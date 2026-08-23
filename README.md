@@ -207,10 +207,11 @@ itu rapikan pembungkusnya: baris terakhir tanpa koma, lalu `];` di akhir.
 Cek hasilnya sebelum dipakai:
 
 ```bash
-awk '/^[ \t]*\["/{n=gsub(/"/,"\"");if(n!=14)print NR": kutip="n}' songs.js
+awk '/^[ \t]*\["/{n=gsub(/"/,"\"");if(n!=10)print NR": kutip="n}' songs.js
 ```
 
-Tiap baris harus punya 14 tanda kutip. Judul beraksen atau ber-apostrof aman; yang
+Tidak ada keluaran = aman. Tiap baris harus punya tepat 10 tanda kutip (judul, artis,
+region, genre, sampul — masing-masing sepasang). Judul beraksen atau ber-apostrof aman; yang
 berbahaya adalah judul dengan kutip di dalamnya — `parse-artist.awk` sudah menolaknya,
 karena satu saja bisa merusak sintaks seluruh berkas.
 
