@@ -783,7 +783,7 @@
       $('#rTitle').textContent = m.title || sg.title || '';
       $('#rArtist').textContent = [m.artist || sg.artist, m.album].filter(Boolean).join(' · ');
       $('#rMeta').textContent = m.year || '';
-      $('#squares').textContent = squares(S.guesses);
+      $('#squares').innerHTML = pips(S.guesses);
 
       const bg = $('#artBg');
       if (m.art) { bg.style.backgroundImage = 'url("' + m.art + '")'; bg.classList.add('on'); }
@@ -811,16 +811,21 @@
 
       $('#runList').innerHTML = ORDER.map((k, i) => {
         const r = S.stages[i];
+        const lvl = '<span class="lvl">' + DIFFS[k].label + '</span>';
         if (!r || !r.done) {
-          return '<li><span class="lvl">' + DIFFS[k].label + '</span>' +
-                 '<span class="nm">belum dimainkan</span></li>';
+          return '<li class="kosong"><span class="thumb ph"></span>' +
+                 '<span class="txt">' + lvl + '<b>Not played</b></span></li>';
         }
+        const cat = ALL.find((s) => s.slug === r.slug);
         const at = r.guesses.findIndex((g) => g.t === 'right');
-        return '<li class="' + (r.won ? 'win' : 'lose') + '">' +
-          '<span class="lvl">' + DIFFS[k].label + '</span>' +
-          '<span class="sq">' + (r.won ? '🟩' : '🟥') + '</span>' +
-          '<span class="nm">' + esc(r.title + ' · ' + r.artist) + '</span>' +
-          '<span class="at">' + (r.won ? fmt(DIFFS[k].ladder[at]) : '✕') + '</span></li>';
+        const thumb = cat && cat.art
+          ? '<img class="thumb" src="' + esc(cat.art) + '" alt="">'
+          : '<span class="thumb ph"></span>';
+        return '<li class="' + (r.won ? 'win' : 'lose') + '">' + thumb +
+          '<span class="txt">' + lvl +
+            '<b>' + esc(r.title) + '</b>' +
+            '<small>' + esc(r.artist) + '</small></span>' +
+          '<span class="at">' + (r.won ? fmt(DIFFS[k].ladder[at]) : 'missed') + '</span></li>';
       }).join('');
 
       $('#againRun').hidden = false;
@@ -866,11 +871,27 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const cell = (v, l) => '<div><b>' + v + '</b><small>' + l + '</small></div>';
 
+  // Untuk dibagikan ke teman -- di sini emoji memang tepat, karena
+  // itu satu-satunya cara mewarnai teks di WhatsApp/X.
   function squares(gs) {
     let s = '';
     for (let i = 0; i < TRIES; i++) {
       const g = gs[i];
       s += !g ? '⬜' : g.t === 'right' ? '🟩' : g.t === 'skip' ? '⬛' : g.t === 'near' ? '🟨' : '🟥';
+    }
+    return s;
+  }
+
+  // Untuk ditampilkan di layar. Emoji dirender oleh font sistem sehingga
+  // warnanya di luar kendali dan tidak nyambung dengan desain -- jadi di
+  // dalam aplikasi dipakai kotak buatan sendiri.
+  function pips(gs) {
+    let s = '';
+    for (let i = 0; i < TRIES; i++) {
+      const g = gs[i];
+      const k = !g ? 'kosong' : g.t === 'right' ? 'benar'
+              : g.t === 'skip' ? 'lewat' : g.t === 'near' ? 'dekat' : 'salah';
+      s += '<i class="pip ' + k + '"></i>';
     }
     return s;
   }
