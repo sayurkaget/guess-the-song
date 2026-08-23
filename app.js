@@ -34,7 +34,6 @@
     y10: { label: '2010s',      hit: function (y) { return y >= 2010 && y < 2020; } },
     y20: { label: '2020s',      hit: function (y) { return y >= 2020; } }
   };
-  const MODES = { daily: 'Daily', endless: 'Free play' };
 
   // penanda versi yang bukan rekaman aslinya — dipakai untuk menolak hasil iTunes
   const JUNK = /\b(live|acoustic|remix|reprise|demo|karaoke|tribute|instrumental|cover|remaster|remastered|edit|version|ver|mix|orchestral|piano|lullaby|workout|sped up|slowed|made famous|originally performed|in the style of|backing track)\b/i;
@@ -77,12 +76,6 @@
 
   const fmt = (n) => (n % 1 === 0 ? n.toFixed(0) : n.toFixed(1)) + 's';
 
-  function todayKey(d) {
-    d = d || new Date();
-    const p = (x) => String(x).padStart(2, '0');
-    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
-  }
-
   const LS = {
     get(k, dflt) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : dflt; } catch (e) { return dflt; } },
     set(k, v)    { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
@@ -95,7 +88,6 @@
     region: LS.get('tl:region', 'all'),
     genre:  LS.get('tl:genre', 'all'),
     era:    LS.get('tl:era', 'all'),
-    mode:   LS.get('tl:mode', 'daily'),
     vol:    LS.get('tl:vol', 0.8),
     muted:  LS.get('tl:muted', false),
 
@@ -118,12 +110,10 @@
   if (!REGIONS[S.region]) S.region = 'all';
   if (!GENRES[S.genre]) S.genre = 'all';
   if (!ERAS[S.era]) S.era = 'all';
-  if (!MODES[S.mode]) S.mode = 'daily';
 
-  // kunci penyimpanan, seed sesi harian, dan cakupan statistik
+  // kunci penyimpanan sesi berjalan dan cakupan statistik
   const filterKey = () => S.region + ':' + S.genre + ':' + S.era;
-  const runKey    = () => 'tl:run:' + filterKey() + ':' +
-                          (S.mode === 'daily' ? todayKey() : 'bebas');
+  const runKey    = () => 'tl:run:' + filterKey();
 
   const D       = () => DIFFS[ORDER[S.stage]];
   const ladder  = () => D().ladder;
@@ -352,11 +342,6 @@
     const avail = S.pool.filter((s) => used.indexOf(s.slug) < 0);
     const from = avail.length ? avail : S.pool;
 
-    if (S.mode === 'daily') {
-      const seed = hash(todayKey() + '|' + filterKey() + '|' + S.stage);
-      const r = rng(seed + (offset || 0) * 7919);
-      return from[Math.floor(r() * from.length)];
-    }
     const recent = LS.get('tl:recent', []);
     const fresh = from.filter((s) => recent.indexOf(s.slug) < 0);
     const src = fresh.length > 3 ? fresh : from;
@@ -454,7 +439,7 @@
     // Gagal tidak menghentikan sesi -- tahap berikutnya tetap jalan.
     if (S.stage === STAGES - 1) S.runDone = true;
     saveRun();
-    if (S.runDone && S.mode === 'daily') recordStats();
+    if (S.runDone) recordStats();
     UI.render(); UI.clearInput();
     UI.status('');
     // Diputar SEKARANG, bukan setelah modal muncul: makin dekat ke klik aslinya,
@@ -491,23 +476,18 @@
 
   /* ================= statistik ================= */
 
-  // satu sesi harian per kombinasi filter, jadi statistiknya juga per kombinasi
+  // statistik per kombinasi filter; tiap sesi yang tuntas dihitung
   const statKey = () => 'tl:stats:' + filterKey();
-  const blankStats = () => ({ runs: 0, total: 0, best: 0, streak: 0, bestStreak: 0, dist: [0, 0, 0, 0, 0, 0], last: '' });
+  const blankStats = () => ({ runs: 0, total: 0, best: 0, perfect: 0, dist: [0, 0, 0, 0, 0, 0] });
 
   function recordStats() {
     const st = Object.assign(blankStats(), LS.get(statKey(), {}));
-    const today = todayKey();
-    if (st.last === today) return;              // satu sesi harian dihitung sekali
     const sc = score();
     st.runs++;
     st.total += sc;
     st.dist[sc]++;
     st.best = Math.max(st.best, sc);
-    const y = new Date(); y.setDate(y.getDate() - 1);
-    st.streak = st.last === todayKey(y) ? st.streak + 1 : 1;
-    st.bestStreak = Math.max(st.bestStreak, st.streak);
-    st.last = today;
+    if (sc === STAGES) st.perfect++;
     LS.set(statKey(), st);
   }
 
@@ -540,20 +520,6 @@
       fill($('#region'), REGIONS, S.region, 'tl:region');
       fill($('#genre'),  GENRES,  S.genre,  'tl:genre');
       fill($('#era'),    ERAS,    S.era,    'tl:era');
-
-      const md = $('#mode');
-      md.innerHTML = '';
-      for (const k in MODES) {
-        const b = el('button');
-        b.textContent = MODES[k];
-        b.setAttribute('aria-pressed', k === S.mode);
-        b.onclick = () => {
-          if (S.mode === k) return;
-          S.mode = k; LS.set('tl:mode', k);
-          UI.buildControls(); UI.refreshLobby();
-        };
-        md.appendChild(b);
-      }
     },
 
     /* --- rangkaian tahap --- */
@@ -636,8 +602,7 @@
       $('#gameMode').textContent = [
         S.region === 'all' ? null : REGIONS[S.region],
         S.genre === 'all' ? null : GENRES[S.genre],
-        S.era === 'all' ? null : ERAS[S.era].label,
-        MODES[S.mode]
+        S.era === 'all' ? null : ERAS[S.era].label
       ].filter(Boolean).join(' · ');
       this.steps($('#steps'), true);
       $('#stageNow').innerHTML = 'Stage <b>' + (S.stage + 1) + '</b> of ' + STAGES +
@@ -701,11 +666,33 @@
                  : '<span class="dd-art ph" aria-hidden="true"></span>') +
           '<span class="dd-txt">' + esc(s.title) +
           '<small>' + esc(s.artist) + '</small></span>';
-        // touchstart juga ditangani: di HP, blur pada input bisa menutup daftar
-        // sebelum mousedown sempat jalan.
-        const pilih = (e) => { e.preventDefault(); UI.choose(i); };
-        b.onmousedown = pilih;
-        b.addEventListener('touchstart', pilih, { passive: false });
+        // Di HP jangan pernah memilih saat touchstart: jari baru menempel dan
+        // browser belum tahu ini ketukan atau geseran, jadi setiap usaha
+        // menggulung daftar malah mengirim tebakan. Diputuskan di touchend,
+        // hanya kalau jarinya nyaris tidak bergeser.
+        let mulai = null;
+        b.addEventListener('touchstart', (e) => {
+          const t = e.touches[0];
+          mulai = { x: t.clientX, y: t.clientY, ms: Date.now() };
+        }, { passive: true });          // passive: biarkan gulungan tetap mulus
+
+        b.addEventListener('touchend', (e) => {
+          if (!mulai) return;
+          const t = e.changedTouches[0];
+          const geser = Math.abs(t.clientX - mulai.x) + Math.abs(t.clientY - mulai.y);
+          const lama = Date.now() - mulai.ms;
+          mulai = null;
+          UI.lastTouch = Date.now();
+          if (geser < 12 && lama < 700) { e.preventDefault(); UI.choose(i); }
+        }, { passive: false });
+
+        // mousedown dipakai desktop; dilewati kalau baru saja ada sentuhan
+        // supaya klik tiruan dari layar sentuh tidak memilih dua kali.
+        b.onmousedown = (e) => {
+          if (Date.now() - (UI.lastTouch || 0) < 900) return;
+          e.preventDefault();
+          UI.choose(i);
+        };
         this.dd.appendChild(b);
       });
       this.dd.hidden = false;
@@ -804,8 +791,7 @@
           '<span class="at">' + (r.won ? fmt(DIFFS[k].ladder[at]) : '✕') + '</span></li>';
       }).join('');
 
-      $('#againRun').hidden = S.mode !== 'endless';
-      $('.r-next').hidden = S.mode !== 'daily';
+      $('#againRun').hidden = false;
 
       open($('#runModal'));
       confetti('#runConfetti', sc >= 3 ? 'win' : 'lose');
@@ -821,13 +807,13 @@
 
     stats() {
       const st = Object.assign(blankStats(), LS.get(statKey(), {}));
-      $('#statScope').textContent = 'Daily run · ' + [
+      $('#statScope').textContent = [
         REGIONS[S.region], GENRES[S.genre], ERAS[S.era].label
       ].join(' · ');
       const avg = st.runs ? (st.total / st.runs).toFixed(1) : '0';
       $('#statgrid').innerHTML =
         cell(st.runs, 'runs') + cell(avg, 'average') +
-        cell(st.best, 'best') + cell(st.streak, 'streak');
+        cell(st.best, 'best') + cell(st.perfect || 0, 'perfect');
       const top = Math.max.apply(null, st.dist.concat([1]));
       $('#dist').innerHTML = st.dist.map((c, i) =>
         '<div class="row"><span class="n">' + i + '</span>' +
@@ -854,7 +840,7 @@
     if (S.region !== 'all') tags.push(REGIONS[S.region]);
     if (S.genre !== 'all') tags.push(GENRES[S.genre]);
     if (S.era !== 'all') tags.push(ERAS[S.era].label);
-    tags.push(S.mode === 'daily' ? todayKey() : 'bebas');
+    if (!tags.length) tags.push('All songs');
 
     const lines = ORDER.map((k, i) => {
       const r = S.stages[i];
@@ -958,20 +944,6 @@
     toastT = setTimeout(() => { t.hidden = true; }, 2200);
   }
 
-  /* ================= hitung mundur ================= */
-
-  function tickClock() {
-    const now = new Date();
-    const mid = new Date(now); mid.setHours(24, 0, 0, 0);
-    let s = Math.max(0, Math.floor((mid - now) / 1000));
-    const h = Math.floor(s / 3600); s %= 3600;
-    const m = Math.floor(s / 60); s %= 60;
-    const p = (x) => String(x).padStart(2, '0');
-    const txt = p(h) + ':' + p(m) + ':' + p(s);
-    $('#countdown').textContent = txt;
-    $('#countdown2').textContent = txt;
-  }
-
   /* ================= event ================= */
 
   UI.play.onclick = playClip;
@@ -1071,8 +1043,6 @@
   UI.buildControls();
   UI.render();
   UI.lobby();                 // selalu mulai dari layar pilih mode
-  tickClock();
-  setInterval(tickClock, 1000);
 
   if (!LS.get('tl:seen')) { LS.set('tl:seen', 1); setTimeout(() => open($('#helpModal')), 500); }
 })();

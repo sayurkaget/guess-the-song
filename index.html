@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Guess The Song — Daily Music Quiz</title>
+<title>Guess The Song — Music Guessing Game</title>
 
 <!-- dipasang ke layar depan HP: Android lewat manifest, iOS lewat meta apple-* -->
 <link rel="manifest" href="app.webmanifest">
@@ -28,7 +28,6 @@
   <header class="head">
     <h1 class="logo">guess the <span>song</span></h1>
     <p class="tagline">name the track from a split second of it</p>
-    <p class="countdown">Next daily run in <b id="countdown">--:--:--</b></p>
   </header>
 
   <!-- ====== mode picker ====== -->
@@ -41,7 +40,6 @@
       <label class="drop"><span class="sr">Region</span><select id="region"></select></label>
       <label class="drop"><span class="sr">Genre</span><select id="genre"></select></label>
       <label class="drop"><span class="sr">Era</span><select id="era"></select></label>
-      <div class="seg" id="mode" role="group" aria-label="Game mode"></div>
     </div>
     <p class="poolinfo" id="poolInfo"></p>
 
@@ -149,7 +147,6 @@
       <button class="btn solid" id="share">Copy result</button>
       <button class="btn ghost" id="againRun">Play again</button>
     </div>
-    <p class="r-next">Next daily run in <b id="countdown2">--:--:--</b></p>
   </div>
 </div>
 

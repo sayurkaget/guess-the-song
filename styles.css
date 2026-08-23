@@ -290,6 +290,10 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
 .dd{
   position:absolute; z-index:30; left:0; right:0; top:calc(100% + 8px);
   max-height:290px; overflow-y:auto;
+  /* gulungan sentuh: izinkan geser tegak, dan beri momentum di iOS */
+  touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
   background:#0b1c13; border:1px solid var(--line);
   border-radius:14px; padding:5px;
   box-shadow:0 24px 60px -18px rgba(0,0,0,.85);
