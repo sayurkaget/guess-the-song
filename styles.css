@@ -33,12 +33,38 @@ body{
   -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
 }
+/* Latar aurora: tiga gumpalan cahaya yang bergerak sangat lambat.
+   Murni CSS transform supaya tidak membebani HP. */
 .glow{
-  position:fixed; inset:0; z-index:-1; pointer-events:none;
-  background:
-    radial-gradient(1100px 620px at 50% -12%, rgba(37,224,125,.20), transparent 62%),
-    radial-gradient(760px 520px at 50% 108%, rgba(18,150,90,.14), transparent 66%),
-    linear-gradient(180deg,var(--bg2),var(--bg) 55%);
+  position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden;
+  background:linear-gradient(180deg,var(--bg2),var(--bg) 60%);
+}
+.glow::before,.glow::after{
+  content:""; position:absolute; border-radius:50%;
+  filter:blur(90px); opacity:.5;
+}
+.glow::before{
+  width:60vw; height:60vw; min-width:420px; min-height:420px;
+  top:-22vw; left:50%; margin-left:-30vw;
+  background:radial-gradient(circle,rgba(37,224,125,.55),transparent 68%);
+  animation:drift1 26s ease-in-out infinite;
+}
+.glow::after{
+  width:48vw; height:48vw; min-width:340px; min-height:340px;
+  bottom:-20vw; left:6vw;
+  background:radial-gradient(circle,rgba(20,190,255,.24),transparent 70%);
+  animation:drift2 34s ease-in-out infinite;
+}
+@keyframes drift1{
+  0%,100%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(6vw,4vw) scale(1.12)}
+}
+@keyframes drift2{
+  0%,100%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(10vw,-6vw) scale(1.18)}
+}
+@media (prefers-reduced-motion:reduce){
+  .glow::before,.glow::after{animation:none}
 }
 button,input{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
@@ -206,25 +232,35 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
 .stage{width:100%}
 .track{
   position:relative;
-  width:100%; height:30px;
-  background:rgba(255,255,255,.05);
-  border-radius:9px; overflow:hidden;
-  margin-bottom:2.4rem;
+  width:100%; height:64px;
+  margin-bottom:2.2rem;
+  padding:0 1px;
 }
-.track-fill{
-  position:absolute; inset:0 auto 0 0; width:0;
-  background:rgba(255,255,255,.14);
-  transition:width .32s cubic-bezier(.4,0,.2,1);
+/* gelombang: 72 batang, tingginya khas per lagu */
+.track-wave{
+  position:absolute; inset:0;
+  display:flex; align-items:center; gap:2px;
 }
-.track-seams{position:absolute;inset:0}
+.track-wave i{
+  flex:1; min-width:0;
+  border-radius:2px;
+  background:rgba(255,255,255,.10);
+  transition:background .35s ease, box-shadow .35s ease, transform .35s ease;
+  transform-origin:center;
+}
+.track-wave i.on{
+  background:linear-gradient(180deg,#41f596,var(--acc-d));
+  box-shadow:0 0 10px -2px rgba(37,224,125,.7);
+}
+.track-seams{position:absolute;inset:0;pointer-events:none}
 .track-seams i{
-  position:absolute; top:0; bottom:0; width:2px;
-  background:var(--bg); opacity:.85;
+  position:absolute; top:6px; bottom:6px; width:1px;
+  background:rgba(255,255,255,.16);
 }
 .track-head{
-  position:absolute; top:0; bottom:0; left:0; width:3px;
-  background:var(--acc); box-shadow:0 0 12px var(--acc);
-  opacity:0; transform:translateX(-1px);
+  position:absolute; top:-4px; bottom:-4px; left:0; width:2px;
+  background:#eafff3; box-shadow:0 0 14px 2px rgba(37,224,125,.9);
+  opacity:0; transform:translateX(-1px); border-radius:2px;
 }
 .track-head.on{opacity:1}
 
@@ -395,12 +431,23 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
 .sheet{
   position:relative;
   width:min(430px,100%); max-height:88vh; overflow-y:auto;
-  background:linear-gradient(180deg,#0d2016,#091510);
-  border:1px solid var(--line); border-radius:22px;
+  background:linear-gradient(180deg,rgba(18,42,28,.86),rgba(8,20,14,.94));
+  backdrop-filter:blur(22px) saturate(1.3);
+  border:1px solid rgba(255,255,255,.13); border-radius:24px;
   padding:1.9rem 1.6rem 1.6rem;
-  box-shadow:0 40px 90px -25px rgba(0,0,0,.9);
+  box-shadow:0 40px 90px -25px rgba(0,0,0,.92),
+             inset 0 1px 0 rgba(255,255,255,.09);
   animation:rise .26s cubic-bezier(.2,.9,.3,1);
 }
+/* sampul album jadi latar kabur di layar hasil */
+.artbg{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-size:cover; background-position:center;
+  filter:blur(58px) saturate(1.5); opacity:0;
+  transform:scale(1.25);
+  transition:opacity .5s ease;
+}
+.artbg.on{opacity:.34}
 @keyframes rise{from{opacity:0;transform:translateY(16px) scale(.97)}}
 .sheet .x{
   position:absolute;right:12px;top:10px;
@@ -536,6 +583,9 @@ kbd{
   .iconbtn{width:44px;height:44px}
   #q{padding-top:.95rem;padding-bottom:.95rem}
   .steps li{padding:.38rem .65rem;font-size:.74rem}
+  /* layar sempit: rapatkan jaraknya supaya batangnya tidak jadi garis rambut */
+  .track{height:56px}
+  .track-wave{gap:1px}
 }
 /* jangan pernah zoom otomatis saat mengetik di iOS (font < 16px memicunya) */
 @supports (-webkit-touch-callout:none){

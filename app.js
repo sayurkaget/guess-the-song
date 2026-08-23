@@ -495,7 +495,8 @@
 
   const UI = {
     q: $('#q'), dd: $('#dd'), track: $('#track'),
-    fill: $('#trackFill'), seams: $('#trackSeams'), headEl: $('#trackHead'),
+    wave: $('#trackWave'), seams: $('#trackSeams'), headEl: $('#trackHead'),
+    bars: [], waveFor: null,
     play: $('#play'), out: $('#readout'), st: $('#status'),
     skipBtn: $('#skip'), skipLabel: $('#skipLabel'),
     sel: -1, list: [],
@@ -620,15 +621,42 @@
       p.textContent = msg;
       p.classList.toggle('warn', warn);
     },
+    // Bar gelombang. Tinggi tiap batang diturunkan dari slug lagu, jadi tiap
+    // lagu punya siluet sendiri yang tetap sama tiap kali dimuat ulang --
+    // bukan gelombang asli (Web Audio tak bisa membaca audio lintas-domain),
+    // tapi memberi kesan "ini berkas suara" alih-alih kotak abu-abu.
     bar() {
+      const N = 72;
       const L = ladder(), max = maxLen();
+      const unlocked = (S.done ? max : limit()) / max;
+
+      if (this.waveFor !== (S.song ? S.song.slug : '-')) {
+        this.waveFor = S.song ? S.song.slug : '-';
+        const r = rng(hash(this.waveFor || 'x'));
+        this.wave.innerHTML = '';
+        this.bars = [];
+        for (let i = 0; i < N; i++) {
+          const b = el('i');
+          // dua gelombang lambat + derau: bentuknya organik, tidak acak kasar
+          const env = 0.35 + 0.4 * Math.sin(i / N * Math.PI) +
+                      0.25 * Math.sin(i / 3.7) * 0.5;
+          const h = Math.max(0.14, Math.min(1, env * (0.55 + r() * 0.75)));
+          b.style.height = (h * 100) + '%';
+          this.wave.appendChild(b);
+          this.bars.push(b);
+        }
+      }
+
+      for (let i = 0; i < this.bars.length; i++) {
+        this.bars[i].classList.toggle('on', (i + 0.5) / N <= unlocked);
+      }
+
       this.seams.innerHTML = '';
       for (let i = 0; i < L.length - 1; i++) {
         const s = el('i');
         s.style.left = (L[i] / max * 100) + '%';
         this.seams.appendChild(s);
       }
-      this.fill.style.width = ((S.done ? max : limit()) / max * 100) + '%';
     },
 
     /* --- daftar tebakan --- */
@@ -757,6 +785,10 @@
       $('#rMeta').textContent = m.year || '';
       $('#squares').textContent = squares(S.guesses);
 
+      const bg = $('#artBg');
+      if (m.art) { bg.style.backgroundImage = 'url("' + m.art + '")'; bg.classList.add('on'); }
+      else bg.classList.remove('on');
+
       const link = $('#listen');
       if (m.link) { link.href = m.link; link.hidden = false; } else link.hidden = true;
 
@@ -792,6 +824,14 @@
       }).join('');
 
       $('#againRun').hidden = false;
+
+      // latar dari sampul lagu terakhir yang berhasil ditebak
+      const menang = S.stages.filter((x) => x && x.won);
+      const seed = menang.length ? menang[menang.length - 1] : null;
+      const art = seed && (ALL.find((s) => s.slug === seed.slug) || {}).art;
+      const bgr = $('#artBgRun');
+      if (art) { bgr.style.backgroundImage = 'url("' + art + '")'; bgr.classList.add('on'); }
+      else bgr.classList.remove('on');
 
       open($('#runModal'));
       confetti('#runConfetti', sc >= 3 ? 'win' : 'lose');
