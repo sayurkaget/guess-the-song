@@ -715,3 +715,39 @@ kbd{
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* ============ custom game: main satu artis ============ */
+
+/* Aksen mode kustom: biru, membedakannya dari tangga Easy->Impossible. */
+body[data-diff="custom"]{--acc:#3db6f5;--acc-l:#5ec8ff;--acc-d:#1f93d6;--acc-rgb:61,182,245}
+.steps li[data-k="custom"]{--c:#3db6f5}
+
+/* tombol pembuka di lobi */
+.customlink{margin:.75rem auto 0;display:block;font-size:.86rem;color:var(--dim);font-weight:600}
+.customlink:hover{color:var(--ink)}
+
+/* modal */
+.sheet.custom{width:min(460px,100%)}
+.custom-h{margin:.1rem 0 1.5rem;text-align:center;font-size:.95rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--ink);font-weight:700}
+.custom-lbl{margin:0 0 .55rem;font-size:.82rem;font-weight:700;color:var(--ink)}
+.custom-field{position:relative}
+#artistQ{
+  width:100%;box-sizing:border-box;padding:.85rem 1rem;border-radius:14px;
+  background:rgba(255,255,255,.05);border:1.5px solid var(--line);
+  color:var(--ink);font-family:var(--fs);font-size:1rem;outline:none;
+  transition:border-color .15s,background .15s;
+}
+#artistQ::placeholder{color:var(--dimmer)}
+#artistQ:focus{border-color:rgba(61,182,245,.6);background:rgba(255,255,255,.07)}
+.custom-results{list-style:none;margin:.5rem 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.artist-row{
+  width:100%;text-align:left;display:flex;align-items:baseline;gap:.6rem;
+  padding:.62rem .7rem;border-radius:10px;background:none;color:var(--ink);
+  font-family:var(--fs);font-size:.95rem;
+}
+.artist-row:hover,.artist-row:focus-visible{background:rgba(61,182,245,.14)}
+.artist-name{font-weight:600}
+.artist-genre{margin-left:auto;font-size:.75rem;color:var(--dimmer);flex:none;align-self:center}
+.custom-hint{margin:1.05rem 0 .2rem;font-size:.8rem;color:var(--dimmer);text-align:center;line-height:1.5}
+.custom-hint.warn{color:var(--bad)}

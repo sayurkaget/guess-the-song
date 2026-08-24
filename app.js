@@ -107,7 +107,8 @@
     startAt: 0,
     picked: null,
     loading: false,
-    epoch: 0         // penanda pemuatan, membatalkan request usang
+    epoch: 0,        // penanda pemuatan, membatalkan request usang
+    custom: null     // mode artis kustom: {id,label,songs[]} -- null = mode katalog biasa
   };
 
   if (!REGIONS[S.region]) S.region = 'all';
@@ -115,7 +116,7 @@
   if (!ERAS[S.era]) S.era = 'all';
 
   // Kombinasi filter memisahkan dua hal: sesi yang berjalan dan statistiknya.
-  const filterKey = () => S.region + ':' + S.genre + ':' + S.era;
+  const filterKey = () => S.custom ? 'custom:' + S.custom.id : (S.region + ':' + S.genre + ':' + S.era);
 
   const D       = () => DIFFS[ORDER[S.stage]];
   const ladder  = () => LADDER;
@@ -132,8 +133,16 @@
     slug: slug(s), hay: norm(s[0] + ' ' + s[1])
   }));
 
+  // Cari entri lagu dari slug. Di mode kustom, lagu artis didahulukan -- lagu
+  // itu membawa meta iTunes yang sudah diambil (.pre), jadi tak perlu resolve ulang.
+  function findSong(sl) {
+    if (S.custom) { const c = S.custom.songs.find((s) => s.slug === sl); if (c) return c; }
+    return ALL.find((s) => s.slug === sl) || null;
+  }
+
   // lagu yang lolos filter pemain, tanpa memandang tingkat kesulitan
   function filtered() {
+    if (S.custom) return S.custom.songs;
     return ALL.filter((s) =>
       (S.region === 'all' || s.region === S.region) &&
       (S.genre === 'all' || s.genre === S.genre) &&
@@ -141,6 +150,8 @@
   }
 
   function buildPool() {
+    // Mode kustom: kumpulannya adalah seluruh lagu artis yang diambil, tanpa tier.
+    if (S.custom) { S.pool = S.custom.songs.slice(); S.tierWidened = false; return; }
     // Wilayah, genre, dan era adalah pilihan sadar pemain -- tidak pernah
     // dilonggarkan. Hanya rentang tier tahap ini yang dilebarkan kalau
     // lagu yang cocok terlalu sedikit.
@@ -165,7 +176,7 @@
     if (!nq) return [];
     const toks = nq.split(' ');
     const out = [];
-    for (const s of ALL) {
+    for (const s of (S.custom ? S.custom.songs : ALL)) {
       if (!toks.every((t) => s.hay.indexOf(t) >= 0)) continue;
       const nt = norm(s.title);
       let sc = 3;
@@ -205,6 +216,7 @@
   }
 
   async function resolve(song) {
+    if (song.pre) return song.pre;   // lagu kustom sudah membawa meta iTunes
     const ck = 'tl:trk3:' + song.slug;   // naikkan versi kalau aturan pencocokan berubah
     const c = LS.get(ck);
     if (c && c.exp > Date.now() && c.preview) return c;
@@ -384,7 +396,7 @@
     }
 
     const cur = S.stages[S.stage];
-    let song = cur && cur.slug ? (ALL.find((s) => s.slug === cur.slug) || null) : null;
+    let song = cur && cur.slug ? (findSong(cur.slug) || null) : null;
 
     S.meta = null; S.picked = null; S.loading = true;
     UI.playState('loading');
@@ -435,7 +447,7 @@
   function submitGuess(pick) {
     if (S.done || !S.song) return;
     const right = pick.slug === S.song.slug;
-    const near = !right && norm(pick.artist) === norm(S.song.artist);
+    const near = !right && !S.custom && norm(pick.artist) === norm(S.song.artist);
     S.guesses.push({ t: right ? 'right' : (near ? 'near' : 'wrong'), title: pick.title, artist: pick.artist });
     if (right) return finish(true);
     if (S.guesses.length >= TRIES) return finish(false);
@@ -497,6 +509,98 @@
     load();
   }
 
+  /* ============ mode kustom: main lagu-lagu satu artis ============ */
+
+  // Ambil lagu satu artis dari iTunes (tanpa kunci). Hasilnya sudah membawa
+  // preview + sampul lewat .pre, jadi resolve() melewatinya tanpa request lagi.
+  async function fetchArtistSongs(artistId) {
+    const url = 'https://itunes.apple.com/lookup?id=' + encodeURIComponent(artistId) +
+                '&entity=song&limit=120&country=US';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('http ' + res.status);
+    const data = JSON.parse(await res.text());
+    const seen = Object.create(null), songs = [];
+    for (const r of (data.results || [])) {
+      if (r.wrapperType !== 'track' || !r.previewUrl) continue;
+      // tolak live/remix/karaoke -- yang dicari rekaman aslinya
+      if (JUNK.test(r.trackName) || JUNK.test(r.collectionName || '')) continue;
+      const title = r.trackName, artist = r.artistName, sl = slug([title, artist]);
+      if (seen[sl]) continue; seen[sl] = 1;
+      const art = (r.artworkUrl100 || '').replace('100x100', '600x600');
+      const year = (r.releaseDate || '').slice(0, 4);
+      songs.push({
+        title, artist, tier: 0, region: '', genre: '', year, art,
+        slug: sl, hay: norm(title + ' ' + artist),
+        pre: { preview: r.previewUrl, art, title, artist, album: r.collectionName || '',
+               year, link: r.trackViewUrl || '', exp: Date.now() + 7 * 864e5 }
+      });
+    }
+    return songs;
+  }
+
+  // Daftar artis untuk dropdown pencarian; cocok persis/awalan didahulukan.
+  async function searchArtists(q) {
+    const url = 'https://itunes.apple.com/search?term=' + encodeURIComponent(q) +
+                '&entity=musicArtist&limit=8&country=US';
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = JSON.parse(await res.text());
+    const nq = norm(q), seen = Object.create(null), list = [];
+    for (const r of (data.results || [])) {
+      if (!r.artistId || !r.artistName || seen[r.artistId]) continue;
+      seen[r.artistId] = 1;
+      const na = norm(r.artistName);
+      let sc = 3;
+      if (na === nq) sc = 0; else if (na.indexOf(nq) === 0) sc = 1; else if (na.indexOf(nq) >= 0) sc = 2;
+      list.push({ id: r.artistId, name: r.artistName, genre: r.primaryGenreName || '', sc });
+    }
+    list.sort((a, b) => a.sc - b.sc || a.name.length - b.name.length);
+    return list.slice(0, 6);
+  }
+
+  // Mulai satu sesi kustom dari artis terpilih.
+  async function startCustom(artistId, artistName) {
+    const hint = $('#customHint');
+    hint.className = 'custom-hint'; hint.textContent = 'Loading ' + artistName + '…';
+    let songs;
+    try { songs = await fetchArtistSongs(artistId); }
+    catch (e) { hint.className = 'custom-hint warn'; hint.textContent = 'Could not load that artist. Try another.'; return; }
+    if (songs.length < STAGES) {
+      hint.className = 'custom-hint warn';
+      hint.textContent = 'Only ' + songs.length + ' original tracks found — need at least ' + STAGES + '. Try another artist.';
+      return;
+    }
+    delete RUNS['custom:' + artistId];              // dari modal selalu mulai sesi baru
+    S.custom = { id: String(artistId), label: artistName, songs };
+    switchRun();                                    // parkir sesi katalog, pindah ke slot kustom
+    S.stages = []; S.stage = 0; S.runDone = false;
+    S.guesses = []; S.done = false; S.won = false;
+    S.song = null; S.meta = null;
+    closeAll();
+    UI.game();
+    load();
+  }
+
+  const CUSTOM_HINT = 'Any artist on Apple Music — we pick 5 of their songs.';
+  function openCustom() {
+    closeAll();
+    $('#artistQ').value = '';
+    const box = $('#artistResults'); box.hidden = true; box.innerHTML = '';
+    const h = $('#customHint'); h.className = 'custom-hint'; h.textContent = CUSTOM_HINT;
+    $('#customModal').hidden = false;
+    setTimeout(() => $('#artistQ').focus(), 40);
+  }
+  function renderArtists(list) {
+    const box = $('#artistResults');
+    if (!list.length) { box.hidden = true; box.innerHTML = ''; return; }
+    box.innerHTML = list.map((a) =>
+      '<li><button type="button" class="artist-row" data-id="' + esc(String(a.id)) +
+      '" data-name="' + esc(a.name) + '"><span class="artist-name">' + esc(a.name) + '</span>' +
+      (a.genre ? '<span class="artist-genre">' + esc(a.genre) + '</span>' : '') +
+      '</button></li>').join('');
+    box.hidden = false;
+  }
+
   /* ================= statistik ================= */
 
   // statistik per kombinasi filter; tiap sesi yang tuntas dihitung
@@ -504,6 +608,7 @@
   const blankStats = () => ({ runs: 0, total: 0, best: 0, perfect: 0, dist: [0, 0, 0, 0, 0, 0] });
 
   function recordStats() {
+    if (S.custom) return;   // mode kustom tak masuk statistik harian
     const st = Object.assign(blankStats(), LS.get(statKey(), {}));
     const sc = score();
     st.runs++;
@@ -553,14 +658,15 @@
       ORDER.forEach((k, i) => {
         if (i) { const a = el('li', 'arrow'); a.textContent = '›'; host.appendChild(a); }
         const li = el('li');
-        li.dataset.k = k;
+        li.dataset.k = S.custom ? 'custom' : k;
         const rec = S.stages[i];
         let mark = '';
         if (live) {
           if (rec && rec.done) { li.classList.add(rec.won ? 'win' : 'lose'); mark = rec.won ? '✓' : '✕'; }
           else if (i === S.stage) li.classList.add('now');
         }
-        li.innerHTML = DIFFS[k].label + (mark ? ' <span class="mark">' + mark + '</span>' : '');
+        const label = S.custom ? (i + 1) : DIFFS[k].label;
+        li.innerHTML = label + (mark ? ' <span class="mark">' + mark + '</span>' : '');
         host.appendChild(li);
       });
     },
@@ -607,6 +713,7 @@
 
     lobby() {
       stopAudio();
+      if (S.custom) { S.custom = null; switchRun(); }   // keluar dari mode kustom, pulihkan sesi katalog
       S.epoch++;                       // batalkan pemuatan yang masih berjalan
       document.body.removeAttribute('data-diff');   // lobi tak terikat satu kesulitan
       $('#game').hidden = true;
@@ -618,15 +725,16 @@
     game() {
       $('#lobby').hidden = true;
       $('#game').hidden = false;
-      document.body.dataset.diff = ORDER[S.stage];  // warna tahap ini mewarnai seluruh halaman
-      $('#gameMode').textContent = [
+      document.body.dataset.diff = S.custom ? 'custom' : ORDER[S.stage];  // warna mewarnai seluruh halaman
+      $('#gameMode').textContent = S.custom ? S.custom.label : [
         S.region === 'all' ? null : REGIONS[S.region],
         S.genre === 'all' ? null : GENRES[S.genre],
         S.era === 'all' ? null : ERAS[S.era].label
       ].filter(Boolean).join(' · ');
       this.steps($('#steps'), true);
-      $('#stageNow').innerHTML = 'Stage <b>' + (S.stage + 1) + '</b> of ' + STAGES +
-        ' · <b>' + D().label + '</b>';
+      $('#stageNow').innerHTML = S.custom
+        ? 'Song <b>' + (S.stage + 1) + '</b> of ' + STAGES + ' · <b>' + esc(S.custom.label) + '</b>'
+        : 'Stage <b>' + (S.stage + 1) + '</b> of ' + STAGES + ' · <b>' + D().label + '</b>';
     },
 
     poolInfo() {
@@ -776,7 +884,7 @@
       const n = S.guesses.length;
 
       $('#resultModal .reveal').className = 'reveal ' + (S.won ? 'win' : 'lose');
-      $('#ghostStage').textContent = D().label.toLowerCase();
+      $('#ghostStage').textContent = (S.custom ? S.custom.label : D().label).toLowerCase();
 
       // Label kecil di atas judul: menang -> pujian, kalah -> "it was_"
       $('#verdict').textContent = S.won
@@ -832,7 +940,7 @@
           return '<li class="kosong"><span class="thumb ph"></span>' +
                  '<span class="txt">' + lvl + '<b>Not played</b></span></li>';
         }
-        const cat = ALL.find((s) => s.slug === r.slug);
+        const cat = findSong(r.slug);
         const at = r.guesses.findIndex((g) => g.t === 'right');
         const thumb = cat && cat.art
           ? '<img class="thumb" src="' + esc(cat.art) + '" alt="">'
@@ -900,16 +1008,20 @@
 
   function shareText() {
     const tags = [];
-    if (S.region !== 'all') tags.push(REGIONS[S.region]);
-    if (S.genre !== 'all') tags.push(GENRES[S.genre]);
-    if (S.era !== 'all') tags.push(ERAS[S.era].label);
-    if (!tags.length) tags.push('All songs');
+    if (S.custom) tags.push(S.custom.label);
+    else {
+      if (S.region !== 'all') tags.push(REGIONS[S.region]);
+      if (S.genre !== 'all') tags.push(GENRES[S.genre]);
+      if (S.era !== 'all') tags.push(ERAS[S.era].label);
+      if (!tags.length) tags.push('All songs');
+    }
 
     const lines = ORDER.map((k, i) => {
+      const name = S.custom ? ('Song ' + (i + 1)) : DIFFS[k].label;
       const r = S.stages[i];
-      if (!r || !r.done) return '⬜ ' + DIFFS[k].label;
+      if (!r || !r.done) return '⬜ ' + name;
       const at = r.guesses.findIndex((g) => g.t === 'right');
-      return (r.won ? '🟩 ' : '🟥 ') + DIFFS[k].label + (r.won ? ' ' + fmt(LADDER[at]) : '');
+      return (r.won ? '🟩 ' : '🟥 ') + name + (r.won ? ' ' + fmt(LADDER[at]) : '');
     });
 
     return 'Guess The Song · ' + tags.join(' · ') + ' · ' + score() + '/' + STAGES +
@@ -920,7 +1032,7 @@
   function shareStage() {
     const at = S.guesses.findIndex((g) => g.t === 'right');
     const hasil = S.won ? 'I got it in ' + fmt(LADDER[at]) : 'I lost this one';
-    return 'Guess The Song · ' + D().label + '\n' +
+    return 'Guess The Song · ' + (S.custom ? S.custom.label : D().label) + '\n' +
            squares(S.guesses) + '  ' + hasil + '\n' +
            'Beat me: https://sayurkaget.github.io/guess-the-song/';
   }
@@ -1030,6 +1142,31 @@
   $('#back').onclick = () => { closeAll(); UI.lobby(); };
   $('#next').onclick = nextStage;
   $('#againRun').onclick = newRun;
+
+  // ---- custom game (main satu artis) ----
+  $('#openCustom').onclick = openCustom;
+  let artistT = 0, artistReq = 0;
+  $('#artistQ').addEventListener('input', () => {
+    const v = $('#artistQ').value.trim();
+    clearTimeout(artistT);
+    if (v.length < 2) { $('#artistResults').hidden = true; $('#artistResults').innerHTML = ''; return; }
+    const my = ++artistReq;
+    artistT = setTimeout(async () => {
+      try { const list = await searchArtists(v); if (my === artistReq) renderArtists(list); }
+      catch (e) { /* diam */ }
+    }, 260);
+  });
+  $('#artistQ').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const first = $('#artistResults').querySelector('.artist-row');
+      if (first) startCustom(first.dataset.id, first.dataset.name);
+    }
+  });
+  $('#artistResults').addEventListener('click', (e) => {
+    const b = e.target.closest('.artist-row');
+    if (b) startCustom(b.dataset.id, b.dataset.name);
+  });
   $('#shareStage').onclick = () => salin(shareStage());
   UI.skipBtn.onclick = () => { if (S.done) UI.result(); else skip(); };
 

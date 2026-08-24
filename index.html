@@ -44,6 +44,7 @@
     <p class="poolinfo" id="poolInfo"></p>
 
     <button class="btn solid start" id="start">Start</button>
+    <button class="btn ghostbtn customlink" id="openCustom">&#10022; Custom game &mdash; play any artist</button>
   </section>
 
   <!-- ====== game ====== -->
@@ -156,6 +157,20 @@
       <button class="btn solid" id="share">Copy result</button>
       <button class="btn ghost" id="againRun">Play again</button>
     </div>
+  </div>
+</div>
+
+<!-- ====== custom game ====== -->
+<div class="modal" id="customModal" hidden>
+  <div class="sheet custom" role="dialog" aria-modal="true" aria-labelledby="customTitle">
+    <button class="x" data-close aria-label="Close">&times;</button>
+    <h2 class="custom-h" id="customTitle">&#10022; Custom Game</h2>
+    <p class="custom-lbl">Play an artist</p>
+    <div class="custom-field">
+      <input id="artistQ" type="text" placeholder="Search any artist&hellip;" autocomplete="off" spellcheck="false" enterkeyhint="go">
+    </div>
+    <ul class="custom-results" id="artistResults" hidden></ul>
+    <p class="custom-hint" id="customHint">Any artist on Apple Music &mdash; we pick 5 of their songs.</p>
   </div>
 </div>
 
