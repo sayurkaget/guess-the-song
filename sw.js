@@ -5,7 +5,7 @@
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v1';
+const CACHE = 'gts-v2';
 const SHELL = [
   './',
   './index.html',
@@ -19,7 +19,13 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // { cache: 'reload' } memaksa tiap berkas diambil segar dari jaringan saat
+  // dipasang -- tanpa ini, addAll bisa menyalin versi lama dari cache HTTP.
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (e) => {
@@ -38,8 +44,10 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== self.location.origin) return;
   if (e.request.method !== 'GET') return;
 
+  // 'no-store' melewati cache HTTP browser: versi terbaru selalu menang saat
+  // online. Cache milik SW ini tetap diisi sebagai cadangan untuk mode luring.
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-store' })
       .then((res) => {
         const salinan = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, salinan)).catch(() => {});
