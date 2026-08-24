@@ -113,9 +113,11 @@
 <div class="modal" id="resultModal" hidden>
   <div class="artbg" id="artBg"></div>
   <canvas class="confetti" id="confetti" aria-hidden="true"></canvas>
-  <div class="sheet result" role="dialog" aria-modal="true" aria-labelledby="rTitle">
+  <div class="reveal" role="dialog" aria-modal="true" aria-labelledby="rTitle">
     <button class="x" data-close aria-label="Close">&times;</button>
-    <p class="verdict" id="verdict"></p>
+
+    <p class="ghost" id="ghostStage" aria-hidden="true"></p>
+
     <button class="cover-wrap" id="coverPlay" aria-label="Play the song">
       <span class="cover-ring" aria-hidden="true"></span>
       <img class="cover" id="cover" alt="" width="180" height="180">
@@ -123,15 +125,22 @@
         <svg viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg>
       </span>
     </button>
+
+    <p class="kicker" id="verdict"></p>
     <h2 class="r-title" id="rTitle"></h2>
     <p class="r-artist" id="rArtist"></p>
-    <p class="r-meta" id="rMeta"></p>
+
     <p class="badge" id="badge"></p>
     <div class="squares" id="squares"></div>
+
     <div class="r-actions">
-      <button class="btn solid" id="next">Next stage</button>
-      <a class="btn ghost" id="listen" target="_blank" rel="noopener">Listen in full</a>
+      <button class="btn ghostbtn" id="shareStage">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.7" fill="none"/></svg>
+        Challenge your friend
+      </button>
+      <button class="btn solid" id="next">Next</button>
     </div>
+    <a class="listenlink" id="listen" target="_blank" rel="noopener">Listen in full</a>
   </div>
 </div>
 

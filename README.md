@@ -1,6 +1,6 @@
 # Guess The Song
 
-Game tebak lagu harian ala [Songly](https://quizly.gg/songly) / Heardle.
+Game tebak lagu ala [Songly](https://quizly.gg/songly) / Heardle.
 Dengarkan potongan pendek sebuah lagu, tebak judulnya. Salah tebak atau melewati akan
 membuka potongan yang lebih panjang.
 
@@ -88,8 +88,8 @@ powershell -Command "Get-CimInstance Win32_Process -Filter \"Name='powershell.ex
 ## Cara main
 
 Setiap kali dibuka, yang muncul lebih dulu adalah **layar pilih mode**: tentukan region,
-genre, era, dan mode harian/bebas, baru tekan **Start**. Tidak ada lagu yang diambil
-sebelum tombol itu ditekan, jadi mengubah pilihan tidak menukar lagu di tengah sesi.
+genre, dan era, baru tekan **Start**. Tidak ada lagu yang diambil sebelum tombol itu
+ditekan, jadi mengubah pilihan tidak menukar lagu di tengah sesi.
 
 Ketik judul di kolom pencarian lalu **klik salah satu saran** — memilih langsung mengirim
 tebakan, tidak ada tombol terpisah. Tiap saran menampilkan sampul albumnya.
@@ -111,16 +111,27 @@ menekannya membuka kembali layar hasilnya.
 Kesulitan bukan pilihan, melainkan **urutan**. Satu sesi berisi lima tahap yang makin
 susah, satu lagu tiap tahap:
 
-| Tahap | Tier lagu | Potongan yang terbuka (detik) |
-|---|---|---|
-| Easy | 1 | 2 · 3 · 5 · 8 · 12 · 16 |
-| Medium | 1–2 | 1 · 2 · 4 · 7 · 11 · 16 |
-| Hard | 2–3 | 0.5 · 1 · 2 · 4 · 8 · 14 |
-| Expert | 3–4 | 0.3 · 0.6 · 1.2 · 2.5 · 5 · 10 |
-| Impossible | 4–5 | 0.1 · 0.3 · 0.7 · 1.5 · 3 · 6 |
+Tangga waktunya **sama di semua tahap** — 5 tebakan, potongan yang terbuka:
 
-Tier menentukan seberapa terkenal lagunya — tahap awal lagu sejuta umat, tahap akhir lagu
-yang jarang diputar.
+```
+0.1s → 0.5s → 2s → 8s → 15s
+```
+
+Yang naik antar-tahap cuma keniche-an lagunya:
+
+| Tahap | Tier lagu |
+|---|---|
+| Easy | 1 |
+| Medium | 1–2 |
+| Hard | 2–3 |
+| Expert | 3–4 |
+| Impossible | 4–5 |
+
+Tier 1 lagu sejuta umat, tier 5 lagu yang jarang diputar.
+
+Yang diputar selalu **intro lagunya**, dari detik nol. Pemutarannya **menyambung**: kalau
+kamu sudah mendengar 0,1 detik lalu melewati, tekan play akan memutar dari 0,1 ke 0,5 —
+bukan mengulang dari awal. Tekan sekali lagi kalau mau mengulang dari nol.
 
 **Gagal di satu tahap tidak menghentikan sesi.** Kamu tetap lanjut sampai Impossible, dan
 nilai akhirnya berapa tahap yang kena, dari 5. Satu lagu tidak muncul dua kali dalam sesi
@@ -138,14 +149,13 @@ bergetar sebentar.
 | Genre | Pop · Rock · Hip-hop · R&B/Soul · Electronic · Indie · Other |
 | Era | Before 2000 · 2000s · 2010s · 2020s |
 
-Tiap kombinasi punya sesi harian dan statistiknya sendiri. Baris kecil di bawah filter
+Tiap kombinasi punya statistiknya sendiri. Baris kecil di bawah filter
 memberitahu berapa lagu yang cocok, dan memperingatkan kalau filternya terlalu sempit.
 Pilihan filter **tidak pernah dilonggarkan diam-diam** — kalau lagu yang cocok kurang,
 yang dilebarkan hanya rentang tier tahap itu.
 
-- **Daily** — semua orang dapat lima lagu yang sama tiap hari, ditentukan dari tanggal.
-- **Free play** — lima lagu acak, bisa diulang terus lewat **Play again**. Tidak
-  memengaruhi statistik.
+Tiap sesi mengambil lima lagu acak, dan bisa diulang terus lewat **Play again**.
+Setiap sesi yang tuntas masuk ke statistik kombinasi filter yang sedang dipakai.
 
 ## Isi folder
 
@@ -157,7 +167,7 @@ yang dilebarkan hanya rentang tier tahap itu.
 | `index.html` | Markup |
 | `styles.css` | Tampilan |
 | `app.js` | Logika permainan, audio, pencarian, statistik |
-| `songs.js` | Katalog 992 lagu |
+| `songs.js` | Katalog 2.998 lagu |
 | `app.webmanifest`, `icon-*.png` | Supaya bisa dipasang ke layar depan HP |
 | `serve.ps1` | Server statis mini |
 | `tools/` | Perkakas perawatan katalog (lihat di bawah) |

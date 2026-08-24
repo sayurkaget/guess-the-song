@@ -8,15 +8,18 @@
 
   /* ================= konfigurasi ================= */
 
-  const TRIES = 6;
+  // Panjang potongan (detik) yang terbuka di tebakan ke-1..ke-5. Sama untuk
+  // semua tahap: yang naik antar-tahap hanyalah keniche-an lagunya, bukan
+  // waktunya.
+  const LADDER = [0.1, 0.5, 2, 8, 15];
+  const TRIES  = LADDER.length;
 
-  // ladder = panjang potongan (detik) yang terbuka di tebakan ke-1..ke-6
   const DIFFS = {
-    easy:       { label: 'Easy',       tiers: [1],    ladder: [2, 3, 5, 8, 12, 16] },
-    medium:     { label: 'Medium',     tiers: [1, 2], ladder: [1, 2, 4, 7, 11, 16] },
-    hard:       { label: 'Hard',       tiers: [2, 3], ladder: [0.5, 1, 2, 4, 8, 14] },
-    expert:     { label: 'Expert',     tiers: [3, 4], ladder: [0.3, 0.6, 1.2, 2.5, 5, 10] },
-    impossible: { label: 'Impossible', tiers: [4, 5], ladder: [0.1, 0.3, 0.7, 1.5, 3, 6] }
+    easy:       { label: 'Easy',       tiers: [1] },
+    medium:     { label: 'Medium',     tiers: [1, 2] },
+    hard:       { label: 'Hard',       tiers: [2, 3] },
+    expert:     { label: 'Expert',     tiers: [3, 4] },
+    impossible: { label: 'Impossible', tiers: [4, 5] }
   };
   // urutan tahap dalam satu sesi
   const ORDER  = ['easy', 'medium', 'hard', 'expert', 'impossible'];
@@ -116,7 +119,7 @@
   const runKey    = () => 'tl:run:' + filterKey();
 
   const D       = () => DIFFS[ORDER[S.stage]];
-  const ladder  = () => D().ladder;
+  const ladder  = () => LADDER;
   const maxLen  = () => ladder()[TRIES - 1];
   const step    = () => Math.min(S.guesses.length, TRIES - 1);
   const limit   = () => ladder()[step()];
@@ -274,12 +277,21 @@
     if (playing) { stopAudio(); return; }
     if (!S.meta || !S.meta.preview) return;
 
-    // setelah tahapnya selesai, biarkan lagunya diputar lebih panjang
-    const room = (isFinite(audio.duration) ? audio.duration : 30) - S.startAt - 0.2;
-    const len = S.done ? Math.max(maxLen(), Math.min(room, 18)) : limit();
+    const batas = S.done
+      ? Math.min((isFinite(audio.duration) ? audio.duration : 30) - 0.2, 30)
+      : limit();
+
+    // Menyambung, bukan mengulang: kalau ada bagian baru yang belum pernah
+    // terdengar (baru saja lewat/salah tebak), putar dari situ. Kalau semuanya
+    // sudah terdengar, tekan lagi untuk mengulang dari awal.
+    let dari = 0;
+    if (typeof S.heard !== 'number') S.heard = 0;
+    if (S.heard > 0.02 && S.heard < batas - 0.02) dari = S.heard;
+    else S.heard = 0;
+
     UI.playState('loading');
     try {
-      await seek(S.startAt);
+      await seek(dari);
       await audio.play();
     } catch (e) {
       UI.playState('idle');
@@ -291,10 +303,11 @@
 
     const tick = () => {
       if (!playing) return;
-      const t = Math.max(0, audio.currentTime - S.startAt);
+      const t = Math.max(0, audio.currentTime);
+      S.heard = Math.max(S.heard, Math.min(t, batas));
       UI.head(t / maxLen());
       UI.readout(t);
-      const left = len - t;
+      const left = batas - t;
       if (left <= 0) { stopAudio(); return; }
       // S.vol dibaca ulang tiap frame, bukan disimpan di awal: kalau disimpan,
       // geseran volume di tengah lagu akan ditimpa terus oleh nilai lama.
@@ -386,9 +399,10 @@
         });
         if (me !== S.epoch) return;
 
-        const dur = isFinite(audio.duration) && audio.duration > 1 ? audio.duration : 30;
-        const hi = Math.max(0, dur - maxLen() - 0.4);
-        S.startAt = Math.min(1.2 + rng(hash(cand.slug))() * 9, hi);
+        // Mulai dari detik nol pratinjau: yang diminta adalah intro lagunya,
+        // bukan potongan acak dari tengah.
+        S.startAt = 0;
+        S.heard = 0;          // sudah terdengar sampai detik ke berapa
 
         saveRun();
         UI.playState('idle');
@@ -442,6 +456,7 @@
     if (S.runDone) recordStats();
     UI.render(); UI.clearInput();
     UI.status('');
+    S.heard = 0;      // saat terungkap, putar lagunya dari awal
     // Diputar SEKARANG, bukan setelah modal muncul: makin dekat ke klik aslinya,
     // makin aman dari kebijakan autoplay browser -- sekaligus terasa lebih responsif.
     // Kalah pun tetap diputar: justru saat itulah kamu ingin dengar lagunya.
@@ -570,10 +585,10 @@
       buildPool();
       this.poolInfo();
 
-      $('#ladderNote').innerHTML = '5 stages, the clip gets shorter every time · ' +
-        'from <b>' + fmt(DIFFS.easy.ladder[0]) + '</b> on Easy down to ' +
-        '<b>' + fmt(DIFFS.impossible.ladder[0]) + '</b> on Impossible · ' +
-        TRIES + ' tries per stage';
+      $('#ladderNote').innerHTML = '5 stages · every stage starts with <b>' +
+        fmt(LADDER[0]) + '</b> of the intro and opens up to <b>' +
+        fmt(LADDER[TRIES - 1]) + '</b> over ' + TRIES + ' tries · ' +
+        'what gets harder is the song, not the clip';
 
       const note = $('#resumeNote');
       const jalan = S.stages.filter(Boolean).length;
@@ -756,14 +771,13 @@
       const m = S.meta || {}, sg = S.song || {};
       const n = S.guesses.length;
 
-      $('#resultModal .result').className = 'sheet result ' + (S.won ? 'win' : 'lose');
+      $('#resultModal .reveal').className = 'reveal ' + (S.won ? 'win' : 'lose');
+      $('#ghostStage').textContent = D().label.toLowerCase();
 
-      const v = $('#verdict');
-      v.className = 'verdict ' + (S.won ? 'win' : 'lose');
-      v.textContent = S.won
-        ? ['First listen. Unreal.', 'Nailed it.', 'Got there.',
-           'Safe.', 'Close one!', 'Last try. Respect.'][n - 1]
-        : 'No luck. The song was:';
+      // Label kecil di atas judul: menang -> pujian, kalah -> "it was_"
+      $('#verdict').textContent = S.won
+        ? ['first listen_', 'nailed it_', 'got there_', 'safe_', 'last try_'][n - 1]
+        : 'it was_';
 
       // Panjang potongan saat tebakan benar -- ini yang bikin "0.1s" terasa keren,
       // jauh lebih bermakna daripada "tebakan ke-3".
@@ -771,18 +785,18 @@
       if (S.won) {
         const at = S.guesses.findIndex((g) => g.t === 'right');
         badge.className = 'badge';
-        badge.textContent = 'Got it in ' + fmt(ladder()[at]) + '!';
+        badge.textContent = 'Guessed in ' + fmt(LADDER[at]) + '!';
       } else {
         badge.className = 'badge lose';
-        badge.textContent = 'Never got it';
+        badge.textContent = 'Lost!';
       }
 
       const img = $('#cover');
       img.src = m.art || '';
       img.alt = 'Sampul ' + (m.title || sg.title || '');
       $('#rTitle').textContent = m.title || sg.title || '';
-      $('#rArtist').textContent = [m.artist || sg.artist, m.album].filter(Boolean).join(' · ');
-      $('#rMeta').textContent = m.year || '';
+      $('#rArtist').textContent =
+        [m.artist || sg.artist, m.album, m.year].filter(Boolean).join(' · ');
       $('#squares').innerHTML = pips(S.guesses);
 
       const bg = $('#artBg');
@@ -792,9 +806,7 @@
       const link = $('#listen');
       if (m.link) { link.href = m.link; link.hidden = false; } else link.hidden = true;
 
-      $('#next').textContent = S.stage >= STAGES - 1
-        ? 'See final result'
-        : 'Stage ' + (S.stage + 2) + ': ' + DIFFS[ORDER[S.stage + 1]].label + ' →';
+      $('#next').textContent = S.stage >= STAGES - 1 ? 'See result' : 'Next';
 
       open($('#resultModal'));
       confetti('#confetti', S.won ? 'win' : 'lose');
@@ -825,7 +837,7 @@
           '<span class="txt">' + lvl +
             '<b>' + esc(r.title) + '</b>' +
             '<small>' + esc(r.artist) + '</small></span>' +
-          '<span class="at">' + (r.won ? fmt(DIFFS[k].ladder[at]) : 'missed') + '</span></li>';
+          '<span class="at">' + (r.won ? fmt(LADDER[at]) : 'missed') + '</span></li>';
       }).join('');
 
       $('#againRun').hidden = false;
@@ -907,11 +919,20 @@
       const r = S.stages[i];
       if (!r || !r.done) return '⬜ ' + DIFFS[k].label;
       const at = r.guesses.findIndex((g) => g.t === 'right');
-      return (r.won ? '🟩 ' : '🟥 ') + DIFFS[k].label + (r.won ? ' ' + fmt(DIFFS[k].ladder[at]) : '');
+      return (r.won ? '🟩 ' : '🟥 ') + DIFFS[k].label + (r.won ? ' ' + fmt(LADDER[at]) : '');
     });
 
     return 'Guess The Song · ' + tags.join(' · ') + ' · ' + score() + '/' + STAGES +
            '\n' + lines.join('\n');
+  }
+
+  // tantangan satu lagu -- sengaja tidak menyebut judulnya
+  function shareStage() {
+    const at = S.guesses.findIndex((g) => g.t === 'right');
+    const hasil = S.won ? 'I got it in ' + fmt(LADDER[at]) : 'I lost this one';
+    return 'Guess The Song · ' + D().label + '\n' +
+           squares(S.guesses) + '  ' + hasil + '\n' +
+           'Beat me: https://sayurkaget.github.io/guess-the-song/';
   }
 
   function pushRecent(sl) {
@@ -1019,6 +1040,7 @@
   $('#back').onclick = () => { closeAll(); UI.lobby(); };
   $('#next').onclick = nextStage;
   $('#againRun').onclick = newRun;
+  $('#shareStage').onclick = () => salin(shareStage());
   UI.skipBtn.onclick = () => { if (S.done) UI.result(); else skip(); };
 
   UI.q.addEventListener('input', () => {
@@ -1078,20 +1100,20 @@
     toast('Stats reset');
   };
 
-  $('#share').onclick = async () => {
-    const txt = shareText();
+  async function salin(txt) {
     try {
       await navigator.clipboard.writeText(txt);
-      toast('Result copied');
+      toast('Copied — paste it to a friend');
     } catch (e) {
       const ta = el('textarea');
       ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
       document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); toast('Result copied'); }
+      try { document.execCommand('copy'); toast('Copied — paste it to a friend'); }
       catch (e2) { toast('Copy failed'); }
       ta.remove();
     }
-  };
+  }
+  $('#share').onclick = () => salin(shareText());
 
   audio.addEventListener('ended', stopAudio);
   audio.addEventListener('error', () => {
