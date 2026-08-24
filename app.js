@@ -784,7 +784,6 @@
       $('#rTitle').textContent = m.title || sg.title || '';
       $('#rArtist').textContent =
         [m.artist || sg.artist, m.album, m.year].filter(Boolean).join(' · ');
-      $('#squares').innerHTML = pips(S.guesses);
 
       const bg = $('#artBg');
       if (m.art) { bg.style.backgroundImage = 'url("' + m.art + '")'; bg.classList.add('on'); }
@@ -877,20 +876,6 @@
     for (let i = 0; i < TRIES; i++) {
       const g = gs[i];
       s += !g ? '⬜' : g.t === 'right' ? '🟩' : g.t === 'skip' ? '⬛' : g.t === 'near' ? '🟨' : '🟥';
-    }
-    return s;
-  }
-
-  // Untuk ditampilkan di layar. Emoji dirender oleh font sistem sehingga
-  // warnanya di luar kendali dan tidak nyambung dengan desain -- jadi di
-  // dalam aplikasi dipakai kotak buatan sendiri.
-  function pips(gs) {
-    let s = '';
-    for (let i = 0; i < TRIES; i++) {
-      const g = gs[i];
-      const k = !g ? 'kosong' : g.t === 'right' ? 'benar'
-              : g.t === 'skip' ? 'lewat' : g.t === 'near' ? 'dekat' : 'salah';
-      s += '<i class="pip ' + k + '"></i>';
     }
     return s;
   }

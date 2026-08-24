@@ -185,18 +185,6 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
 }
 .runlist li.lose .at{color:var(--bad);background:rgba(242,85,90,.12)}
 
-/* kotak hasil buatan sendiri -- emoji dirender font sistem dan warnanya ngawur */
-.pip{
-  display:inline-block;width:20px;height:20px;border-radius:6px;
-  background:rgba(255,255,255,.09);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
-}
-.pip.benar{background:linear-gradient(160deg,#41f596,var(--acc-d));
-  box-shadow:0 3px 10px -3px rgba(37,224,125,.8)}
-.pip.salah{background:linear-gradient(160deg,#ff6b70,#b8383d)}
-.pip.dekat{background:linear-gradient(160deg,#f7cf5c,#c99a1e)}
-.pip.lewat{background:rgba(255,255,255,.16)}
-
 /* ===== layar pilih mode ===== */
 .lobby,.game{width:100%;display:flex;flex-direction:column;align-items:center}
 .lobby{animation:fade .22s ease-out}
@@ -558,7 +546,6 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
   font-size:.9rem;color:var(--dim);line-height:1.45;
 }
 .reveal .badge{margin:1.5rem 0 0;font-size:.82rem;padding:.5rem 1.15rem}
-.reveal .squares{margin:1.1rem 0 0}
 .reveal .r-actions{margin-top:1.7rem;gap:.6rem}
 .btn.ghostbtn{
   background:rgba(255,255,255,.07);color:var(--acc);
@@ -624,25 +611,38 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
 .r-artist{margin:.3rem 0 0;color:var(--dim);font-size:.95rem}
 .r-meta{margin:.3rem 0 0;color:var(--dimmer);font-size:.78rem;font-family:var(--fm)}
 
-/* badge "DITEBAK DALAM 0.1S!" */
+/* badge "GUESSED IN 0.1S!" — stempel neon yang dimiringkan */
 .badge{
   display:inline-block;margin:1.15rem 0 0;
-  padding:.42rem 1rem;border-radius:999px;
+  padding:.44rem 1.05rem;border-radius:999px;
   font-family:var(--fm);font-size:.78rem;font-weight:700;
   letter-spacing:.06em;text-transform:uppercase;
   color:var(--acc);
-  border:1.5px solid rgba(37,224,125,.55);
-  background:rgba(37,224,125,.09);
+  border:2px solid var(--acc);
+  background:rgba(37,224,125,.1);
+  /* Kemiringan ini sekaligus jadi nilai akhir animasi stamp: keyframe-nya tanpa
+     `to`, jadi ia berhenti tepat di transform milik rule ini. */
+  transform:rotate(-6deg);
+  text-shadow:0 0 10px rgba(37,224,125,.9), 0 0 26px rgba(37,224,125,.45);
+  box-shadow:
+    0 0 12px -1px rgba(37,224,125,.6),
+    0 0 30px -4px rgba(37,224,125,.35),
+    inset 0 0 12px -4px rgba(37,224,125,.5);
   animation:stamp .42s cubic-bezier(.2,1.6,.4,1) .18s backwards;
 }
 .badge.lose{
   color:var(--bad);
-  border-color:rgba(242,85,90,.5);
-  background:rgba(242,85,90,.08);
+  border-color:var(--bad);
+  background:rgba(242,85,90,.1);
+  transform:rotate(-3deg);
+  text-shadow:0 0 10px rgba(242,85,90,.9), 0 0 26px rgba(242,85,90,.45);
+  box-shadow:
+    0 0 12px -1px rgba(242,85,90,.55),
+    0 0 30px -4px rgba(242,85,90,.32),
+    inset 0 0 12px -4px rgba(242,85,90,.45);
 }
-@keyframes stamp{from{opacity:0;transform:scale(1.5) rotate(-4deg)}}
+@keyframes stamp{from{opacity:0;transform:scale(1.6) rotate(7deg)}}
 
-.squares{margin:1.1rem 0 .3rem;display:flex;gap:7px;justify-content:center}
 .r-actions{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap}
 .r-next{margin:1.3rem 0 0;color:var(--dimmer);font-size:.78rem}
 .r-next b{font-family:var(--fm);color:var(--dim)}
