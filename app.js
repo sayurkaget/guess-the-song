@@ -469,10 +469,10 @@
     saveRun(); UI.render();
     UI.status('Skipped. ' + fmt(limit()) + ' unlocked now.');
     UI.clearInput();
-    // Lagunya tidak dihentikan. Kalau masih berputar, batas dinamis sudah
-    // memperpanjangnya sendiri; kalau klip pendek tadi sudah habis, sambung
-    // otomatis dari titik terakhir yang terdengar ke bagian yang baru terbuka.
-    if (!playing) playClip();
+    // Tidak dihentikan, tapi juga TIDAK diputar otomatis. Kalau klip masih
+    // berputar saat di-skip, batas dinamis memperpanjangnya mulus tanpa
+    // memotong; kalau sudah berhenti, biarkan diam sampai pemain menekan
+    // play sendiri (yang lalu menyambung dari titik terakhir yang terdengar).
   }
 
   function finish(won) {
