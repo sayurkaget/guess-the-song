@@ -608,6 +608,7 @@
     lobby() {
       stopAudio();
       S.epoch++;                       // batalkan pemuatan yang masih berjalan
+      document.body.removeAttribute('data-diff');   // lobi tak terikat satu kesulitan
       $('#game').hidden = true;
       $('#lobby').hidden = false;
       this.buildControls();
@@ -617,7 +618,7 @@
     game() {
       $('#lobby').hidden = true;
       $('#game').hidden = false;
-      $('#game').dataset.diff = ORDER[S.stage];   // aksen arena ikut warna tahap ini
+      document.body.dataset.diff = ORDER[S.stage];  // warna tahap ini mewarnai seluruh halaman
       $('#gameMode').textContent = [
         S.region === 'all' ? null : REGIONS[S.region],
         S.genre === 'all' ? null : GENRES[S.genre],
@@ -816,6 +817,7 @@
 
     /* --- hasil satu sesi penuh --- */
     runResult() {
+      document.body.removeAttribute('data-diff');   // rangkuman lintas kelima kesulitan
       const sc = score();
       const v = $('#runVerdict');
       v.className = 'verdict ' + (sc >= 3 ? 'win' : 'lose');

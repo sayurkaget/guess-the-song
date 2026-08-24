@@ -97,6 +97,12 @@ tebakan, tidak ada tombol terpisah. Tiap saran menampilkan sampul albumnya.
 Saat bermain, tombol **Change mode** mengembalikanmu ke layar pilihan. Sesi yang sedang
 berjalan tidak hilang: tombolnya berubah jadi **Continue**.
 
+**Tiap kombinasi filter punya sesinya sendiri.** Ganti dari pop/2010s ke rock/before-2000
+dan kamu mulai sesi baru dari tahap 1 — tombolnya kembali jadi **Start**. Ganti balik ke
+pop/2010s dan sesi yang tadi masih di sana, lengkap dengan tahap yang sudah lewat. Tanpa
+pemisahan ini, tahap yang sudah tercatat tetap memakai lagu lamanya, jadi filter
+rock/before-2000 bisa memunculkan lagu pop 2010-an.
+
 Sesinya **hanya hidup di memori** — muat ulang halaman selalu memulai sesi baru. Ini
 disengaja. Yang bertahan lintas-refresh hanya statistik dan pilihan filter.
 
@@ -136,6 +142,18 @@ Yang naik antar-tahap cuma keniche-an lagunya:
 
 Tier 1 lagu sejuta umat, tier 5 lagu yang jarang diputar.
 
+Tiap tahap juga punya **warna aksennya sendiri**, dan **seluruh halaman** ikut warna itu —
+bukan cuma tombol play, gelombang, angka detik, dan fokus pencarian, tapi juga latar aurora
+dan layar reveal (cincin sampul, tombol Next, stempel menang): Easy hijau, Medium emas,
+Hard oranye, Expert koral, Impossible ungu. Warnanya disetel lewat keluarga token `--acc`
+(`--acc-l` puncak gradien, `--acc-d` dasar, `--acc-rgb` untuk cahaya) yang ditimpa per tahap
+di `body[data-diff="…"]`. Diletakkan di `<body>`, bukan `#game`, justru karena latar dan
+modal adalah saudara dari `#game` — kalau atributnya di `#game` keduanya tak pernah kebagian
+warna. JS menyetelnya di `UI.game()`, lalu **membersihkannya** di `UI.lobby()` dan
+`UI.runResult()`: lobi belum menjalankan satu kesulitan pun, dan rangkuman sesi merangkum
+kelimanya sekaligus — keduanya kembali ke hijau default. Yang tetap merah dalam segala warna
+adalah penanda kalah (stempel "Lost!", verdict), supaya kalah tetap terbaca sebagai kalah.
+
 Yang diputar selalu **intro lagunya**, dari detik nol. Pemutarannya **menyambung**: kalau
 kamu sudah mendengar 0,1 detik lalu melewati, tekan play akan memutar dari 0,1 ke 0,5 —
 bukan mengulang dari awal. Tekan sekali lagi kalau mau mengulang dari nol.
@@ -172,10 +190,11 @@ Setiap sesi yang tuntas masuk ke statistik kombinasi filter yang sedang dipakai.
 | `Tebak Lagu.vbs` | Menyalakan server tanpa jendela; salinannya ada di folder Startup |
 | `server.log` | Catatan server — dibaca kalau ada yang aneh |
 | `index.html` | Markup |
-| `styles.css` | Tampilan |
+| `styles.css` | Tampilan; seluruh halaman mengikuti warna kesulitan lewat `body[data-diff]` |
 | `app.js` | Logika permainan, audio, pencarian, statistik |
 | `songs.js` | Katalog 2.998 lagu |
 | `app.webmanifest`, `icon-*.png` | Supaya bisa dipasang ke layar depan HP |
+| `sw.js` | Service worker: game jalan luring, dan versi terbaru selalu menang saat online |
 | `serve.ps1` | Server statis mini |
 | `tools/` | Perkakas perawatan katalog (lihat di bawah) |
 
