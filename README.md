@@ -95,8 +95,15 @@ Ketik judul di kolom pencarian lalu **klik salah satu saran** — memilih langsu
 tebakan, tidak ada tombol terpisah. Tiap saran menampilkan sampul albumnya.
 
 Saat bermain, tombol **Change mode** mengembalikanmu ke layar pilihan. Sesi yang sedang
-berjalan tidak hilang: tombolnya berubah jadi **Continue**, dan kalau sudah selesai,
-menekannya membuka kembali layar hasilnya.
+berjalan tidak hilang: tombolnya berubah jadi **Continue**.
+
+Sesinya **hanya hidup di memori** — muat ulang halaman selalu memulai sesi baru. Ini
+disengaja. Yang bertahan lintas-refresh hanya statistik dan pilihan filter.
+
+Setelah tiap tahap, layar hasil memenuhi layar: nama tahap membayang raksasa di
+belakang, sampul album, judul besar, dan badge **GUESSED IN 0.1S!** atau **LOST!**.
+Tombol **Challenge your friend** menyalin hasil tahap itu beserta tautan situsnya —
+tanpa membocorkan judul lagunya.
 
 | Aksi | Pintasan |
 |---|---|
