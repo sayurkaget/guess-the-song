@@ -114,9 +114,8 @@
   if (!GENRES[S.genre]) S.genre = 'all';
   if (!ERAS[S.era]) S.era = 'all';
 
-  // kunci penyimpanan sesi berjalan dan cakupan statistik
+  // Kombinasi filter memisahkan dua hal: sesi yang berjalan dan statistiknya.
   const filterKey = () => S.region + ':' + S.genre + ':' + S.era;
-  const runKey    = () => 'tl:run:' + filterKey();
 
   const D       = () => DIFFS[ORDER[S.stage]];
   const ladder  = () => LADDER;
@@ -343,6 +342,22 @@
     S.won  = !!(cur && cur.won);
   }
 
+  // Tiap kombinasi filter punya sesinya sendiri, di memori saja. Tanpa ini
+  // sesi yang berjalan ikut terbawa saat pemain ganti mode, dan tahap yang
+  // sudah tercatat tetap memakai lagu lamanya -- filter rock/before-2000 pun
+  // bisa memunculkan lagu pop 2010-an yang sudah keluar sebelumnya.
+  const RUNS = Object.create(null);
+  let runFilter = filterKey();
+
+  function switchRun() {
+    RUNS[runFilter] = { stages: S.stages, stage: S.stage, runDone: S.runDone };
+    runFilter = filterKey();
+    const r = RUNS[runFilter] || { stages: [], stage: 0, runDone: false };
+    S.stages = r.stages; S.stage = r.stage; S.runDone = r.runDone;
+    S.song = null; S.meta = null;
+    loadRun();      // tebakan tahap ini, milik sesi yang baru dipilih
+  }
+
   function pickSong(offset) {
     // jangan ulang lagu yang sudah keluar di tahap sebelumnya dalam sesi ini
     const used = S.stages.filter(Boolean).map((x) => x.slug);
@@ -475,7 +490,6 @@
   function newRun() {
     closeAll();
     S.stages.filter(Boolean).forEach((x) => pushRecent(x.slug));
-    LS.del(runKey());
     S.stages = []; S.stage = 0; S.runDone = false;
     S.guesses = []; S.done = false; S.won = false;
     S.song = null; S.meta = null;
@@ -524,6 +538,7 @@
         sel.dataset.on = cur === 'all' ? '0' : '1';
         sel.onchange = () => {
           LS.set(save, sel.value); S[save.slice(3)] = sel.value;
+          switchRun();
           UI.buildControls(); UI.refreshLobby();
         };
       };
