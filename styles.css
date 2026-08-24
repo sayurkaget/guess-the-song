@@ -8,8 +8,10 @@
   --line:rgba(255,255,255,.09);
   --surf:rgba(255,255,255,.045);
   --surf2:rgba(255,255,255,.08);
-  --acc:#25e07d;
-  --acc-d:#12b862;
+  --acc:#25e07d;       /* aksen utama -- default hijau (Easy), juga lobi & modal */
+  --acc-l:#41f596;     /* puncak gradien */
+  --acc-d:#12b862;     /* dasar gradien */
+  --acc-rgb:37,224,125;/* untuk rgba() cahaya */
   --bad:#f2555a;
   --warn:#f5b13d;
   --r:16px;
@@ -266,6 +268,14 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
 .seg button:hover{color:var(--ink)}
 .seg button[aria-pressed="true"]{background:var(--surf2);color:var(--ink)}
 
+/* ===== warna per tingkat kesulitan =====
+   Hanya arena #game yang di-tint; logo dan modal tetap hijau (hijau = menang).
+   Easy memakai default hijau di :root, jadi tak perlu ditimpa. */
+#game[data-diff="medium"]    {--acc:#e3c74a;--acc-l:#f4dc6a;--acc-d:#b8971d;--acc-rgb:227,199,74}
+#game[data-diff="hard"]      {--acc:#f08a3c;--acc-l:#ffa457;--acc-d:#cf6a1e;--acc-rgb:240,138,60}
+#game[data-diff="expert"]    {--acc:#ef5b60;--acc-l:#ff787c;--acc-d:#cf3a40;--acc-rgb:239,91,96}
+#game[data-diff="impossible"]{--acc:#9b7bf5;--acc-l:#b49bff;--acc-d:#7355d6;--acc-rgb:155,123,245}
+
 /* ===== track bar ===== */
 /* .wrap pakai align-items:center, jadi anak tanpa width akan menyusut ke konten.
    .stage wajib 100% supaya track bar selebar kolom. */
@@ -289,8 +299,8 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
   transform-origin:center;
 }
 .track-wave i.on{
-  background:linear-gradient(180deg,#41f596,var(--acc-d));
-  box-shadow:0 0 10px -2px rgba(37,224,125,.7);
+  background:linear-gradient(180deg,var(--acc-l),var(--acc-d));
+  box-shadow:0 0 10px -2px rgba(var(--acc-rgb),.7);
 }
 .track-seams{position:absolute;inset:0;pointer-events:none}
 .track-seams i{
@@ -299,7 +309,7 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
 }
 .track-head{
   position:absolute; top:-4px; bottom:-4px; left:0; width:2px;
-  background:#eafff3; box-shadow:0 0 14px 2px rgba(37,224,125,.9);
+  background:#eafff3; box-shadow:0 0 14px 2px rgba(var(--acc-rgb),.9);
   opacity:0; transform:translateX(-1px); border-radius:2px;
 }
 .track-head.on{opacity:1}
@@ -309,16 +319,16 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
 .playbtn{
   width:clamp(112px,26vw,150px); aspect-ratio:1;
   border-radius:50%;
-  background:linear-gradient(160deg,#31ef8b,#12b862);
+  background:linear-gradient(160deg,var(--acc-l),var(--acc-d));
   color:#04120a;
   display:grid;place-items:center;
-  box-shadow:0 0 0 0 rgba(37,224,125,.42), 0 18px 48px -14px rgba(37,224,125,.75);
-  transition:transform .18s cubic-bezier(.34,1.5,.5,1),box-shadow .3s,filter .2s;
+  box-shadow:0 0 0 0 rgba(var(--acc-rgb),.42), 0 18px 48px -14px rgba(var(--acc-rgb),.75);
+  transition:transform .18s cubic-bezier(.34,1.5,.5,1),box-shadow .3s,filter .2s,background .35s;
 }
 .playbtn:hover{transform:scale(1.045)}
 .playbtn:active{transform:scale(.97)}
 .playbtn:disabled{filter:grayscale(.75) brightness(.62);cursor:not-allowed;transform:none}
-.playbtn.playing{box-shadow:0 0 0 14px rgba(37,224,125,.07), 0 18px 48px -14px rgba(37,224,125,.6)}
+.playbtn.playing{box-shadow:0 0 0 14px rgba(var(--acc-rgb),.07), 0 18px 48px -14px rgba(var(--acc-rgb),.6)}
 .playbtn svg{width:44%;height:44%;fill:currentColor;display:none}
 .playbtn[data-s="idle"] .ico-play,
 .playbtn[data-s="playing"] .ico-pause,
@@ -332,7 +342,8 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
   font-family:var(--fm); font-weight:700;
   font-size:clamp(1.05rem,3.4vw,1.35rem);
   color:var(--acc); white-space:nowrap;
-  text-shadow:0 0 22px rgba(37,224,125,.35);
+  text-shadow:0 0 22px rgba(var(--acc-rgb),.35);
+  transition:color .35s, text-shadow .35s;
 }
 .status{
   min-height:1.3em; margin:1.5rem 0 0;
@@ -354,7 +365,7 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
   transition:border-color .18s,background .18s;
 }
 #q::placeholder{color:var(--dimmer)}
-#q:focus{border-color:rgba(37,224,125,.55);background:rgba(255,255,255,.07)}
+#q:focus{border-color:rgba(var(--acc-rgb),.55);background:rgba(255,255,255,.07)}
 #q:disabled{opacity:.5}
 .clear{
   position:absolute;right:12px;top:50%;transform:translateY(-50%);
@@ -392,9 +403,9 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
 .dd-txt{min-width:0;flex:1;overflow:hidden}
 .dd-txt small{display:block;color:var(--dimmer);font-size:.78rem;margin-top:1px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dd-item:hover,.dd-item.sel{background:rgba(37,224,125,.14)}
+.dd-item:hover,.dd-item.sel{background:rgba(var(--acc-rgb),.14)}
 .dd-item.sel small,.dd-item:hover small{color:var(--dim)}
-.dd-item.sel{outline:1.5px solid rgba(37,224,125,.45);outline-offset:-1.5px}
+.dd-item.sel{outline:1.5px solid rgba(var(--acc-rgb),.45);outline-offset:-1.5px}
 .dd-empty{padding:.7rem;color:var(--dimmer);font-size:.85rem;text-align:center}
 
 .btn{

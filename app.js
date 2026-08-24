@@ -617,6 +617,7 @@
     game() {
       $('#lobby').hidden = true;
       $('#game').hidden = false;
+      $('#game').dataset.diff = ORDER[S.stage];   // aksen arena ikut warna tahap ini
       $('#gameMode').textContent = [
         S.region === 'all' ? null : REGIONS[S.region],
         S.genre === 'all' ? null : GENRES[S.genre],
