@@ -282,35 +282,34 @@ body[data-diff="impossible"]{--acc:#9b7bf5;--acc-l:#b49bff;--acc-d:#7355d6;--acc
 .stage{width:100%}
 .track{
   position:relative;
-  width:100%; height:64px;
+  width:100%; height:34px;
   margin-bottom:2.2rem;
-  padding:0 1px;
+  display:flex; align-items:center;
 }
-/* gelombang: 72 batang, tingginya khas per lagu */
-.track-wave{
-  position:absolute; inset:0;
-  display:flex; align-items:center; gap:2px;
-}
-.track-wave i{
-  flex:1; min-width:0;
-  border-radius:2px;
+/* garis progres: rel gelap + isian terang sepanjang bagian yang terbuka */
+.track-rail{
+  position:relative;
+  width:100%; height:8px; border-radius:99px;
   background:rgba(255,255,255,.10);
-  transition:background .35s ease, box-shadow .35s ease, transform .35s ease;
-  transform-origin:center;
 }
-.track-wave i.on{
-  background:linear-gradient(180deg,var(--acc-l),var(--acc-d));
-  box-shadow:0 0 10px -2px rgba(var(--acc-rgb),.7);
+.track-fill{
+  position:absolute; left:0; top:0; height:100%; width:0;
+  border-radius:99px;
+  background:linear-gradient(90deg,var(--acc-d),var(--acc-l));
+  box-shadow:0 0 12px -2px rgba(var(--acc-rgb),.7);
+  transition:width .35s ease;
 }
-.track-seams{position:absolute;inset:0;pointer-events:none}
+/* penanda ambang buka (0.5 / 2 / 8 dst) */
+.track-seams{position:absolute; inset:0; pointer-events:none}
 .track-seams i{
-  position:absolute; top:6px; bottom:6px; width:1px;
-  background:rgba(255,255,255,.16);
+  position:absolute; top:50%; width:2px; height:13px; border-radius:2px;
+  background:rgba(255,255,255,.22); transform:translate(-50%,-50%);
 }
+/* playhead: titik yang bergerak saat lagu diputar */
 .track-head{
-  position:absolute; top:-4px; bottom:-4px; left:0; width:2px;
-  background:#eafff3; box-shadow:0 0 14px 2px rgba(var(--acc-rgb),.9);
-  opacity:0; transform:translateX(-1px); border-radius:2px;
+  position:absolute; top:50%; left:0; width:14px; height:14px; border-radius:50%;
+  background:#eafff3; box-shadow:0 0 12px 2px rgba(var(--acc-rgb),.9);
+  opacity:0; transform:translate(-50%,-50%);
 }
 .track-head.on{opacity:1}
 
@@ -705,8 +704,7 @@ kbd{
   #q{padding-top:.95rem;padding-bottom:.95rem}
   .steps li{padding:.38rem .65rem;font-size:.74rem}
   /* layar sempit: rapatkan jaraknya supaya batangnya tidak jadi garis rambut */
-  .track{height:56px}
-  .track-wave{gap:1px}
+  .track{height:30px}
 }
 /* jangan pernah zoom otomatis saat mengetik di iOS (font < 16px memicunya) */
 @supports (-webkit-touch-callout:none){
