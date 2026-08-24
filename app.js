@@ -331,18 +331,12 @@
       };
     }
     S.stages = stages;
-    LS.set(runKey(), { stage: S.stage, runDone: S.runDone, stages: stages });
+    // Sengaja TIDAK disimpan ke localStorage: sesi hidup di memori saja, jadi
+    // muat ulang halaman selalu memulai yang baru. "Change mode" lalu kembali
+    // tetap menyambung karena masih satu muatan halaman.
   }
 
   function loadRun() {
-    const r = LS.get(runKey());
-    if (r && r.stages) {
-      S.stages = r.stages;
-      S.stage = Math.min(r.stage || 0, STAGES - 1);
-      S.runDone = !!r.runDone;
-    } else {
-      S.stages = []; S.stage = 0; S.runDone = false;
-    }
     const cur = S.stages[S.stage];
     S.guesses = (cur && cur.guesses) || [];
     S.done = !!(cur && cur.done);
@@ -590,14 +584,7 @@
         fmt(LADDER[TRIES - 1]) + '</b> over ' + TRIES + ' tries · ' +
         'what gets harder is the song, not the clip';
 
-      const note = $('#resumeNote');
       const jalan = S.stages.filter(Boolean).length;
-      if (!S.pool.length) note.textContent = '';
-      else if (S.runDone) note.textContent = 'This run is done — you scored ' + score() + '/' + STAGES + '.';
-      else if (jalan || S.guesses.length)
-        note.textContent = 'You have a run in progress (stage ' + (S.stage + 1) + ' of ' + STAGES + ').';
-      else note.textContent = '';
-
       $('#start').disabled = !S.pool.length;
       $('#start').textContent = S.runDone ? 'See result'
         : (jalan || S.guesses.length ? 'Continue' : 'Start');

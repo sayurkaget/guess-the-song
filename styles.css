@@ -527,8 +527,11 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
   display:flex;flex-direction:column;align-items:center;
   animation:rise .3s cubic-bezier(.2,.9,.3,1);
 }
-/* nama tahap raksasa membayang di belakang */
-.ghost{
+/* Nama tahap raksasa membayang di belakang.
+   Kelasnya HARUS dilingkupi .reveal: dulu bernama .ghost saja dan menabrak
+   .btn.ghost milik tombol Skip -- tombolnya ikut jadi 112px dan melayang
+   di puncak halaman. */
+.reveal .ghoststage{
   position:absolute;top:-2.2rem;left:50%;transform:translateX(-50%);
   margin:0;pointer-events:none;user-select:none;
   font-size:clamp(3.6rem,15vw,7rem);
