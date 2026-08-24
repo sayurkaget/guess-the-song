@@ -25,7 +25,7 @@
   const ORDER  = ['easy', 'medium', 'hard', 'expert', 'impossible'];
   const STAGES = ORDER.length;
 
-  const REGIONS = { all: 'All regions', gl: 'Western', as: 'Asia' };
+  const REGIONS = { all: 'All regions', gl: 'Western', as: 'Asia', id: 'Indonesia' };
   const GENRES  = {
     all: 'All genres', pop: 'Pop', rock: 'Rock', hiphop: 'Hip-hop',
     rnb: 'R&B / Soul', edm: 'Electronic', indie: 'Indie', lain: 'Other'
@@ -288,7 +288,10 @@
     if (playing) { stopAudio(); return; }
     if (!S.meta || !S.meta.preview) return;
 
-    const batas = S.done
+    // Batas main dibaca ULANG tiap frame (curBatas), bukan dikunci sekali:
+    // menekan Skip di tengah putaran menaikkan limit(), dan klipnya ikut
+    // memanjang mulus tanpa berhenti.
+    const curBatas = () => S.done
       ? Math.min((isFinite(audio.duration) ? audio.duration : 30) - 0.2, 30)
       : limit();
 
@@ -297,7 +300,7 @@
     // sudah terdengar, tekan lagi untuk mengulang dari awal.
     let dari = 0;
     if (typeof S.heard !== 'number') S.heard = 0;
-    if (S.heard > 0.02 && S.heard < batas - 0.02) dari = S.heard;
+    if (S.heard > 0.02 && S.heard < curBatas() - 0.02) dari = S.heard;
     else S.heard = 0;
 
     UI.playState('loading');
@@ -314,6 +317,7 @@
 
     const tick = () => {
       if (!playing) return;
+      const batas = curBatas();
       const t = Math.max(0, audio.currentTime);
       S.heard = Math.max(S.heard, Math.min(t, batas));
       UI.head(t / maxLen());
@@ -462,10 +466,13 @@
     if (S.done || !S.song) return;
     S.guesses.push({ t: 'skip' });
     if (S.guesses.length >= TRIES) return finish(false);
-    stopAudio();
     saveRun(); UI.render();
     UI.status('Skipped. ' + fmt(limit()) + ' unlocked now.');
     UI.clearInput();
+    // Lagunya tidak dihentikan. Kalau masih berputar, batas dinamis sudah
+    // memperpanjangnya sendiri; kalau klip pendek tadi sudah habis, sambung
+    // otomatis dari titik terakhir yang terdengar ke bagian yang baru terbuka.
+    if (!playing) playClip();
   }
 
   function finish(won) {
@@ -1219,8 +1226,6 @@
   };
   $('#mute').classList.toggle('muted', S.muted);
 
-  $('#statsBtn').onclick = () => UI.stats();
-  $('#helpBtn').onclick = () => open($('#helpModal'));
   $('#reset').onclick = () => {
     LS.del(statKey());
     UI.stats();
