@@ -1012,13 +1012,17 @@
            '\n' + lines.join('\n');
   }
 
+  // Alamat situs mengikuti domain tempat game dibuka (github.io, pages.dev,
+  // domain sendiri -- apa pun), jadi tautan tantangan tak pernah usang.
+  function siteUrl() { return location.origin + location.pathname; }
+
   // tantangan satu lagu -- sengaja tidak menyebut judulnya
   function shareStage() {
     const at = S.guesses.findIndex((g) => g.t === 'right');
     const hasil = S.won ? 'I got it in ' + fmt(LADDER[at]) : 'I lost this one';
     return 'Guess The Song · ' + (S.custom ? S.custom.label : D().label) + '\n' +
            squares(S.guesses) + '  ' + hasil + '\n' +
-           'Beat me: https://sayurkaget.github.io/guess-the-song/';
+           'Beat me: ' + siteUrl();
   }
 
   function pushRecent(sl) {
