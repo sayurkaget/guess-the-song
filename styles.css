@@ -749,16 +749,3 @@ body[data-diff="custom"]{--acc:#3db6f5;--acc-l:#5ec8ff;--acc-d:#1f93d6;--acc-rgb
 .artist-genre{margin-left:auto;font-size:.75rem;color:var(--dimmer);flex:none;align-self:center}
 .custom-hint{margin:1.05rem 0 .2rem;font-size:.8rem;color:var(--dimmer);text-align:center;line-height:1.5}
 .custom-hint.warn{color:var(--bad)}
-
-/* ============ tombol donasi (Ko-fi) ============ */
-.donate{
-  margin-left:auto;                 /* dorong ke kanan, jauh dari volume */
-  display:inline-flex; align-items:center; gap:.4rem;
-  padding:.42rem .9rem; border-radius:999px;
-  background:var(--surf); color:var(--dim);
-  font-size:.82rem; font-weight:600; text-decoration:none;
-  transition:background .15s, color .15s, transform .12s;
-}
-.donate:hover{ background:var(--surf2); color:var(--ink); transform:translateY(-1px) }
-.donate:active{ transform:translateY(0) }
-.donate span{ font-size:1rem; line-height:1 }
