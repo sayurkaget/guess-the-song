@@ -185,8 +185,14 @@
       else if (norm(s.artist).indexOf(nq) === 0) sc = 2;
       out.push({ s, sc });
     }
-    out.sort((a, b) => a.sc - b.sc || a.s.title.length - b.s.title.length);
-    return out.slice(0, 8).map((x) => x.s);
+    // Setelah kecocokan, urutkan menurut POPULARITAS (tier rendah = makin
+    // terkenal), bukan panjang judul. Dulu memakai panjang judul, sehingga
+    // mencari satu artis memunculkan lagu-lagu berjudul pendek yang justru
+    // paling asing -- "Treat You Better" kalah oleh "Why" dan "Ruin".
+    // Lagu kustom bertier 0 semua, jadi di sana urutannya jatuh ke judul.
+    out.sort((a, b) => a.sc - b.sc || a.s.tier - b.s.tier ||
+                       a.s.title.length - b.s.title.length);
+    return out.slice(0, 12).map((x) => x.s);
   }
 
   /* ================= iTunes ================= */
