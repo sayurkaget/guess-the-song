@@ -190,9 +190,14 @@
     // mencari satu artis memunculkan lagu-lagu berjudul pendek yang justru
     // paling asing -- "Treat You Better" kalah oleh "Why" dan "Ruin".
     // Lagu kustom bertier 0 semua, jadi di sana urutannya jatuh ke judul.
+    //
+    // Batasnya 60: artis dengan lagu terbanyak di katalog punya 44, jadi
+    // mengetik nama artis memunculkan SELURUH lagunya (daftarnya bisa
+    // digulung). Tetap dibatasi supaya kata umum seperti "love" tidak
+    // menggambar ribuan baris tiap ketukan tombol.
     out.sort((a, b) => a.sc - b.sc || a.s.tier - b.s.tier ||
                        a.s.title.length - b.s.title.length);
-    return out.slice(0, 12).map((x) => x.s);
+    return out.slice(0, 60).map((x) => x.s);
   }
 
   /* ================= iTunes ================= */
@@ -804,10 +809,13 @@
       list.forEach((s, i) => {
         const b = el('button', 'dd-item');
         b.type = 'button';
+        // Sepuluh baris pertama dimuat biasa -- itu yang langsung terlihat,
+        // dan loading="lazy" di situ justru menunda gambar sampai browser
+        // menganggap dropdown terlihat. Sisanya (daftar bisa 60 baris saat
+        // mengetik nama artis) baru dimuat ketika digulung ke bawah.
+        const malas = i >= 10 ? ' loading="lazy"' : '';
         b.innerHTML =
-          // sengaja TANPA loading="lazy": daftarnya cuma 8 gambar kecil, dan
-          // lazy membuat browser menunda pemuatan sampai dropdown dianggap terlihat
-          (s.art ? '<img class="dd-art" src="' + esc(s.art) + '" alt="">'
+          (s.art ? '<img class="dd-art"' + malas + ' src="' + esc(s.art) + '" alt="">'
                  : '<span class="dd-art ph" aria-hidden="true"></span>') +
           '<span class="dd-txt">' + esc(s.title) +
           '<small>' + esc(s.artist) + '</small></span>';
