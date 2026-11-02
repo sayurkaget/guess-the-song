@@ -132,7 +132,6 @@
     slug: slug(s), hay: norm(s[0] + ' ' + s[1])
   }));
 
-  const WESTERN_ARTISTS = new Set(ALL.map((s) => norm(s.artist)));
 
   // Cari entri lagu dari slug. Di mode kustom, lagu artis didahulukan -- lagu
   // itu membawa meta iTunes yang sudah diambil (.pre), jadi tak perlu resolve ulang.
@@ -540,7 +539,6 @@
     const seen = Object.create(null), songs = [];
     for (const r of (data.results || [])) {
       if (r.wrapperType !== 'track' || !r.previewUrl) continue;
-      if (!WESTERN_ARTISTS.has(norm(r.artistName))) continue;
       // tolak live/remix/karaoke -- yang dicari rekaman aslinya
       if (JUNK.test(r.trackName) || JUNK.test(r.collectionName || '')) continue;
       const title = r.trackName, artist = r.artistName, sl = slug([title, artist]);
@@ -569,7 +567,6 @@
       if (!r.artistId || !r.artistName || seen[r.artistId]) continue;
       seen[r.artistId] = 1;
       const na = norm(r.artistName);
-      if (!WESTERN_ARTISTS.has(na)) continue;
       let sc = 3;
       if (na === nq) sc = 0; else if (na.indexOf(nq) === 0) sc = 1; else if (na.indexOf(nq) >= 0) sc = 2;
       list.push({ id: r.artistId, name: r.artistName, genre: r.primaryGenreName || '', sc });
@@ -580,7 +577,6 @@
 
   // Mulai satu sesi kustom dari artis terpilih.
   async function startCustom(artistId, artistName) {
-    if (!WESTERN_ARTISTS.has(norm(artistName))) return;
     const hint = $('#customHint');
     hint.className = 'custom-hint'; hint.textContent = 'Loading ' + artistName + '…';
     let songs;
@@ -602,7 +598,7 @@
     load();
   }
 
-  const CUSTOM_HINT = 'Choose a Western artist from our catalogue — we pick 5 of their songs.';
+  const CUSTOM_HINT = 'Pick an artist — we pick 5 of their songs.';
   function openCustom() {
     closeAll();
     $('#artistQ').value = '';

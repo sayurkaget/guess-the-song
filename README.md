@@ -167,8 +167,8 @@ bergetar sebentar.
 
 ## Menyaring katalog
 
-Game hanya memakai lagu Western; pilihan region sudah dihapus. Custom Game hanya
-menampilkan artis Western yang tercantum di katalog. Preferensi region lama diabaikan;
+Mode utama hanya memakai lagu Western; pilihan region sudah dihapus. Custom Game
+bisa mencari semua artis yang tersedia di Apple Music. Preferensi region lama diabaikan;
 statistik Western tetap tersedia.
 
 | Filter | Pilihan |
