@@ -749,3 +749,7 @@ body[data-diff="custom"]{--acc:#3db6f5;--acc-l:#5ec8ff;--acc-d:#1f93d6;--acc-rgb
 .artist-genre{margin-left:auto;font-size:.75rem;color:var(--dimmer);flex:none;align-self:center}
 .custom-hint{margin:1.05rem 0 .2rem;font-size:.8rem;color:var(--dimmer);text-align:center;line-height:1.5}
 .custom-hint.warn{color:var(--bad)}
+
+/* Secondary actions on the mode picker. */
+.lobby-tools{display:flex;justify-content:center;flex-wrap:wrap;gap:.65rem;margin-top:1rem}
+.lobby-tools .btn{min-height:44px;padding:.65rem 1rem;font-size:.85rem}

@@ -60,6 +60,10 @@
 
     <button class="btn solid start" id="start">Start</button>
     <button class="btn ghostbtn customlink" id="openCustom">&#10022; Custom game &mdash; play an artist</button>
+    <div class="lobby-tools" aria-label="Game information">
+      <button class="btn ghostbtn" id="openStats" type="button" aria-haspopup="dialog" aria-controls="statsModal">Stats</button>
+      <button class="btn ghostbtn" id="openHelp" type="button" aria-haspopup="dialog" aria-controls="helpModal">How to Play</button>
+    </div>
   </section>
 
   <!-- ====== game ====== -->
@@ -205,13 +209,14 @@
       <li>Hit <b>play</b> — you only hear a short clip of the song.</li>
       <li>Start typing a title and <b>pick it from the list</b>. Picking submits the guess right away.</li>
       <li>A wrong guess or a <b>Skip</b> unlocks a longer clip.</li>
-      <li>You get <b>6 tries</b> per stage. The sooner you get it, the better.</li>
+      <li>You get <b>5 tries</b> per stage. The sooner you get it, the better.</li>
     </ol>
     <h3>Five stages</h3>
     <p class="dim">One run is <b>5 stages</b>, each harder than the last:
-      <b>Easy → Medium → Hard → Expert → Impossible</b>. One song per stage, and the opening
-      clip keeps shrinking — 2 seconds on Easy, down to 0.1 seconds on Impossible. The songs
-      get more obscure too.</p>
+      <b>Easy → Medium → Hard → Expert → Impossible</b>. There is one song per stage,
+      and the songs get more obscure as you progress. Every stage uses the same clip lengths:
+      <b>0.1s → 0.5s → 2s → 8s → 15s</b>. Each wrong guess or Skip uses one try;
+      after the fifth, the song is revealed.</p>
     <p class="dim">Missing a stage <b>does not end the run</b> — you carry on to the next one
       all the way to Impossible. Your score is how many stages you nailed, out of 5.</p>
     <h3>Keyboard</h3>

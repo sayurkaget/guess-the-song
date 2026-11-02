@@ -1145,6 +1145,8 @@
 
   // ---- custom game (main satu artis) ----
   $('#openCustom').onclick = openCustom;
+  $('#openStats').onclick = () => { closeAll(); UI.stats(); };
+  $('#openHelp').onclick = () => { closeAll(); open($('#helpModal')); };
   let artistT = 0, artistReq = 0;
   $('#artistQ').addEventListener('input', () => {
     const v = $('#artistQ').value.trim();
@@ -1194,6 +1196,9 @@
   document.addEventListener('keydown', (e) => {
     const typing = e.target === UI.q;
     if (e.key === 'Escape') { closeAll(); return; }
+    // Dialogs and focused controls keep their native keyboard behavior.
+    if (document.querySelector('.modal:not([hidden])')) return;
+    if (!typing && e.target.closest('button, input, select, textarea, a')) return;
     if (!inGame()) {
       // di lobi, Enter = mulai main
       if (e.key === 'Enter' && !$('#start').disabled) { e.preventDefault(); $('#start').click(); }
