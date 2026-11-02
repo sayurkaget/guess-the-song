@@ -106,6 +106,7 @@
     picked: null,
     loading: false,
     epoch: 0,        // penanda pemuatan, membatalkan request usang
+    challenge: null,
     custom: null     // mode artis kustom: {id,label,songs[]} -- null = mode katalog biasa
   };
 
@@ -115,7 +116,7 @@
   if (!ERAS[S.era]) S.era = 'all';
 
   // Kombinasi filter memisahkan dua hal: sesi yang berjalan dan statistiknya.
-  const filterKey = () => S.custom ? 'custom:' + S.custom.id : ('gl:' + S.genre + ':' + S.era);
+  const filterKey = () => S.challenge ? 'challenge:' + S.challenge.id : S.custom ? 'custom:' + S.custom.id : ('gl:' + S.genre + ':' + S.era);
 
   const D       = () => DIFFS[ORDER[S.stage]];
   const ladder  = () => LADDER;
@@ -227,7 +228,7 @@
 
   async function resolve(song) {
     if (song.pre) return song.pre;   // lagu kustom sudah membawa meta iTunes
-    const ck = 'tl:trk3:' + song.slug;   // naikkan versi kalau aturan pencocokan berubah
+    const ck = 'tl:trk4:' + song.slug;   // naikkan versi kalau aturan pencocokan berubah
     const c = LS.get(ck);
     if (c && c.exp > Date.now() && c.preview) return c;
 
@@ -252,6 +253,7 @@
     if (!best) throw new Error('tidak ketemu');
 
     const rec = {
+      trackId: best.trackId,
       preview: best.previewUrl,
       art: (best.artworkUrl100 || '').replace('100x100', '600x600'),
       title: best.trackName,
@@ -418,7 +420,7 @@
     UI.render();
 
     for (let k = 0; k < 5; k++) {
-      const cand = song || pickSong(k);
+      const cand = S.challenge ? S.challenge.song : (song || pickSong(k));
       try {
         const meta = await resolve(cand);
         if (me !== S.epoch) return;             // pemuatan lain sudah menggantikan ini
@@ -447,6 +449,7 @@
         return;
       } catch (e) {
         if (me !== S.epoch) return;
+        if (S.challenge) break; // Never substitute a different challenge song.
         song = null;                            // kandidat gagal → coba berikutnya
       }
     }
@@ -499,11 +502,13 @@
     // makin aman dari kebijakan autoplay browser -- sekaligus terasa lebih responsif.
     // Kalah pun tetap diputar: justru saat itulah kamu ingin dengar lagunya.
     UI.autoplay();
-    setTimeout(() => UI.result(), 420);
+    const finishedEpoch = S.epoch;
+    setTimeout(() => { if (S.epoch === finishedEpoch && S.done) UI.result(); }, 420);
   }
 
   function nextStage() {
     closeAll();
+    if (S.challenge) { UI.lobby(); return; }
     if (S.stage >= STAGES - 1) { UI.runResult(); return; }
     S.stage++;
     const cur = S.stages[S.stage];
@@ -533,7 +538,7 @@
   async function fetchArtistSongs(artistId) {
     const url = 'https://itunes.apple.com/lookup?id=' + encodeURIComponent(artistId) +
                 '&entity=song&limit=120&country=US';
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
     if (!res.ok) throw new Error('http ' + res.status);
     const data = JSON.parse(await res.text());
     const seen = Object.create(null), songs = [];
@@ -548,7 +553,7 @@
       songs.push({
         title, artist, tier: 0, region: '', genre: '', year, art,
         slug: sl, hay: norm(title + ' ' + artist),
-        pre: { preview: r.previewUrl, art, title, artist, album: r.collectionName || '',
+        pre: { trackId: r.trackId, preview: r.previewUrl, art, title, artist, album: r.collectionName || '',
                year, link: r.trackViewUrl || '', exp: Date.now() + 7 * 864e5 }
       });
     }
@@ -618,6 +623,60 @@
     box.hidden = false;
   }
 
+  /* ================= friend challenge ================= */
+
+  async function acceptChallenge() {
+    const incoming = window.TrackChallenge.parse(location.hash);
+    if (!incoming) return;
+    const ticket = ++S.epoch;
+    const button = $('#acceptChallenge'), message = $('#challengeMessage');
+    button.disabled = true;
+    message.textContent = 'Loading your challenge…';
+    try {
+      const r = await window.TrackChallenge.lookup(incoming.id);
+      // Include the artist catalogue for custom challenges, alongside normal suggestions.
+      let extras = [];
+      if (r.artistId) {
+        try { extras = await fetchArtistSongs(r.artistId); } catch (e) { /* Main catalogue remains available. */ }
+      }
+      if (ticket !== S.epoch) return;
+      const title = r.trackName, artist = r.artistName;
+      const art = (r.artworkUrl100 || '').replace('100x100', '600x600');
+      const song = {
+        title, artist, tier: 0, genre: '', year: (r.releaseDate || '').slice(0, 4), art,
+        slug: slug([title, artist]), hay: norm(title + ' ' + artist),
+        pre: { trackId: r.trackId, preview: r.previewUrl, art, title, artist,
+          album: r.collectionName || '', year: (r.releaseDate || '').slice(0, 4), link: r.trackViewUrl || '' }
+      };
+      const songs = new Map([...ALL, ...extras, song].map((s) => [s.slug, s]));
+      S.challenge = { ...incoming, song };
+      S.custom = { id: 'challenge:' + incoming.id, label: 'Friend challenge', songs: [...songs.values()] };
+      delete RUNS['challenge:' + incoming.id];
+      switchRun();
+      UI.clearInput();
+      UI.game();
+      await load();
+    } catch (e) {
+      if (ticket !== S.epoch) return;
+      message.textContent = 'Could not load this exact song. Check your connection or try again. The preview may no longer be available.';
+      button.textContent = 'Try again';
+    } finally {
+      if (ticket === S.epoch || S.challenge) button.disabled = false;
+    }
+  }
+
+  function showIncomingChallenge() {
+    if (!location.hash.startsWith('#challenge=')) return false;
+    const incoming = window.TrackChallenge.parse(location.hash);
+    $('#lobby').hidden = true;
+    $('#challengeIntro').hidden = false;
+    $('#acceptChallenge').hidden = !incoming;
+    $('#challengeMessage').textContent = incoming
+      ? 'Your friend ' + window.TrackChallenge.describe(incoming.result) + '. Can you beat them?'
+      : 'This challenge link is invalid or uses an unsupported version. Ask your friend for a new link.';
+    return true;
+  }
+
   /* ================= statistik ================= */
 
   // statistik per kombinasi filter; tiap sesi yang tuntas dihitung
@@ -625,7 +684,7 @@
   const blankStats = () => ({ runs: 0, total: 0, best: 0, perfect: 0, dist: [0, 0, 0, 0, 0, 0] });
 
   function recordStats() {
-    if (S.custom) return;   // mode kustom tak masuk statistik harian
+    if (S.custom || S.challenge) return;   // mode kustom tak masuk statistik harian
     const st = Object.assign(blankStats(), LS.get(statKey(), {}));
     const sc = score();
     st.runs++;
@@ -670,6 +729,8 @@
     /* --- rangkaian tahap --- */
     steps(host, live) {
       host.innerHTML = '';
+      host.hidden = !!S.challenge;
+      if (S.challenge) return;
       ORDER.forEach((k, i) => {
         if (i) { const a = el('li', 'arrow'); a.textContent = '›'; host.appendChild(a); }
         const li = el('li');
@@ -728,7 +789,9 @@
 
     lobby() {
       stopAudio();
-      if (S.custom) { S.custom = null; switchRun(); }   // keluar dari mode kustom, pulihkan sesi katalog
+      $('#challengeIntro').hidden = true;
+      if (S.challenge) history.replaceState(null, '', location.pathname + location.search);
+      if (S.custom || S.challenge) { S.custom = null; S.challenge = null; switchRun(); }   // keluar dari mode kustom, pulihkan sesi katalog
       S.epoch++;                       // batalkan pemuatan yang masih berjalan
       document.body.removeAttribute('data-diff');   // lobi tak terikat satu kesulitan
       $('#game').hidden = true;
@@ -739,6 +802,7 @@
 
     game() {
       $('#lobby').hidden = true;
+      $('#challengeIntro').hidden = true;
       $('#game').hidden = false;
       document.body.dataset.diff = S.custom ? 'custom' : ORDER[S.stage];  // warna mewarnai seluruh halaman
       $('#gameMode').textContent = S.custom ? S.custom.label : [
@@ -747,7 +811,9 @@
       ].filter(Boolean).join(' · ');
       $('#gameMode').hidden = !$('#gameMode').textContent;
       this.steps($('#steps'), true);
-      $('#stageNow').innerHTML = S.custom
+      $('#stageNow').innerHTML = S.challenge
+        ? 'Friend challenge · Your friend ' + window.TrackChallenge.describe(S.challenge.result)
+        : S.custom
         ? 'Song <b>' + (S.stage + 1) + '</b> of ' + STAGES + ' · <b>' + esc(S.custom.label) + '</b>'
         : 'Stage <b>' + (S.stage + 1) + '</b> of ' + STAGES + ' · <b>' + D().label + '</b>';
     },
@@ -913,7 +979,14 @@
       const link = $('#listen');
       if (m.link) { link.href = m.link; link.hidden = false; } else link.hidden = true;
 
-      $('#next').textContent = S.stage >= STAGES - 1 ? 'See result' : 'Next';
+      $('#next').textContent = S.challenge ? 'Play regular game' : (S.stage >= STAGES - 1 ? 'See result' : 'Next');
+      const comparison = $('#challengeComparison');
+      comparison.hidden = !S.challenge;
+      comparison.textContent = S.challenge
+        ? window.TrackChallenge.compare(S.challenge.result, S.won ? n : 0) +
+          ' Your friend ' + window.TrackChallenge.describe(S.challenge.result) +
+          '; you ' + window.TrackChallenge.describe(S.won ? n : 0) + '.'
+        : '';
 
       open($('#resultModal'));
       confetti('#confetti', S.won ? 'win' : 'lose');
@@ -1033,7 +1106,7 @@
     const hasil = S.won ? 'I got it in ' + fmt(LADDER[at]) : 'I lost this one';
     return 'Guess The Song · ' + (S.custom ? S.custom.label : D().label) + '\n' +
            squares(S.guesses) + '  ' + hasil + '\n' +
-           'Beat me: ' + siteUrl();
+           'Beat me: ' + window.TrackChallenge.create(siteUrl(), S.meta.trackId, S.won ? at + 1 : 0);
   }
 
   function pushRecent(sl) {
@@ -1138,6 +1211,11 @@
     UI.game();
     load();
   };
+  window.addEventListener('hashchange', () => {
+    if (location.hash.startsWith('#challenge=')) location.reload();
+  });
+  $('#acceptChallenge').onclick = acceptChallenge;
+  $('#leaveChallenge').onclick = () => { history.replaceState(null, '', location.pathname + location.search); UI.lobby(); };
   $('#back').onclick = () => { closeAll(); UI.lobby(); };
   $('#next').onclick = nextStage;
   $('#againRun').onclick = newRun;
@@ -1168,7 +1246,10 @@
     const b = e.target.closest('.artist-row');
     if (b) startCustom(b.dataset.id, b.dataset.name);
   });
-  $('#shareStage').onclick = () => salin(shareStage());
+  $('#shareStage').onclick = () => {
+    try { salin(shareStage()); }
+    catch (e) { toast('This recording cannot be shared right now. Try another song.'); }
+  };
   UI.skipBtn.onclick = () => { if (S.done) UI.result(); else skip(); };
 
   UI.q.addEventListener('input', () => {
@@ -1196,7 +1277,7 @@
     const typing = e.target === UI.q;
     if (e.key === 'Escape') { closeAll(); return; }
     // Dialogs and focused controls keep their native keyboard behavior.
-    if (document.querySelector('.modal:not([hidden])')) return;
+    if (document.querySelector('.modal:not([hidden])') || !$('#challengeIntro').hidden) return;
     if (!typing && e.target.closest('button, input, select, textarea, a')) return;
     if (!inGame()) {
       // di lobi, Enter = mulai main
@@ -1256,5 +1337,5 @@
   UI.render();
   UI.lobby();                 // selalu mulai dari layar pilih mode
 
-  if (!LS.get('tl:seen')) { LS.set('tl:seen', 1); setTimeout(() => open($('#helpModal')), 500); }
+  if (!showIncomingChallenge() && !LS.get('tl:seen')) { LS.set('tl:seen', 1); setTimeout(() => open($('#helpModal')), 500); }
 })();

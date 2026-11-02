@@ -107,8 +107,12 @@ disengaja. Yang bertahan lintas-refresh hanya statistik dan pilihan filter.
 
 Setelah tiap tahap, layar hasil memenuhi layar: nama tahap membayang raksasa di
 belakang, sampul album, judul besar, dan badge **GUESSED IN 0.1S!** atau **LOST!**.
-Tombol **Challenge your friend** menyalin hasil tahap itu beserta tautan situsnya —
-tanpa membocorkan judul lagunya.
+Tombol **Challenge your friend** menyalin hasil tahap dan tautan ke satu rekaman yang
+sama (ID Apple Music, tanpa judul lagu di URL). Penerima menekan **Accept challenge**
+untuk memainkan satu ronde dengan lima kesempatan yang sama. Hasil akhir membandingkan
+jumlah tebakan dengan penantang; ronde ini tidak masuk statistik lima tahap.
+Jika rekaman tidak tersedia, pemain mendapat pesan kegagalan dan tombol coba lagi,
+bukan lagu pengganti. Tautan bersifat kasual: hasil penantang tidak diverifikasi server.
 
 | Aksi | Pintasan |
 |---|---|
@@ -296,3 +300,8 @@ Semua kemajuan disimpan di `localStorage` — tidak ada server, tidak ada akun.
 
 Komentar di dalam kode sengaja dibiarkan berbahasa Indonesia; hanya teks yang dilihat
 pemain yang berbahasa Inggris.
+
+## Pengujian tantangan
+
+Jalankan `node --test tests/challenge.test.cjs` untuk memeriksa tautan, rekaman yang
+dipilih, hasil perbandingan, pembatalan, dan pemisahan statistik.

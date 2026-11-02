@@ -66,6 +66,14 @@
     </div>
   </section>
 
+  <section class="lobby" id="challengeIntro" hidden>
+    <h2>Friend challenge</h2>
+    <p class="dim" id="challengeMessage" role="status"></p>
+    <p class="laddernote">One song. Five tries. Same recording, same clip lengths:<br>0.1s → 0.5s → 2s → 8s → 15s.</p>
+    <button class="btn solid" id="acceptChallenge" type="button">Accept challenge</button>
+    <button class="btn ghostbtn customlink" id="leaveChallenge" type="button">Play regular game</button>
+  </section>
+
   <!-- ====== game ====== -->
   <section class="game" id="game" hidden>
     <div class="gamebar">
@@ -144,6 +152,7 @@
     <p class="r-artist" id="rArtist"></p>
 
     <p class="badge" id="badge"></p>
+    <p class="dim challenge-comparison" id="challengeComparison" hidden></p>
 
     <div class="r-actions">
       <button class="btn ghostbtn" id="shareStage">
@@ -233,6 +242,7 @@
 <div class="toast" id="toast" hidden></div>
 
 <script src="songs.js"></script>
+<script src="challenge.js"></script>
 <script src="app.js"></script>
 <script>
   // Service worker hanya jalan di HTTPS (atau localhost). Di alamat LAN biasa

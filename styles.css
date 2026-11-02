@@ -753,3 +753,6 @@ body[data-diff="custom"]{--acc:#3db6f5;--acc-l:#5ec8ff;--acc-d:#1f93d6;--acc-rgb
 /* Secondary actions on the mode picker. */
 .lobby-tools{display:flex;justify-content:center;flex-wrap:wrap;gap:.65rem;margin-top:1rem}
 .lobby-tools .btn{min-height:44px;padding:.65rem 1rem;font-size:.85rem}
+
+#challengeIntro{text-align:center}
+.challenge-comparison{max-width:36rem;margin:1.2rem auto 0;line-height:1.5;overflow-wrap:anywhere}
