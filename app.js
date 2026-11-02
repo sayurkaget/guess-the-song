@@ -742,10 +742,10 @@
       $('#game').hidden = false;
       document.body.dataset.diff = S.custom ? 'custom' : ORDER[S.stage];  // warna mewarnai seluruh halaman
       $('#gameMode').textContent = S.custom ? S.custom.label : [
-        'Western',
         S.genre === 'all' ? null : GENRES[S.genre],
         S.era === 'all' ? null : ERAS[S.era].label
       ].filter(Boolean).join(' · ');
+      $('#gameMode').hidden = !$('#gameMode').textContent;
       this.steps($('#steps'), true);
       $('#stageNow').innerHTML = S.custom
         ? 'Song <b>' + (S.stage + 1) + '</b> of ' + STAGES + ' · <b>' + esc(S.custom.label) + '</b>'
@@ -973,7 +973,7 @@
     stats() {
       const st = Object.assign(blankStats(), LS.get(statKey(), {}));
       $('#statScope').textContent = [
-        'Western', GENRES[S.genre], ERAS[S.era].label
+        GENRES[S.genre], ERAS[S.era].label
       ].join(' · ');
       const avg = st.runs ? (st.total / st.runs).toFixed(1) : '0';
       $('#statgrid').innerHTML =
@@ -1006,7 +1006,6 @@
     const tags = [];
     if (S.custom) tags.push(S.custom.label);
     else {
-      tags.push('Western');
       if (S.genre !== 'all') tags.push(GENRES[S.genre]);
       if (S.era !== 'all') tags.push(ERAS[S.era].label);
       if (!tags.length) tags.push('All songs');
