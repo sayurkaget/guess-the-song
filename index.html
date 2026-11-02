@@ -7,19 +7,19 @@
 <title>Guess The Song — Music Guessing Game</title>
 
 <!-- SEO + preview saat dibagikan -->
-<meta name="description" content="Guess the song from a split second of it — as little as 0.1s. Free music game with 18,000+ tracks: pop, rock, K-pop, and Indonesian hits (tebak lagu online).">
+<meta name="description" content="Guess the song from a split second of it — as little as 0.1s. Free music game with Western tracks across pop, rock, hip-hop, and more.">
 <link rel="canonical" href="https://namethetrack.netlify.app/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Name The Track">
 <meta property="og:url" content="https://namethetrack.netlify.app/">
 <meta property="og:title" content="Guess The Song — name the track in a split second">
-<meta property="og:description" content="Name the track from as little as 0.1 seconds. A free music guessing game with 18,000+ songs, including Indonesian hits (tebak lagu).">
+<meta property="og:description" content="Name the track from as little as 0.1 seconds. A free music guessing game with Western songs across genres and eras.">
 <meta property="og:image" content="https://namethetrack.netlify.app/icon-512.png">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Guess The Song — name the track in a split second">
-<meta name="twitter:description" content="Name the track from as little as 0.1s. 18,000+ songs, free. Tebak lagu online.">
+<meta name="twitter:description" content="Name the track from as little as 0.1s. Western songs, free. Pick your genre and era.">
 <meta name="twitter:image" content="https://namethetrack.netlify.app/icon-512.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://namethetrack.netlify.app/#website","name":"Name The Track","alternateName":["Name The Track — Guess The Song","NameTheTrack"],"url":"https://namethetrack.netlify.app/","publisher":{"@id":"https://namethetrack.netlify.app/#publisher"}},{"@type":"Organization","@id":"https://namethetrack.netlify.app/#publisher","name":"Name The Track","url":"https://namethetrack.netlify.app/","logo":{"@type":"ImageObject","url":"https://namethetrack.netlify.app/icon-512.png","width":512,"height":512}},{"@type":"WebApplication","name":"Name The Track — Guess The Song","url":"https://namethetrack.netlify.app/","applicationCategory":"GameApplication","operatingSystem":"Any (web browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Guess the song from a split second of it. A free music guessing game with 18,000+ tracks including Indonesian hits.","isPartOf":{"@id":"https://namethetrack.netlify.app/#website"}}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://namethetrack.netlify.app/#website","name":"Name The Track","alternateName":["Name The Track — Guess The Song","NameTheTrack"],"url":"https://namethetrack.netlify.app/","publisher":{"@id":"https://namethetrack.netlify.app/#publisher"}},{"@type":"Organization","@id":"https://namethetrack.netlify.app/#publisher","name":"Name The Track","url":"https://namethetrack.netlify.app/","logo":{"@type":"ImageObject","url":"https://namethetrack.netlify.app/icon-512.png","width":512,"height":512}},{"@type":"WebApplication","name":"Name The Track — Guess The Song","url":"https://namethetrack.netlify.app/","applicationCategory":"GameApplication","operatingSystem":"Any (web browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Guess the song from a split second of it. A free music guessing game with Western tracks across genres and eras.","isPartOf":{"@id":"https://namethetrack.netlify.app/#website"}}]}</script>
 
 <!-- dipasang ke layar depan HP: Android lewat manifest, iOS lewat meta apple-* -->
 <link rel="manifest" href="app.webmanifest">
@@ -53,14 +53,13 @@
     <p class="laddernote" id="ladderNote"></p>
 
     <div class="subcontrols">
-      <label class="drop"><span class="sr">Region</span><select id="region"></select></label>
       <label class="drop"><span class="sr">Genre</span><select id="genre"></select></label>
       <label class="drop"><span class="sr">Era</span><select id="era"></select></label>
     </div>
     <p class="poolinfo" id="poolInfo"></p>
 
     <button class="btn solid start" id="start">Start</button>
-    <button class="btn ghostbtn customlink" id="openCustom">&#10022; Custom game &mdash; play any artist</button>
+    <button class="btn ghostbtn customlink" id="openCustom">&#10022; Custom game &mdash; play a Western artist</button>
   </section>
 
   <!-- ====== game ====== -->
@@ -177,10 +176,10 @@
     <h2 class="custom-h" id="customTitle">&#10022; Custom Game</h2>
     <p class="custom-lbl">Play an artist</p>
     <div class="custom-field">
-      <input id="artistQ" type="text" placeholder="Search any artist&hellip;" autocomplete="off" spellcheck="false" enterkeyhint="go">
+      <input id="artistQ" type="text" placeholder="Search Western artists&hellip;" autocomplete="off" spellcheck="false" enterkeyhint="go">
     </div>
     <ul class="custom-results" id="artistResults" hidden></ul>
-    <p class="custom-hint" id="customHint">Any artist on Apple Music &mdash; we pick 5 of their songs.</p>
+    <p class="custom-hint" id="customHint">Choose a Western artist from our catalogue &mdash; we pick 5 of their songs.</p>
   </div>
 </div>
 

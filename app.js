@@ -25,7 +25,6 @@
   const ORDER  = ['easy', 'medium', 'hard', 'expert', 'impossible'];
   const STAGES = ORDER.length;
 
-  const REGIONS = { all: 'All regions', gl: 'Western', as: 'Asia', id: 'Indonesia' };
   const GENRES  = {
     all: 'All genres', pop: 'Pop', rock: 'Rock', hiphop: 'Hip-hop',
     rnb: 'R&B / Soul', edm: 'Electronic', indie: 'Indie', lain: 'Other'
@@ -88,7 +87,6 @@
   /* ================= state ================= */
 
   const S = {
-    region: LS.get('tl:region', 'all'),
     genre:  LS.get('tl:genre', 'all'),
     era:    LS.get('tl:era', 'all'),
     vol:    LS.get('tl:vol', 0.8),
@@ -111,12 +109,13 @@
     custom: null     // mode artis kustom: {id,label,songs[]} -- null = mode katalog biasa
   };
 
-  if (!REGIONS[S.region]) S.region = 'all';
+  // Pilihan region lama tidak lagi berlaku; statistik Western tetap memakai kunci gl.
+  LS.del('tl:region');
   if (!GENRES[S.genre]) S.genre = 'all';
   if (!ERAS[S.era]) S.era = 'all';
 
   // Kombinasi filter memisahkan dua hal: sesi yang berjalan dan statistiknya.
-  const filterKey = () => S.custom ? 'custom:' + S.custom.id : (S.region + ':' + S.genre + ':' + S.era);
+  const filterKey = () => S.custom ? 'custom:' + S.custom.id : ('gl:' + S.genre + ':' + S.era);
 
   const D       = () => DIFFS[ORDER[S.stage]];
   const ladder  = () => LADDER;
@@ -127,11 +126,13 @@
 
   /* ================= katalog & pencarian ================= */
 
-  const ALL = (window.SONGS || []).map((s, i) => ({
+  const ALL = (window.SONGS || []).filter((s) => s[3] === 'gl').map((s, i) => ({
     i, title: s[0], artist: s[1], tier: s[2], region: s[3],
     genre: s[4] || 'lain', year: s[5] || 0, art: s[6] || '',
     slug: slug(s), hay: norm(s[0] + ' ' + s[1])
   }));
+
+  const WESTERN_ARTISTS = new Set(ALL.map((s) => norm(s.artist)));
 
   // Cari entri lagu dari slug. Di mode kustom, lagu artis didahulukan -- lagu
   // itu membawa meta iTunes yang sudah diambil (.pre), jadi tak perlu resolve ulang.
@@ -144,7 +145,6 @@
   function filtered() {
     if (S.custom) return S.custom.songs;
     return ALL.filter((s) =>
-      (S.region === 'all' || s.region === S.region) &&
       (S.genre === 'all' || s.genre === S.genre) &&
       ERAS[S.era].hit(s.year));
   }
@@ -540,6 +540,7 @@
     const seen = Object.create(null), songs = [];
     for (const r of (data.results || [])) {
       if (r.wrapperType !== 'track' || !r.previewUrl) continue;
+      if (!WESTERN_ARTISTS.has(norm(r.artistName))) continue;
       // tolak live/remix/karaoke -- yang dicari rekaman aslinya
       if (JUNK.test(r.trackName) || JUNK.test(r.collectionName || '')) continue;
       const title = r.trackName, artist = r.artistName, sl = slug([title, artist]);
@@ -568,6 +569,7 @@
       if (!r.artistId || !r.artistName || seen[r.artistId]) continue;
       seen[r.artistId] = 1;
       const na = norm(r.artistName);
+      if (!WESTERN_ARTISTS.has(na)) continue;
       let sc = 3;
       if (na === nq) sc = 0; else if (na.indexOf(nq) === 0) sc = 1; else if (na.indexOf(nq) >= 0) sc = 2;
       list.push({ id: r.artistId, name: r.artistName, genre: r.primaryGenreName || '', sc });
@@ -578,6 +580,7 @@
 
   // Mulai satu sesi kustom dari artis terpilih.
   async function startCustom(artistId, artistName) {
+    if (!WESTERN_ARTISTS.has(norm(artistName))) return;
     const hint = $('#customHint');
     hint.className = 'custom-hint'; hint.textContent = 'Loading ' + artistName + '…';
     let songs;
@@ -599,7 +602,7 @@
     load();
   }
 
-  const CUSTOM_HINT = 'Any artist on Apple Music — we pick 5 of their songs.';
+  const CUSTOM_HINT = 'Choose a Western artist from our catalogue — we pick 5 of their songs.';
   function openCustom() {
     closeAll();
     $('#artistQ').value = '';
@@ -664,7 +667,6 @@
           UI.buildControls(); UI.refreshLobby();
         };
       };
-      fill($('#region'), REGIONS, S.region, 'tl:region');
       fill($('#genre'),  GENRES,  S.genre,  'tl:genre');
       fill($('#era'),    ERAS,    S.era,    'tl:era');
     },
@@ -744,7 +746,7 @@
       $('#game').hidden = false;
       document.body.dataset.diff = S.custom ? 'custom' : ORDER[S.stage];  // warna mewarnai seluruh halaman
       $('#gameMode').textContent = S.custom ? S.custom.label : [
-        S.region === 'all' ? null : REGIONS[S.region],
+        'Western',
         S.genre === 'all' ? null : GENRES[S.genre],
         S.era === 'all' ? null : ERAS[S.era].label
       ].filter(Boolean).join(' · ');
@@ -975,7 +977,7 @@
     stats() {
       const st = Object.assign(blankStats(), LS.get(statKey(), {}));
       $('#statScope').textContent = [
-        REGIONS[S.region], GENRES[S.genre], ERAS[S.era].label
+        'Western', GENRES[S.genre], ERAS[S.era].label
       ].join(' · ');
       const avg = st.runs ? (st.total / st.runs).toFixed(1) : '0';
       $('#statgrid').innerHTML =
@@ -1008,7 +1010,7 @@
     const tags = [];
     if (S.custom) tags.push(S.custom.label);
     else {
-      if (S.region !== 'all') tags.push(REGIONS[S.region]);
+      tags.push('Western');
       if (S.genre !== 'all') tags.push(GENRES[S.genre]);
       if (S.era !== 'all') tags.push(ERAS[S.era].label);
       if (!tags.length) tags.push('All songs');

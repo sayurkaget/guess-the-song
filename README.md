@@ -87,8 +87,7 @@ powershell -Command "Get-CimInstance Win32_Process -Filter \"Name='powershell.ex
 
 ## Cara main
 
-Setiap kali dibuka, yang muncul lebih dulu adalah **layar pilih mode**: tentukan region,
-genre, dan era, baru tekan **Start**. Tidak ada lagu yang diambil sebelum tombol itu
+Setiap kali dibuka, yang muncul lebih dulu adalah **layar pilih mode**: tentukan genre dan era, baru tekan **Start**. Tidak ada lagu yang diambil sebelum tombol itu
 ditekan, jadi mengubah pilihan tidak menukar lagu di tengah sesi.
 
 Ketik judul di kolom pencarian lalu **klik salah satu saran** — memilih langsung mengirim
@@ -168,9 +167,12 @@ bergetar sebentar.
 
 ## Menyaring katalog
 
+Game hanya memakai lagu Western; pilihan region sudah dihapus. Custom Game hanya
+menampilkan artis Western yang tercantum di katalog. Preferensi region lama diabaikan;
+statistik Western tetap tersedia.
+
 | Filter | Pilihan |
 |---|---|
-| Region | Western · Asia |
 | Genre | Pop · Rock · Hip-hop · R&B/Soul · Electronic · Indie · Other |
 | Era | Before 2000 · 2000s · 2010s · 2020s |
 
@@ -192,7 +194,7 @@ Setiap sesi yang tuntas masuk ke statistik kombinasi filter yang sedang dipakai.
 | `index.html` | Markup |
 | `styles.css` | Tampilan; seluruh halaman mengikuti warna kesulitan lewat `body[data-diff]` |
 | `app.js` | Logika permainan, audio, pencarian, statistik |
-| `songs.js` | Katalog 2.998 lagu |
+| `songs.js` | Katalog 13,974 lagu Western |
 | `app.webmanifest`, `icon-*.png` | Supaya bisa dipasang ke layar depan HP |
 | `sw.js` | Service worker: game jalan luring, dan versi terbaru selalu menang saat online |
 | `serve.ps1` | Server statis mini |
@@ -259,8 +261,7 @@ Tambahkan satu baris di `songs.js` — cukup empat kolom pertama:
 ["Song Title", "Artist Name", 3, "gl"],
 ```
 
-`tier` 1 (paling terkenal) sampai 5 (paling niche); `region` `"gl"` (Barat) atau `"as"`
-(Asia). Genre, tahun, dan sampul tidak perlu diisi manual:
+`tier` 1 (paling terkenal) sampai 5 (paling niche); `region` harus `"gl"` (Western). Genre, tahun, dan sampul tidak perlu diisi manual:
 
 ```bash
 bash tools/enrich.sh
