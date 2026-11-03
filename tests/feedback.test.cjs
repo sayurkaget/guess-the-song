@@ -9,6 +9,7 @@ function setup() {
  function node(id){return {value:'',textContent:'',hidden:true,disabled:false,setCustomValidity(value){this.validation=value},focus(){},addEventListener(type,fn){handlers[id+':'+type]=fn}}}
  for(const id of ['feedbackForm','feedbackFields','feedbackMessage','feedbackStatus','sendFeedback','feedbackDetails','feedbackModal','feedbackCategory'])nodes.set('#'+id,node(id));
  const form=nodes.get('#feedbackForm'),message=nodes.get('#feedbackMessage');
+ form.hasAttribute=()=>false;
  form.reportValidity=()=>!message.validation;
  form.getAttribute=()=>'/feedback-received.html';
  form.reset=()=>{message.value='';nodes.get('#feedbackDetails').value=''};
@@ -42,4 +43,9 @@ test('double clicking cannot send duplicate requests',async()=>{
 test('reopening preserves an unsent draft and its editable game details',()=>{
  const {c,nodes,message}=setup();message.value='Existing draft';nodes.get('#feedbackDetails').value='My device details';c.window.PlayerFeedback.open('New game');
  assert.equal(message.value,'Existing draft');assert.equal(nodes.get('#feedbackDetails').value,'My device details');
+});
+
+test('unregistered form cannot falsely report a successful delivery',async()=>{
+ const {nodes,message,calls,send}=setup();nodes.get('#feedbackForm').hasAttribute=()=>true;message.value='Feedback draft';
+ await send();assert.equal(calls.length,0);assert.equal(message.value,'Feedback draft');assert.match(nodes.get('#feedbackStatus').textContent,/not been sent/);
 });
