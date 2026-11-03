@@ -5,13 +5,15 @@
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v7-challenges';
+const CACHE = 'gts-v8-daily';
 const SHELL = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './challenge.js',
+  './daily.js',
+  './daily-pool-v1.js',
   './songs.js',
   './app.webmanifest',
   './icon-180.png',

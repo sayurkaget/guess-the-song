@@ -106,6 +106,7 @@
     picked: null,
     loading: false,
     epoch: 0,        // penanda pemuatan, membatalkan request usang
+    daily: null,
     challenge: null,
     custom: null     // mode artis kustom: {id,label,songs[]} -- null = mode katalog biasa
   };
@@ -116,7 +117,7 @@
   if (!ERAS[S.era]) S.era = 'all';
 
   // Kombinasi filter memisahkan dua hal: sesi yang berjalan dan statistiknya.
-  const filterKey = () => S.challenge ? 'challenge:' + S.challenge.id : S.custom ? 'custom:' + S.custom.id : ('gl:' + S.genre + ':' + S.era);
+  const filterKey = () => S.daily ? 'daily:' + S.daily.day : S.challenge ? 'challenge:' + S.challenge.id : S.custom ? 'custom:' + S.custom.id : ('gl:' + S.genre + ':' + S.era);
 
   const D       = () => DIFFS[ORDER[S.stage]];
   const ladder  = () => LADDER;
@@ -137,6 +138,7 @@
   // Cari entri lagu dari slug. Di mode kustom, lagu artis didahulukan -- lagu
   // itu membawa meta iTunes yang sudah diambil (.pre), jadi tak perlu resolve ulang.
   function findSong(sl) {
+    if (S.daily) { const d = S.daily.songs.find((s) => s.slug === sl); if (d) return d; }
     if (S.custom) { const c = S.custom.songs.find((s) => s.slug === sl); if (c) return c; }
     return ALL.find((s) => s.slug === sl) || null;
   }
@@ -150,6 +152,7 @@
   }
 
   function buildPool() {
+    if (S.daily) { S.pool = S.daily.songs.slice(); S.tierWidened = false; return; }
     // Mode kustom: kumpulannya adalah seluruh lagu artis yang diambil, tanpa tier.
     if (S.custom) { S.pool = S.custom.songs.slice(); S.tierWidened = false; return; }
     // Wilayah, genre, dan era adalah pilihan sadar pemain -- tidak pernah
@@ -176,7 +179,7 @@
     if (!nq) return [];
     const toks = nq.split(' ');
     const out = [];
-    for (const s of (S.custom ? S.custom.songs : ALL)) {
+    for (const s of (S.custom ? S.custom.songs : S.daily ? [...new Map([...ALL, ...S.daily.songs].map((s) => [s.slug, s])).values()] : ALL)) {
       if (!toks.every((t) => s.hay.indexOf(t) >= 0)) continue;
       const nt = norm(s.title);
       let sc = 3;
@@ -240,7 +243,7 @@
     // Toko US: sejak katalognya jadi Barat + Asia, cakupannya paling lengkap di sana
     // -- dan sama dengan toko yang dipakai tools/enrich.sh, jadi sampulnya cocok.
     const url = 'https://itunes.apple.com/search?term=' + term + '&entity=song&limit=14&country=US';
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
     if (!res.ok) throw new Error('http ' + res.status);
     const data = JSON.parse(await res.text()); // endpoint balas text/javascript
 
@@ -358,6 +361,7 @@
       };
     }
     S.stages = stages;
+    if (S.daily) saveDaily();
     // Sengaja TIDAK disimpan ke localStorage: sesi hidup di memori saja, jadi
     // muat ulang halaman selalu memulai yang baru. "Change mode" lalu kembali
     // tetap menyambung karena masih satu muatan halaman.
@@ -401,6 +405,7 @@
   async function load() {
     const me = ++S.epoch;
     stopAudio();
+    $('#retrySong').hidden = true;
     buildPool();
 
     if (!S.pool.length) {
@@ -414,13 +419,13 @@
     const cur = S.stages[S.stage];
     let song = cur && cur.slug ? (findSong(cur.slug) || null) : null;
 
-    S.meta = null; S.picked = null; S.loading = true;
+    S.song = null; S.meta = null; S.picked = null; S.loading = true;
     UI.playState('loading');
     UI.status('Loading song…');
     UI.render();
 
     for (let k = 0; k < 5; k++) {
-      const cand = S.challenge ? S.challenge.song : (song || pickSong(k));
+      const cand = S.daily ? S.daily.songs[S.stage] : S.challenge ? S.challenge.song : (song || pickSong(k));
       try {
         const meta = await resolve(cand);
         if (me !== S.epoch) return;             // pemuatan lain sudah menggantikan ini
@@ -449,14 +454,15 @@
         return;
       } catch (e) {
         if (me !== S.epoch) return;
-        if (S.challenge) break; // Never substitute a different challenge song.
+        if (S.challenge || S.daily) break; // Never substitute a different challenge song.
         song = null;                            // kandidat gagal → coba berikutnya
       }
     }
 
     S.loading = false;
     UI.playState('idle');
-    UI.status('Could not load the song. Check your connection and reload.', true);
+    UI.status('Could not load the song. Check your connection and try again.', true);
+    $('#retrySong').hidden = false;
   }
 
   /* ================= alur permainan ================= */
@@ -494,7 +500,7 @@
     // Gagal tidak menghentikan sesi -- tahap berikutnya tetap jalan.
     if (S.stage === STAGES - 1) S.runDone = true;
     saveRun();
-    if (S.runDone) recordStats();
+    if (S.runDone) { if (S.daily) completeDaily(); else recordStats(); }
     UI.render(); UI.clearInput();
     UI.status('');
     S.heard = 0;      // saat terungkap, putar lagunya dari awal
@@ -523,6 +529,7 @@
 
   function newRun() {
     closeAll();
+    if (S.daily) { UI.lobby(); return; }
     S.stages.filter(Boolean).forEach((x) => pushRecent(x.slug));
     S.stages = []; S.stage = 0; S.runDone = false;
     S.guesses = []; S.done = false; S.won = false;
@@ -623,6 +630,47 @@
     box.hidden = false;
   }
 
+  /* ================= daily challenge ================= */
+
+  const dailyKey = (day) => 'tl:daily:v1:' + day;
+  function dailyStreak() { return window.DailyGame.streak(LS.get('tl:daily:completed', [])); }
+  function refreshDaily() {
+    const day = window.DailyGame.day(), saved = LS.get(dailyKey(day));
+    const streak = dailyStreak();
+    $('#dailyDate').textContent = day + ' UTC · New songs in ' + window.DailyGame.remaining();
+    $('#dailyStreak').textContent = 'Streak ' + streak.current + (streak.current === 1 ? ' day · Best ' : ' days · Best ') + streak.best;
+    $('#openDaily').textContent = saved && saved.runDone ? 'View daily result' : saved ? 'Continue daily' : 'Play daily';
+  }
+  function saveDaily() {
+    const key = dailyKey(S.daily.day), saved = LS.get(key);
+    // An already completed result is immutable, including across browser tabs.
+    if (saved && saved.runDone) return;
+    LS.set(key, { stage: S.stage, stages: S.stages, runDone: S.runDone });
+  }
+  function completeDaily() {
+    const completed = LS.get('tl:daily:completed', []);
+    if (!completed.includes(S.daily.day)) LS.set('tl:daily:completed', [...completed, S.daily.day].sort());
+  }
+  async function startDaily() {
+    closeAll();
+    const day = window.DailyGame.day();
+    const songs = window.DailyGame.plan(window.DAILY_POOL_V1, day).map((s) => ({
+      title: s[0], artist: s[1], tier: s[2], region: s[3], genre: s[4], year: s[5], art: s[6],
+      slug: slug(s), hay: norm(s[0] + ' ' + s[1])
+    }));
+    S.daily = { day, songs };
+    S.custom = null; S.challenge = null;
+    switchRun();
+    const saved = window.DailyGame.restore(LS.get(dailyKey(day)), songs.map((s) => s.slug));
+    Object.assign(S, saved || { stage: 0, stages: [], runDone: false });
+    S.song = null; S.meta = null;
+    loadRun();
+    history.replaceState(null, '', location.pathname + location.search + '#daily');
+    UI.clearInput(); UI.game();
+    if (S.runDone) { completeDaily(); UI.render(); UI.status('Daily complete. Come back tomorrow for new songs.'); UI.runResult(); return; }
+    await load();
+  }
+
   /* ================= friend challenge ================= */
 
   async function acceptChallenge() {
@@ -684,7 +732,7 @@
   const blankStats = () => ({ runs: 0, total: 0, best: 0, perfect: 0, dist: [0, 0, 0, 0, 0, 0] });
 
   function recordStats() {
-    if (S.custom || S.challenge) return;   // mode kustom tak masuk statistik harian
+    if (S.custom || S.challenge || S.daily) return;   // mode kustom tak masuk statistik harian
     const st = Object.assign(blankStats(), LS.get(statKey(), {}));
     const sc = score();
     st.runs++;
@@ -775,6 +823,7 @@
       loadRun();
       buildPool();
       this.poolInfo();
+      refreshDaily();
 
       $('#ladderNote').innerHTML = '5 stages · every stage starts with <b>' +
         fmt(LADDER[0]) + '</b> of the intro and opens up to <b>' +
@@ -790,8 +839,8 @@
     lobby() {
       stopAudio();
       $('#challengeIntro').hidden = true;
-      if (S.challenge) history.replaceState(null, '', location.pathname + location.search);
-      if (S.custom || S.challenge) { S.custom = null; S.challenge = null; switchRun(); }   // keluar dari mode kustom, pulihkan sesi katalog
+      if (S.challenge || S.daily) history.replaceState(null, '', location.pathname + location.search);
+      if (S.custom || S.challenge || S.daily) { S.custom = null; S.challenge = null; S.daily = null; switchRun(); }   // keluar dari mode kustom, pulihkan sesi katalog
       S.epoch++;                       // batalkan pemuatan yang masih berjalan
       document.body.removeAttribute('data-diff');   // lobi tak terikat satu kesulitan
       $('#game').hidden = true;
@@ -805,7 +854,7 @@
       $('#challengeIntro').hidden = true;
       $('#game').hidden = false;
       document.body.dataset.diff = S.custom ? 'custom' : ORDER[S.stage];  // warna mewarnai seluruh halaman
-      $('#gameMode').textContent = S.custom ? S.custom.label : [
+      $('#gameMode').textContent = S.daily ? 'Daily · ' + S.daily.day : S.custom ? S.custom.label : [
         S.genre === 'all' ? null : GENRES[S.genre],
         S.era === 'all' ? null : ERAS[S.era].label
       ].filter(Boolean).join(' · ');
@@ -1022,6 +1071,12 @@
       }).join('');
 
       $('#againRun').hidden = false;
+      $('#againRun').textContent = S.daily ? 'Play regular game' : 'Play again';
+      $('#dailyResult').hidden = !S.daily;
+      if (S.daily) {
+        const streak = dailyStreak();
+        $('#dailyResult').textContent = 'Daily Challenge · ' + S.daily.day + ' · Streak ' + streak.current + ' · Best ' + streak.best + '. Next daily in ' + window.DailyGame.remaining() + '.';
+      }
 
       // latar dari sampul lagu terakhir yang berhasil ditebak
       const menang = S.stages.filter((x) => x && x.won);
@@ -1076,6 +1131,9 @@
   }
 
   function shareText() {
+    if (S.daily) return 'Name The Track · Daily Challenge · ' + S.daily.day + '\n' +
+      score() + '/' + STAGES + '\n' + ORDER.map((k, i) => squares((S.stages[i] || {}).guesses || [])).join('\n') +
+      '\nStreak: ' + dailyStreak().current + '\n' + siteUrl() + '#daily';
     const tags = [];
     if (S.custom) tags.push(S.custom.label);
     else {
@@ -1188,8 +1246,14 @@
     [].forEach.call(document.querySelectorAll('.modal'), (m) => m.hidden = true);
   }
 
+  function dismissModal() {
+    const completedDaily = S.daily && S.runDone && !$('#runModal').hidden;
+    closeAll();
+    if (completedDaily) UI.lobby();
+  }
+
   document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal') || e.target.hasAttribute('data-close')) closeAll();
+    if (e.target.classList.contains('modal') || e.target.hasAttribute('data-close')) dismissModal();
   });
 
   let toastT = 0;
@@ -1212,8 +1276,10 @@
     load();
   };
   window.addEventListener('hashchange', () => {
-    if (location.hash.startsWith('#challenge=')) location.reload();
+    if (location.hash.startsWith('#challenge=') || location.hash === '#daily') location.reload();
   });
+  $('#openDaily').onclick = startDaily;
+  $('#retrySong').onclick = () => load();
   $('#acceptChallenge').onclick = acceptChallenge;
   $('#leaveChallenge').onclick = () => { history.replaceState(null, '', location.pathname + location.search); UI.lobby(); };
   $('#back').onclick = () => { closeAll(); UI.lobby(); };
@@ -1275,7 +1341,7 @@
   const inGame = () => !$('#game').hidden;
   document.addEventListener('keydown', (e) => {
     const typing = e.target === UI.q;
-    if (e.key === 'Escape') { closeAll(); return; }
+    if (e.key === 'Escape') { dismissModal(); return; }
     // Dialogs and focused controls keep their native keyboard behavior.
     if (document.querySelector('.modal:not([hidden])') || !$('#challengeIntro').hidden) return;
     if (!typing && e.target.closest('button, input, select, textarea, a')) return;
@@ -1327,7 +1393,7 @@
 
   audio.addEventListener('ended', stopAudio);
   audio.addEventListener('error', () => {
-    if (!S.loading) UI.status('Audio failed to load. Try another song or reload.', true);
+    if (!S.loading) { UI.status('Audio failed to load. Try again.', true); $('#retrySong').hidden = false; }
   });
   document.addEventListener('visibilitychange', () => { if (document.hidden && playing) stopAudio(); });
 
@@ -1337,5 +1403,7 @@
   UI.render();
   UI.lobby();                 // selalu mulai dari layar pilih mode
 
-  if (!showIncomingChallenge() && !LS.get('tl:seen')) { LS.set('tl:seen', 1); setTimeout(() => open($('#helpModal')), 500); }
+  setInterval(() => { if (!$('#lobby').hidden) refreshDaily(); }, 30000);
+  if (location.hash === '#daily') startDaily();
+  else if (!showIncomingChallenge() && !LS.get('tl:seen')) { LS.set('tl:seen', 1); setTimeout(() => open($('#helpModal')), 500); }
 })();

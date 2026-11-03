@@ -305,3 +305,21 @@ pemain yang berbahasa Inggris.
 
 Jalankan `node --test tests/challenge.test.cjs` untuk memeriksa tautan, rekaman yang
 dipilih, hasil perbandingan, pembatalan, dan pemisahan statistik.
+
+## Daily Challenge
+
+Daily memakai pool Western tetap di `daily-pool-v1.js`: jangan ubah isinya saat
+memperbarui katalog mode bebas. Pemilihan lima lagu deterministik per tanggal UTC,
+satu artis berbeda per tahap. Reset global pukul 00.00 UTC (07.00 WIB). Filter genre,
+era, dan riwayat lagu mode bebas tidak memengaruhi Daily. Jika audio tidak tersedia,
+pemain bisa mencoba lagi; lagunya tidak diganti secara acak.
+
+Progres dan hasil Daily disimpan di browser ini. Selesaikan kelima tahap, berapa pun
+skornya, untuk mencatat satu hari streak. Hasil yang selesai tidak dapat diulang pada
+hari yang sama lewat UI. Streak terputus setelah melewatkan satu hari; best tetap ada.
+Jika sesi melewati waktu reset, penyelesaiannya tetap untuk tanggal sesi semula.
+Menghapus data browser menghapus progres dan streak; tidak ada sinkronisasi akun.
+
+Copy result membagikan tanggal, skor, kotak tebakan, streak, dan link `#daily`, tanpa
+judul lagu. Link membuka tantangan hari yang sedang berlaku, bukan arsip tanggal lama.
+Uji semua mode dengan `node --test tests/*.test.cjs`.

@@ -756,3 +756,10 @@ body[data-diff="custom"]{--acc:#3db6f5;--acc-l:#5ec8ff;--acc-d:#1f93d6;--acc-rgb
 
 #challengeIntro{text-align:center}
 .challenge-comparison{max-width:36rem;margin:1.2rem auto 0;line-height:1.5;overflow-wrap:anywhere}
+
+.daily-card{width:100%;max-width:520px;padding:1.2rem;margin:0 0 1.8rem;border:1px solid rgba(var(--acc-rgb),.25);border-radius:20px;background:rgba(var(--acc-rgb),.055);text-align:center}
+.daily-heading h2{margin:0 0 .3rem;font-size:1.25rem;color:var(--ink)}
+.daily-heading span,.daily-card p{font-size:.8rem;color:var(--dim)}
+.daily-card .daily-streak{color:var(--acc);font-weight:700}
+.daily-card .daily-note{font-size:.7rem;line-height:1.5;margin:.8rem 0 0}
+#dailyResult{line-height:1.5;margin:0 0 1rem}
