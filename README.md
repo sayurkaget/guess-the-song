@@ -344,11 +344,11 @@ Bruno Mars untuk Leave the Door Open sama-sama diterima. Kredit featuring dan me
 remaster diabaikan pada judul; live, remix, akustik, dan lagu lain berjudul sama tetap
 dibedakan. Tidak ada permintaan jaringan tambahan saat menjawab.
 
-## Statistik aktivitas pemilik (menunggu konfigurasi)
+## Statistik aktivitas pemilik
 
-`analytics.js` belum mengirim data atau memuat Google Analytics selama meta
-`ga-measurement-id` di `index.html` kosong. Isi dengan Measurement ID GA4 milik pemilik
-(`G-...`) setelah membuat Web data stream untuk `https://namethetrack.netlify.app`.
+`analytics.js` terhubung ke Measurement ID GA4 pemilik `G-T364R8CD1T` melalui meta
+`ga-measurement-id` di `index.html`. Kosongkan meta tersebut untuk menonaktifkan
+pengiriman data dan pemuatan Google Analytics.
 Tracking hanya berjalan di domain produksi. Saat menyiapkan stream, nonaktifkan
 Enhanced Measurement agar form feedback dan perubahan hash tidak dilacak otomatis.
 
@@ -361,5 +361,6 @@ Event yang tersedia di laporan Events / Realtime Google Analytics:
 
 Parameter `game_mode` berisi regular, daily, custom, atau challenge. Daftarkan sebagai
 custom dimension di GA4 untuk memecah laporan berdasarkan mode. Kode event tidak
-mengirim judul/tebakan, kata pencarian, email, atau isi feedback. Pengumpulan belum
-aktif dan dashboard belum terhubung sampai ID dipasang; data tidak berlaku surut.
+mengirim judul/tebakan, kata pencarian, email, atau isi feedback. Pengumpulan dimulai
+setelah konfigurasi ini diterbitkan; data tidak berlaku surut. Penerimaan data dapat
+diperiksa di laporan Realtime setelah bermain di website produksi.
