@@ -763,3 +763,17 @@ body[data-diff="custom"]{--acc:#3db6f5;--acc-l:#5ec8ff;--acc-d:#1f93d6;--acc-rgb
 .daily-card .daily-streak{color:var(--acc);font-weight:700}
 .daily-card .daily-note{font-size:.7rem;line-height:1.5;margin:.8rem 0 0}
 #dailyResult{line-height:1.5;margin:0 0 1rem}
+
+.feedback-link{margin-left:auto;min-height:44px;padding:.5rem .75rem;background:transparent;color:var(--dim);font:inherit;font-size:.8rem;border:0;cursor:pointer}
+.feedback-link:hover{color:var(--acc)}
+.feedback-sheet h2{margin-top:0}
+.feedback-sheet fieldset{border:0;padding:0;margin:0;min-width:0}
+.feedback-sheet label{display:block;margin:1rem 0 .4rem;font-size:.85rem;font-weight:600}
+.feedback-sheet label span,.feedback-note{color:var(--dim);font-weight:400;font-size:.75rem}
+.feedback-sheet input:not([type=hidden]),.feedback-sheet select,.feedback-sheet textarea{box-sizing:border-box;display:block;width:100%;border:1px solid var(--line);border-radius:10px;padding:.75rem;background:#0b2116;color:var(--ink);font:inherit;font-size:1rem}
+.feedback-sheet textarea{resize:vertical;min-height:70px}
+.feedback-sheet :is(input,select,textarea):focus{outline:2px solid var(--acc);outline-offset:2px}
+.feedback-note{line-height:1.5;margin:.8rem 0 1rem}
+#feedbackStatus{font-size:.85rem;line-height:1.5;overflow-wrap:anywhere}
+.feedback-success{color:var(--acc)}
+.feedback-error{color:var(--bad)}

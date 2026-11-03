@@ -325,3 +325,13 @@ Menghapus data browser menghapus progres dan streak; tidak ada sinkronisasi akun
 Copy result membagikan tanggal, skor, kotak tebakan, streak, dan link `#daily`, tanpa
 judul lagu. Link membuka tantangan hari yang sedang berlaku, bukan arsip tanggal lama.
 Uji semua mode dengan `node --test tests/*.test.cjs`.
+
+## Feedback
+
+Tombol Feedback di footer membuka form pribadi: kategori, pesan, email opsional, dan
+detail game opsional yang dapat diedit. Judul lagu hanya diisi setelah ronde selesai.
+Pengiriman melalui Netlify Forms (`player-feedback`) dan memakai honeypot spam.
+Aktifkan **Forms → Enable form detection** di dashboard Netlify, lalu redeploy jika
+form belum terdeteksi. Lihat kiriman di **Forms → player-feedback**, termasuk folder
+spam bila perlu. Tidak ada login pemain, komentar publik, atau pengiriman email otomatis.
+Kegagalan pengiriman mempertahankan isi form agar bisa dicoba lagi.

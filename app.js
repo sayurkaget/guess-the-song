@@ -1293,6 +1293,15 @@
   $('#openCustom').onclick = openCustom;
   $('#openStats').onclick = () => { closeAll(); UI.stats(); };
   $('#openHelp').onclick = () => { closeAll(); open($('#helpModal')); };
+  $('#openFeedback').onclick = () => {
+    stopAudio();
+    const details = [S.daily ? 'Mode: Daily ' + S.daily.day : S.challenge ? 'Mode: Friend challenge' :
+      S.custom ? 'Mode: Custom artist — ' + S.custom.label : 'Mode: Free play',
+      !$('#game').hidden && !S.daily && !S.challenge ? 'Stage: ' + D().label : '',
+      S.done && S.meta ? 'Song: ' + S.meta.title + ' — ' + S.meta.artist : ''].filter(Boolean).join('\n');
+    closeAll();
+    window.PlayerFeedback.open(details);
+  };
   let artistT = 0, artistReq = 0;
   $('#artistQ').addEventListener('input', () => {
     const v = $('#artistQ').value.trim();

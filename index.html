@@ -135,6 +135,7 @@
       </button>
       <input id="volume" type="range" min="0" max="100" value="80" aria-label="Volume">
     </div>
+    <button class="feedback-link" id="openFeedback" type="button" aria-haspopup="dialog" aria-controls="feedbackModal">Feedback</button>
   </footer>
 </main>
 
@@ -248,12 +249,42 @@
   </div>
 </div>
 
+<div class="modal" id="feedbackModal" hidden>
+  <div class="sheet feedback-sheet" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+    <button class="x" data-close aria-label="Close" type="button">&times;</button>
+    <h2 id="feedbackTitle">Send feedback</h2>
+    <p class="dim">Found a bug, missing a song, or have an idea? Let us know.</p>
+    <form name="player-feedback" id="feedbackForm" method="POST" action="/feedback-received.html" data-netlify="true" netlify-honeypot="bot-field">
+      <input type="hidden" name="form-name" value="player-feedback">
+      <p hidden><label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
+      <fieldset id="feedbackFields">
+        <label for="feedbackCategory">Category</label>
+        <select id="feedbackCategory" name="category" required>
+          <option value="bug">Report a bug</option>
+          <option value="song">Suggest a song</option>
+          <option value="other">Other feedback</option>
+        </select>
+        <label for="feedbackMessage">Message</label>
+        <textarea id="feedbackMessage" name="message" rows="4" minlength="5" maxlength="3000" placeholder="What happened, or what would you like to see?" required></textarea>
+        <label for="feedbackEmail">Email <span>(optional, if you'd like a reply)</span></label>
+        <input id="feedbackEmail" name="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com">
+        <label for="feedbackDetails">Game details <span>(optional)</span></label>
+        <textarea id="feedbackDetails" name="game-details" rows="2" maxlength="600" placeholder="Mode, song, or device details"></textarea>
+        <p class="feedback-note">Your message and any details you include go privately to the site owner.</p>
+        <button class="btn solid" id="sendFeedback" type="submit">Send feedback</button>
+      </fieldset>
+      <p id="feedbackStatus" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+</div>
+
 <div class="toast" id="toast" hidden></div>
 
 <script src="songs.js"></script>
 <script src="daily-pool-v1.js"></script>
 <script src="daily.js"></script>
 <script src="challenge.js"></script>
+<script src="feedback.js"></script>
 <script src="app.js"></script>
 <script>
   // Service worker hanya jalan di HTTPS (atau localhost). Di alamat LAN biasa
