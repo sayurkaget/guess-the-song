@@ -5,13 +5,14 @@
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v11-feedback';
+const CACHE = 'gts-v12-song-answers';
 const SHELL = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './feedback.js',
+  './analytics.js',
   './challenge.js',
   './daily.js',
   './daily-pool-v1.js',

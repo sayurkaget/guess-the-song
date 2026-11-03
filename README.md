@@ -335,3 +335,31 @@ Aktifkan **Forms → Enable form detection** di dashboard Netlify, lalu redeploy
 form belum terdeteksi. Lihat kiriman di **Forms → player-feedback**, termasuk folder
 spam bila perlu. Tidak ada login pemain, komentar publik, atau pengiriman email otomatis.
 Kegagalan pengiriman mempertahankan isi form agar bisa dicoba lagi.
+
+## Jawaban lagu duplikat
+
+Jawaban dibandingkan memakai judul dan kredit artis katalog serta rekaman iTunes,
+bukan slug saja. Pilihan Rihanna / Calvin Harris untuk We Found Love dan Silk Sonic /
+Bruno Mars untuk Leave the Door Open sama-sama diterima. Kredit featuring dan metadata
+remaster diabaikan pada judul; live, remix, akustik, dan lagu lain berjudul sama tetap
+dibedakan. Tidak ada permintaan jaringan tambahan saat menjawab.
+
+## Statistik aktivitas pemilik (menunggu konfigurasi)
+
+`analytics.js` belum mengirim data atau memuat Google Analytics selama meta
+`ga-measurement-id` di `index.html` kosong. Isi dengan Measurement ID GA4 milik pemilik
+(`G-...`) setelah membuat Web data stream untuk `https://namethetrack.netlify.app`.
+Tracking hanya berjalan di domain produksi. Saat menyiapkan stream, nonaktifkan
+Enhanced Measurement agar form feedback dan perubahan hash tidak dilacak otomatis.
+
+Event yang tersedia di laporan Events / Realtime Google Analytics:
+- `game_start`: lagu pertama berhasil dimuat dalam sesi baru; resume tidak dihitung lagi.
+- `custom_start`: sesi artis kustom berhasil dimulai (bagian dari game_start).
+- `daily_complete`: Daily selesai; parameter result won/lost dan attempts 1–5.
+- `challenge_copy`: tautan tantangan berhasil disalin, bukan bukti pesan terkirim.
+- `result_copy`: hasil sesi/Daily berhasil disalin.
+
+Parameter `game_mode` berisi regular, daily, custom, atau challenge. Daftarkan sebagai
+custom dimension di GA4 untuk memecah laporan berdasarkan mode. Kode event tidak
+mengirim judul/tebakan, kata pencarian, email, atau isi feedback. Pengumpulan belum
+aktif dan dashboard belum terhubung sampai ID dipasang; data tidak berlaku surut.

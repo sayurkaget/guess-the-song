@@ -60,6 +60,51 @@
 
   const slug = (s) => norm(s[0] + ' ' + s[1]).replace(/ /g, '-');
 
+  // Identitas jawaban terpisah dari slug pencarian. Kredit kolaborasi dan
+  // remaster dapat berbeda antaralbum, tetapi live/remix tetap versi berbeda.
+  function recordingTitle(title) {
+    return (title || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
+      .replace(/[([]\s*(?:feat\.?|ft\.?|featuring|with)\s+[^)\]]*[)\]]/gi, ' ')
+      .replace(/\s+(?:feat\.?|ft\.?|featuring)\s+.*$/i, ' ')
+      .replace(/[([]\s*(?:\d{4}\s+)?remaster(?:ed)?(?:\s+\d{4})?\s*[)\]]/gi, ' ')
+      .replace(/\s*-\s*(?:\d{4}\s+)?remaster(?:ed)?(?:\s+\d{4})?\s*$/i, ' ')
+      .replace(/['’ʼ`´]/g, '').replace(/\$/g, 's')
+      .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  }
+
+  function songArtists(song) {
+    const artistKey = (name) => name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
+      .replace(/['’ʼ`´]/g, '').replace(/\$/g, 's').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    const credits = [song.artist || ''];
+    const featured = /\b(?:feat\.?|ft\.?|featuring|with)\s+([^()[\]]+)/gi;
+    for (const match of (song.title || '').matchAll(featured)) credits.push(match[1]);
+    const keys = new Set();
+    for (const credit of credits) {
+      // Keep the full name too (e.g. Earth, Wind & Fire).
+      keys.add(artistKey(credit));
+      for (const name of credit.split(/\s*(?:,|&|\b(?:featuring|feat|ft)\b\.?|\bwith\b|\band\b)\s*/i)) {
+        const key = artistKey(name);
+        if (key) keys.add(key);
+      }
+    }
+    keys.delete('');
+    return keys;
+  }
+
+  function sameRecording(a, b) {
+    if (!a || !b) return false;
+    if (a.trackId && b.trackId && String(a.trackId) === String(b.trackId)) return true;
+    const title = recordingTitle(a.title);
+    if (!title || title !== recordingTitle(b.title)) return false;
+    const artists = songArtists(a);
+    return [...songArtists(b)].some((artist) => artists.has(artist));
+  }
+
+  function correctAnswer(pick) {
+    return [pick, pick.pre].filter(Boolean).some((candidate) =>
+      [S.song, S.meta].some((target) => sameRecording(candidate, target)));
+  }
+
   function hash(str) {
     let h = 2166136261;
     for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -126,6 +171,11 @@
   const limit   = () => ladder()[step()];
   const stageCount = () => S.daily ? 1 : STAGES;
   const score   = () => S.stages.filter((x) => x && x.won).length;
+  const gameMode = () => S.daily ? 'daily' : S.challenge ? 'challenge' : S.custom ? 'custom' : 'regular';
+  function trackActivity(name, details = {}) {
+    // Analytics must never interrupt a game (including with blockers enabled).
+    try { window.PlayerAnalytics?.event(name, { mode: gameMode(), ...details }); } catch (e) {}
+  }
 
   /* ================= katalog & pencarian ================= */
 
@@ -447,6 +497,10 @@
         S.startAt = 0;
         S.heard = 0;          // sudah terdengar sampai detik ke berapa
 
+        if (S.stage === 0 && !cur) {
+          trackActivity('game_start');
+          if (S.custom && !S.challenge) trackActivity('custom_start');
+        }
         saveRun();
         UI.playState('idle');
         UI.status(S.done ? '' : 'Ready. Hit play for the first ' + fmt(limit()) + '.');
@@ -470,7 +524,7 @@
 
   function submitGuess(pick) {
     if (S.done || !S.song) return;
-    const right = pick.slug === S.song.slug;
+    const right = correctAnswer(pick);
     const near = !right && !S.custom && norm(pick.artist) === norm(S.song.artist);
     S.guesses.push({ t: right ? 'right' : (near ? 'near' : 'wrong'), title: pick.title, artist: pick.artist });
     if (right) return finish(true);
@@ -501,6 +555,7 @@
     // Gagal tidak menghentikan sesi -- tahap berikutnya tetap jalan.
     if (S.stage === stageCount() - 1) S.runDone = true;
     saveRun();
+    if (S.daily) trackActivity('daily_complete', { won, attempts: S.guesses.length });
     if (S.runDone) { if (S.daily) completeDaily(); else recordStats(); }
     UI.render(); UI.clearInput();
     UI.status('');
@@ -1325,7 +1380,7 @@
     if (b) startCustom(b.dataset.id, b.dataset.name);
   });
   $('#shareStage').onclick = () => {
-    try { salin(shareStage()); }
+    try { salin(shareStage(), 'challenge_copy'); }
     catch (e) { toast('This recording cannot be shared right now. Try another song.'); }
   };
   UI.skipBtn.onclick = () => { if (S.done) UI.result(); else skip(); };
@@ -1388,20 +1443,25 @@
     toast('Stats reset');
   };
 
-  async function salin(txt) {
+  async function salin(txt, eventName) {
+    const mode = gameMode();
+    let copied = false;
     try {
       await navigator.clipboard.writeText(txt);
-      toast('Copied — paste it to a friend');
+      copied = true;
     } catch (e) {
       const ta = el('textarea');
       ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
       document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); toast('Copied — paste it to a friend'); }
-      catch (e2) { toast('Copy failed'); }
+      try { copied = document.execCommand('copy'); }
+      catch (e2) { /* Show failure below. */ }
       ta.remove();
     }
+    toast(copied ? 'Copied — paste it to a friend' : 'Copy failed');
+    if (copied && eventName) trackActivity(eventName, { mode });
+    return copied;
   }
-  $('#share').onclick = () => salin(shareText());
+  $('#share').onclick = () => salin(shareText(), 'result_copy');
 
   audio.addEventListener('ended', stopAudio);
   audio.addEventListener('error', () => {

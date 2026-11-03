@@ -25,6 +25,19 @@ function setup(hash='', initialSaved=new Map()) {
   return {context,t:context.test,C:context.window.TrackChallenge,nodes,saved};
 }
 
+test('daily analytics counts first load and completion, but not resume or result reopening',async()=>{
+ const {t,context,saved}=setup();const events=[];
+ context.window.PlayerAnalytics={event:(name,data)=>events.push({name,data})};
+ await t.startDaily();await t.startDaily();
+ assert.equal(events.filter(e=>e.name==='game_start').length,1);
+ t.submitGuess(t.S.song);t.submitGuess(t.S.song);
+ assert.equal(events.filter(e=>e.name==='daily_complete').length,1);
+ const complete=events.find(e=>e.name==='daily_complete');assert.equal(complete.data.attempts,1);assert.equal(complete.data.won,true);
+ const resumed=setup('',saved);const reopened=[];
+ resumed.context.window.PlayerAnalytics={event:name=>reopened.push(name)};
+ await resumed.t.startDaily();assert.equal(reopened.length,0);
+});
+
 test('same daily date yields one identical song regardless of pool order',()=>{
  const {context}=setup();const D=context.window.DailyGame,pool=context.window.DAILY_POOL_V1;
  const a=D.plan(pool,'2026-11-03'),b=D.plan(pool.slice().reverse(),'2026-11-03');
