@@ -18,18 +18,18 @@ function setup(hash='', initialSaved=new Map()) {
   });
   for (const file of ['challenge.js','daily.js','daily-pool-v1.js']) vm.runInContext(read(file),context);
   const source=read('app.js').split('  /* ================= event ================= */')[0]+
-    '\nglobalThis.test={S,UI,acceptChallenge,showIncomingChallenge,shareStage,searchIndex,recordStats,submitGuess,skip,nextStage,load,startDaily,shareText,saveRun,completeDaily,dismissModal};})();';
+    '\nglobalThis.test={S,UI,acceptChallenge,showIncomingChallenge,shareStage,searchIndex,recordStats,submitGuess,skip,nextStage,load,startDaily,shareText,saveRun,completeDaily,dismissModal,stageCount};})();';
   vm.runInContext(source,context);
   for(const key of ['head','playState','readout','render','clearInput','buildControls','refreshLobby','autoplay','runResult'])context.test.UI[key]=()=>{};
   context.fetch=async()=>{const s=context.test.S.daily.songs[context.test.S.stage];return {ok:true,text:async()=>JSON.stringify({results:[{...track,trackId:100+context.test.S.stage,trackName:s.title,artistName:s.artist}]})}};
   return {context,t:context.test,C:context.window.TrackChallenge,nodes,saved};
 }
 
-test('same daily date yields identical five songs regardless of pool order',()=>{
+test('same daily date yields one identical song regardless of pool order',()=>{
  const {context}=setup();const D=context.window.DailyGame,pool=context.window.DAILY_POOL_V1;
  const a=D.plan(pool,'2026-11-03'),b=D.plan(pool.slice().reverse(),'2026-11-03');
- assert.equal(JSON.stringify(a),JSON.stringify(b));assert.equal(new Set(a.map(r=>r[1])).size,5);
- assert.equal(JSON.stringify(a.map(r=>r[2])), '[1,2,3,4,5]');
+ assert.equal(JSON.stringify(a),JSON.stringify(b));assert.equal(a.length,1);
+ assert.ok(a[0][2]>=1 && a[0][2]<=5);
  assert.equal(D.day(new Date(2026,10,3,6,59,59)),'2026-11-02');
  assert.equal(D.day(new Date(2026,10,3,7,0,0)),'2026-11-03');
  assert.notEqual(JSON.stringify(a),JSON.stringify(D.plan(pool,'2026-11-04')));
@@ -51,20 +51,20 @@ test('daily ignores free-play filters, resumes guesses after refresh, and restor
  second.t.UI.lobby();assert.equal(second.t.S.daily,null);assert.equal(second.t.S.guesses.length,0);
  assert.ok(![...second.saved.keys()].some(k=>k.startsWith('tl:stats:')));
 });
-test('completing all five stages earns one streak day, locks result, and shares no titles',async()=>{
+test('completing one daily song earns one streak day, locks result, and shares no titles',async()=>{
  const {t,saved,context}=setup();await t.startDaily();
  const titles=t.S.daily.songs.map(s=>s.title),day=t.S.daily.day;
- for(let stage=0;stage<5;stage++){
-  for(let guess=0;guess<5;guess++)t.skip();
-  if(stage<4){t.nextStage();await new Promise(setImmediate);}
- }
+ assert.equal(t.stageCount(),1);
+ for(let guess=0;guess<5;guess++)t.skip();
+ assert.equal(t.S.stages.length,1);
+ t.nextStage();assert.equal(t.S.stage,0);
  assert.equal(t.S.runDone,true);
  assert.equal(JSON.parse(saved.get('tl:daily:completed')).length,1);
  const text=t.shareText();assert.ok(text.includes(day));assert.ok(text.endsWith('#daily'));
  for(const title of titles)assert.ok(!text.includes(title));
  t.completeDaily();assert.equal(JSON.parse(saved.get('tl:daily:completed')).length,1);
- const before=saved.get('tl:daily:v1:'+day);t.S.guesses=[];t.S.done=false;t.saveRun();
- assert.equal(saved.get('tl:daily:v1:'+day),before);
+ const before=saved.get('tl:daily:v2:'+day);t.S.guesses=[];t.S.done=false;t.saveRun();
+ assert.equal(saved.get('tl:daily:v2:'+day),before);
  await t.startDaily();assert.equal(t.S.runDone,true);
  assert.equal(context.window.DailyGame.streak(JSON.parse(saved.get('tl:daily:completed'))).current,1);
 });
@@ -85,4 +85,19 @@ test('corrupt saved state is rejected',()=>{
 test('closing a completed daily result returns to the regular lobby',async()=>{
  const {t,nodes}=setup();await t.startDaily();t.S.runDone=true;
  nodes.set('#runModal',{hidden:false});t.dismissModal();assert.equal(t.S.daily,null);
+});
+
+test('a correct first guess immediately completes Daily; free play stays five stages',async()=>{
+ const {t}=setup();assert.equal(t.stageCount(),5);await t.startDaily();
+ t.submitGuess(t.S.song);assert.equal(t.S.runDone,true);assert.equal(t.S.stages.length,1);
+ assert.match(t.shareText(),/Guessed in 0.1s/);assert.ok(!t.shareText().includes('/5'));
+ t.UI.lobby();assert.equal(t.stageCount(),5);
+});
+test('old five-stage Daily migrates the matching song without losing streak history',async()=>{
+ const first=setup();await first.t.startDaily();const day=first.t.S.daily.day, song=first.t.S.song;
+ const record={slug:song.slug,title:song.title,artist:song.artist,guesses:[{t:'right'}],done:true,won:true};
+ const saved=new Map([['tl:daily:v1:'+day,JSON.stringify({stage:4,stages:[{slug:'other',guesses:[]},record],runDone:true})],['tl:daily:completed',JSON.stringify([day])]]);
+ const second=setup('',saved);await second.t.startDaily();
+ assert.equal(second.t.S.stage,0);assert.equal(second.t.S.stages.length,1);assert.equal(second.t.S.runDone,true);
+ assert.equal(JSON.parse(saved.get('tl:daily:completed')).length,1);assert.ok(saved.has('tl:daily:v2:'+day));
 });

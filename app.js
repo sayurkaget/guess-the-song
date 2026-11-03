@@ -124,6 +124,7 @@
   const maxLen  = () => ladder()[TRIES - 1];
   const step    = () => Math.min(S.guesses.length, TRIES - 1);
   const limit   = () => ladder()[step()];
+  const stageCount = () => S.daily ? 1 : STAGES;
   const score   = () => S.stages.filter((x) => x && x.won).length;
 
   /* ================= katalog & pencarian ================= */
@@ -498,7 +499,7 @@
     S.done = true; S.won = won;
     stopAudio();
     // Gagal tidak menghentikan sesi -- tahap berikutnya tetap jalan.
-    if (S.stage === STAGES - 1) S.runDone = true;
+    if (S.stage === stageCount() - 1) S.runDone = true;
     saveRun();
     if (S.runDone) { if (S.daily) completeDaily(); else recordStats(); }
     UI.render(); UI.clearInput();
@@ -515,7 +516,7 @@
   function nextStage() {
     closeAll();
     if (S.challenge) { UI.lobby(); return; }
-    if (S.stage >= STAGES - 1) { UI.runResult(); return; }
+    if (S.stage >= stageCount() - 1) { UI.runResult(); return; }
     S.stage++;
     const cur = S.stages[S.stage];
     S.guesses = (cur && cur.guesses) || [];
@@ -632,12 +633,12 @@
 
   /* ================= daily challenge ================= */
 
-  const dailyKey = (day) => 'tl:daily:v1:' + day;
+  const dailyKey = (day) => 'tl:daily:v2:' + day;
   function dailyStreak() { return window.DailyGame.streak(LS.get('tl:daily:completed', [])); }
   function refreshDaily() {
-    const day = window.DailyGame.day(), saved = LS.get(dailyKey(day));
+    const day = window.DailyGame.day(), saved = LS.get(dailyKey(day)) || LS.get('tl:daily:v1:' + day);
     const streak = dailyStreak();
-    $('#dailyDate').textContent = day + ' · New songs in ' + window.DailyGame.remaining();
+    $('#dailyDate').textContent = day + ' · New song in ' + window.DailyGame.remaining();
     $('#dailyStreak').textContent = 'Streak ' + streak.current + (streak.current === 1 ? ' day · Best ' : ' days · Best ') + streak.best;
     $('#openDaily').textContent = saved && saved.runDone ? 'View daily result' : saved ? 'Continue daily' : 'Play daily';
   }
@@ -661,13 +662,13 @@
     S.daily = { day, songs };
     S.custom = null; S.challenge = null;
     switchRun();
-    const saved = window.DailyGame.restore(LS.get(dailyKey(day)), songs.map((s) => s.slug));
+    const saved = window.DailyGame.restore(LS.get(dailyKey(day)) || LS.get('tl:daily:v1:' + day), songs.map((s) => s.slug));
     Object.assign(S, saved || { stage: 0, stages: [], runDone: false });
     S.song = null; S.meta = null;
     loadRun();
     history.replaceState(null, '', location.pathname + location.search + '#daily');
     UI.clearInput(); UI.game();
-    if (S.runDone) { completeDaily(); UI.render(); UI.status('Daily complete. Come back tomorrow for new songs.'); UI.runResult(); return; }
+    if (S.runDone) { saveDaily(); completeDaily(); UI.render(); UI.status('Daily complete. Come back tomorrow for a new song.'); UI.runResult(); return; }
     await load();
   }
 
@@ -777,8 +778,8 @@
     /* --- rangkaian tahap --- */
     steps(host, live) {
       host.innerHTML = '';
-      host.hidden = !!S.challenge;
-      if (S.challenge) return;
+      host.hidden = !!(S.challenge || S.daily);
+      if (S.challenge || S.daily) return;
       ORDER.forEach((k, i) => {
         if (i) { const a = el('li', 'arrow'); a.textContent = '›'; host.appendChild(a); }
         const li = el('li');
@@ -860,7 +861,7 @@
       ].filter(Boolean).join(' · ');
       $('#gameMode').hidden = !$('#gameMode').textContent;
       this.steps($('#steps'), true);
-      $('#stageNow').innerHTML = S.challenge
+      $('#stageNow').innerHTML = S.daily ? 'One song · <b>5 tries</b>' : S.challenge
         ? 'Friend challenge · Your friend ' + window.TrackChallenge.describe(S.challenge.result)
         : S.custom
         ? 'Song <b>' + (S.stage + 1) + '</b> of ' + STAGES + ' · <b>' + esc(S.custom.label) + '</b>'
@@ -995,7 +996,7 @@
       const n = S.guesses.length;
 
       $('#resultModal .reveal').className = 'reveal ' + (S.won ? 'win' : 'lose');
-      $('#ghostStage').textContent = (S.custom ? S.custom.label : D().label).toLowerCase();
+      $('#ghostStage').textContent = (S.daily ? 'Daily' : S.custom ? S.custom.label : D().label).toLowerCase();
 
       // Label kecil di atas judul: menang -> pujian, kalah -> "it was_"
       $('#verdict').textContent = S.won
@@ -1028,7 +1029,7 @@
       const link = $('#listen');
       if (m.link) { link.href = m.link; link.hidden = false; } else link.hidden = true;
 
-      $('#next').textContent = S.challenge ? 'Play regular game' : (S.stage >= STAGES - 1 ? 'See result' : 'Next');
+      $('#next').textContent = S.challenge ? 'Play regular game' : (S.daily ? 'Daily result' : S.stage >= STAGES - 1 ? 'See result' : 'Next');
       const comparison = $('#challengeComparison');
       comparison.hidden = !S.challenge;
       comparison.textContent = S.challenge
@@ -1046,14 +1047,16 @@
       document.body.removeAttribute('data-diff');   // rangkuman lintas kelima kesulitan
       const sc = score();
       const v = $('#runVerdict');
-      v.className = 'verdict ' + (sc >= 3 ? 'win' : 'lose');
+      v.className = 'verdict ' + (sc >= (S.daily ? 1 : 3) ? 'win' : 'lose');
       v.textContent = ['Zero. Try again tomorrow.', 'One down.', 'Not bad.',
                        'Nice run!', 'So close to perfect!', 'Perfect. Every stage.'][sc];
+      if (S.daily) v.textContent = sc ? 'Daily solved!' : 'New song tomorrow.';
       $('#runScore').textContent = sc;
+      $('#runScoreLabel').textContent = S.daily ? '/1 song' : '/5 stages';
 
-      $('#runList').innerHTML = ORDER.map((k, i) => {
+      $('#runList').innerHTML = ORDER.slice(0, stageCount()).map((k, i) => {
         const r = S.stages[i];
-        const lvl = '<span class="lvl">' + DIFFS[k].label + '</span>';
+        const lvl = '<span class="lvl">' + (S.daily ? 'Daily' : DIFFS[k].label) + '</span>';
         if (!r || !r.done) {
           return '<li class="kosong"><span class="thumb ph"></span>' +
                  '<span class="txt">' + lvl + '<b>Not played</b></span></li>';
@@ -1087,7 +1090,7 @@
       else bgr.classList.remove('on');
 
       open($('#runModal'));
-      confetti('#runConfetti', sc >= 3 ? 'win' : 'lose');
+      confetti('#runConfetti', sc >= (S.daily ? 1 : 3) ? 'win' : 'lose');
     },
 
     // Begitu tebakan benar, langsung putar lagunya. Dipanggil dari dalam
@@ -1132,7 +1135,7 @@
 
   function shareText() {
     if (S.daily) return 'Name The Track · Daily Challenge · ' + S.daily.day + '\n' +
-      score() + '/' + STAGES + '\n' + ORDER.map((k, i) => squares((S.stages[i] || {}).guesses || [])).join('\n') +
+      (S.stages[0] && S.stages[0].won ? 'Guessed in ' + fmt(LADDER[S.stages[0].guesses.findIndex((g) => g.t === 'right')]) : 'Missed') + '\n' + squares((S.stages[0] || {}).guesses || []) +
       '\nStreak: ' + dailyStreak().current + '\n' + siteUrl() + '#daily';
     const tags = [];
     if (S.custom) tags.push(S.custom.label);

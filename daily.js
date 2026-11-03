@@ -31,7 +31,8 @@
       if (!picked) throw new Error('Daily pool needs five distinct artists');
       chosen.push(picked); artists.add(picked[1]);
     }
-    return chosen;
+    // Keep the established date schedule, selecting one of its five tracks.
+    return [chosen[hash('daily-single|' + date) % chosen.length]];
   }
   function streak(completed, today = day()) {
     const dates = [...new Set(completed)].filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && d <= today).sort();
@@ -43,16 +44,15 @@
     return { current, best };
   }
   function restore(value, slugs) {
-    if (!value || !Array.isArray(value.stages) || !Number.isInteger(value.stage) || value.stage < 0 || value.stage > 4) return null;
-    const stages = value.stages.slice(0, 5);
-    for (let i = 0; i < stages.length; i++) {
-      const r = stages[i];
-      if (!r) continue;
-      if (r.slug !== slugs[i] || !Array.isArray(r.guesses) || r.guesses.length > 5 ||
-          r.guesses.some((g) => !g || !['right','wrong','near','skip'].includes(g.t))) return null;
-    }
-    const runDone = stages.length === 5 && stages.every((r) => r && r.done);
-    return { stages, stage: value.stage, runDone };
+    if (!value || !Array.isArray(value.stages) || slugs.length !== 1) return null;
+    // Migrate the matching song from the old five-stage Daily, if already played.
+    const r = value.stages.find((record) => record && record.slug === slugs[0]);
+    if (!r) return null;
+    if (!Array.isArray(r.guesses) || r.guesses.length > 5 ||
+        r.guesses.some((g) => !g || !['right','wrong','near','skip'].includes(g.t))) return null;
+    const won = r.guesses.some((g) => g.t === 'right');
+    const done = won || r.guesses.length === 5;
+    return { stages: [{ ...r, won, done }], stage: 0, runDone: done };
   }
   function remaining(now = new Date()) {
     const seconds = Math.ceil((nextReset(now).getTime() - now.getTime()) / 1000);

@@ -309,16 +309,15 @@ dipilih, hasil perbandingan, pembatalan, dan pemisahan statistik.
 ## Daily Challenge
 
 Daily memakai pool Western tetap di `daily-pool-v1.js`: jangan ubah isinya saat
-memperbarui katalog mode bebas. Pemilihan lima lagu deterministik per tanggal Daily,
-satu artis berbeda per tahap. Reset pukul 07.00 pagi mengikuti zona waktu perangkat
+memperbarui katalog mode bebas. Satu lagu dipilih deterministik per tanggal Daily. Reset pukul 07.00 pagi mengikuti zona waktu perangkat
 pemain (termasuk perubahan daylight saving). Sebelum pukul 07.00, tanggal Daily
-masih tanggal sebelumnya. Tanggal Daily yang sama memakai lagu yang sama, walau
+masih tanggal sebelumnya. Tanggal Daily yang sama memakai satu lagu yang sama, walau
 pergantian hari terjadi pada waktu berbeda antarzona. Filter genre,
 era, dan riwayat lagu mode bebas tidak memengaruhi Daily. Jika audio tidak tersedia,
 pemain bisa mencoba lagi; lagunya tidak diganti secara acak.
 
-Progres dan hasil Daily disimpan di browser ini. Selesaikan kelima tahap, berapa pun
-skornya, untuk mencatat satu hari streak. Hasil yang selesai tidak dapat diulang pada
+Progres dan hasil Daily disimpan di browser ini. Progres lagu yang sama dari versi
+lima tahap dipulihkan otomatis, dan riwayat streak tetap dipertahankan. Selesaikan satu ronde (menang atau kalah) untuk mencatat satu hari streak. Hasil yang selesai tidak dapat diulang pada
 hari yang sama lewat UI. Streak terputus setelah melewatkan satu hari; best tetap ada.
 Jika sesi melewati waktu reset, penyelesaiannya tetap untuk tanggal sesi semula.
 Menghapus data browser menghapus progres dan streak; tidak ada sinkronisasi akun.
