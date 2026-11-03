@@ -637,7 +637,7 @@
   function refreshDaily() {
     const day = window.DailyGame.day(), saved = LS.get(dailyKey(day));
     const streak = dailyStreak();
-    $('#dailyDate').textContent = day + ' UTC · New songs in ' + window.DailyGame.remaining();
+    $('#dailyDate').textContent = day + ' · New songs in ' + window.DailyGame.remaining();
     $('#dailyStreak').textContent = 'Streak ' + streak.current + (streak.current === 1 ? ' day · Best ' : ' days · Best ') + streak.best;
     $('#openDaily').textContent = saved && saved.runDone ? 'View daily result' : saved ? 'Continue daily' : 'Play daily';
   }

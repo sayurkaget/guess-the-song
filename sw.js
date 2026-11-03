@@ -5,7 +5,7 @@
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v8-daily';
+const CACHE = 'gts-v9-local-daily';
 const SHELL = [
   './',
   './index.html',

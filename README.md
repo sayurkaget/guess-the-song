@@ -309,8 +309,11 @@ dipilih, hasil perbandingan, pembatalan, dan pemisahan statistik.
 ## Daily Challenge
 
 Daily memakai pool Western tetap di `daily-pool-v1.js`: jangan ubah isinya saat
-memperbarui katalog mode bebas. Pemilihan lima lagu deterministik per tanggal UTC,
-satu artis berbeda per tahap. Reset global pukul 00.00 UTC (07.00 WIB). Filter genre,
+memperbarui katalog mode bebas. Pemilihan lima lagu deterministik per tanggal Daily,
+satu artis berbeda per tahap. Reset pukul 07.00 pagi mengikuti zona waktu perangkat
+pemain (termasuk perubahan daylight saving). Sebelum pukul 07.00, tanggal Daily
+masih tanggal sebelumnya. Tanggal Daily yang sama memakai lagu yang sama, walau
+pergantian hari terjadi pada waktu berbeda antarzona. Filter genre,
 era, dan riwayat lagu mode bebas tidak memengaruhi Daily. Jika audio tidak tersedia,
 pemain bisa mencoba lagi; lagunya tidak diganti secara acak.
 

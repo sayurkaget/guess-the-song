@@ -1,9 +1,20 @@
-/* Daily schedule uses a single UTC day for all players. */
+/* Daily resets at 07:00 in the player device timezone, including DST changes. */
 (function () {
   'use strict';
   const dayMs = 86400000;
-  function day(now = new Date()) { return now.toISOString().slice(0, 10); }
-  function previous(date) { return day(new Date(Date.parse(date + 'T00:00:00Z') - dayMs)); }
+  function previous(date) {
+    return new Date(Date.parse(date + 'T00:00:00Z') - dayMs).toISOString().slice(0, 10);
+  }
+  function day(now = new Date()) {
+    const date = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    return now.getHours() < 7 ? previous(date) : date;
+  }
+  function nextReset(now = new Date()) {
+    const next = new Date(now.getTime());
+    next.setHours(7, 0, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    return next;
+  }
   function hash(text) {
     let h = 2166136261;
     for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -44,8 +55,8 @@
     return { stages, stage: value.stage, runDone };
   }
   function remaining(now = new Date()) {
-    const seconds = Math.ceil((Date.parse(day(now) + 'T00:00:00Z') + dayMs - now.getTime()) / 1000);
+    const seconds = Math.ceil((nextReset(now).getTime() - now.getTime()) / 1000);
     return Math.floor(seconds / 3600) + 'h ' + Math.floor(seconds % 3600 / 60) + 'm';
   }
-  window.DailyGame = { day, previous, plan, streak, restore, remaining };
+  window.DailyGame = { day, previous, nextReset, plan, streak, restore, remaining };
 })();

@@ -25,13 +25,13 @@ function setup(hash='', initialSaved=new Map()) {
   return {context,t:context.test,C:context.window.TrackChallenge,nodes,saved};
 }
 
-test('same UTC date yields identical five songs regardless of pool order or timezone',()=>{
+test('same daily date yields identical five songs regardless of pool order',()=>{
  const {context}=setup();const D=context.window.DailyGame,pool=context.window.DAILY_POOL_V1;
  const a=D.plan(pool,'2026-11-03'),b=D.plan(pool.slice().reverse(),'2026-11-03');
  assert.equal(JSON.stringify(a),JSON.stringify(b));assert.equal(new Set(a.map(r=>r[1])).size,5);
  assert.equal(JSON.stringify(a.map(r=>r[2])), '[1,2,3,4,5]');
- assert.equal(D.day(new Date('2026-11-03T06:59:59+07:00')),'2026-11-02');
- assert.equal(D.day(new Date('2026-11-03T07:00:00+07:00')),'2026-11-03');
+ assert.equal(D.day(new Date(2026,10,3,6,59,59)),'2026-11-02');
+ assert.equal(D.day(new Date(2026,10,3,7,0,0)),'2026-11-03');
  assert.notEqual(JSON.stringify(a),JSON.stringify(D.plan(pool,'2026-11-04')));
 });
 test('streak handles duplicate completions, missed days, month and year boundaries',()=>{
