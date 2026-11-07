@@ -326,6 +326,9 @@
   audio.preload = 'auto';
   audio.volume = S.muted ? 0 : S.vol;
 
+  const sounds = window.GameSounds ? window.GameSounds.create(() => S.muted ? 0 : S.vol)
+    : { play() {}, stop() {}, sync() {} };
+
   let raf = 0, playing = false;
 
   function seek(t) {
@@ -340,6 +343,7 @@
   }
 
   function stopAudio() {
+    sounds.stop();
     cancelAnimationFrame(raf);
     playing = false;
     audio.pause();
@@ -352,6 +356,7 @@
   async function playClip() {
     if (playing) { stopAudio(); return; }
     if (!S.meta || !S.meta.preview) return;
+    if (!S.done) sounds.stop();
 
     // Batas main dibaca ULANG tiap frame (curBatas), bukan dikunci sekali:
     // menekan Skip di tengah putaran menaikkan limit(), dan klipnya ikut
@@ -529,6 +534,7 @@
     if (right) return finish(true);
     if (S.guesses.length >= TRIES) return finish(false);
     stopAudio();
+    sounds.play('wrong');
     saveRun(); UI.render();
     UI.status(near ? 'Right artist, wrong song. ' + fmt(limit()) + ' unlocked.'
                    : 'Not it. ' + fmt(limit()) + ' unlocked now.');
@@ -551,6 +557,7 @@
   function finish(won) {
     S.done = true; S.won = won;
     stopAudio();
+    sounds.play(won ? 'correct' : 'wrong');
     // Gagal tidak menghentikan sesi -- tahap berikutnya tetap jalan.
     if (S.stage === stageCount() - 1) S.runDone = true;
     saveRun();
@@ -1114,8 +1121,10 @@
 
     /* --- hasil satu sesi penuh --- */
     runResult() {
+      stopAudio();
       document.body.removeAttribute('data-diff');   // rangkuman lintas kelima kesulitan
       const sc = score();
+      sounds.play(sc ? 'complete' : 'missed');
       const v = $('#runVerdict');
       v.className = 'verdict ' + (sc >= (S.daily ? 1 : 3) ? 'win' : 'lose');
       v.textContent = ['Zero. Try again tomorrow.', 'One down.', 'Not bad.',
@@ -1447,12 +1456,14 @@
     S.muted = false;
     LS.set('tl:vol', S.vol); LS.set('tl:muted', false);
     audio.volume = S.vol;
+    sounds.sync();
     $('#mute').classList.remove('muted');
   };
   $('#mute').onclick = () => {
     S.muted = !S.muted;
     LS.set('tl:muted', S.muted);
     audio.volume = S.muted ? 0 : S.vol;
+    sounds.sync();
     $('#mute').classList.toggle('muted', S.muted);
   };
   $('#mute').classList.toggle('muted', S.muted);
@@ -1487,7 +1498,7 @@
   audio.addEventListener('error', () => {
     if (!S.loading) { UI.status('Audio failed to load. Try again.', true); $('#retrySong').hidden = false; }
   });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && playing) stopAudio(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopAudio(); });
 
   /* ================= mulai ================= */
 

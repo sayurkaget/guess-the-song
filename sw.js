@@ -5,13 +5,14 @@
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v21-studio-catalog';
+const CACHE = 'gts-v22-sounds';
 const SHELL = [
   './',
   './index.html',
   './styles.css',
   './fonts/InterVariable.woff2',
   './app.js',
+  './sounds.js',
   './recordings.js',
   './feedback.js',
   './analytics.js',
