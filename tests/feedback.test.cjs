@@ -49,3 +49,15 @@ test('unregistered form cannot falsely report a successful delivery',async()=>{
  const {nodes,message,calls,send}=setup();nodes.get('#feedbackForm').hasAttribute=()=>true;message.value='Feedback draft';
  await send();assert.equal(calls.length,0);assert.equal(message.value,'Feedback draft');assert.match(nodes.get('#feedbackStatus').textContent,/not been sent/);
 });
+
+test('Cloudflare feedback requires a JSON receipt before clearing the draft',async()=>{
+ const {c,nodes,message,send}=setup();
+ nodes.get('#feedbackForm').hasAttribute=name=>name==='data-feedback-api';
+ message.value='Feedback draft';
+ c.fetch=async()=>({ok:true,json:async()=>({ok:false})});
+ await send();assert.equal(message.value,'Feedback draft');
+ c.fetch=async()=>({ok:true,json:async()=>{throw new Error('HTML fallback')}});
+ await send();assert.equal(message.value,'Feedback draft');
+ c.fetch=async()=>({ok:true,json:async()=>({ok:true})});
+ await send();assert.equal(message.value,'');
+});

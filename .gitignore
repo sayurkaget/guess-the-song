@@ -1,1 +1,4 @@
 .catalog-cache/
+.cloudflare-tools/
+.wrangler/
+dist/

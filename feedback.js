@@ -39,6 +39,9 @@
         body: body.toString(), signal: AbortSignal.timeout(15000)
       });
       if (!response.ok) throw new Error('Submission failed');
+      if (form.hasAttribute('data-feedback-api') && (await response.json()).ok !== true) {
+        throw new Error('Submission not confirmed');
+      }
       form.reset();
       status.textContent = 'Thanks! Your feedback has been sent.';
       status.className = 'feedback-success';
