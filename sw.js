@@ -5,7 +5,7 @@
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v19-menu-button';
+const CACHE = 'gts-v20-n-play-logo';
 const SHELL = [
   './',
   './index.html',
@@ -19,6 +19,8 @@ const SHELL = [
   './daily-pool-v1.js',
   './songs.js',
   './app.webmanifest',
+  './icon-32.png',
+  './icon-96.png',
   './icon-180.png',
   './icon-192.png',
   './icon-512.png'
