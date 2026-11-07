@@ -11,6 +11,7 @@ fs.mkdirSync(output, { recursive: true });
 const files = ['index.html', 'styles.css', 'app.js', 'songs.js', 'recordings.js',
   'daily.js', 'daily-pool-v1.js', 'challenge.js', 'feedback.js', 'analytics.js',
   'app.webmanifest', 'sw.js', 'robots.txt', 'sitemap.xml',
+  'googlebc29a838b567dfc0.html',
   'icon-32.png', 'icon-96.png', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 for (const file of files) {
   let contents = fs.readFileSync(path.join(root, file));
