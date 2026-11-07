@@ -5,7 +5,7 @@
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v22-sounds';
+const CACHE = 'gts-v23-media-sounds';
 const SHELL = [
   './',
   './index.html',
@@ -13,6 +13,10 @@ const SHELL = [
   './fonts/InterVariable.woff2',
   './app.js',
   './sounds.js',
+  './sounds/correct.wav',
+  './sounds/wrong.wav',
+  './sounds/complete.wav',
+  './sounds/missed.wav',
   './recordings.js',
   './feedback.js',
   './analytics.js',

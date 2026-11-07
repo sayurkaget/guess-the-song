@@ -57,5 +57,8 @@ test('Cloudflare bundle uses its own URLs, isolates APIs, and preserves the orig
   assert.equal(fs.readFileSync(path.join(root, 'index.html'), 'utf8'), original);
   assert.deepEqual(fs.readFileSync(path.join(root, 'dist/songs.js')), fs.readFileSync(path.join(root, 'songs.js')));
   assert.deepEqual(fs.readFileSync(path.join(root, 'dist/daily-pool-v1.js')), fs.readFileSync(path.join(root, 'daily-pool-v1.js')));
+  for (const cue of ['correct', 'wrong', 'complete', 'missed']) {
+    assert.deepEqual(fs.readFileSync(path.join(root, 'dist/sounds', cue + '.wav')), fs.readFileSync(path.join(root, 'sounds', cue + '.wav')));
+  }
   assert.ok(!fs.existsSync(path.join(root, 'dist/.catalog-cache')));
 });

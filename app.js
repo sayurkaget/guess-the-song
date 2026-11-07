@@ -327,7 +327,9 @@
   audio.volume = S.muted ? 0 : S.vol;
 
   const sounds = window.GameSounds ? window.GameSounds.create(() => S.muted ? 0 : S.vol)
-    : { play() {}, stop() {}, sync() {} };
+    : { play() {}, stop() {}, sync() {}, active() { return false; } };
+
+  const clipVolume = () => (S.muted ? 0 : S.vol) * (S.done && sounds.active() ? .18 : 1);
 
   let raf = 0, playing = false;
 
@@ -376,6 +378,7 @@
     UI.playState('loading');
     try {
       await seek(dari);
+      audio.volume = clipVolume();
       await audio.play();
     } catch (e) {
       UI.playState('idle');
@@ -396,7 +399,7 @@
       if (left <= 0) { stopAudio(); return; }
       // S.vol dibaca ulang tiap frame, bukan disimpan di awal: kalau disimpan,
       // geseran volume di tengah lagu akan ditimpa terus oleh nilai lama.
-      const v = S.muted ? 0 : S.vol;
+      const v = clipVolume();
       audio.volume = v * (left < 0.1 ? Math.max(0, left / 0.1) : 1);
       raf = requestAnimationFrame(tick);
     };
@@ -1455,15 +1458,15 @@
     S.vol = e.target.value / 100;
     S.muted = false;
     LS.set('tl:vol', S.vol); LS.set('tl:muted', false);
-    audio.volume = S.vol;
     sounds.sync();
+    audio.volume = clipVolume();
     $('#mute').classList.remove('muted');
   };
   $('#mute').onclick = () => {
     S.muted = !S.muted;
     LS.set('tl:muted', S.muted);
-    audio.volume = S.muted ? 0 : S.vol;
     sounds.sync();
+    audio.volume = clipVolume();
     $('#mute').classList.toggle('muted', S.muted);
   };
   $('#mute').classList.toggle('muted', S.muted);

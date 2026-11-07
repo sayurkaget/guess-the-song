@@ -6,19 +6,28 @@ const path = require('node:path');
 function setup() {
   const nodes = new Map();
   const soundEvents = [];
+  let effectActive = false;
   const node = () => ({hidden:true,style:{},dataset:{},classList:{add(){},remove(){},toggle(){}},setAttribute(){}});
-  const c = vm.createContext({window:{SONGS:[],GameSounds:{create:()=>({play(name){soundEvents.push(name)},stop(){},sync(){}})}},Map,console,setTimeout:()=>0,clearTimeout(){},cancelAnimationFrame(){},
+  const c = vm.createContext({window:{SONGS:[],GameSounds:{create:()=>({play(name){soundEvents.push(name);effectActive=true},stop(){effectActive=false},sync(){},active(){return effectActive}})}},Map,console,setTimeout:()=>0,clearTimeout(){},cancelAnimationFrame(){},
     AbortSignal, Audio:class {pause(){}}, localStorage:{getItem(){return null},setItem(){},removeItem(){}},
     document:{addEventListener(){},querySelector(s){if(!nodes.has(s))nodes.set(s,node());return nodes.get(s)},querySelectorAll(){return []},body:{dataset:{}}}});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../recordings.js'),'utf8'),c);
   const src = fs.readFileSync(path.join(__dirname,'../app.js'),'utf8').split('  /* ================= event ================= */')[0];
-  vm.runInContext(src + '\nglobalThis.test={S,UI,sameRecording,correctAnswer,submitGuess,fetchArtistSongs};})();',c);
+  vm.runInContext(src + '\nglobalThis.test={S,UI,sounds,clipVolume,sameRecording,correctAnswer,submitGuess,fetchArtistSongs};})();',c);
   for(const key of ['render','clearInput','autoplay']) c.test.UI[key]=()=>{};
   c.test.context=c;
   c.test.soundEvents=soundEvents;
   return c.test;
 }
 const song = (title, artist, extra={}) => ({title,artist,slug:title+'-'+artist,...extra});
+
+test('reveal song ducks only during an effect; guessing clips and mute retain their volume', () => {
+  const t=setup(); t.S.vol=.8; t.S.muted=false;
+  t.sounds.play('correct');t.S.done=false;assert.equal(t.clipVolume(),.8);
+  t.S.done=true;assert.ok(t.clipVolume()<.2);
+  t.sounds.stop();assert.equal(t.clipVolume(),.8);
+  t.S.muted=true;assert.equal(t.clipVolume(),0);
+});
 
 test('both catalogue entries for We Found Love win with either album credit', () => {
   for (const owner of ['Rihanna','Calvin Harris']) for (const answer of ['Rihanna','Calvin Harris']) {
