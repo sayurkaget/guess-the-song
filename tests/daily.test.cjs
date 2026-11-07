@@ -18,7 +18,7 @@ function setup(hash='', initialSaved=new Map()) {
   });
   for (const file of ['challenge.js','daily.js','daily-pool-v1.js']) vm.runInContext(read(file),context);
   const source=read('app.js').split('  /* ================= event ================= */')[0]+
-    '\nglobalThis.test={S,UI,acceptChallenge,showIncomingChallenge,shareStage,searchIndex,recordStats,submitGuess,skip,nextStage,load,startDaily,shareText,saveRun,completeDaily,dismissModal,stageCount};})();';
+    '\nglobalThis.test={S,UI,acceptChallenge,showIncomingChallenge,shareStage,searchIndex,recordStats,submitGuess,skip,nextStage,load,startDaily,shareText,saveRun,completeDaily,dailyStreak,refreshDaily,dismissModal,stageCount};})();';
   vm.runInContext(source,context);
   for(const key of ['head','playState','readout','render','clearInput','buildControls','refreshLobby','autoplay','runResult'])context.test.UI[key]=()=>{};
   context.fetch=async()=>{const s=context.test.S.daily.songs[context.test.S.stage];return {ok:true,text:async()=>JSON.stringify({results:[{...track,trackId:100+context.test.S.stage,trackName:s.title,artistName:s.artist}]})}};
@@ -64,7 +64,7 @@ test('daily ignores free-play filters, resumes guesses after refresh, and restor
  second.t.UI.lobby();assert.equal(second.t.S.daily,null);assert.equal(second.t.S.guesses.length,0);
  assert.ok(![...second.saved.keys()].some(k=>k.startsWith('tl:stats:')));
 });
-test('completing one daily song earns one streak day, locks result, and shares no titles',async()=>{
+test('losing daily locks the result and shares no titles, without earning a win streak',async()=>{
  const {t,saved,context}=setup();await t.startDaily();
  const titles=t.S.daily.songs.map(s=>s.title),day=t.S.daily.day;
  assert.equal(t.stageCount(),1);
@@ -79,7 +79,8 @@ test('completing one daily song earns one streak day, locks result, and shares n
  const before=saved.get('tl:daily:v2:'+day);t.S.guesses=[];t.S.done=false;t.saveRun();
  assert.equal(saved.get('tl:daily:v2:'+day),before);
  await t.startDaily();assert.equal(t.S.runDone,true);
- assert.equal(context.window.DailyGame.streak(JSON.parse(saved.get('tl:daily:completed'))).current,1);
+ assert.equal(t.dailyStreak().current,0);
+ assert.match(t.shareText(),/Win streak: 0/);
 });
 test('unavailable daily song never falls back to random music and exposes retry',async()=>{
  const {t,context,nodes}=setup();let count=0;context.fetch=async()=>{count++;throw Error('offline')};
@@ -113,4 +114,52 @@ test('old five-stage Daily migrates the matching song without losing streak hist
  const second=setup('',saved);await second.t.startDaily();
  assert.equal(second.t.S.stage,0);assert.equal(second.t.S.stages.length,1);assert.equal(second.t.S.runDone,true);
  assert.equal(JSON.parse(saved.get('tl:daily:completed')).length,1);assert.ok(saved.has('tl:daily:v2:'+day));
+});
+
+test('daily win streak counts consecutive wins, resets on loss, and survives reopening', async () => {
+  const {t, context, saved, nodes} = setup();
+  const daily = context.window.DailyGame;
+  const play = async (date, won) => {
+    t.UI.lobby();
+    daily.day = () => date;
+    await t.startDaily();
+    if (won) t.submitGuess(t.S.song);
+    else for (let attempt = 0; attempt < 5; attempt++) t.skip();
+    t.refreshDaily();
+  };
+  await play('2026-11-01', true);
+  await play('2026-11-02', true);
+  assert.equal(t.dailyStreak().current, 2);
+  assert.match(nodes.get('#dailyStatus').textContent, /2-win streak/);
+  await play('2026-11-03', false);
+  assert.equal(t.dailyStreak().current, 0);
+  assert.equal(t.dailyStreak().best, 2);
+  assert.doesNotMatch(nodes.get('#dailyStatus').textContent, /win streak/);
+  await play('2026-11-04', true);
+  assert.equal(t.dailyStreak().current, 1);
+  assert.equal(t.dailyStreak().best, 2);
+
+  const reopened = setup('', saved);
+  reopened.context.window.DailyGame.day = () => '2026-11-04';
+  await reopened.t.startDaily();
+  assert.equal(reopened.t.dailyStreak().current, 1);
+  assert.equal(reopened.t.dailyStreak().best, 2);
+  assert.match(reopened.t.shareText(), /Win streak: 1/);
+  reopened.context.window.DailyGame.day = () => '2026-11-06';
+  assert.equal(reopened.t.dailyStreak().current, 0);
+  assert.equal(reopened.t.dailyStreak().best, 2);
+});
+
+test('legacy completion dates require a saved correct answer to earn a win', async () => {
+  const {t, context, saved} = setup();
+  context.window.DailyGame.day = () => '2026-11-04';
+  saved.set('tl:daily:completed', JSON.stringify(['2026-11-02', '2026-11-03']));
+  assert.equal(t.dailyStreak().current, 0);
+  await t.startDaily();
+  t.submitGuess(t.S.song);
+  const key = 'tl:daily:v2:2026-11-04';
+  saved.set('tl:daily:v1:2026-11-04', saved.get(key));
+  saved.delete(key);
+  assert.equal(t.dailyStreak().current, 1);
+  assert.equal(t.dailyStreak().best, 1);
 });

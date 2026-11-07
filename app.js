@@ -689,13 +689,31 @@
   /* ================= daily challenge ================= */
 
   const dailyKey = (day) => 'tl:daily:v2:' + day;
-  function dailyStreak() { return window.DailyGame.streak(LS.get('tl:daily:completed', [])); }
+  function dailyStreak() {
+    const daily = window.DailyGame, today = daily.day();
+    const completed = LS.get('tl:daily:completed', []);
+    const wins = [];
+    let lostToday = false;
+    for (const date of new Set(Array.isArray(completed) ? completed : [])) {
+      if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) continue;
+      const saved = LS.get(dailyKey(date)) || LS.get('tl:daily:v1:' + date);
+      if (!saved) continue;
+      const slugs = daily.plan(window.DAILY_POOL_V1, date).map(slug);
+      const result = daily.restore(saved, slugs);
+      if (!result || !result.runDone) continue;
+      if (result.stages[0].won) wins.push(date);
+      else if (date === today) lostToday = true;
+    }
+    const streak = daily.streak(wins, today);
+    if (lostToday) streak.current = 0;
+    return streak;
+  }
   function refreshDaily() {
     const day = window.DailyGame.day(), saved = LS.get(dailyKey(day)) || LS.get('tl:daily:v1:' + day);
     const current = dailyStreak().current;
     const status = $('#dailyStatus');
     const details = [];
-    if (current) details.push(current + '-day streak');
+    if (current) details.push(current + '-win streak');
     if (saved && saved.runDone) details.push('Next song in ' + window.DailyGame.remaining());
     status.textContent = details.join(' · ');
     status.hidden = !details.length;
@@ -1132,7 +1150,7 @@
       $('#dailyResult').hidden = !S.daily;
       if (S.daily) {
         const streak = dailyStreak();
-        $('#dailyResult').textContent = 'Daily Challenge · ' + S.daily.day + ' · Streak ' + streak.current + ' · Best ' + streak.best + '. Next daily in ' + window.DailyGame.remaining() + '.';
+        $('#dailyResult').textContent = 'Daily Challenge · ' + S.daily.day + ' · Win streak ' + streak.current + ' · Best ' + streak.best + '. Next daily in ' + window.DailyGame.remaining() + '.';
       }
 
       // latar dari sampul lagu terakhir yang berhasil ditebak
@@ -1190,7 +1208,7 @@
   function shareText() {
     if (S.daily) return 'Name The Track · Daily Challenge · ' + S.daily.day + '\n' +
       (S.stages[0] && S.stages[0].won ? 'Guessed in ' + fmt(LADDER[S.stages[0].guesses.findIndex((g) => g.t === 'right')]) : 'Missed') + '\n' + squares((S.stages[0] || {}).guesses || []) +
-      '\nStreak: ' + dailyStreak().current + '\n' + siteUrl() + '#daily';
+      '\nWin streak: ' + dailyStreak().current + '\n' + siteUrl() + '#daily';
     const tags = [];
     if (S.custom) tags.push(S.custom.label);
     else {
