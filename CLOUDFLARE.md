@@ -32,7 +32,9 @@ are adjusted in the Pages bundle. Local and temporary preview hosts do not send
 analytics. Browser streaks and preferences are scoped to the website origin; old
 history remains available on the old address, not automatically on the new one.
 
-The original Netlify/GitHub sites stay available during migration. Do not delete
-them or redirect users until the new deployment is verified. To roll back Pages,
-republish the previous successful deployment through the Cloudflare dashboard.
-Retain the D1 database to preserve incoming feedback.
+The owner requested deletion of the original Netlify project after the Cloudflare
+deployment was verified. Netlify project `namethetrack` was deleted on 2026-11-07;
+its old URL no longer serves the game. The local `.netlify-backup/` folder contains
+the old form backup and is excluded from Git. GitHub Pages remains a separate copy.
+To roll back Pages, republish the previous successful deployment through the
+Cloudflare dashboard. Retain the D1 database to preserve incoming feedback.
