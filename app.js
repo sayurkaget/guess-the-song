@@ -37,9 +37,6 @@
     y20: { label: '2020s',      hit: function (y) { return y >= 2020; } }
   };
 
-  // penanda versi yang bukan rekaman aslinya — dipakai untuk menolak hasil iTunes
-  const JUNK = /\b(live|acoustic|remix|reprise|demo|karaoke|tribute|instrumental|cover|remaster|remastered|edit|version|ver|mix|orchestral|piano|lullaby|workout|sped up|slowed|made famous|originally performed|in the style of|backing track)\b/i;
-
   /* ================= util ================= */
 
   const $  = (s) => document.querySelector(s);
@@ -179,9 +176,10 @@
 
   /* ================= katalog & pencarian ================= */
 
-  const ALL = (window.SONGS || []).filter((s) => s[3] === 'gl').map((s, i) => ({
+  const ALL = (window.SONGS || []).filter((s) =>
+    s[3] === 'gl' && window.RecordingPolicy.isStudio({ title: s[0] })).map((s, i) => ({
     i, title: s[0], artist: s[1], tier: s[2], region: s[3],
-    genre: s[4] || 'lain', year: s[5] || 0, art: s[6] || '',
+    genre: s[4] || 'lain', year: s[5] || 0, art: s[6] || '', trackId: s[7] || null,
     slug: slug(s), hay: norm(s[0] + ' ' + s[1])
   }));
 
@@ -257,7 +255,7 @@
   /* ================= iTunes ================= */
 
   function scoreResult(r, song, rank) {
-    if (!r.previewUrl) return -1;
+    if (!r.previewUrl || !window.RecordingPolicy.isStudio(r)) return -1;
     const rt = norm(r.trackName), ra = norm(r.artistName);
     const wt = norm(song.title),  wa = norm(song.artist);
     let sc = 0;
@@ -269,10 +267,6 @@
     // kalau tidak versi live/karaoke justru menang skor.
     if (ra === wa) sc += 5; else if (ra.indexOf(wa) >= 0 || wa.indexOf(ra) >= 0) sc += 4; else sc -= 5;
 
-    // tolak versi live/akustik/remix — kecuali judul yang dicari memang begitu
-    const junky = JUNK.test(r.trackName) || JUNK.test(r.collectionName || '') || JUNK.test(r.artistName);
-    if (junky && !JUNK.test(song.title)) sc -= 9;
-
     // judul polos tanpa embel-embel kurung lebih mungkin jadi rekaman aslinya
     if (!/[([]/.test(r.trackName) && !/[([]/.test(song.title)) sc += 1.5;
 
@@ -281,19 +275,23 @@
   }
 
   async function resolve(song) {
-    if (song.pre) return song.pre;   // lagu kustom sudah membawa meta iTunes
-    const ck = 'tl:trk4:' + song.slug;   // naikkan versi kalau aturan pencocokan berubah
+    if (song.pre) {
+      if (!window.RecordingPolicy.isStudio(song.pre)) throw new Error('Studio recording unavailable');
+      return song.pre;
+    }
+    const ck = 'tl:trk5:' + song.slug;
     const c = LS.get(ck);
-    if (c && c.exp > Date.now() && c.preview) return c;
+    if (c && c.exp > Date.now() && c.preview && window.RecordingPolicy.isStudio(c)) return c;
 
     // Aksen di kata kunci bikin pencarian iTunes gagal total: "No One Noticed
     // The Marías" nol hasil, "No One Noticed The Marias" ketemu. Tanda baca lain
     // (' # $ &) justru membantu, jadi hanya diakritiknya yang dibuang.
     const term = encodeURIComponent(
       (song.title + ' ' + song.artist).normalize('NFD').replace(/\p{M}/gu, ''));
-    // Toko US: sejak katalognya jadi Barat + Asia, cakupannya paling lengkap di sana
-    // -- dan sama dengan toko yang dipakai tools/enrich.sh, jadi sampulnya cocok.
-    const url = 'https://itunes.apple.com/search?term=' + term + '&entity=song&limit=14&country=US';
+    // Use the same storefront as the catalogue import.
+    const url = song.trackId
+      ? 'https://itunes.apple.com/lookup?id=' + encodeURIComponent(song.trackId) + '&entity=song&country=US'
+      : 'https://itunes.apple.com/search?term=' + term + '&entity=song&limit=14&country=US';
     const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
     if (!res.ok) throw new Error('http ' + res.status);
     const data = JSON.parse(await res.text()); // endpoint balas text/javascript
@@ -301,6 +299,7 @@
     const results = data.results || [];
     let best = null, bs = 0;
     for (let i = 0; i < results.length; i++) {
+      if (song.trackId && String(results[i].trackId) !== String(song.trackId)) continue;
       const sc = scoreResult(results[i], song, i);
       if (sc > bs) { bs = sc; best = results[i]; }
     }
@@ -600,15 +599,14 @@
   // preview + sampul lewat .pre, jadi resolve() melewatinya tanpa request lagi.
   async function fetchArtistSongs(artistId) {
     const url = 'https://itunes.apple.com/lookup?id=' + encodeURIComponent(artistId) +
-                '&entity=song&limit=120&country=US';
+                '&entity=song&limit=200&country=US';
     const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
     if (!res.ok) throw new Error('http ' + res.status);
     const data = JSON.parse(await res.text());
     const seen = Object.create(null), songs = [];
     for (const r of (data.results || [])) {
-      if (r.wrapperType !== 'track' || !r.previewUrl) continue;
-      // tolak live/remix/karaoke -- yang dicari rekaman aslinya
-      if (JUNK.test(r.trackName) || JUNK.test(r.collectionName || '')) continue;
+      if (r.wrapperType !== 'track' || r.kind !== 'song' || !r.previewUrl ||
+          !window.RecordingPolicy.isStudio(r)) continue;
       const title = r.trackName, artist = r.artistName, sl = slug([title, artist]);
       if (seen[sl]) continue; seen[sl] = 1;
       const art = (r.artworkUrl100 || '').replace('100x100', '600x600');

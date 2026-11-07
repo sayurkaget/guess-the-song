@@ -14,8 +14,9 @@ function setup(hash='#challenge=1.269573303.3') {
     Audio:class {readyState=1;pause(){} load(){}},
     localStorage:{getItem:k=>saved.get(k),setItem:(k,v)=>saved.set(k,v),removeItem:k=>saved.delete(k)},
     document:{querySelector(s){if(!nodes.has(s))nodes.set(s,node());return nodes.get(s)},querySelectorAll(){return []},addEventListener(){},body:{dataset:{},removeAttribute(){}},createElement:node},
-    fetch:async(url)=>({ok:true,text:async()=>JSON.stringify({results:url.includes('limit=120')?[track,{...track,trackId:4,trackName:'Another song'}]:[track]})})
+    fetch:async(url)=>({ok:true,text:async()=>JSON.stringify({results:url.includes('limit=200')?[track,{...track,trackId:4,trackName:'Another song'}]:[track]})})
   });
+  vm.runInContext(read('recordings.js'),context);
   vm.runInContext(read('challenge.js'),context);
   const source=read('app.js').split('  /* ================= event ================= */')[0]+
     '\nglobalThis.test={S,UI,acceptChallenge,showIncomingChallenge,shareStage,searchIndex,recordStats,submitGuess,skip,nextStage,load};})();';
@@ -71,7 +72,7 @@ test('missing exact recording fails without replacing it and allows retry',async
  await t.acceptChallenge();assert.equal(t.S.meta.trackId,269573303);
 });
 test('artist lookup failure keeps the requested custom song searchable',async()=>{
- const {context,t}=setup();context.fetch=async(url)=>{if(url.includes('limit=120'))throw Error('offline');return {ok:true,text:async()=>JSON.stringify({results:[{...track,trackName:'Outside Catalogue',artistName:'Custom Artist'}]})}};
+ const {context,t}=setup();context.fetch=async(url)=>{if(url.includes('limit=200'))throw Error('offline');return {ok:true,text:async()=>JSON.stringify({results:[{...track,trackName:'Outside Catalogue',artistName:'Custom Artist'}]})}};
  await t.acceptChallenge();assert.equal(t.searchIndex('Outside Catalogue')[0].slug,t.S.song.slug);
 });
 test('leaving during lookup prevents a late response reopening the challenge',async()=>{
@@ -83,4 +84,13 @@ test('leaving during lookup prevents a late response reopening the challenge',as
 test('invalid link shows a recoverable entry message',()=>{
  const {t,nodes}=setup('#challenge=1.bad.3');assert.equal(t.showIncomingChallenge(),true);
  assert.equal(nodes.get('#acceptChallenge').hidden,true);assert.match(nodes.get('#challengeMessage').textContent,/invalid/);
+});
+
+test('friend challenges reject live recordings instead of silently substituting studio audio', async () => {
+ const {context,t,nodes}=setup();
+ context.fetch=async()=>({ok:true,text:async()=>JSON.stringify({results:[{...track,trackName:'Thriller (Live)'}]})});
+ await t.acceptChallenge();
+ assert.equal(t.S.song,null);
+ assert.equal(t.S.challenge,null);
+ assert.equal(nodes.get('#acceptChallenge').disabled,false);
 });

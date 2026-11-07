@@ -188,6 +188,26 @@ yang dilebarkan hanya rentang tier tahap itu.
 Tiap sesi mengambil lima lagu acak, dan bisa diulang terus lewat **Play again**.
 Setiap sesi yang tuntas masuk ke statistik kombinasi filter yang sedang dipakai.
 
+### Memperluas katalog studio
+
+`node tools/expand-catalog.cjs` mengambil metadata sampai 200 hasil per artis dari
+iTunes US, memakai artis yang sudah ada di `songs.js`. Hanya lagu dengan preview
+dan nama artis yang cocok yang ditambahkan. Label live, akustik, remix, dan versi
+alternatif lain disaring oleh `recordings.js`; remaster studio tetap boleh.
+Penyaringan bergantung pada judul dan metadata album yang diberikan sumber.
+
+Hasil sementara ada di `.catalog-cache/songs-expanded.js` dan ringkasannya di
+`.catalog-cache/report.json`. Periksa kegagalan dan jumlah hasil sebelum mengganti
+`songs.js`. Jalankan `node tools/expand-catalog.cjs --cached-only` untuk menyusun
+ulang hasil setelah memperbaiki aturan, tanpa meminta data lagi. Cache metadata
+lokal ini tidak masuk Git; audio tidak diunduh oleh perkakas impor.
+
+Lagu lama mempertahankan tingkat kesulitannya. Tambahan yang belum dikurasi memakai
+tier 4 dan menyimpan ID rekaman untuk pemutaran yang tepat. Kumpulan Daily yang tetap
+di `daily-pool-v1.js` tidak diubah oleh impor. Custom Game juga meminta hingga 200
+hasil per artis dan memakai penyaring rekaman yang sama. Ini memperluas cakupan,
+bukan jaminan seluruh diskografi tersedia.
+
 ## Isi folder
 
 | Berkas | Isi |
@@ -198,7 +218,7 @@ Setiap sesi yang tuntas masuk ke statistik kombinasi filter yang sedang dipakai.
 | `index.html` | Markup |
 | `styles.css` | Tampilan; seluruh halaman mengikuti warna kesulitan lewat `body[data-diff]` |
 | `app.js` | Logika permainan, audio, pencarian, statistik |
-| `songs.js` | Katalog 13,974 lagu Western |
+| `songs.js` | Katalog 30,812 lagu Western |
 | `app.webmanifest`, `icon-*.png` | Supaya bisa dipasang ke layar depan HP |
 | `sw.js` | Service worker: game jalan luring, dan versi terbaru selalu menang saat online |
 | `serve.ps1` | Server statis mini |

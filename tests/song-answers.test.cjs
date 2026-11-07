@@ -7,11 +7,13 @@ function setup() {
   const nodes = new Map();
   const node = () => ({hidden:true,style:{},dataset:{},classList:{add(){},remove(){},toggle(){}},setAttribute(){}});
   const c = vm.createContext({window:{SONGS:[]},Map,console,setTimeout:()=>0,clearTimeout(){},cancelAnimationFrame(){},
-    Audio:class {pause(){}}, localStorage:{getItem(){return null},setItem(){},removeItem(){}},
+    AbortSignal, Audio:class {pause(){}}, localStorage:{getItem(){return null},setItem(){},removeItem(){}},
     document:{addEventListener(){},querySelector(s){if(!nodes.has(s))nodes.set(s,node());return nodes.get(s)},querySelectorAll(){return []},body:{dataset:{}}}});
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../recordings.js'),'utf8'),c);
   const src = fs.readFileSync(path.join(__dirname,'../app.js'),'utf8').split('  /* ================= event ================= */')[0];
-  vm.runInContext(src + '\nglobalThis.test={S,UI,sameRecording,correctAnswer,submitGuess};})();',c);
+  vm.runInContext(src + '\nglobalThis.test={S,UI,sameRecording,correctAnswer,submitGuess,fetchArtistSongs};})();',c);
   for(const key of ['render','clearInput','autoplay']) c.test.UI[key]=()=>{};
+  c.test.context=c;
   return c.test;
 }
 const song = (title, artist, extra={}) => ({title,artist,slug:title+'-'+artist,...extra});
@@ -58,4 +60,22 @@ test('exact iTunes recording IDs remain valid despite display metadata differenc
   const t=setup();t.S.song=song('Song','Artist');t.S.meta=song('Song','Artist',{trackId:123});
   assert.equal(t.correctAnswer(song('Alternate label','Artist',{pre:{trackId:123}})),true);
   assert.equal(t.sameRecording(song('Other','Other',{trackId:456}),t.S.meta),false);
+});
+
+test('custom artist pool uses 200 results and filters live versions without dropping remasters', async () => {
+  const t=setup();
+  const base={wrapperType:'track',kind:'song',artistName:'Oasis',collectionName:'Definitely Maybe',previewUrl:'https://example.com/audio'};
+  let requested='';
+  t.context.fetch=async url=>{
+    requested=url;
+    return {ok:true,text:async()=>JSON.stringify({results:[
+      {...base,trackName:'Live Forever',trackId:1},
+      {...base,trackName:'Live Forever (Live)',trackId:2},
+      {...base,trackName:'Supersonic (Remastered)',trackId:3},
+      {...base,trackName:'Live Forever',trackId:4}
+    ]})};
+  };
+  const songs=await t.fetchArtistSongs(99);
+  assert.match(requested,/limit=200/);
+  assert.deepEqual(Array.from(songs,s=>s.title),['Live Forever','Supersonic (Remastered)']);
 });

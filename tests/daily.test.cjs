@@ -14,9 +14,9 @@ function setup(hash='', initialSaved=new Map()) {
     Audio:class {readyState=1;pause(){} load(){}},
     localStorage:{getItem:k=>saved.get(k),setItem:(k,v)=>saved.set(k,v),removeItem:k=>saved.delete(k)},
     document:{querySelector(s){if(!nodes.has(s))nodes.set(s,node());return nodes.get(s)},querySelectorAll(){return []},addEventListener(){},body:{dataset:{},removeAttribute(){}},createElement:node},
-    fetch:async(url)=>({ok:true,text:async()=>JSON.stringify({results:url.includes('limit=120')?[track,{...track,trackId:4,trackName:'Another song'}]:[track]})})
+    fetch:async(url)=>({ok:true,text:async()=>JSON.stringify({results:url.includes('limit=200')?[track,{...track,trackId:4,trackName:'Another song'}]:[track]})})
   });
-  for (const file of ['challenge.js','daily.js','daily-pool-v1.js']) vm.runInContext(read(file),context);
+  for (const file of ['recordings.js','challenge.js','daily.js','daily-pool-v1.js']) vm.runInContext(read(file),context);
   const source=read('app.js').split('  /* ================= event ================= */')[0]+
     '\nglobalThis.test={S,UI,acceptChallenge,showIncomingChallenge,shareStage,searchIndex,recordStats,submitGuess,skip,nextStage,load,startDaily,shareText,saveRun,completeDaily,dailyStreak,refreshDaily,dismissModal,stageCount};})();';
   vm.runInContext(source,context);

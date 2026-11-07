@@ -26,6 +26,7 @@
     const data = JSON.parse(await response.text());
     const track = (data.results || []).find((r) => String(r.trackId) === String(id) && r.wrapperType === 'track' && r.kind === 'song');
     if (!track || !track.previewUrl || !track.trackName || !track.artistName) throw new Error('Preview unavailable');
+    if (!window.RecordingPolicy.isStudio(track)) throw new Error('Studio recording unavailable');
     return track;
   }
   window.TrackChallenge = { parse, create, describe, compare, lookup };
