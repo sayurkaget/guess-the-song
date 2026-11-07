@@ -5,7 +5,7 @@
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v18-win-streak';
+const CACHE = 'gts-v19-menu-button';
 const SHELL = [
   './',
   './index.html',

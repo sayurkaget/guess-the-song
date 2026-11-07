@@ -1360,6 +1360,11 @@
   $('#back').onclick = () => { closeAll(); UI.lobby(); };
   $('#next').onclick = nextStage;
   $('#againRun').onclick = newRun;
+  $('#backToMenu').onclick = () => {
+    closeAll();
+    UI.lobby();
+    $('#start').focus();
+  };
 
   // ---- custom game (main satu artis) ----
   $('#openCustom').onclick = openCustom;
