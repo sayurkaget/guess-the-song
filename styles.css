@@ -1,3 +1,11 @@
+@font-face{
+  font-family:'Inter';
+  src:url('./fonts/InterVariable.woff2') format('woff2');
+  font-style:normal;
+  font-weight:100 900;
+  font-display:swap;
+}
+
 /* ===== tokens ===== */
 :root{
   --bg:#05100b;
@@ -15,8 +23,8 @@
   --bad:#f2555a;
   --warn:#f5b13d;
   --r:16px;
-  --fs:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
-  --fm:'JetBrains Mono',ui-monospace,'Cascadia Mono',monospace;
+  --fs:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --fm:var(--fs);
 }
 
 *{box-sizing:border-box}
@@ -85,11 +93,11 @@ h3{font-size:.95rem;letter-spacing:.02em;margin-top:1.4rem}
 .logo{
   margin:0;
   font-size:clamp(2.6rem,10vw,4.1rem);
-  font-weight:800; letter-spacing:-.04em; line-height:1;
+  font-weight:700; letter-spacing:-.04em; line-height:1;
   color:#fff;
 }
+.readout,.countdown,.stagenow,.runscore{font-variant-numeric:tabular-nums}
 .logo span{color:var(--acc)}
-.tagline{margin:.55rem 0 0;color:var(--dim);font-size:.95rem}
 .countdown{margin:.85rem 0 0;color:var(--dimmer);font-size:.82rem}
 .countdown b{font-family:var(--fm);color:var(--dim);font-weight:700}
 
@@ -760,7 +768,7 @@ body[data-diff="custom"]{--acc:#3db6f5;--acc-l:#5ec8ff;--acc-d:#1f93d6;--acc-rgb
 .daily-card{width:100%;max-width:520px;padding:1.2rem;margin:0 0 1.8rem;border:1px solid rgba(var(--acc-rgb),.25);border-radius:20px;background:rgba(var(--acc-rgb),.055);text-align:center}
 .daily-heading h2{margin:0 0 .3rem;font-size:1.25rem;color:var(--ink)}
 .daily-heading span,.daily-card p{font-size:.8rem;color:var(--dim)}
-.daily-card .daily-streak{color:var(--acc);font-weight:700}
+.daily-heading{margin-bottom:1rem}
 .daily-card .daily-note{font-size:.7rem;line-height:1.5;margin:.8rem 0 0}
 #dailyResult{line-height:1.5;margin:0 0 1rem}
 

@@ -692,9 +692,13 @@
   function dailyStreak() { return window.DailyGame.streak(LS.get('tl:daily:completed', [])); }
   function refreshDaily() {
     const day = window.DailyGame.day(), saved = LS.get(dailyKey(day)) || LS.get('tl:daily:v1:' + day);
-    const streak = dailyStreak();
-    $('#dailyDate').textContent = day + ' · New song in ' + window.DailyGame.remaining();
-    $('#dailyStreak').textContent = 'Streak ' + streak.current + (streak.current === 1 ? ' day · Best ' : ' days · Best ') + streak.best;
+    const current = dailyStreak().current;
+    const status = $('#dailyStatus');
+    const details = [];
+    if (current) details.push(current + '-day streak');
+    if (saved && saved.runDone) details.push('Next song in ' + window.DailyGame.remaining());
+    status.textContent = details.join(' · ');
+    status.hidden = !details.length;
     $('#openDaily').textContent = saved && saved.runDone ? 'View daily result' : saved ? 'Continue daily' : 'Play daily';
   }
   function saveDaily() {
@@ -881,11 +885,6 @@
       this.poolInfo();
       refreshDaily();
 
-      $('#ladderNote').innerHTML = '5 stages · every stage starts with <b>' +
-        fmt(LADDER[0]) + '</b> of the intro and opens up to <b>' +
-        fmt(LADDER[TRIES - 1]) + '</b> over ' + TRIES + ' tries · ' +
-        'what gets harder is the song, not the clip';
-
       const jalan = S.stages.filter(Boolean).length;
       $('#start').disabled = !S.pool.length;
       $('#start').textContent = S.runDone ? 'See result'
@@ -925,13 +924,13 @@
 
     poolInfo() {
       const p = $('#poolInfo');
-      const n = S.pool.length;      // jumlah lagu yang benar-benar bisa keluar di tahap ini
       const total = filtered().length;
       let msg = '', warn = false;
       if (!total) { msg = 'No songs match these filters.'; warn = true; }
-      else if (total < STAGES * 3) { msg = 'Only ' + total + ' songs match — narrow filters.'; warn = true; }
-      else { msg = total + ' songs in this pool.'; }
+      else if (total < STAGES * 3) { msg = total + (total === 1 ? ' song matches.' : ' songs match.'); warn = true; }
+      else if (S.genre !== 'all' || S.era !== 'all') { msg = total.toLocaleString('en-US') + ' songs'; }
       p.textContent = msg;
+      p.hidden = !msg;
       p.classList.toggle('warn', warn);
     },
     // Garis progres: rel gelap dengan isian terang sepanjang bagian klip yang

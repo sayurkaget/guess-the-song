@@ -5,11 +5,12 @@
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v14-description';
+const CACHE = 'gts-v17-inter';
 const SHELL = [
   './',
   './index.html',
   './styles.css',
+  './fonts/InterVariable.woff2',
   './app.js',
   './feedback.js',
   './analytics.js',

@@ -30,9 +30,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Guess The Song">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
 </head>
@@ -44,27 +42,22 @@
 
   <header class="head">
     <h1 class="logo">guess the <span>song</span></h1>
-    <p class="tagline">name the track from a split second of it</p>
   </header>
 
   <!-- ====== mode picker ====== -->
   <section class="lobby" id="lobby">
     <section class="daily-card" aria-labelledby="dailyHeading">
-      <div class="daily-heading"><h2 id="dailyHeading">Daily Challenge</h2><span>1 song · 5 tries · A new challenge every day</span></div>
-      <p id="dailyDate"></p>
-      <p class="daily-streak" id="dailyStreak"></p>
+      <div class="daily-heading"><h2 id="dailyHeading">Daily Challenge</h2><span>1 song · 5 tries</span></div>
       <button class="btn solid" id="openDaily" type="button">Play daily</button>
-      <p class="daily-note">Finish today’s song to keep your streak. Saved in this browser.<br>Resets at 7:00 AM in your local time.</p>
+      <p class="daily-note" id="dailyStatus" hidden></p>
     </section>
-    <p class="lobby-lead">What are you playing?</p>
-
-    <p class="laddernote" id="ladderNote"></p>
+    <h2 class="lobby-lead">Classic · 5 stages</h2>
 
     <div class="subcontrols">
       <label class="drop"><span class="sr">Genre</span><select id="genre"></select></label>
       <label class="drop"><span class="sr">Era</span><select id="era"></select></label>
     </div>
-    <p class="poolinfo" id="poolInfo"></p>
+    <p class="poolinfo" id="poolInfo" hidden></p>
 
     <button class="btn solid start" id="start">Start</button>
     <button class="btn ghostbtn customlink" id="openCustom">&#10022; Custom game &mdash; play an artist</button>
@@ -231,7 +224,10 @@
       <li>A wrong guess or a <b>Skip</b> unlocks a longer clip.</li>
       <li>You get <b>5 tries</b> per stage. The sooner you get it, the better.</li>
     </ol>
-    <h3>Five stages</h3>
+    <h3>Daily Challenge</h3>
+    <p class="dim">Guess one song in five tries. Finish it each day to build your streak.
+      Progress is saved in this browser. A new song arrives at 7:00 AM in your local time.</p>
+    <h3>Classic · Five stages</h3>
     <p class="dim">One run is <b>5 stages</b>, each harder than the last:
       <b>Easy → Medium → Hard → Expert → Impossible</b>. There is one song per stage,
       and the songs get more obscure as you progress. Every stage uses the same clip lengths:
