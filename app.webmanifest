@@ -1,6 +1,6 @@
 {
-  "name": "Guess The Song",
-  "short_name": "GuessSong",
+  "name": "Name The Track — Guess The Song",
+  "short_name": "Name The Track",
   "description": "Name the track from a split second of it. Five stages, Easy to Impossible.",
   "start_url": "./",
   "scope": "./",
