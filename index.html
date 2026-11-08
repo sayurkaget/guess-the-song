@@ -9,18 +9,18 @@
 
 <!-- SEO + preview saat dibagikan -->
 <meta name="description" content="Guess songs from as little as 0.1 seconds. Play a daily challenge, choose your favorite artist, or challenge friends in this free music guessing game.">
-<link rel="canonical" href="https://namethetrack.netlify.app/">
+<link rel="canonical" href="https://namethetrack.pages.dev/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Name The Track">
-<meta property="og:url" content="https://namethetrack.netlify.app/">
+<meta property="og:url" content="https://namethetrack.pages.dev/">
 <meta property="og:title" content="Name The Track — Guess The Song">
 <meta property="og:description" content="Guess songs from as little as 0.1 seconds. Play a daily challenge, choose your favorite artist, or challenge friends in this free music guessing game.">
-<meta property="og:image" content="https://namethetrack.netlify.app/icon-512.png">
+<meta property="og:image" content="https://namethetrack.pages.dev/icon-512.png">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Name The Track — Guess The Song">
 <meta name="twitter:description" content="Guess songs from as little as 0.1 seconds. Play a daily challenge, choose your favorite artist, or challenge friends in this free music guessing game.">
-<meta name="twitter:image" content="https://namethetrack.netlify.app/icon-512.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://namethetrack.netlify.app/#website","name":"Name The Track","alternateName":["Name The Track — Guess The Song","NameTheTrack"],"url":"https://namethetrack.netlify.app/","publisher":{"@id":"https://namethetrack.netlify.app/#publisher"}},{"@type":"Organization","@id":"https://namethetrack.netlify.app/#publisher","name":"Name The Track","url":"https://namethetrack.netlify.app/","logo":{"@type":"ImageObject","url":"https://namethetrack.netlify.app/icon-512.png","width":512,"height":512}},{"@type":"WebApplication","name":"Name The Track — Guess The Song","url":"https://namethetrack.netlify.app/","applicationCategory":"GameApplication","operatingSystem":"Any (web browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Guess songs from as little as 0.1 seconds. Play a daily challenge, choose your favorite artist, or challenge friends in this free music guessing game.","isPartOf":{"@id":"https://namethetrack.netlify.app/#website"}}]}</script>
+<meta name="twitter:image" content="https://namethetrack.pages.dev/icon-512.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://namethetrack.pages.dev/#website","name":"Name The Track","alternateName":["Name The Track — Guess The Song","NameTheTrack"],"url":"https://namethetrack.pages.dev/","publisher":{"@id":"https://namethetrack.pages.dev/#publisher"}},{"@type":"Organization","@id":"https://namethetrack.pages.dev/#publisher","name":"Name The Track","url":"https://namethetrack.pages.dev/","logo":{"@type":"ImageObject","url":"https://namethetrack.pages.dev/icon-512.png","width":512,"height":512}},{"@type":"WebApplication","name":"Name The Track — Guess The Song","url":"https://namethetrack.pages.dev/","applicationCategory":"GameApplication","operatingSystem":"Any (web browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Guess songs from as little as 0.1 seconds. Play a daily challenge, choose your favorite artist, or challenge friends in this free music guessing game.","isPartOf":{"@id":"https://namethetrack.pages.dev/#website"}}]}</script>
 
 <!-- dipasang ke layar depan HP: Android lewat manifest, iOS lewat meta apple-* -->
 <link rel="manifest" href="app.webmanifest">
@@ -30,10 +30,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Name The Track">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/GeneralSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="layout.css">
 <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
 <link rel="icon" type="image/png" sizes="96x96" href="icon-96.png">
+<link rel="preload" href="fonts/CabinetGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
+
+<link rel="stylesheet" href="site-guide.css">
 </head>
 <body>
 
@@ -48,24 +52,33 @@
   <!-- ====== mode picker ====== -->
   <section class="lobby" id="lobby">
     <section class="daily-card" aria-labelledby="dailyHeading">
-      <div class="daily-heading"><h2 id="dailyHeading">Daily Challenge</h2><span>1 song · 5 tries</span></div>
+      <div class="daily-heading">
+        <h2 id="dailyHeading">Daily Challenge</h2>
+        <span>1 song · 5 tries</span>
+        <p class="daily-note" id="dailyStatus" hidden></p>
+      </div>
       <button class="btn solid" id="openDaily" type="button">Play daily</button>
-      <p class="daily-note" id="dailyStatus" hidden></p>
     </section>
-    <h2 class="lobby-lead">Classic · 5 stages</h2>
 
-    <div class="subcontrols">
-      <label class="drop"><span class="sr">Genre</span><select id="genre"></select></label>
-      <label class="drop"><span class="sr">Era</span><select id="era"></select></label>
-    </div>
-    <p class="poolinfo" id="poolInfo" hidden></p>
+    <section class="classic-section" aria-labelledby="classicHeading">
+      <div class="classic-heading">
+        <h2 id="classicHeading">Classic</h2>
+        <span>5 stages</span>
+      </div>
+      <div class="classic-controls">
+        <div class="subcontrols">
+          <label class="drop"><span class="sr">Genre</span><select id="genre"></select></label>
+          <label class="drop"><span class="sr">Era</span><select id="era"></select></label>
+        </div>
+        <button class="btn solid start" id="start">Start</button>
+      </div>
+      <p class="poolinfo" id="poolInfo" hidden></p>
+    </section>
 
-    <button class="btn solid start" id="start">Start</button>
-    <button class="btn ghostbtn customlink" id="openCustom">&#10022; Custom game &mdash; play an artist</button>
-    <div class="lobby-tools" aria-label="Game information">
-      <button class="btn ghostbtn" id="openStats" type="button" aria-haspopup="dialog" aria-controls="statsModal">Stats</button>
-      <button class="btn ghostbtn" id="openHelp" type="button" aria-haspopup="dialog" aria-controls="helpModal">How to Play</button>
-    </div>
+    <button class="customlink custom-row" id="openCustom" type="button">
+      <span>Play your favorite artist</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
   </section>
 
   <section class="lobby" id="challengeIntro" hidden>
@@ -104,7 +117,7 @@
       <div class="readout" id="readout">0.0s</div>
     </div>
 
-    <p class="status" id="status">Loading song…</p>
+    <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true">Loading song…</p>
     <button class="btn ghostbtn" id="retrySong" type="button" hidden>Try again</button>
 
     <section class="guessbar">
@@ -124,6 +137,7 @@
   </section>
 
   <footer class="foot">
+    <button class="menu-stats" id="openStats" type="button" aria-haspopup="dialog" aria-controls="statsModal">Stats</button>
     <div class="vol">
       <button class="iconbtn" id="mute" aria-label="Mute">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path class="wave1" d="M16.5 8.8a4.5 4.5 0 0 1 0 6.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="wave2" d="M19 6.3a8 8 0 0 1 0 11.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="slash" d="m4 4 16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -133,6 +147,55 @@
     <button class="feedback-link" id="openFeedback" type="button" aria-haspopup="dialog" aria-controls="feedbackModal">Feedback</button>
   </footer>
 </main>
+<div class="site-guide">
+  <section class="music-browser" aria-labelledby="musicBrowserTitle">
+    <h2 id="musicBrowserTitle">Choose your music</h2>
+    <p class="browser-intro">A few shortcuts for your next Classic run.</p>
+    <div class="music-group">
+      <h3>Genres</h3>
+      <div class="music-tags">
+        <button type="button" data-guide-genre="pop">Pop</button>
+        <button type="button" data-guide-genre="rock">Rock</button>
+        <button type="button" data-guide-genre="hiphop">Hip-hop</button>
+        <button type="button" data-guide-genre="rnb">R&amp;B / Soul</button>
+        <button type="button" data-guide-genre="edm">Electronic</button>
+        <button type="button" data-guide-genre="indie">Indie</button>
+      </div>
+    </div>
+    <div class="music-group">
+      <h3>Eras</h3>
+      <div class="music-tags era-tags">
+        <button type="button" data-guide-era="old">Before 2000</button>
+        <button type="button" data-guide-era="y00">2000s</button>
+        <button type="button" data-guide-era="y10">2010s</button>
+        <button type="button" data-guide-era="y20">2020s</button>
+      </div>
+    </div>
+    <p class="browser-note">Genre shortcuts include every era; era shortcuts include every genre. Combine both using the filters above.</p>
+  </section>
+
+  <div class="guide-info">
+    <section class="guide-about" aria-labelledby="aboutTitle">
+      <h2 id="aboutTitle">About the game</h2>
+      <p>Name The Track is a music guessing game built around short audio clips. Put your music memory to the test with a five-stage Classic run, a single Daily song, or a Custom game featuring an artist you choose.</p>
+      <p>Play for free, right in your browser.</p>
+    </section>
+    <section class="guide-faq" aria-labelledby="faqTitle">
+      <h2 id="faqTitle">Good to know</h2>
+      <details><summary>Do I need an account?</summary><p>No sign-up is needed. Open the game on your phone or computer and pick a mode.</p></details>
+      <details><summary>What can I replay?</summary><p>Classic and Custom games can be played as often as you like. The Daily song is available once per day, with five attempts.</p></details>
+      <details><summary>When is the next Daily?</summary><p>At 7:00 AM in your device's local time. Consecutive Daily wins build your streak; a missed day or a loss resets it.</p></details>
+      <details><summary>Where is my progress saved?</summary><p>Your Daily progress and stats are saved in this browser. They do not automatically transfer to another browser or device.</p></details>
+    </section>
+  </div>
+
+  <footer class="guide-footer">
+    <small>© 2026 Name The Track</small>
+    <button type="button" data-guide-top>Back to top <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button>
+  </footer>
+  <p class="sr" id="guideAnnouncement" role="status" aria-live="polite"></p>
+</div>
+
 
 <!-- ====== stage result ====== -->
 <div class="modal" id="resultModal" hidden>
@@ -151,6 +214,8 @@
       </span>
     </button>
 
+    <p class="status" id="resultAudioStatus" role="status" aria-live="polite" hidden></p>
+    <button class="btn ghostbtn" id="resultRetry" type="button" hidden>Try again</button>
     <p class="kicker" id="verdict"></p>
     <h2 class="r-title" id="rTitle"></h2>
     <p class="r-artist" id="rArtist"></p>
@@ -215,46 +280,12 @@
   </div>
 </div>
 
-<!-- ====== how to play ====== -->
-<div class="modal" id="helpModal" hidden>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="hTitle">
-    <button class="x" data-close aria-label="Close">&times;</button>
-    <h2 id="hTitle">How to play</h2>
-    <ol class="how">
-      <li>Hit <b>play</b> — you only hear a short clip of the song.</li>
-      <li>Start typing a title and <b>pick it from the list</b>. Picking submits the guess right away.</li>
-      <li>A wrong guess or a <b>Skip</b> unlocks a longer clip.</li>
-      <li>You get <b>5 tries</b> per stage. The sooner you get it, the better.</li>
-    </ol>
-    <h3>Daily Challenge</h3>
-    <p class="dim">Guess one song in five tries. Solve consecutive daily challenges to build your win streak.
-      A missed day or an incorrect final result resets it.
-      Progress is saved in this browser. A new song arrives at 7:00 AM in your local time.</p>
-    <h3>Classic · Five stages</h3>
-    <p class="dim">One run is <b>5 stages</b>, each harder than the last:
-      <b>Easy → Medium → Hard → Expert → Impossible</b>. There is one song per stage,
-      and the songs get more obscure as you progress. Every stage uses the same clip lengths:
-      <b>0.1s → 0.5s → 2s → 8s → 15s</b>. Each wrong guess or Skip uses one try;
-      after the fifth, the song is revealed.</p>
-    <p class="dim">Missing a stage <b>does not end the run</b> — you carry on to the next one
-      all the way to Impossible. Your score is how many stages you nailed, out of 5.</p>
-    <h3>Keyboard</h3>
-    <ul class="keys">
-      <li><kbd>Space</kbd> play / stop</li>
-      <li><kbd>Tab</kbd> skip</li>
-      <li><kbd>↑</kbd><kbd>↓</kbd> move through suggestions &nbsp; <kbd>Enter</kbd> guess it &nbsp; <kbd>Esc</kbd> close</li>
-    </ul>
-    <p class="dim small">Audio uses 30-second preview clips from the public iTunes Search API.
-      Needs an internet connection.</p>
-  </div>
-</div>
-
 <div class="modal" id="feedbackModal" hidden>
   <div class="sheet feedback-sheet" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
     <button class="x" data-close aria-label="Close" type="button">&times;</button>
     <h2 id="feedbackTitle">Send feedback</h2>
     <p class="dim">Found a bug, missing a song, or have an idea? Let us know.</p>
-    <form name="player-feedback" id="feedbackForm" method="POST" action="/feedback-received.html" data-netlify="true" netlify-honeypot="bot-field">
+    <form name="player-feedback" id="feedbackForm" method="POST" action="/api/feedback" data-feedback-api="true" netlify-honeypot="bot-field">
       <input type="hidden" name="form-name" value="player-feedback">
       <p hidden><label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
       <fieldset id="feedbackFields">
@@ -288,6 +319,7 @@
 <script src="feedback.js"></script>
 <script src="analytics.js"></script>
 <script src="app.js"></script>
+<script src="site-guide.js"></script>
 <script>
   // Service worker hanya jalan di HTTPS (atau localhost). Di alamat LAN biasa
   // ia diabaikan diam-diam -- itu wajar, bukan error.

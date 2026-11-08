@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 function setup() {
   const nodes = new Map();
-  const node = () => ({hidden:true,style:{},dataset:{},classList:{add(){},remove(){},toggle(){}},setAttribute(){}});
+  const node = () => ({hidden:true,style:{},dataset:{},classList:{add(){},remove(){},toggle(){}},setAttribute(){},getAttribute(){return ''}});
   const c = vm.createContext({window:{SONGS:[]},Map,console,setTimeout:()=>0,clearTimeout(){},cancelAnimationFrame(){},
     AbortSignal, Audio:class {pause(){}}, localStorage:{getItem(){return null},setItem(){},removeItem(){}},
     document:{addEventListener(){},querySelector(s){if(!nodes.has(s))nodes.set(s,node());return nodes.get(s)},querySelectorAll(){return []},body:{dataset:{}}}});

@@ -58,4 +58,11 @@ test('Cloudflare bundle uses its own URLs, isolates APIs, and preserves the orig
   assert.deepEqual(fs.readFileSync(path.join(root, 'dist/songs.js')), fs.readFileSync(path.join(root, 'songs.js')));
   assert.deepEqual(fs.readFileSync(path.join(root, 'dist/daily-pool-v1.js')), fs.readFileSync(path.join(root, 'daily-pool-v1.js')));
   assert.ok(!fs.existsSync(path.join(root, 'dist/.catalog-cache')));
+  assert.ok(!/noindex/i.test(html), 'Production must remain indexable');
+  const headers = path.join(root, 'dist/_headers');
+  assert.ok(!fs.existsSync(headers) || !/noindex/i.test(fs.readFileSync(headers, 'utf8')));
+  for (const asset of ['layout.css','site-guide.css','site-guide.js','fonts/GeneralSans-Variable.woff2','fonts/CabinetGrotesk-Variable.woff2']) {
+    assert.ok(fs.statSync(path.join(root, 'dist', asset)).size > 0, asset);
+    assert.ok(fs.readFileSync(path.join(root, 'dist/sw.js'),'utf8').includes(asset), 'Offline shell includes '+asset);
+  }
 });

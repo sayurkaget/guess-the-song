@@ -11,7 +11,7 @@ function setup(hash='#challenge=1.269573303.3') {
   const context=vm.createContext({window:{SONGS:[['Unrelated Song','Another Artist',1,'gl','pop',2020,'']]},
     location:{hash,origin:'https://game.example',pathname:'/',search:''},history:{replaceState(){context.location.hash=''}},
     AbortSignal,Map,URL,console,setTimeout:()=>0,clearTimeout(){},cancelAnimationFrame(){},
-    Audio:class {readyState=1;pause(){} load(){}},
+    Audio:class extends EventTarget {readyState=0;pause(){} load(){this.readyState=1;this.dispatchEvent(new Event('loadedmetadata'));}},
     localStorage:{getItem:k=>saved.get(k),setItem:(k,v)=>saved.set(k,v),removeItem:k=>saved.delete(k)},
     document:{querySelector(s){if(!nodes.has(s))nodes.set(s,node());return nodes.get(s)},querySelectorAll(){return []},addEventListener(){},body:{dataset:{},removeAttribute(){}},createElement:node},
     fetch:async(url)=>({ok:true,text:async()=>JSON.stringify({results:url.includes('limit=200')?[track,{...track,trackId:4,trackName:'Another song'}]:[track]})})

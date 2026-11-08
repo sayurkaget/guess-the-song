@@ -5,12 +5,16 @@
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v24-no-effects';
+const CACHE = 'gts-v25-layout-audio';
 const SHELL = [
   './',
   './index.html',
   './styles.css',
-  './fonts/InterVariable.woff2',
+  './layout.css',
+  './site-guide.css',
+  './site-guide.js',
+  './fonts/GeneralSans-Variable.woff2',
+  './fonts/CabinetGrotesk-Variable.woff2',
   './app.js',
   './recordings.js',
   './feedback.js',

@@ -1,0 +1,60 @@
+.site-guide{
+  width:min(724px,calc(100% - 2.5rem));margin:3rem auto 0;
+  color:var(--dim);font-size:1rem;line-height:1.7;
+}
+.wrap:has(#lobby[hidden]) ~ .site-guide{display:none}
+.site-guide h2{
+  margin:0 0 .75rem;color:var(--ink);font-size:1.5rem;font-weight:700;
+  line-height:1.25;letter-spacing:-.02em;text-wrap:balance;
+}
+.music-browser{border-top:1px solid var(--line);padding:2.5rem 0}
+.browser-intro{margin:0 0 1.75rem}
+.music-group + .music-group{margin-top:1.5rem}
+.site-guide .music-group h3{
+  margin:0 0 .75rem;font:500 .875rem/1.5 var(--fs);letter-spacing:0;color:var(--dim);
+}
+.music-tags{display:flex;flex-wrap:wrap;gap:.5rem}
+.music-tags button{
+  min-height:44px;padding:.6rem 1rem;border:1px solid var(--line);border-radius:10px;
+  background:transparent;color:var(--ink);font:500 .9375rem/1.5 var(--fs);
+  transition:background-color .15s ease-out,border-color .15s ease-out;
+}
+.music-tags button:hover{background:rgba(24,216,119,.08);border-color:rgba(24,216,119,.4)}
+.era-tags{font-variant-numeric:tabular-nums}
+.browser-note{max-width:62ch;margin:1.5rem 0 0;font-size:.875rem;line-height:1.65}
+.guide-info{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:3rem;
+  padding:2.5rem 0;border-top:1px solid var(--line);
+}
+.guide-about p{margin:0 0 1rem;overflow-wrap:break-word}
+.guide-about p:last-child{margin-bottom:0}
+.guide-faq details + details{border-top:1px solid var(--line)}
+.guide-faq summary{
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  min-height:52px;padding:.75rem 0;list-style:none;cursor:pointer;
+  color:var(--ink);font-weight:500;line-height:1.5;
+}
+.guide-faq summary::-webkit-details-marker{display:none}
+.guide-faq summary::after{
+  content:'';width:12px;height:12px;flex:none;
+  background:linear-gradient(var(--dim),var(--dim)) center/12px 1px no-repeat,
+    linear-gradient(var(--dim),var(--dim)) center/1px 12px no-repeat;
+}
+.guide-faq details[open] summary::after{background-size:12px 1px,0 0}
+.guide-faq details p{margin:0;padding:0 1.5rem 1rem 0;font-size:.9375rem;line-height:1.7}
+.guide-footer{
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:1rem 0 2rem;border-top:1px solid var(--line);font-size:.8rem;
+}
+.guide-footer small{font-size:inherit}
+.guide-footer button{display:flex;align-items:center;gap:.5rem;min-height:44px;padding:.5rem 0;font:inherit;color:var(--dim)}
+.guide-footer button:hover{color:var(--ink)}
+.guide-footer svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.site-guide :is(button,summary):focus-visible{outline:2px solid var(--acc);outline-offset:4px;border-radius:4px}
+@media(max-width:600px){
+  .site-guide{margin-top:2rem}
+  .guide-info{grid-template-columns:minmax(0,1fr);gap:2rem;padding:2rem 0}
+  .music-browser{padding:2rem 0}
+  .site-guide h2{font-size:1.375rem}
+}
+@media(prefers-reduced-motion:reduce){.music-tags button{transition:none}}

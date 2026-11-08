@@ -326,7 +326,55 @@
   audio.preload = 'auto';
   audio.volume = S.muted ? 0 : S.vol;
 
-  let raf = 0, playing = false;
+  let raf = 0, playing = false, playPending = false, playbackEpoch = 0;
+  let cancelAudioLoad = null, cancelPendingPlay = null, bufferTimer = 0;
+
+  function loadAudioMetadata(src) {
+    return new Promise((resolve, reject) => {
+      let timer;
+      const finish = (error) => {
+        clearTimeout(timer);
+        audio.removeEventListener('loadedmetadata', ready);
+        audio.removeEventListener('error', failed);
+        if (cancelAudioLoad === cancel) cancelAudioLoad = null;
+        error ? reject(error) : resolve();
+      };
+      const ready = () => finish();
+      const failed = () => finish(new Error('Audio unavailable'));
+      const cancel = () => finish(new DOMException('Cancelled', 'AbortError'));
+      cancelAudioLoad = cancel;
+      audio.addEventListener('loadedmetadata', ready);
+      audio.addEventListener('error', failed);
+      timer = setTimeout(() => finish(new Error('Audio timed out')), 12000);
+      audio.src = src;
+      audio.load();
+    });
+  }
+
+  function beginPlayback() {
+    return new Promise((resolve, reject) => {
+      let timer;
+      const finish = (error) => {
+        clearTimeout(timer);
+        if (cancelPendingPlay === cancel) cancelPendingPlay = null;
+        error ? reject(error) : resolve();
+      };
+      const cancel = () => finish(new DOMException('Cancelled', 'AbortError'));
+      cancelPendingPlay = cancel;
+      timer = setTimeout(() => finish(new Error('Playback timed out')), 12000);
+      try { Promise.resolve(audio.play()).then(() => finish(), finish); }
+      catch (error) { finish(error); }
+    });
+  }
+
+  function audioFailure() {
+    stopAudio();
+    S.audioFailed = true;
+    UI.render();
+    UI.status('Could not play the audio. Check your connection and try again.', true);
+    $('#retrySong').hidden = false;
+    $('#resultRetry').hidden = false;
+  }
 
   function seek(t) {
     return new Promise((done) => {
@@ -340,6 +388,11 @@
   }
 
   function stopAudio() {
+    playbackEpoch++;
+    playPending = false;
+    clearTimeout(bufferTimer);
+    if (cancelAudioLoad) cancelAudioLoad();
+    if (cancelPendingPlay) cancelPendingPlay();
     cancelAnimationFrame(raf);
     playing = false;
     audio.pause();
@@ -351,7 +404,9 @@
 
   async function playClip() {
     if (playing) { stopAudio(); return; }
-    if (!S.meta || !S.meta.preview) return;
+    if (playPending || S.loading || S.audioFailed || !S.meta || !S.meta.preview) return;
+    const attempt = ++playbackEpoch;
+    playPending = true;
 
     // Batas main dibaca ULANG tiap frame (curBatas), bukan dikunci sekali:
     // menekan Skip di tengah putaran menaikkan limit(), dan klipnya ikut
@@ -369,16 +424,24 @@
     else S.heard = 0;
 
     UI.playState('loading');
+    UI.status('Loading audio…');
     try {
       await seek(dari);
-      await audio.play();
+      if (attempt !== playbackEpoch) return;
+      await beginPlayback();
     } catch (e) {
-      UI.playState('idle');
-      UI.status('The browser blocked playback. Hit play once more.', true);
+      if (attempt !== playbackEpoch) return;
+      if (e.name === 'NotAllowedError') {
+        stopAudio();
+        UI.status('Your browser paused playback. Tap Play to listen.', true);
+      } else audioFailure();
       return;
     }
+    if (attempt !== playbackEpoch) return;
+    playPending = false;
     playing = true;
     UI.playState('playing');
+    UI.status('');
 
     const tick = () => {
       if (!playing) return;
@@ -452,10 +515,12 @@
     return src[Math.floor(Math.random() * src.length)];
   }
 
-  async function load() {
+  async function load(retrySong = null) {
     const me = ++S.epoch;
     stopAudio();
     $('#retrySong').hidden = true;
+    $('#resultRetry').hidden = true;
+    S.audioFailed = false;
     buildPool();
 
     if (!S.pool.length) {
@@ -467,7 +532,7 @@
     }
 
     const cur = S.stages[S.stage];
-    let song = cur && cur.slug ? (findSong(cur.slug) || null) : null;
+    let song = retrySong || (cur && cur.slug ? (findSong(cur.slug) || null) : null);
 
     S.song = null; S.meta = null; S.picked = null; S.loading = true;
     UI.playState('loading');
@@ -476,20 +541,15 @@
 
     for (let k = 0; k < 5; k++) {
       const cand = S.daily ? S.daily.songs[S.stage] : S.challenge ? S.challenge.song : (song || pickSong(k));
+      S.retrySong = cand;
       try {
         const meta = await resolve(cand);
         if (me !== S.epoch) return;             // pemuatan lain sudah menggantikan ini
-        S.song = cand; S.meta = meta; S.loading = false;
-
-        audio.src = meta.preview;
-        audio.load();
-        await new Promise((r) => {
-          if (audio.readyState >= 1) return r();
-          const on = () => { audio.removeEventListener('loadedmetadata', on); r(); };
-          audio.addEventListener('loadedmetadata', on);
-          setTimeout(r, 6000);
-        });
+        S.song = cand; S.meta = meta;
+        UI.status('Loading audio…');
+        await loadAudioMetadata(meta.preview);
         if (me !== S.epoch) return;
+        S.loading = false;
 
         // Mulai dari detik nol pratinjau: yang diminta adalah intro lagunya,
         // bukan potongan acak dari tengah.
@@ -502,27 +562,30 @@
         }
         saveRun();
         UI.playState('idle');
-        UI.status(S.done ? '' : 'Ready. Hit play for the first ' + fmt(limit()) + '.');
+        UI.status(S.done ? '' : 'Press Play to hear ' + fmt(limit()) + '.');
         UI.render();
-        if (S.done) setTimeout(() => UI.result(), 250);
+        if (S.done) setTimeout(() => { if (me === S.epoch && S.done) UI.result(); }, 250);
         return;
       } catch (e) {
         if (me !== S.epoch) return;
-        if (S.challenge || S.daily) break; // Never substitute a different challenge song.
+        if (S.challenge || S.daily || cur || retrySong) break; // Preserve an existing round on retry.
         song = null;                            // kandidat gagal → coba berikutnya
       }
     }
 
     S.loading = false;
+    S.audioFailed = true;
     UI.playState('idle');
+    UI.render();
     UI.status('Could not load the song. Check your connection and try again.', true);
     $('#retrySong').hidden = false;
+    $('#resultRetry').hidden = false;
   }
 
   /* ================= alur permainan ================= */
 
   function submitGuess(pick) {
-    if (S.done || !S.song) return;
+    if (S.done || !S.song || S.loading || S.audioFailed) return;
     const right = correctAnswer(pick);
     const near = !right && !S.custom && norm(pick.artist) === norm(S.song.artist);
     S.guesses.push({ t: right ? 'right' : (near ? 'near' : 'wrong'), title: pick.title, artist: pick.artist });
@@ -536,7 +599,7 @@
   }
 
   function skip() {
-    if (S.done || !S.song) return;
+    if (S.done || !S.song || S.loading || S.audioFailed) return;
     S.guesses.push({ t: 'skip' });
     if (S.guesses.length >= TRIES) return finish(false);
     saveRun(); UI.render();
@@ -875,9 +938,13 @@
     playState(s) {
       this.play.dataset.s = s;
       this.play.classList.toggle('playing', s === 'playing');
-      this.play.disabled = s === 'loading' && S.loading;
+      this.play.disabled = S.loading || S.audioFailed || !S.meta || (s === 'loading' && !playing);
+      this.play.setAttribute('aria-busy', String(s === 'loading'));
       this.play.setAttribute('aria-label',
-        s === 'playing' ? 'Stop playback' : 'Play the clip');
+        s === 'loading' ? (playing ? 'Buffering audio. Stop playback' : 'Loading audio') : s === 'playing' ? 'Stop playback' : 'Play the clip');
+      $('#coverPlay').disabled = this.play.disabled;
+      $('#coverPlay').setAttribute('aria-busy', String(s === 'loading'));
+      $('#coverPlay').setAttribute('aria-label', this.play.getAttribute('aria-label'));
       $('#coverPlay').dataset.playing = s === 'playing' ? '1' : '0';
     },
     readout(t) {
@@ -891,6 +958,9 @@
     status(msg, err) {
       this.st.textContent = msg || '';
       this.st.classList.toggle('err', !!err);
+      $('#resultAudioStatus').textContent = msg || '';
+      $('#resultAudioStatus').classList.toggle('err', !!err);
+      $('#resultAudioStatus').hidden = !msg;
     },
 
     // Lobi hanya menghitung ulang kumpulan lagunya -- tidak memuat apa pun.
@@ -976,9 +1046,10 @@
       const delta = last ? 0 : L[S.guesses.length + 1] - L[S.guesses.length];
       this.skipLabel.textContent = S.done ? 'See result' : (last ? 'Give up' : 'Skip +' + fmt(delta));
       this.skipBtn.dataset.s = S.done ? 'done' : 'play';
-      this.skipBtn.disabled = !S.song;
-      this.q.disabled = S.done || !S.song;
-      this.play.disabled = !S.meta;
+      this.skipBtn.disabled = !S.song || S.loading || S.audioFailed;
+      this.q.disabled = S.done || !S.song || S.loading || S.audioFailed;
+      this.play.disabled = !S.meta || S.loading || S.audioFailed || playPending;
+      $('#coverPlay').disabled = this.play.disabled;
     },
 
     /* --- dropdown pencarian --- */
@@ -1068,10 +1139,10 @@
       $('#resultModal .reveal').className = 'reveal ' + (S.won ? 'win' : 'lose');
       $('#ghostStage').textContent = (S.daily ? 'Daily' : S.custom ? S.custom.label : D().label).toLowerCase();
 
-      // Label kecil di atas judul: menang -> pujian, kalah -> "it was_"
+      // Label kecil di atas judul: menang -> pujian, kalah -> "it was"
       $('#verdict').textContent = S.won
-        ? ['first listen_', 'nailed it_', 'got there_', 'safe_', 'last try_'][n - 1]
-        : 'it was_';
+        ? ['first listen', 'nailed it', 'got there', 'safe', 'last try'][n - 1]
+        : 'it was';
 
       // Panjang potongan saat tebakan benar -- ini yang bikin "0.1s" terasa keren,
       // jauh lebih bermakna daripada "tebakan ke-3".
@@ -1358,7 +1429,8 @@
     if (location.hash.startsWith('#challenge=') || location.hash === '#daily') location.reload();
   });
   $('#openDaily').onclick = startDaily;
-  $('#retrySong').onclick = () => load();
+  $('#retrySong').onclick = () => load(S.song || S.retrySong);
+  $('#resultRetry').onclick = () => load(S.song || S.retrySong);
   $('#acceptChallenge').onclick = acceptChallenge;
   $('#leaveChallenge').onclick = () => { history.replaceState(null, '', location.pathname + location.search); UI.lobby(); };
   $('#back').onclick = () => { closeAll(); UI.lobby(); };
@@ -1373,7 +1445,7 @@
   // ---- custom game (main satu artis) ----
   $('#openCustom').onclick = openCustom;
   $('#openStats').onclick = () => { closeAll(); UI.stats(); };
-  $('#openHelp').onclick = () => { closeAll(); open($('#helpModal')); };
+
   $('#openFeedback').onclick = () => {
     stopAudio();
     const details = [S.daily ? 'Mode: Daily ' + S.daily.day : S.challenge ? 'Mode: Friend challenge' :
@@ -1491,9 +1563,20 @@
 
   audio.addEventListener('ended', stopAudio);
   audio.addEventListener('error', () => {
-    if (!S.loading) { UI.status('Audio failed to load. Try again.', true); $('#retrySong').hidden = false; }
+    if (!S.loading && S.meta && !$('#game').hidden) audioFailure();
   });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && playing) stopAudio(); });
+  audio.addEventListener('waiting', () => {
+    if (!playing) return;
+    UI.playState('loading');
+    UI.status('Buffering audio…');
+    clearTimeout(bufferTimer);
+    bufferTimer = setTimeout(() => { if (playing) audioFailure(); }, 12000);
+  });
+  audio.addEventListener('playing', () => {
+    clearTimeout(bufferTimer);
+    if (playing) { UI.playState('playing'); UI.status(''); }
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && (playing || playPending)) stopAudio(); });
 
   /* ================= mulai ================= */
 
@@ -1503,5 +1586,5 @@
 
   setInterval(() => { if (!$('#lobby').hidden) refreshDaily(); }, 30000);
   if (location.hash === '#daily') startDaily();
-  else if (!showIncomingChallenge() && !LS.get('tl:seen')) { LS.set('tl:seen', 1); setTimeout(() => open($('#helpModal')), 500); }
+  else showIncomingChallenge();
 })();
