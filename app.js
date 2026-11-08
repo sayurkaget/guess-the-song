@@ -1254,13 +1254,18 @@
   //   mode 'lose' -> serpihan merah kelabu jatuh lesu dari atas
   let confettiStop = null;
   function confetti(sel, mode) {
+    if (confettiStop) { confettiStop(); confettiStop = null; }
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const lose = mode === 'lose';
     const cv = $(sel);
     const ctx = cv.getContext('2d');
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const W = cv.width = innerWidth * dpr;
-    const H = cv.height = innerHeight * dpr;
+    if (!ctx) return;
+    // Keep the raster workload bounded on large/high-DPI screens. CSS still
+    // fills the viewport; positions and velocities share the same scale.
+    const dpr = Math.min(window.devicePixelRatio || 1, 2,
+      Math.sqrt(1200000 / Math.max(1, innerWidth * innerHeight)));
+    const W = cv.width = Math.max(1, Math.floor(innerWidth * dpr));
+    const H = cv.height = Math.max(1, Math.floor(innerHeight * dpr));
     const cols = lose
       ? ['#f2555a', '#8e3b3f', '#5c6b62', '#3d4a43', '#a8524f']
       : ['#25e07d', '#ffffff', '#12b862', '#8ef7bd', '#d8fbe8'];
@@ -1285,18 +1290,21 @@
     const grav = lose ? 0.12 : 0.28;
 
     let rafc = 0, prev = performance.now();
+    confettiStop = () => { cancelAnimationFrame(rafc); ctx.clearRect(0, 0, W, H); };
     (function frame(now) {
+      if (document.hidden) { confettiStop(); return; }
       const dt = Math.min((now - prev) / 16.67, 3);
       prev = now;
       ctx.clearRect(0, 0, W, H);
       let alive = 0;
       for (const b of bits) {
         b.vy += grav * dpr * dt;
-        b.vx *= 0.996;
+        b.vx *= Math.pow(0.996, dt);
         b.x += b.vx * dt;
         b.y += b.vy * dt;
         b.rot += b.vr * dt;
-        if (b.y < H + 50 * dpr) alive++;
+        if (b.y >= H + 50 * dpr) continue;
+        alive++;
         ctx.save();
         ctx.translate(b.x, b.y);
         ctx.rotate(b.rot);
@@ -1307,8 +1315,6 @@
       if (alive) rafc = requestAnimationFrame(frame);
       else ctx.clearRect(0, 0, W, H);
     })(prev);
-
-    confettiStop = () => { cancelAnimationFrame(rafc); ctx.clearRect(0, 0, W, H); };
   }
 
   /* ================= modal & toast ================= */
