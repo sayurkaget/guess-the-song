@@ -7,7 +7,7 @@ const ArtistDetective = require('../artist-game.js');
 
 const root = path.join(__dirname, '..');
 
-test('ArtistDetective buildRoster resolves all 100 iconic artists against songs.js and duel-streams-v1.js', () => {
+test('ArtistDetective buildRoster resolves all 250 iconic artists against songs.js and duel-streams-v1.js', () => {
   const ctx = { window: {} };
   vm.runInContext(fs.readFileSync(path.join(root, 'songs.js'), 'utf8'), vm.createContext(ctx));
   vm.runInContext(fs.readFileSync(path.join(root, 'duel-streams-v1.js'), 'utf8'), ctx);
@@ -16,18 +16,23 @@ test('ArtistDetective buildRoster resolves all 100 iconic artists against songs.
   }));
 
   const roster = ArtistDetective.buildRoster(all, ctx.window.DUEL_STREAMS_V1);
-  assert.equal(roster.length, 100, 'expected all 100 artists in RAW_ROSTER to resolve in songs.js');
+  assert.equal(roster.length, 250, 'expected all 250 artists in RAW_ROSTER to resolve in songs.js');
 
   const ids = new Set();
   const ranks = new Set();
+  const codes = new Set();
   for (const a of roster) {
     assert.ok(a.id && !ids.has(a.id), 'duplicate or empty artist id: ' + a.id);
     ids.add(a.id);
-    assert.ok(a.rank >= 1 && a.rank <= 100 && !ranks.has(a.rank), 'invalid or duplicate rank: ' + a.rank);
+    assert.ok(a.rank >= 1 && a.rank <= 250 && !ranks.has(a.rank), 'invalid or duplicate rank: ' + a.rank);
     ranks.add(a.rank);
     assert.ok(a.art && a.art.startsWith('http'), 'missing cover art for ' + a.name);
     assert.ok(a.topSong && a.topSong.trackId > 0, 'missing topSong trackId for ' + a.name);
     assert.ok(a.hintSong && a.hintSong.trackId > 0, 'missing hintSong trackId for ' + a.name);
+    const chUrl = ArtistDetective.createChallenge('https://namethetrack.pages.dev/', { id: a.id, tries: 3, won: true });
+    assert.ok(chUrl && !codes.has(chUrl), 'duplicate challenge URL for ' + a.name);
+    codes.add(chUrl);
+    assert.deepEqual(ArtistDetective.parseChallenge(chUrl), { version: 1, id: a.id, won: true, tries: 3 });
   }
   assert.equal(roster[0].name, 'The Weeknd');
   assert.equal(roster[0].topSong.title, 'Blinding Lights');

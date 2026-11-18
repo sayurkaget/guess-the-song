@@ -3385,7 +3385,7 @@
       const board = $('#agBoard');
       if (!board) return;
       if (!ag.guesses.length) {
-        board.innerHTML = '<div class="spotle-empty">Guess any artist above to reveal Debut Year, Solo/Group Type, Gender, Genre, Country &amp; Global Rank (#1&ndash;#100).</div>';
+        board.innerHTML = '<div class="spotle-empty">Guess any artist above to reveal Debut Year, Solo/Group Type, Gender, Genre, Country &amp; Global Rank (#1&ndash;#250).</div>';
         return;
       }
       board.innerHTML = ag.guesses.slice().reverse().map((g, revIdx) => {
@@ -3426,13 +3426,20 @@
       const qNorm = norm(query);
       const dd = $('#agDD');
       if (!qNorm || ag.done) { closeAgDD(); return; }
-      const matches = roster.filter((a) => a.hay.includes(qNorm)).slice(0, 8);
+      const matches = roster
+        .filter((a) => a.hay.includes(qNorm))
+        .sort((a, b) => {
+          const aPre = a.hay.startsWith(qNorm) ? 0 : ((' ' + a.hay).includes(' ' + qNorm) ? 1 : 2);
+          const bPre = b.hay.startsWith(qNorm) ? 0 : ((' ' + b.hay).includes(' ' + qNorm) ? 1 : 2);
+          return (aPre - bPre) || (a.rank - b.rank);
+        })
+        .slice(0, 10);
       ag.matches = matches;
       ag.sel = -1;
       dd.innerHTML = '';
       if (!matches.length) {
         const empty = el('div', 'dd-empty');
-        empty.textContent = 'No matching artist in top 100 roster.';
+        empty.textContent = 'No matching artist in top 250 roster.';
         dd.appendChild(empty);
       } else {
         matches.forEach((a, idx) => {
