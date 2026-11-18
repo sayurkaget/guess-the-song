@@ -540,3 +540,31 @@ test('Duel target pill, Duel stats tab, Space preview key, and duel summary scor
   assert.match(nodes.get('#dist').innerHTML, /Streams[\s\S]*9[\s\S]*Year[\s\S]*5/);
   assert.equal(nodes.get('#reset').hidden, true);
 });
+
+test('Artist Detective lobby card, arena DOM, and #artist= challenge intro work cleanly', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'layout.css'), 'utf8');
+  const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+
+  assert.match(html, /class="arcade-row"[\s\S]*id="openDuel"[\s\S]*id="openArtistGame"/);
+  assert.match(html, /id="artistGame"[\s\S]*id="agTabs"[\s\S]*id="agQ"[\s\S]*id="agResultBanner"[\s\S]*id="agBoard"/);
+  assert.match(html, /src="artist-game\.js"/);
+  assert.match(sw, /'\.\/artist-game\.js'/);
+  assert.match(css, /#lobby \.arcade-row/);
+  assert.match(css, /\.challenge-kicker\[data-mode="artist"\]/);
+
+  const storage = new Map([
+    ['tl:artist:stats', JSON.stringify({ won: 6, current: 2, best: 4 })]
+  ]);
+  const harness = setupGame({ storage });
+  harness.ctx.window.ArtistDetective = require('../artist-game.js');
+  harness.t.UI.refreshLobby();
+  assert.equal(harness.nodes.get('#artistLobbySub').textContent, '6 clues · Best streak 4');
+
+  harness.ctx.location.hash = '#artist=1.the-weeknd.3';
+  assert.equal(harness.t.showIncomingChallenge(), true);
+  assert.equal(harness.nodes.get('#challengeIntro').hidden, false);
+  assert.equal(harness.nodes.get('#challengeKicker').dataset.mode, 'artist');
+  assert.equal(harness.nodes.get('#challengeTitle').textContent, 'Mystery artist challenge');
+  assert.match(harness.nodes.get('#challengeMessage').textContent, /solved this Mystery Artist in 3 tries/);
+});

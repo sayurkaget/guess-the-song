@@ -118,3 +118,15 @@
   - Bumped SW caches to `gts-v66-fan-disc-faq` (`sw.js`) and `gts-cf-v46-fan-disc-faq` (`tools/build-cloudflare.cjs`).
   - Verified with `node --test tests\*.test.cjs` (`122/122` pass) and Playwright Desktop + Mobile E2E on `dist/`.
   - Deployed `dist/` to Cloudflare Pages: `https://e778db03.namethetrack.pages.dev` (`https://namethetrack.pages.dev/`).
+
+## Wave 30 — Artist Detective (Spotle-Style Mystery Artist Deduction Mode) (2026-11-18)
+- **Artist Detective Engine (`artist-game.js`, `tests/artist-game.test.cjs`)**:
+  - Added `window.ArtistDetective` (`buildRoster`, `compare`, `dailyArtist`, `createChallenge`, `parseChallenge`, `compareChallenge`, `shareText`, `MAX_TRIES: 10`) backed by 100 iconic global artists resolved from `songs.js` and `duel-streams-v1.js`.
+  - Evaluates 6 clue tiles per guess (`Debut` year with `±5` close & `▲`/`▼` arrows, `Type` Solo/Duo/Group with member count, `Gender`, `Genre`, `Country` with continent close match, and Global `Rank` `#1–#100` with `±15` close & `▲`/`▼` arrows).
+- **Lobby & Arena UI (`index.html`, `layout.css`, `app.js`, `sw.js`, `tools/build-cloudflare.cjs`, `tests/game-ui.test.cjs`)**:
+  - Placed `#openDuel` (Music Duel) and `#openArtistGame` (Artist Detective) side-by-side inside `.arcade-row` on desktop (`> 680px`) and stacked on mobile (`<= 680px`), with dynamic `#artistLobbySub` (`Best streak X` / `Solved X`).
+  - Built `#artistGame` with `Daily Artist` (`tl:artist:daily:YYYY-MM-DD`) and `Unlimited` tabs (`#agTabs`), artist autocomplete dropdown (`#agQ` / `#agDD`) with circular photos, 5-second `▶ Audio Clue` (`#agAudioHint`), `Give up` (`#agGiveUp`), inline completion/reveal banner (`#agResultBanner`) with `▶ Play Hit` (`#agPlaySongBtn`), spoiler-free emoji grid + `#artist=1.<id>.<triesOrX>` friend challenge sharing (`#agShareBtn`), and full `#challengeIntro` integration for `#artist=` links.
+- **Verification & Deployment**:
+  - Bumped SW caches to `gts-v67-artist-detective` (`sw.js`) and `gts-cf-v47-artist-detective` (`tools/build-cloudflare.cjs`).
+  - Verified with `node --test tests\*.test.cjs` (`127/127` pass) and Playwright Desktop (`1180x800`) + Mobile (`390x844`) E2E on `dist/`.
+  - Deployed `dist/` to Cloudflare Pages: `https://2788078b.namethetrack.pages.dev` (`https://namethetrack.pages.dev/`).

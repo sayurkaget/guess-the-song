@@ -5,7 +5,7 @@
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v66-fan-disc-faq';
+const CACHE = 'gts-v67-artist-detective';
 const SHELL = [
   './',
   './index.html',
@@ -25,6 +25,7 @@ const SHELL = [
   './daily-pool-v1.js',
   './duel-streams-v1.js',
   './duel.js',
+  './artist-game.js',
   './songs.js',
   './app.webmanifest',
   './icon-32.png',

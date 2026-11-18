@@ -94,19 +94,35 @@
       </div>
     </section>
 
-    <button class="duel-card-wide" id="openDuel" type="button">
-      <div class="duel-card-copy">
-        <div class="duel-card-title">
-          <h2>Music Duel</h2>
-          <span class="mode-pill is-gold">Higher or lower</span>
+    <div class="arcade-row">
+      <button class="duel-card-wide" id="openDuel" type="button">
+        <div class="duel-card-copy">
+          <div class="duel-card-title">
+            <h2>Music Duel</h2>
+            <span class="mode-pill is-gold">Higher or lower</span>
+          </div>
+          <p id="duelLobbySub">Spotify streams &amp; release year</p>
         </div>
-        <p id="duelLobbySub">Spotify streams &amp; release year</p>
-      </div>
-      <span class="duel-cta-pill">
-        Play duel
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </span>
-    </button>
+        <span class="duel-cta-pill">
+          Play duel
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </button>
+
+      <button class="duel-card-wide artist-detective-card" id="openArtistGame" type="button">
+        <div class="duel-card-copy">
+          <div class="duel-card-title">
+            <h2>Artist Detective</h2>
+            <span class="mode-pill is-purple">10 tries</span>
+          </div>
+          <p id="artistLobbySub">Deduce the mystery artist from 6 clues</p>
+        </div>
+        <span class="duel-cta-pill is-purple-cta">
+          Play artist
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </button>
+    </div>
   </section>
 
   <section class="lobby" id="challengeIntro" hidden>
@@ -267,6 +283,72 @@
     </div>
 
     <p class="status duel-status" id="duelStatus" role="status" aria-live="polite" aria-atomic="true"></p>
+  </section>
+
+  <!-- ====== artist detective ====== -->
+  <section class="game artist-game" id="artistGame" hidden>
+    <div class="gamebar">
+      <button class="backbtn" id="artistGameBack" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6 9 12l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Change mode
+      </button>
+      <div class="gamemeta">
+        <span class="streak-pill" id="agTargetPill" hidden>Target 0</span>
+        <span class="streak-pill" id="agBestPill" hidden>Best 0</span>
+        <span class="streak-pill hot" id="agTriesPill">Guess 1 / 10</span>
+      </div>
+    </div>
+
+    <div class="seg duel-tabs" id="agTabs" role="tablist" aria-label="Artist Detective mode">
+      <button type="button" role="tab" data-ag-mode="daily" aria-pressed="true">Daily Artist</button>
+      <button type="button" role="tab" data-ag-mode="free" aria-pressed="false">Unlimited</button>
+    </div>
+
+    <div class="spotle-top-card">
+      <div class="search spotle-search">
+        <svg class="search-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="agQ" type="text" placeholder="Type any artist to reveal clues…" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="agDD" aria-autocomplete="list">
+        <button class="clear" id="agClear" type="button" aria-label="Clear" hidden>&times;</button>
+        <div class="dd spotle-dd" id="agDD" role="listbox" hidden></div>
+      </div>
+
+      <div class="spotle-controls-row">
+        <div class="spotle-btn-group">
+          <button class="btn ghostbtn spotle-hint-btn" id="agAudioHint" type="button">
+            &#9654; Audio Clue
+          </button>
+          <button class="btn ghostbtn spotle-giveup-btn" id="agGiveUp" type="button">
+            Give up
+          </button>
+        </div>
+        <div class="spotle-legend" aria-label="Clue color legend">
+          <span><i class="dot exact"></i>Exact</span>
+          <span><i class="dot close"></i>Close</span>
+          <span><i class="dot miss"></i>&#9650; / &#9660;</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="spotle-result-banner" id="agResultBanner" hidden>
+      <div class="spotle-result-main">
+        <img class="spotle-result-art" id="agResultArt" alt="">
+        <div class="spotle-result-copy">
+          <span class="run-kicker" data-mode="artist" id="agVerdict">Solved!</span>
+          <h3 id="agAnswerName"></h3>
+          <p id="agTopSongLabel"></p>
+          <p class="ag-challenge-note" id="agChallengeNote" hidden></p>
+        </div>
+      </div>
+      <div class="spotle-result-actions">
+        <button class="btn ghostbtn" id="agPlaySongBtn" type="button">&#9654; Play Hit</button>
+        <button class="btn ghostbtn" id="agShareBtn" type="button">Challenge your friend</button>
+        <button class="btn solid" id="agNextBtn" type="button">Next artist</button>
+      </div>
+    </div>
+
+    <div class="spotle-board" id="agBoard" aria-live="polite">
+      <div class="spotle-empty">Guess any artist above to reveal Debut Year, Solo/Group Type, Gender, Genre, Country &amp; Global Rank (#1&ndash;#100).</div>
+    </div>
   </section>
 
   <footer class="foot">
@@ -531,6 +613,7 @@
 <script src="analytics.js"></script>
 <script src="duel-streams-v1.js"></script>
 <script src="duel.js"></script>
+<script src="artist-game.js"></script>
 <script src="app.js"></script>
 <script src="site-guide.js"></script>
 <script>
