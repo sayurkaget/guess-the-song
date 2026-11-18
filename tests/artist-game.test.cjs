@@ -94,13 +94,14 @@ test('ArtistDetective dailyArtist is deterministic per date string', () => {
   assert.equal(ArtistDetective.dailyArtist([], '2026-11-18'), null);
 });
 
-test('ArtistDetective createChallenge, parseChallenge, compareChallenge, and shareText round-trip cleanly', () => {
+test('ArtistDetective createChallenge, parseChallenge, compareChallenge, and shareText round-trip cleanly without spoiling artist name in URL', () => {
   const winUrl = ArtistDetective.createChallenge('https://namethetrack.pages.dev/#daily', {
     id: 'The Weeknd',
     tries: 4,
     won: true
   });
-  assert.equal(winUrl, 'https://namethetrack.pages.dev/#artist=1.the-weeknd.4');
+  assert.match(winUrl, /^https:\/\/namethetrack\.pages\.dev\/#artist=1\.[a-z0-9]+\.4$/);
+  assert.doesNotMatch(winUrl, /weeknd/i);
   assert.deepEqual(ArtistDetective.parseChallenge(winUrl), {
     version: 1,
     id: 'the-weeknd',
@@ -108,12 +109,32 @@ test('ArtistDetective createChallenge, parseChallenge, compareChallenge, and sha
     tries: 4
   });
 
+  const fmUrl = ArtistDetective.createChallenge('https://namethetrack.pages.dev/', {
+    id: 'fleetwood-mac',
+    tries: 3,
+    won: true
+  });
+  assert.doesNotMatch(fmUrl, /fleetwood|mac/i);
+  assert.deepEqual(ArtistDetective.parseChallenge(fmUrl), {
+    version: 1,
+    id: 'fleetwood-mac',
+    won: true,
+    tries: 3
+  });
+
   const loseUrl = ArtistDetective.createChallenge('https://namethetrack.pages.dev/', {
     id: 'taylor-swift',
     tries: 10,
     won: false
   });
-  assert.equal(loseUrl, 'https://namethetrack.pages.dev/#artist=1.taylor-swift.x');
+  assert.doesNotMatch(loseUrl, /taylor|swift/i);
+  assert.deepEqual(ArtistDetective.parseChallenge(loseUrl), {
+    version: 1,
+    id: 'taylor-swift',
+    won: false,
+    tries: 0
+  });
+  // Legacy slug link remains backwards-compatible
   assert.deepEqual(ArtistDetective.parseChallenge('#artist=1.taylor-swift.x'), {
     version: 1,
     id: 'taylor-swift',
@@ -122,6 +143,7 @@ test('ArtistDetective createChallenge, parseChallenge, compareChallenge, and sha
   });
 
   assert.equal(ArtistDetective.parseChallenge('#artist=1.bad.11'), null);
+  assert.equal(ArtistDetective.parseChallenge('#artist=1.unknown-artist.3'), null);
   assert.equal(ArtistDetective.parseChallenge('#artist=2.the-weeknd.3'), null);
   assert.equal(ArtistDetective.parseChallenge('#duel=1.s.3.10-20'), null);
 

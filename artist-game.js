@@ -269,6 +269,15 @@
     return h >>> 0;
   }
 
+  const ID_TO_CODE = new Map();
+  const CODE_TO_ID = new Map();
+  for (const r of RAW_ROSTER) {
+    const id = slugify(r[0]);
+    const code = hashStr('tl:ag:v1:' + id).toString(36);
+    ID_TO_CODE.set(id, code);
+    CODE_TO_ID.set(code, id);
+  }
+
   function dailyArtist(roster, dateStr) {
     if (!Array.isArray(roster) || !roster.length) return null;
     const cleanDate = String(dateStr || '2026-01-01');
@@ -279,9 +288,10 @@
   function createChallenge(baseUrl, { id = '', tries = 0, won = false } = {}) {
     const cleanUrl = String(baseUrl || '').split('#')[0];
     const cleanId = slugify(id);
-    if (!cleanUrl || !cleanId) return '';
+    const code = ID_TO_CODE.get(cleanId) || (CODE_TO_ID.has(cleanId) ? cleanId : '');
+    if (!cleanUrl || !code) return '';
     const resCode = won && tries >= 1 && tries <= 10 ? String(Math.floor(tries)) : 'x';
-    return cleanUrl + '#artist=1.' + cleanId + '.' + resCode;
+    return cleanUrl + '#artist=1.' + code + '.' + resCode;
   }
 
   function parseChallenge(raw) {
@@ -292,9 +302,10 @@
     else return null;
     const parts = token.split('.');
     if (parts.length !== 3 || parts[0] !== '1') return null;
-    const id = parts[1];
+    const rawKey = parts[1];
     const resCode = parts[2];
-    if (!/^[a-z0-9-]+$/.test(id) || id.length < 2) return null;
+    const id = CODE_TO_ID.get(rawKey) || (ID_TO_CODE.has(rawKey) ? rawKey : '');
+    if (!id) return null;
     if (resCode !== 'x' && !/^(?:[1-9]|10)$/.test(resCode)) return null;
     return {
       version: 1,
