@@ -13,9 +13,14 @@ const original = context.window.SONGS;
 const artists = [...new Set(original.map(song => song[1]))];
 const artistKey = value => value.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
   .replace(/\b(?:and|the)\b/g, '').replace(/[^\p{L}\p{N}]/gu, '');
-const songKey = (title, artist) => (title.replace(/\s*[-–—]\s*(?:\d{4}\s+)?remaster(?:ed)?(?:\s+\d{4})?\s*$/i, '') + ' ' + artist).toLowerCase().normalize('NFD')
+const songKey = (title, artist) => (title
+  .replace(/[([]\s*(?:feat\.?|ft\.?|featuring|with)\s+[^)\]]*[)\]]/gi, ' ')
+  .replace(/\s+(?:feat\.?|ft\.?|featuring)\s+.*$/i, ' ')
+  .replace(/[([]\s*[^)\]]*(?:\b(?:remaster(?:ed)?(?:\s+\d{4})?(?:\s+version)?|bonus track|single version|radio edit|album version|extended(?: version)?|deluxe version|amended|explicit|clean|spanish(?:\s+version)?|spanglish(?:\s+version)?|alternate(?:\s+\w+)?|video mix|radio mix|club mix)\b|\bvs\.?\s+[^)\]]*)[)\]]/gi, ' ')
+  .replace(/\s*[-–—]\s*(?:\d{4}\s+)?(?:remaster(?:ed)?(?:\s+\d{4})?(?:\s+version)?|bonus track|single version|radio edit|album version|extended version|deluxe version|a colors show|stripped|beat|piano jam[^]*|remake|redux|livestream version|radio mix|spanish(?:\s+version)?|spanglish(?:\s+version)?)\s*$/i, '')
+  + ' ' + artist).toLowerCase().normalize('NFD')
   .replace(/\p{M}/gu, '').replace(/\(.*?\)|\[.*?\]/g, ' ')
-  .replace(/['’ʼ`´]/g, '').replace(/\$/g, 's')
+  .replace(/['’ʼ`´]/g, '').replace(/\$/g, 's').replace(/&/g, ' and ')
   .replace(/\b(feat|ft|with|and|the|dari|from)\b/g, ' ')
   .replace(/[^\p{L}\p{N} ]/gu, ' ').replace(/\s+/g, ' ').trim();
 function genre(value) {

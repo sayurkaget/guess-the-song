@@ -4,23 +4,23 @@
 <meta charset="utf-8">
 <meta name="ga-measurement-id" content="G-T364R8CD1T">
 <meta name="google-site-verification" content="_dZd0PjfepG7EdzC3WaoKu12NTdZ6fBZa9dyiRxO9G4">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Name The Track — Guess The Song</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TuneUp — Music Games &amp; Song Duel</title>
 
 <!-- SEO + preview saat dibagikan -->
-<meta name="description" content="Guess songs from as little as 0.1 seconds. Play a daily challenge, choose your favorite artist, or challenge friends in this free music guessing game.">
+<meta name="description" content="Play free music games in your browser. Guess songs from 0.1s clips in Daily, Classic, and Custom Artist modes, or battle Spotify streams and release years in Music Duel.">
 <link rel="canonical" href="https://namethetrack.pages.dev/">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Name The Track">
+<meta property="og:site_name" content="TuneUp">
 <meta property="og:url" content="https://namethetrack.pages.dev/">
-<meta property="og:title" content="Name The Track — Guess The Song">
-<meta property="og:description" content="Guess songs from as little as 0.1 seconds. Play a daily challenge, choose your favorite artist, or challenge friends in this free music guessing game.">
+<meta property="og:title" content="TuneUp — Music Games &amp; Song Duel">
+<meta property="og:description" content="Play free music games in your browser. Guess songs from 0.1s clips in Daily, Classic, and Custom Artist modes, or battle Spotify streams and release years in Music Duel.">
 <meta property="og:image" content="https://namethetrack.pages.dev/icon-512.png">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Name The Track — Guess The Song">
-<meta name="twitter:description" content="Guess songs from as little as 0.1 seconds. Play a daily challenge, choose your favorite artist, or challenge friends in this free music guessing game.">
+<meta name="twitter:title" content="TuneUp — Music Games &amp; Song Duel">
+<meta name="twitter:description" content="Play free music games in your browser. Guess songs from 0.1s clips in Daily, Classic, and Custom Artist modes, or battle Spotify streams and release years in Music Duel.">
 <meta name="twitter:image" content="https://namethetrack.pages.dev/icon-512.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://namethetrack.pages.dev/#website","name":"Name The Track","alternateName":["Name The Track — Guess The Song","NameTheTrack"],"url":"https://namethetrack.pages.dev/","publisher":{"@id":"https://namethetrack.pages.dev/#publisher"}},{"@type":"Organization","@id":"https://namethetrack.pages.dev/#publisher","name":"Name The Track","url":"https://namethetrack.pages.dev/","logo":{"@type":"ImageObject","url":"https://namethetrack.pages.dev/icon-512.png","width":512,"height":512}},{"@type":"WebApplication","name":"Name The Track — Guess The Song","url":"https://namethetrack.pages.dev/","applicationCategory":"GameApplication","operatingSystem":"Any (web browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Guess songs from as little as 0.1 seconds. Play a daily challenge, choose your favorite artist, or challenge friends in this free music guessing game.","isPartOf":{"@id":"https://namethetrack.pages.dev/#website"}}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://namethetrack.pages.dev/#website","name":"TuneUp","alternateName":["Tune Up","TuneUp — Music Games & Song Duel"],"url":"https://namethetrack.pages.dev/","publisher":{"@id":"https://namethetrack.pages.dev/#publisher"}},{"@type":"Organization","@id":"https://namethetrack.pages.dev/#publisher","name":"TuneUp","url":"https://namethetrack.pages.dev/","logo":{"@type":"ImageObject","url":"https://namethetrack.pages.dev/icon-512.png","width":512,"height":512}},{"@type":"WebApplication","name":"TuneUp — Music Games & Song Duel","url":"https://namethetrack.pages.dev/","applicationCategory":"GameApplication","operatingSystem":"Any (web browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Play free music games in your browser. Guess songs from 0.1s clips in Daily, Classic, and Custom Artist modes, or battle Spotify streams and release years in Music Duel.","isPartOf":{"@id":"https://namethetrack.pages.dev/#website"}}]}</script>
 
 <!-- dipasang ke layar depan HP: Android lewat manifest, iOS lewat meta apple-* -->
 <link rel="manifest" href="app.webmanifest">
@@ -28,7 +28,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Name The Track">
+<meta name="apple-mobile-web-app-title" content="TuneUp">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preload" href="fonts/GeneralSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
@@ -36,6 +36,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
 <link rel="icon" type="image/png" sizes="96x96" href="icon-96.png">
 <link rel="preload" href="fonts/CabinetGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/Unbounded-Bold.woff2" as="font" type="font/woff2" crossorigin>
 
 <link rel="stylesheet" href="site-guide.css">
 </head>
@@ -46,7 +47,7 @@
 <main class="wrap">
 
   <header class="head">
-    <h1 class="logo">name the <span>track</span></h1>
+    <h1 class="logo">Tune<span>Up</span></h1>
   </header>
 
   <!-- ====== mode picker ====== -->
@@ -62,31 +63,63 @@
 
     <section class="classic-section" aria-labelledby="classicHeading">
       <div class="classic-heading">
-        <h2 id="classicHeading">Classic</h2>
-        <span>5 stages</span>
-      </div>
-      <div class="classic-controls">
-        <div class="subcontrols">
-          <label class="drop"><span class="sr">Genre</span><select id="genre"></select></label>
-          <label class="drop"><span class="sr">Era</span><select id="era"></select></label>
+        <div class="classic-title-group">
+          <h2 id="classicHeading">Classic</h2>
+          <span class="mode-pill">5 stages</span>
         </div>
-        <button class="btn solid start" id="start">Start</button>
+        <div class="seg classic-seg" id="classicTabs" role="tablist" aria-label="Classic setup">
+          <button type="button" role="tab" data-classic-tab="filters" aria-selected="true" aria-pressed="true">Genre &amp; Era</button>
+          <button type="button" role="tab" data-classic-tab="artist" aria-selected="false" aria-pressed="false">By Artist</button>
+        </div>
       </div>
-      <p class="poolinfo" id="poolInfo" hidden></p>
+      <div id="classicFiltersPanel">
+        <div class="classic-controls">
+          <div class="subcontrols">
+            <label class="drop"><span class="sr">Genre</span><select id="genre"></select></label>
+            <label class="drop"><span class="sr">Era</span><select id="era"></select></label>
+          </div>
+          <button class="btn solid start" id="start">Start</button>
+        </div>
+        <p class="poolinfo" id="poolInfo" hidden></p>
+      </div>
+      <div class="artist-panel" id="classicArtistPanel" hidden>
+        <div class="artist-panel-copy">
+          <b>Play your favorite artist</b>
+          <span>Pick any artist &mdash; guess 5 of their tracks from 0.1s clips</span>
+        </div>
+        <button class="artist-cta" id="openCustom" type="button">
+          Choose artist
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
     </section>
 
-    <button class="customlink custom-row" id="openCustom" type="button">
-      <span>Play your favorite artist</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <button class="duel-card-wide" id="openDuel" type="button">
+      <div class="duel-card-copy">
+        <div class="duel-card-title">
+          <h2>Music Duel</h2>
+          <span class="mode-pill is-gold">Higher or lower</span>
+        </div>
+        <p id="duelLobbySub">Spotify streams &amp; release year</p>
+      </div>
+      <span class="duel-cta-pill">
+        Play duel
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
     </button>
   </section>
 
   <section class="lobby" id="challengeIntro" hidden>
-    <h2>Friend challenge</h2>
-    <p class="dim" id="challengeMessage" role="status"></p>
-    <p class="laddernote">One song. Five tries. Same recording, same clip lengths:<br>0.1s → 0.5s → 2s → 8s → 15s.</p>
-    <button class="btn solid" id="acceptChallenge" type="button">Accept challenge</button>
-    <button class="btn ghostbtn customlink" id="leaveChallenge" type="button">Play regular game</button>
+    <div class="challenge-card">
+      <span class="challenge-kicker" id="challengeKicker">Song Challenge</span>
+      <h2 id="challengeTitle">Friend challenge</h2>
+      <p class="dim" id="challengeMessage" role="status"></p>
+      <p class="laddernote" id="challengeRules">One song. Five tries. Same recording, same clip lengths:<br>0.1s → 0.5s → 2s → 8s → 15s.</p>
+      <div class="challenge-actions">
+        <button class="btn solid" id="acceptChallenge" type="button">Accept challenge</button>
+        <button class="btn ghostbtn customlink" id="leaveChallenge" type="button">Play regular game</button>
+      </div>
+    </div>
   </section>
 
   <!-- ====== game ====== -->
@@ -96,44 +129,144 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.2 7.7 12l6.8 6.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Change mode
       </button>
-      <p class="gamemode" id="gameMode"></p>
+      <div class="gamemeta">
+        <p class="gamemode" id="gameMode"></p>
+        <span class="streak-pill" id="songStreak" hidden></span>
+      </div>
     </div>
 
     <ol class="steps live" id="steps" aria-label="Stage progress"></ol>
-    <p class="stagenow" id="stageNow"></p>
+    <p class="daily-game-pill" id="dailyGameBadge" hidden>Daily Challenge · 1 song</p>
 
-    <div class="track" id="track">
-      <div class="track-rail" id="trackWave"><div class="track-fill" id="trackFill"></div></div>
-      <div class="track-seams" id="trackSeams"></div>
-      <div class="track-head" id="trackHead"></div>
-    </div>
+    <div class="arena-grid">
+      <div class="vinyl-card">
+        <div class="vinyl-top">
+          <p class="stagenow" id="stageNow"></p>
+          <div class="clip-pill"><span class="readout" id="readout">0.0s</span><small> / <span id="clipMax">15s</span></small></div>
+        </div>
 
-    <div class="player">
-      <button class="playbtn" id="play" aria-label="Play the clip">
-        <svg class="ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg>
-        <svg class="ico-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.4"/><rect x="13.5" y="5" width="4" height="14" rx="1.4"/></svg>
-        <svg class="ico-load" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="12 38"/></svg>
-      </button>
-      <div class="readout" id="readout">0.0s</div>
-    </div>
+        <div class="player">
+          <div class="vinyl-disc">
+            <div class="vinyl-grooves" aria-hidden="true"></div>
+            <button class="playbtn" id="play" aria-label="Play the clip">
+              <svg class="ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg>
+              <svg class="ico-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.4"/><rect x="13.5" y="5" width="4" height="14" rx="1.4"/></svg>
+              <svg class="ico-load" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="12 38"/></svg>
+            </button>
+          </div>
+        </div>
 
-    <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true">Loading song…</p>
-    <button class="btn ghostbtn" id="retrySong" type="button" hidden>Try again</button>
-
-    <section class="guessbar">
-      <div class="search">
-        <svg class="search-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        <input id="q" type="text" placeholder="Search songs…" autocomplete="off" spellcheck="false"
-               role="combobox" aria-expanded="false" aria-controls="dd" aria-autocomplete="list">
-        <button class="clear" id="clear" aria-label="Clear" hidden>&times;</button>
-        <div class="dd" id="dd" role="listbox" hidden></div>
+        <div class="vinyl-foot">
+          <div class="track" id="track">
+            <div class="track-rail" id="trackWave"><div class="track-fill" id="trackFill"></div></div>
+            <div class="track-seams" id="trackSeams"></div>
+            <div class="track-head" id="trackHead"></div>
+          </div>
+          <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true">Loading song…</p>
+          <button class="btn ghostbtn" id="retrySong" type="button" hidden>Try again</button>
+        </div>
       </div>
-      <button class="btn ghost" id="skip" data-s="play">
-        <svg class="ico-skip" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.6 5.4 12.2 12 4.6 18.6ZM12.6 5.4 20.2 12l-7.6 6.6Z"/><rect x="20.6" y="5.4" width="2.1" height="13.2" rx="1"/></svg>
-        <svg class="ico-result" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.6"/></svg>
-        <span id="skipLabel">Skip</span>
+
+      <div class="guess-card">
+        <section class="guessbar">
+          <div class="search">
+            <svg class="search-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input id="q" type="text" placeholder="Search songs…" autocomplete="off" spellcheck="false"
+                   role="combobox" aria-expanded="false" aria-controls="dd" aria-autocomplete="list">
+            <button class="clear" id="clear" aria-label="Clear" hidden>&times;</button>
+            <div class="dd" id="dd" role="listbox" hidden></div>
+          </div>
+        </section>
+
+        <ol class="board-slots" id="trySlots" aria-label="Attempts this stage"></ol>
+        <ol class="guesses" id="guesses" aria-label="Guesses this stage" hidden></ol>
+
+        <button class="btn ghost skip-wide" id="skip" data-s="play">
+          <svg class="ico-skip" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.6 5.4 12.2 12 4.6 18.6ZM12.6 5.4 20.2 12l-7.6 6.6Z"/><rect x="20.6" y="5.4" width="2.1" height="13.2" rx="1"/></svg>
+          <svg class="ico-result" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.6"/></svg>
+          <span id="skipLabel">Skip</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== music duel ====== -->
+  <section class="game duel" id="duel" hidden>
+    <div class="gamebar">
+      <button class="backbtn" id="duelBack" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6 9 12l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Change mode
       </button>
-    </section>
+      <div class="gamemeta">
+        <p class="gamemode" id="duelModeLabel">Music Duel</p>
+        <span class="streak-pill" id="duelTarget" hidden>Target 0</span>
+        <span class="streak-pill" id="duelBest" hidden>Best 0</span>
+        <span class="streak-pill hot" id="duelScore">Score 0</span>
+      </div>
+    </div>
+
+    <div class="seg duel-tabs" id="duelTabs" role="tablist" aria-label="Duel deck">
+      <button type="button" role="tab" data-duel="streams" aria-pressed="true">Spotify Streams</button>
+      <button type="button" role="tab" data-duel="year" aria-pressed="false">Release Year</button>
+    </div>
+
+    <p class="duel-prompt" id="duelPrompt">Does the challenger have <b>more</b> or <b>fewer</b> Spotify streams?</p>
+
+    <div class="duel-grid">
+      <article class="duel-card" id="duelA">
+        <div class="duel-art-wrap">
+          <img class="duel-art" id="duelArtA" alt="">
+          <button class="duel-play" id="duelPlayA" type="button" data-s="idle" aria-label="Play song A preview">
+            <svg class="ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg>
+            <svg class="ico-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.4"/><rect x="13.5" y="5" width="4" height="14" rx="1.4"/></svg>
+            <svg class="ico-load" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="12 38"/></svg>
+          </button>
+        </div>
+        <div class="duel-info">
+          <span class="duel-tag" id="duelTagA">Known streams</span>
+          <h2 class="duel-title" id="duelTitleA"></h2>
+          <p class="duel-artist" id="duelArtistA"></p>
+        </div>
+        <div class="duel-metric">
+          <div class="duel-year" id="duelYearA"></div>
+          <small class="duel-sub" id="duelSubA" hidden></small>
+        </div>
+      </article>
+
+      <div class="duel-vs" aria-hidden="true">VS</div>
+
+      <article class="duel-card duel-challenger" id="duelB">
+        <div class="duel-art-wrap">
+          <img class="duel-art" id="duelArtB" alt="">
+          <button class="duel-play" id="duelPlayB" type="button" data-s="idle" aria-label="Play challenger preview">
+            <svg class="ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg>
+            <svg class="ico-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.4"/><rect x="13.5" y="5" width="4" height="14" rx="1.4"/></svg>
+            <svg class="ico-load" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="12 38"/></svg>
+          </button>
+        </div>
+        <div class="duel-info">
+          <span class="duel-tag" id="duelTagB">Challenger</span>
+          <h2 class="duel-title" id="duelTitleB"></h2>
+          <p class="duel-artist" id="duelArtistB"></p>
+        </div>
+        <div class="duel-metric">
+          <div class="duel-year duel-unknown" id="duelYearB">?</div>
+          <small class="duel-sub" id="duelSubB" hidden></small>
+        </div>
+        <div class="duel-actions" id="duelActions">
+          <button class="btn solid duel-btn" id="duelLater" type="button">
+            <span id="duelLaterLbl">&#9650; Higher</span>
+            <small id="duelLaterSub"></small>
+          </button>
+          <button class="btn ghost duel-btn" id="duelEarlier" type="button">
+            <span id="duelEarlierLbl">&#9660; Lower</span>
+            <small id="duelEarlierSub"></small>
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <p class="status duel-status" id="duelStatus" role="status" aria-live="polite" aria-atomic="true"></p>
   </section>
 
   <footer class="foot">
@@ -160,6 +293,7 @@
         <button type="button" data-guide-genre="rnb">R&amp;B / Soul</button>
         <button type="button" data-guide-genre="edm">Electronic</button>
         <button type="button" data-guide-genre="indie">Indie</button>
+        <button type="button" data-guide-genre="lain">Other</button>
       </div>
     </div>
     <div class="music-group">
@@ -177,20 +311,21 @@
   <div class="guide-info">
     <section class="guide-about" aria-labelledby="aboutTitle">
       <h2 id="aboutTitle">About the game</h2>
-      <p>Name The Track is a music guessing game built around short audio clips. Put your music memory to the test with a five-stage Classic run, a single Daily song, or a Custom game featuring an artist you choose.</p>
-      <p>Play for free, right in your browser.</p>
+      <p>TuneUp brings quick music games together right in your browser. Put your ear to the test with 0.1s–15s audio clips in Daily, Classic, and Custom Artist modes, or compare hit songs in Music Duel.</p>
+      <p>Play for free, anytime you want.</p>
     </section>
     <section class="guide-faq" aria-labelledby="faqTitle">
       <h2 id="faqTitle">Good to know</h2>
       <details><summary>Do I need an account?</summary><p>No sign-up is needed. Open the game on your phone or computer and pick a mode.</p></details>
-      <details><summary>What can I replay?</summary><p>Classic and Custom games can be played as often as you like. The Daily song is available once per day, with five attempts.</p></details>
+      <details><summary>What can I replay?</summary><p>Classic, Custom Artist, and Music Duel can be played as often as you like. The Daily song is available once per day, with five attempts.</p></details>
       <details><summary>When is the next Daily?</summary><p>At 7:00 AM in your device's local time. Consecutive Daily wins build your streak; a missed day or a loss resets it.</p></details>
+      <details><summary>Can I challenge a friend?</summary><p>Yes. After any song, 5-stage run, or Music Duel, tap Challenge your friend to copy a link with the exact same tracks—without spoiling the answers.</p></details>
       <details><summary>Where is my progress saved?</summary><p>Your Daily progress and stats are saved in this browser. They do not automatically transfer to another browser or device.</p></details>
     </section>
   </div>
 
   <footer class="guide-footer">
-    <small>© 2026 Name The Track</small>
+    <small>© 2026 TuneUp</small>
     <button type="button" data-guide-top>Back to top <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button>
   </footer>
   <p class="sr" id="guideAnnouncement" role="status" aria-live="polite"></p>
@@ -204,33 +339,48 @@
   <div class="reveal" role="dialog" aria-modal="true" aria-labelledby="rTitle">
     <button class="x" data-close aria-label="Close">&times;</button>
 
-    <p class="ghoststage" id="ghostStage" aria-hidden="true"></p>
+    <div class="reveal-grid">
+      <div class="reveal-sleeve">
+        <div class="reveal-disc" aria-hidden="true"></div>
+        <button class="cover-wrap" id="coverPlay" aria-label="Play the song">
+          <span class="cover-ring" aria-hidden="true"></span>
+          <img class="cover" id="cover" alt="" width="180" height="180">
+          <span class="cover-play" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg>
+          </span>
+        </button>
+      </div>
 
-    <button class="cover-wrap" id="coverPlay" aria-label="Play the song">
-      <span class="cover-ring" aria-hidden="true"></span>
-      <img class="cover" id="cover" alt="" width="180" height="180">
-      <span class="cover-play" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg>
-      </span>
-    </button>
+      <div class="reveal-info">
+        <div class="reveal-head">
+          <div class="reveal-tags">
+            <p class="kicker" id="verdict"></p>
+            <p class="badge" id="badge"></p>
+          </div>
+          <h2 class="r-title" id="rTitle"></h2>
+          <p class="r-artist" id="rArtist"></p>
+          <p class="streak-note" id="streakNote" hidden></p>
+        </div>
 
-    <p class="status" id="resultAudioStatus" role="status" aria-live="polite" hidden></p>
-    <button class="btn ghostbtn" id="resultRetry" type="button" hidden>Try again</button>
-    <p class="kicker" id="verdict"></p>
-    <h2 class="r-title" id="rTitle"></h2>
-    <p class="r-artist" id="rArtist"></p>
+        <div class="reveal-body">
+          <p class="status" id="resultAudioStatus" role="status" aria-live="polite" hidden></p>
+          <button class="btn ghostbtn" id="resultRetry" type="button" hidden>Try again</button>
+          <p class="dim challenge-comparison" id="challengeComparison" hidden></p>
 
-    <p class="badge" id="badge"></p>
-    <p class="dim challenge-comparison" id="challengeComparison" hidden></p>
-
-    <div class="r-actions">
-      <button class="btn ghostbtn" id="shareStage">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.7" fill="none"/></svg>
-        Challenge your friend
-      </button>
-      <button class="btn solid" id="next">Next</button>
+          <div class="r-actions">
+            <button class="btn ghostbtn" id="shareStage">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.7" fill="none"/></svg>
+              Challenge your friend
+            </button>
+            <button class="btn solid" id="next">Next</button>
+          </div>
+          <div class="reveal-foot">
+            <a class="listenlink" id="listen" target="_blank" rel="noopener">Listen in full &#8599;</a>
+            <button class="report-song" id="reportSong" type="button">Report this song</button>
+          </div>
+        </div>
+      </div>
     </div>
-    <a class="listenlink" id="listen" target="_blank" rel="noopener">Listen in full</a>
   </div>
 </div>
 
@@ -238,18 +388,58 @@
 <div class="modal" id="runModal" hidden>
   <div class="artbg" id="artBgRun"></div>
   <canvas class="confetti" id="runConfetti" aria-hidden="true"></canvas>
-  <div class="sheet result" role="dialog" aria-modal="true" aria-labelledby="runTitle">
+  <div class="sheet result run-sheet" role="dialog" aria-modal="true" aria-labelledby="runTitle">
     <button class="x" data-close aria-label="Close">&times;</button>
-    <p class="verdict" id="runVerdict"></p>
-    <p class="runscore"><b id="runScore">0</b><span id="runScoreLabel">/5 stages</span></p>
-    <h2 class="sr" id="runTitle">Run result</h2>
-    <p class="dim" id="dailyResult" hidden></p>
-    <ol class="runlist" id="runList"></ol>
-    <div class="r-actions">
-      <button class="btn solid" id="share">Copy result</button>
-      <button class="btn ghost" id="againRun">Play again</button>
+    <div class="run-hero">
+      <div class="run-fan" id="runFan" aria-hidden="true"></div>
+      <div class="run-head">
+        <span class="run-kicker" id="runModeTag">Run Complete</span>
+        <div class="run-scoreline">
+          <p class="verdict" id="runVerdict"></p>
+          <p class="runscore"><b id="runScore">0</b><span id="runScoreLabel">/5 stages</span></p>
+        </div>
+        <h2 class="sr" id="runTitle">Run result</h2>
+        <p class="dim" id="dailyResult" hidden></p>
+        <p class="dim challenge-comparison" id="runChallengeResult" hidden></p>
+      </div>
     </div>
-    <button class="btn ghostbtn customlink" id="backToMenu" type="button">Back to menu</button>
+    <ol class="runlist run-shelf" id="runList"></ol>
+    <div class="run-foot">
+      <div class="r-actions">
+        <button class="btn solid" id="share" type="button">Challenge your friend</button>
+        <button class="btn ghost" id="againRun">Play again</button>
+      </div>
+      <button class="btn ghostbtn customlink" id="backToMenu" type="button">Back to menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== release duel result ====== -->
+<div class="modal" id="duelModal" hidden>
+  <div class="artbg" id="artBgDuel"></div>
+  <canvas class="confetti" id="duelConfetti" aria-hidden="true"></canvas>
+  <div class="sheet result run-sheet duel-sheet" role="dialog" aria-modal="true" aria-labelledby="duelEndTitle">
+    <button class="x" data-close aria-label="Close">&times;</button>
+    <div class="run-hero">
+      <div class="run-fan" id="duelFan" aria-hidden="true"></div>
+      <div class="run-head">
+        <span class="run-kicker" id="duelModeTag">Music Duel</span>
+        <div class="run-scoreline">
+          <p class="verdict" id="duelVerdict"></p>
+          <p class="runscore"><b id="duelFinalScore">0</b><span id="duelFinalBest">best 0</span></p>
+        </div>
+        <h2 class="sr" id="duelEndTitle">Release Duel result</h2>
+        <p class="dim challenge-comparison" id="duelSummaryNote"></p>
+      </div>
+    </div>
+    <ol class="runlist duel-runlist run-shelf" id="duelRunList"></ol>
+    <div class="run-foot">
+      <div class="r-actions">
+        <button class="btn solid" id="duelAgain" type="button">Play again</button>
+        <button class="btn ghost" id="duelShare" type="button">Challenge your friend</button>
+      </div>
+      <button class="btn ghostbtn customlink" id="duelMenu" type="button">Back to menu</button>
+    </div>
   </div>
 </div>
 
@@ -260,9 +450,12 @@
     <h2 class="custom-h" id="customTitle">&#10022; Custom Game</h2>
     <p class="custom-lbl">Play an artist</p>
     <div class="custom-field">
+      <svg class="search-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <input id="artistQ" type="text" placeholder="Search artists&hellip;" autocomplete="off" spellcheck="false" enterkeyhint="go">
+      <button class="clear" id="artistClear" type="button" aria-label="Clear artist search" hidden>&times;</button>
     </div>
     <ul class="custom-results" id="artistResults" hidden></ul>
+    <div class="custom-quick" id="customQuick" hidden></div>
     <p class="custom-hint" id="customHint">Pick an artist &mdash; we pick 5 of their songs.</p>
   </div>
 </div>
@@ -272,9 +465,15 @@
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle">
     <button class="x" data-close aria-label="Close">&times;</button>
     <h2 id="sTitle">Stats</h2>
+    <div class="seg stats-tabs" id="statsTabs" role="tablist" aria-label="Stats scope">
+      <button type="button" role="tab" data-tab="filter" aria-selected="true" aria-pressed="true">This filter</button>
+      <button type="button" role="tab" data-tab="overall" aria-selected="false" aria-pressed="false">All Classic</button>
+      <button type="button" role="tab" data-tab="daily" aria-selected="false" aria-pressed="false">Daily</button>
+      <button type="button" role="tab" data-tab="duel" aria-selected="false" aria-pressed="false">Duel</button>
+    </div>
     <p class="dim" id="statScope"></p>
     <div class="statgrid" id="statgrid"></div>
-    <h3>Score spread</h3>
+    <h3 id="distHeading">Score spread</h3>
     <div class="dist" id="dist"></div>
     <button class="btn ghost tiny" id="reset">Reset stats</button>
   </div>
@@ -284,23 +483,35 @@
   <div class="sheet feedback-sheet" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
     <button class="x" data-close aria-label="Close" type="button">&times;</button>
     <h2 id="feedbackTitle">Send feedback</h2>
-    <p class="dim">Found a bug, missing a song, or have an idea? Let us know.</p>
+    <p class="dim" id="feedbackIntro">Found a bug, missing a song, or have an idea? Let us know.</p>
     <form name="player-feedback" id="feedbackForm" method="POST" action="/api/feedback" data-feedback-api="true" netlify-honeypot="bot-field">
       <input type="hidden" name="form-name" value="player-feedback">
       <p hidden><label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
       <fieldset id="feedbackFields">
+        <div id="feedbackReasonField" hidden>
+          <label for="feedbackReason">Issue</label>
+          <select id="feedbackReason" disabled>
+            <option value="">Choose an issue</option>
+            <option value="audio">Audio does not play</option>
+            <option value="live">Live version</option>
+            <option value="title">Wrong song title or artist</option>
+            <option value="other">Other song issue</option>
+          </select>
+        </div>
+        <div id="feedbackCategoryField">
         <label for="feedbackCategory">Category</label>
         <select id="feedbackCategory" name="category" required>
           <option value="bug">Report a bug</option>
           <option value="song">Suggest a song</option>
           <option value="other">Other feedback</option>
         </select>
-        <label for="feedbackMessage">Message</label>
-        <textarea id="feedbackMessage" name="message" rows="4" minlength="5" maxlength="3000" placeholder="What happened, or what would you like to see?" required></textarea>
+        </div>
+        <label for="feedbackMessage" id="feedbackMessageLabel">Message</label>
+        <textarea id="feedbackMessage" name="message" rows="3" minlength="5" maxlength="3000" placeholder="What happened, or what would you like to see?" required></textarea>
         <label for="feedbackEmail">Email <span>(optional, if you'd like a reply)</span></label>
         <input id="feedbackEmail" name="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com">
         <label for="feedbackDetails">Game details <span>(optional)</span></label>
-        <textarea id="feedbackDetails" name="game-details" rows="2" maxlength="600" placeholder="Mode, song, or device details"></textarea>
+        <textarea id="feedbackDetails" name="game-details" rows="1" maxlength="600" placeholder="Mode, song, or device details"></textarea>
         <p class="feedback-note">Your message and any details you include go privately to the site owner.</p>
         <button class="btn solid" id="sendFeedback" type="submit">Send feedback</button>
       </fieldset>
@@ -318,6 +529,8 @@
 <script src="challenge.js"></script>
 <script src="feedback.js"></script>
 <script src="analytics.js"></script>
+<script src="duel-streams-v1.js"></script>
+<script src="duel.js"></script>
 <script src="app.js"></script>
 <script src="site-guide.js"></script>
 <script>

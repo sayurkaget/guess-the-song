@@ -29,12 +29,46 @@ test('large desktop canvases stay within a bounded pixel budget', () => {
     assert.equal(t.draws(),120);
   }
 });
-test('opening a new result cancels the previous animation loop', () => {
-  const t=setup(); t.context.animate('first','win'); t.context.animate('second','lose');
-  assert.equal(t.pending.size,1);
+test('opening a new result cancels the previous animation loop and skips confetti on lose', () => {
+  const t = setup();
+  t.context.animate('first', 'win');
+  t.context.animate('second', 'win');
+  assert.equal(t.pending.size, 1);
+  t.context.animate('second', 'lose');
+  assert.equal(t.pending.size, 0);
 });
 test('hidden tabs stop drawing and scheduling confetti', () => {
   const t=setup(); t.context.animate('first','win'); const before=t.draws();
   t.document.hidden=true; t.frame(16.67);
   assert.equal(t.draws(),before); assert.equal(t.pending.size,0);
+});
+
+test('audio clock writes only when its displayed tenth changes', () => {
+  const app = fs.readFileSync(require('node:path').join(__dirname, '../app.js'), 'utf8');
+  const source = app.slice(app.indexOf('    readout(t) {'), app.indexOf('    status(msg, err) {'));
+  const ui = vm.runInNewContext('({' + source + '})', {
+    S: { done: false }, fmt: n => n + 's', limit: () => 0.1, maxLen: () => 15
+  });
+  let value = '', writes = 0;
+  ui.out = { get textContent() { return value; }, set textContent(v) { value = v; writes++; } };
+  for (let frame = 0; frame < 60; frame++) ui.readout(frame / 60);
+  assert.equal(value, '1.0s');
+  assert.equal(writes, 11);
+  ui.readout(null);
+  assert.equal(value, '0.1s');
+});
+
+test('playhead moves without changing layout and clamps at both ends', () => {
+  const app = fs.readFileSync(require('node:path').join(__dirname, '../app.js'), 'utf8');
+  const source = app.slice(app.indexOf('    readout(t) {'), app.indexOf('    status(msg, err) {'));
+  const ui = vm.runInNewContext('({' + source + '})');
+  const classes = new Set();
+  ui.headEl = { style: {}, classList: { add: s => classes.add(s), remove: s => classes.delete(s) } };
+  for (const [f, percent] of [[-1, 0], [0.5, 50], [2, 100]]) {
+    ui.head(f);
+    assert.equal(ui.headEl.style.transform, `translate3d(${percent}%, -50%, 0)`);
+    assert.equal(ui.headEl.style.left, undefined);
+  }
+  ui.head(null);
+  assert.equal(classes.has('on'), false);
 });

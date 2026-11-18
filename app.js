@@ -1,4 +1,4 @@
-/* Guess The Song — satu sesi = 5 tahap, Easy naik terus sampai Impossible.
+/* TuneUp — satu sesi = 5 tahap, Easy naik terus sampai Impossible.
    Gagal di satu tahap tidak menghentikan sesi; skor akhirnya X/5.
    Audio: potongan pratinjau 30 detik dari iTunes Search API (publik, tanpa API key).
    Catatan: teks yang dilihat pemain berbahasa Inggris; komentar sengaja
@@ -69,23 +69,52 @@
       .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
   }
 
+  const COMPOUND_ARTISTS = [
+    ['tyler the creator', /\btyler\s*,\s*the\s+creator\b/gi],
+    ['earth wind fire', /\bearth\s*,\s*wind\s*(?:&|and)\s*fire\b/gi],
+    ['simon garfunkel', /\bsimon\s*(?:&|and)\s*garfunkel\b/gi],
+    ['of monsters and men', /\bof\s+monsters\s*(?:&|and)\s*men\b/gi],
+    ['mumford sons', /\bmumford\s*(?:&|and)\s*sons\b/gi],
+    ['iron wine', /\biron\s*(?:&|and)\s*wine\b/gi],
+    ['peter bjorn and john', /\bpeter\s+bjorn\s*(?:&|and)\s*john\b/gi],
+    ['edward sharpe the magnetic zeros', /\bedward\s+sharpe\s*(?:&|and)\s*the\s+magnetic\s+zeros\b/gi],
+    ['the mamas the papas', /\bthe\s+mamas\s*(?:&|and)\s*the\s+papas\b/gi]
+  ];
+  const ARTIST_ALIASES = { 'silk sonic': ['bruno mars', 'anderson paak'] };
+
   function songArtists(song) {
     const artistKey = (name) => name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
       .replace(/['’ʼ`´]/g, '').replace(/\$/g, 's').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
     const credits = [song.artist || ''];
-    const featured = /\b(?:feat\.?|ft\.?|featuring|with)\s+([^()[\]]+)/gi;
-    for (const match of (song.title || '').matchAll(featured)) credits.push(match[1]);
+    for (const m of (song.title || '').matchAll(/[([]\s*(?:feat\.?|ft\.?|featuring|with)\s+([^)\]]+)[)\]]/gi)) credits.push(m[1]);
+    for (const m of (song.title || '').matchAll(/(?:^|\s)(?:feat\.?|ft\.?|featuring)\s+([^()[\]]+)/gi)) credits.push(m[1]);
     const keys = new Set();
-    for (const credit of credits) {
+    for (let credit of credits) {
       // Keep the full name too (e.g. Earth, Wind & Fire).
       keys.add(artistKey(credit));
+      for (const [alias, pattern] of COMPOUND_ARTISTS) {
+        const next = credit.replace(pattern, ',');
+        if (next !== credit) {
+          keys.add(alias);
+          credit = next;
+        }
+      }
       for (const name of credit.split(/\s*(?:,|&|\b(?:featuring|feat|ft)\b\.?|\bwith\b|\band\b)\s*/i)) {
         const key = artistKey(name);
         if (key) keys.add(key);
       }
     }
+    for (const [group, members] of Object.entries(ARTIST_ALIASES)) {
+      if (keys.has(group)) members.forEach((m) => keys.add(m));
+    }
     keys.delete('');
     return keys;
+  }
+
+  function sameArtist(a, b) {
+    if (!a || !b) return false;
+    const artists = songArtists(a);
+    return [...songArtists(b)].some((artist) => artists.has(artist));
   }
 
   function sameRecording(a, b) {
@@ -93,13 +122,24 @@
     if (a.trackId && b.trackId && String(a.trackId) === String(b.trackId)) return true;
     const title = recordingTitle(a.title);
     if (!title || title !== recordingTitle(b.title)) return false;
-    const artists = songArtists(a);
-    return [...songArtists(b)].some((artist) => artists.has(artist));
+    return sameArtist(a, b);
   }
 
   function correctAnswer(pick) {
     return [pick, pick.pre].filter(Boolean).some((candidate) =>
       [S.song, S.meta].some((target) => sameRecording(candidate, target)));
+  }
+
+  function sameGuessArtist(pick) {
+    return [pick, pick.pre].filter(Boolean).some((candidate) =>
+      [S.song, S.meta].some((target) => sameArtist(candidate, target)));
+  }
+
+  function sameStageGuess(g, song) {
+    return Boolean(g && g.t !== 'skip' && song && (
+      (g.slug && song.slug && g.slug === song.slug) ||
+      (norm(g.title) === norm(song.title) && norm(g.artist) === norm(song.artist))
+    ));
   }
 
   function hash(str) {
@@ -150,6 +190,7 @@
     epoch: 0,        // penanda pemuatan, membatalkan request usang
     daily: null,
     challenge: null,
+    runChallenge: null,
     custom: null     // mode artis kustom: {id,label,songs[]} -- null = mode katalog biasa
   };
 
@@ -159,16 +200,20 @@
   if (!ERAS[S.era]) S.era = 'all';
 
   // Kombinasi filter memisahkan dua hal: sesi yang berjalan dan statistiknya.
-  const filterKey = () => S.daily ? 'daily:' + S.daily.day : S.challenge ? 'challenge:' + S.challenge.id : S.custom ? 'custom:' + S.custom.id : ('gl:' + S.genre + ':' + S.era);
+  const filterKey = () => S.daily ? 'daily:' + S.daily.day
+    : S.challenge ? 'challenge:' + S.challenge.id
+    : S.runChallenge ? 'run:' + S.runChallenge.ids.join('-')
+    : S.custom ? 'custom:' + S.custom.id
+    : ('gl:' + S.genre + ':' + S.era);
 
   const D       = () => DIFFS[ORDER[S.stage]];
   const ladder  = () => LADDER;
   const maxLen  = () => ladder()[TRIES - 1];
   const step    = () => Math.min(S.guesses.length, TRIES - 1);
   const limit   = () => ladder()[step()];
-  const stageCount = () => S.daily ? 1 : STAGES;
+  const stageCount = () => S.daily ? 1 : S.runChallenge ? S.runChallenge.songs.length : STAGES;
   const score   = () => S.stages.filter((x) => x && x.won).length;
-  const gameMode = () => S.daily ? 'daily' : S.challenge ? 'challenge' : S.custom ? 'custom' : 'regular';
+  const gameMode = () => S.daily ? 'daily' : (S.challenge || S.runChallenge) ? 'challenge' : S.custom ? 'custom' : 'regular';
   function trackActivity(name, details = {}) {
     // Analytics must never interrupt a game (including with blockers enabled).
     try { window.PlayerAnalytics?.event(name, { mode: gameMode(), ...details }); } catch (e) {}
@@ -238,18 +283,11 @@
       out.push({ s, sc });
     }
     // Setelah kecocokan, urutkan menurut POPULARITAS (tier rendah = makin
-    // terkenal), bukan panjang judul. Dulu memakai panjang judul, sehingga
-    // mencari satu artis memunculkan lagu-lagu berjudul pendek yang justru
-    // paling asing -- "Treat You Better" kalah oleh "Why" dan "Ruin".
-    // Lagu kustom bertier 0 semua, jadi di sana urutannya jatuh ke judul.
-    //
-    // Batasnya 60: artis dengan lagu terbanyak di katalog punya 44, jadi
-    // mengetik nama artis memunculkan SELURUH lagunya (daftarnya bisa
-    // digulung). Tetap dibatasi supaya kata umum seperti "love" tidak
-    // menggambar ribuan baris tiap ketukan tombol.
+    // terkenal), bukan panjang judul. Batas 200 cukup untuk menampung seluruh
+    // diskografi artis terbanyak (168 lagu) sambil tetap membatasi kata umum.
     out.sort((a, b) => a.sc - b.sc || a.s.tier - b.s.tier ||
                        a.s.title.length - b.s.title.length);
-    return out.slice(0, 60).map((x) => x.s);
+    return out.slice(0, 200).map((x) => x.s);
   }
 
   /* ================= iTunes ================= */
@@ -263,9 +301,11 @@
     if (rt === wt) sc += 6; else if (rt.indexOf(wt) === 0) sc += 4;
     else if (rt.indexOf(wt) >= 0 || wt.indexOf(rt) >= 0) sc += 2; else return -1;
 
-    // "feat." bikin nama artis tak persis sama — jangan dihukum terlalu berat,
-    // kalau tidak versi live/karaoke justru menang skor.
-    if (ra === wa) sc += 5; else if (ra.indexOf(wa) >= 0 || wa.indexOf(ra) >= 0) sc += 4; else sc -= 5;
+    // Hanya izinkan artis yang cocok / alias resmi; blokir cover band saat trackId tidak dikunci.
+    if (ra === wa) sc += 5;
+    else if (ra.indexOf(wa) >= 0 || wa.indexOf(ra) >= 0 || sameArtist({ title: r.trackName, artist: r.artistName }, song)) sc += 4;
+    else if (!song.trackId) return -1;
+    else sc -= 5;
 
     // judul polos tanpa embel-embel kurung lebih mungkin jadi rekaman aslinya
     if (!/[([]/.test(r.trackName) && !/[([]/.test(song.title)) sc += 1.5;
@@ -468,6 +508,7 @@
     if (S.song) {
       stages[S.stage] = {
         slug: S.song.slug,
+        trackId: (S.meta && S.meta.trackId) || S.song.trackId || null,
         title: (S.meta && S.meta.title) || S.song.title,
         artist: (S.meta && S.meta.artist) || S.song.artist,
         guesses: S.guesses, done: S.done, won: S.won
@@ -505,18 +546,41 @@
 
   function pickSong(offset) {
     // jangan ulang lagu yang sudah keluar di tahap sebelumnya dalam sesi ini
-    const used = S.stages.filter(Boolean).map((x) => x.slug);
-    const avail = S.pool.filter((s) => used.indexOf(s.slug) < 0);
+    const used = S.stages.filter(Boolean);
+    const avail = S.pool.filter((s) =>
+      used.every((u) => s.slug !== u.slug && !sameRecording(s, u)));
     const from = avail.length ? avail : S.pool;
 
     const recent = LS.get('tl:recent', []);
     const fresh = from.filter((s) => recent.indexOf(s.slug) < 0);
     const src = fresh.length > 3 ? fresh : from;
+    if (S.custom && src.length > 1) {
+      const ranked = src.slice().sort((a, b) => (a.rank ?? a.tier ?? 0) - (b.rank ?? b.tier ?? 0));
+      const core = ranked.length > 48 ? ranked.slice(0, 48) : ranked;
+      const pool = (S.stage < 2 && core.length > 20) ? core.slice(0, Math.max(20, Math.ceil(core.length * 0.6))) : core;
+      let total = 0;
+      const weights = pool.map((_, i) => (total += (pool.length - i + 4), pool.length - i + 4));
+      let roll = Math.random() * total;
+      for (let i = 0; i < pool.length; i++) {
+        roll -= weights[i];
+        if (roll <= 0) return pool[i];
+      }
+      return pool[pool.length - 1];
+    }
+    if (!S.custom && !S.daily && !S.challenge && src.length > 1) {
+      const tiers = [...new Set(src.map((s) => s.tier).filter(Boolean))];
+      if (tiers.length > 1) {
+        const pickTier = tiers[Math.floor(Math.random() * tiers.length)];
+        const byTier = src.filter((s) => s.tier === pickTier);
+        if (byTier.length) return byTier[Math.floor(Math.random() * byTier.length)];
+      }
+    }
     return src[Math.floor(Math.random() * src.length)];
   }
 
   async function load(retrySong = null) {
     const me = ++S.epoch;
+    lastStreak = null;
     stopAudio();
     $('#retrySong').hidden = true;
     $('#resultRetry').hidden = true;
@@ -540,7 +604,10 @@
     UI.render();
 
     for (let k = 0; k < 5; k++) {
-      const cand = S.daily ? S.daily.songs[S.stage] : S.challenge ? S.challenge.song : (song || pickSong(k));
+      const cand = S.daily ? S.daily.songs[S.stage]
+        : S.challenge ? S.challenge.song
+        : S.runChallenge ? S.runChallenge.songs[S.stage]
+        : (song || pickSong(k));
       S.retrySong = cand;
       try {
         const meta = await resolve(cand);
@@ -586,9 +653,15 @@
 
   function submitGuess(pick) {
     if (S.done || !S.song || S.loading || S.audioFailed) return;
+    if (S.guesses.some((g) => sameStageGuess(g, pick))) {
+      UI.status('Already tried that song.');
+      UI.clearInput();
+      return;
+    }
     const right = correctAnswer(pick);
-    const near = !right && !S.custom && norm(pick.artist) === norm(S.song.artist);
-    S.guesses.push({ t: right ? 'right' : (near ? 'near' : 'wrong'), title: pick.title, artist: pick.artist });
+    const artistLocked = S.custom && (!S.runChallenge || S.runChallenge.artistId);
+    const near = !right && !artistLocked && sameGuessArtist(pick);
+    S.guesses.push({ t: right ? 'right' : (near ? 'near' : 'wrong'), title: pick.title, artist: pick.artist, slug: pick.slug });
     if (right) return finish(true);
     if (S.guesses.length >= TRIES) return finish(false);
     stopAudio();
@@ -617,9 +690,10 @@
     // Gagal tidak menghentikan sesi -- tahap berikutnya tetap jalan.
     if (S.stage === stageCount() - 1) S.runDone = true;
     saveRun();
+    lastStreak = updateSongStreak(won);
     if (S.daily) trackActivity('daily_complete', { won, attempts: S.guesses.length });
     if (S.runDone) { if (S.daily) completeDaily(); else recordStats(); }
-    UI.render(); UI.clearInput();
+    UI.render(); UI.streak(); UI.clearInput();
     UI.status('');
     S.heard = 0;      // saat terungkap, putar lagunya dari awal
     // Diputar SEKARANG, bukan setelah modal muncul: makin dekat ke klik aslinya,
@@ -642,12 +716,12 @@
     S.song = null; S.meta = null;
     saveRun();
     UI.game();
-    load();
+    return load();
   }
 
   function newRun() {
     closeAll();
-    if (S.daily) { UI.lobby(); return; }
+    if (S.daily || S.runChallenge) { UI.lobby(); return; }
     S.stages.filter(Boolean).forEach((x) => pushRecent(x.slug));
     S.stages = []; S.stage = 0; S.runDone = false;
     S.guesses = []; S.done = false; S.won = false;
@@ -661,26 +735,88 @@
   // Ambil lagu satu artis dari iTunes (tanpa kunci). Hasilnya sudah membawa
   // preview + sampul lewat .pre, jadi resolve() melewatinya tanpa request lagi.
   async function fetchArtistSongs(artistId) {
+    if (String(artistId).startsWith('local:')) {
+      return localArtistSongs(String(artistId).slice(6));
+    }
     const url = 'https://itunes.apple.com/lookup?id=' + encodeURIComponent(artistId) +
                 '&entity=song&limit=200&country=US';
     const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
     if (!res.ok) throw new Error('http ' + res.status);
     const data = JSON.parse(await res.text());
-    const seen = Object.create(null), songs = [];
-    for (const r of (data.results || [])) {
+    const results = data.results || [];
+    const artistRow = results.find((r) => r.wrapperType === 'artist');
+    const primaryKey = artistRow && artistRow.artistName ? norm(artistRow.artistName) : '';
+    const aliases = primaryKey
+      ? Object.entries(ARTIST_ALIASES).filter(([, ms]) => ms.some((m) => norm(m) === primaryKey)).map(([k]) => k)
+      : [];
+    const leadKeys = primaryKey ? [primaryKey, ...aliases] : [];
+    const editionKey = (t) => recordingTitle((t || '')
+      .replace(/[([]\s*[^)\]]*(?:\b(?:bonus track|single version|radio edit|album version|extended(?: version)?|deluxe version|remastered version|amended|explicit|clean|spanish(?:\s+version)?|spanglish(?:\s+version)?|english(?:\s+version)?|alternate(?:\s+\w+)?|video mix|radio mix|club mix)\b|\bvs\.?\s+[^)\]]*)[)\]]/gi, ' ')
+      .replace(/\s*[-–—]\s*(?:bonus track|single version|radio edit|album version|extended(?: version)?|deluxe version|stripped|radio mix|spanish(?:\s+version)?|spanglish(?:\s+version)?)\s*$/i, ' ')
+      .replace(/&/g, ' and '));
+    const dupTagScore = (t) => /[([]\s*(?:[^)\]]*(?:\b(?:feat\.?|ft\.?|featuring|bonus track|single version|radio edit|album version|extended|deluxe|amended|explicit|clean|remaster|mix|spanish|spanglish|english|alternate)\b|\bvs\.?\s+[^)\]]*))[)\]]|[-–—]\s*(?:bonus track|single version|radio edit|album version|extended|deluxe|\d{4}\s+remaster|remaster|stripped|radio mix|spanish|spanglish)\s*$|\b(?:feat\.?|ft\.?|featuring)\b|(?:&|\S)[.…]{2,}/i.test(t) ? 1 : 0;
+    const censoredPrefix = (t) => {
+      const hasEditTag = /[([]\s*(?:radio edit|clean(?:\s+version)?|edited)\s*[)\]]/i.test(t || '');
+      const stripped = (t || '').replace(/\s*[([]\s*(?:feat\.?|ft\.?|featuring|with|radio edit|clean(?:\s+version)?|edited)\s*[^)\]]*[)\]]/gi, '').trim();
+      const m = (hasEditTag || /[&*$][.…]{2,}$/.test(stripped)) && stripped.match(/^(.+?)\s*[&*$]*[.…]{2,}\s*$/);
+      const toks = m ? recordingTitle(m[1]).split(' ').filter(Boolean) : [];
+      return toks.length >= 2 ? toks : [];
+    };
+    const startsWithToks = (fullTitle, prefixToks) => {
+      if (!prefixToks.length) return false;
+      const fullToks = recordingTitle(fullTitle).split(' ').filter(Boolean);
+      return fullToks.length > prefixToks.length && prefixToks.every((tk, idx) => fullToks[idx] === tk);
+    };
+    const songs = [];
+    let leadCount = 0;
+    for (let rawIdx = 0; rawIdx < results.length; rawIdx++) {
+      const r = results[rawIdx];
       if (r.wrapperType !== 'track' || r.kind !== 'song' || !r.previewUrl ||
           !window.RecordingPolicy.isStudio(r)) continue;
+      if (r.trackTimeMillis > 0 && r.trackTimeMillis < 75000 &&
+          /\b(?:intro|outro|interlude)\b/i.test(r.trackName)) continue;
+      const ra = norm(r.artistName || '');
+      const isLead = !leadKeys.length || leadKeys.some((k) => ra.indexOf(k) >= 0);
+      if (isLead) leadCount++;
+      else if (rawIdx >= 100 && leadCount >= 12) continue;
+
       const title = r.trackName, artist = r.artistName, sl = slug([title, artist]);
-      if (seen[sl]) continue; seen[sl] = 1;
       const art = (r.artworkUrl100 || '').replace('100x100', '600x600');
       const year = (r.releaseDate || '').slice(0, 4);
-      songs.push({
+      const song = {
         title, artist, tier: 0, region: '', genre: '', year, art,
         slug: sl, hay: norm(title + ' ' + artist),
         pre: { trackId: r.trackId, preview: r.previewUrl, art, title, artist, album: r.collectionName || '',
                year, link: r.trackViewUrl || '', exp: Date.now() + 7 * 864e5 }
+      };
+      const ek = editionKey(title);
+      const artists = songArtists(song);
+      const cToks = censoredPrefix(title);
+      const prevIdx = songs.findIndex((prev) => {
+        if (prev.slug === sl || sameRecording(prev, song)) return true;
+        const shared = [...songArtists(prev)].some((a) => artists.has(a));
+        if (!shared) return false;
+        if (ek && ek === editionKey(prev.title)) return true;
+        if (cToks.length && !censoredPrefix(prev.title).length && startsWithToks(prev.title, cToks)) return true;
+        const pToks = censoredPrefix(prev.title);
+        return pToks.length && !cToks.length && startsWithToks(title, pToks);
       });
+      if (prevIdx >= 0) {
+        const prev = songs[prevIdx];
+        const prevCens = censoredPrefix(prev.title).length > 0;
+        const newCens = cToks.length > 0;
+        if (prevCens && !newCens) { songs[prevIdx] = song; continue; }
+        if (!prevCens && newCens) continue;
+        const sNew = dupTagScore(title), sOld = dupTagScore(prev.title);
+        if (sNew < sOld || (sNew === sOld && title.length < prev.title.length)) songs[prevIdx] = song;
+        continue;
+      }
+      songs.push(song);
     }
+    songs.forEach((s, idx) => {
+      s.rank = idx;
+      s.tier = idx < 10 ? 1 : idx < 25 ? 2 : idx < 45 ? 3 : 4;
+    });
     return songs;
   }
 
@@ -704,19 +840,268 @@
     return list.slice(0, 6);
   }
 
+  const POPULAR_ARTISTS = [
+    { id: '159260351', name: 'Taylor Swift' },
+    { id: '479756766', name: 'The Weeknd' },
+    { id: '271256', name: 'Drake' },
+    { id: '278873078', name: 'Bruno Mars' },
+    { id: '471744', name: 'Coldplay' },
+    { id: '1065981054', name: 'Billie Eilish' },
+    { id: '62820413', name: 'Arctic Monkeys' },
+    { id: '63346553', name: 'Rihanna' },
+    { id: '412778295', name: 'Ariana Grande' },
+    { id: '1031397873', name: 'Dua Lipa' },
+    { id: '320569549', name: 'Justin Bieber' },
+    { id: '183313439', name: 'Ed Sheeran' },
+    { id: '277293880', name: 'Lady Gaga' },
+    { id: '111051', name: 'Eminem' },
+    { id: '368183298', name: 'Kendrick Lamar' },
+    { id: '605800394', name: 'SZA' },
+    { id: '979458609', name: 'Olivia Rodrigo' },
+    { id: '471260289', name: 'Harry Styles' },
+    { id: '390647681', name: 'Sabrina Carpenter' },
+    { id: '966309175', name: 'Post Malone' },
+    { id: '464296584', name: 'Lana Del Rey' },
+    { id: '1419227', name: 'Beyoncé' },
+    { id: '262836961', name: 'Adele' },
+    { id: '64387566', name: 'Katy Perry' },
+    { id: '1798556', name: 'Maroon 5' },
+    { id: '358714030', name: 'Imagine Dragons' },
+    { id: '148662', name: 'Linkin Park' },
+    { id: '3296287', name: 'Queen' },
+    { id: '32940', name: 'Michael Jackson' },
+    { id: '549236696', name: 'Travis Scott' },
+    { id: '830588310', name: 'Doja Cat' },
+    { id: '890403665', name: 'Shawn Mendes' },
+    { id: '217005', name: 'Britney Spears' },
+    { id: '137057909', name: 'Miley Cyrus' },
+    { id: '280215834', name: 'Selena Gomez' },
+    { id: '336249253', name: 'Charlie Puth' },
+    { id: '156488786', name: 'Sam Smith' },
+    { id: '324916925', name: 'Halsey' },
+    { id: '1446365464', name: 'Tate McRae' },
+    { id: '1264818718', name: 'Chappell Roan' },
+    { id: '935727853', name: 'Camila Cabello' },
+    { id: '280215821', name: 'Demi Lovato' },
+    { id: '260414340', name: 'OneRepublic' },
+    { id: '28721078', name: 'Sia' },
+    { id: '338264227', name: 'Ellie Goulding' },
+    { id: '334854763', name: 'Kesha' },
+    { id: '4488522', name: 'P!nk' },
+    { id: '259398', name: 'Christina Aguilera' },
+    { id: '91853', name: 'Mariah Carey' },
+    { id: '13952', name: 'Whitney Houston' },
+    { id: '63729', name: 'Céline Dion' },
+    { id: '20044', name: 'Madonna' },
+    { id: '54657', name: 'Elton John' },
+    { id: '46726', name: 'Stevie Wonder' },
+    { id: '217039', name: 'Backstreet Boys' },
+    { id: '396754057', name: 'One Direction' },
+    { id: '114342891', name: 'Jonas Brothers' },
+    { id: '398120', name: '*NSYNC' },
+    { id: '577354628', name: 'Fifth Harmony' },
+    { id: '477515548', name: 'Little Mix' },
+    { id: '973181994', name: 'ZAYN' },
+    { id: '471260298', name: 'Niall Horan' },
+    { id: '316265', name: 'Kelly Clarkson' },
+    { id: '348580754', name: 'Meghan Trainor' },
+    { id: '466059563', name: 'Bebe Rexha' },
+    { id: '570372593', name: 'Zara Larsson' },
+    { id: '1265164818', name: 'Ava Max' },
+    { id: '894337', name: 'George Michael' },
+    { id: '548421', name: 'Wham!' },
+    { id: '2715720', name: 'Kanye West' },
+    { id: '128050210', name: 'Future' },
+    { id: '5869117', name: 'Lil Wayne' },
+    { id: '105998', name: '2Pac' },
+    { id: '112058', name: '50 Cent' },
+    { id: '95705522', name: 'Chris Brown' },
+    { id: '15885', name: 'Usher' },
+    { id: '316069', name: 'Alicia Keys' },
+    { id: '78257321', name: 'Ne-Yo' },
+    { id: '82842423', name: 'Khalid' },
+    { id: '442122051', name: 'Frank Ocean' },
+    { id: '1019899019', name: 'Daniel Caesar' },
+    { id: '420368335', name: 'Tyler, The Creator' },
+    { id: '278464538', name: 'Nicki Minaj' },
+    { id: '956078923', name: 'Cardi B' },
+    { id: '73705833', name: 'J. Cole' },
+    { id: '3261325', name: 'Akon' },
+    { id: '255303209', name: 'Flo Rida' },
+    { id: '360391', name: 'Black Eyed Peas' },
+    { id: '1435848034', name: 'The Kid LAROI' },
+    { id: '256673237', name: 'T-Pain' },
+    { id: '136975', name: 'The Beatles' },
+    { id: '112018', name: 'Nirvana' },
+    { id: '657515', name: 'Radiohead' },
+    { id: '954266', name: 'Green Day' },
+    { id: '889780', name: 'Red Hot Chili Peppers' },
+    { id: '487143', name: 'Pink Floyd' },
+    { id: '5040714', name: 'AC/DC' },
+    { id: '3996865', name: 'Metallica' },
+    { id: '6906197', name: 'Foo Fighters' },
+    { id: '512633', name: 'Oasis' },
+    { id: '158038', name: 'Fleetwood Mac' },
+    { id: '219350813', name: 'The Neighbourhood' },
+    { id: '290242959', name: 'Tame Impala' },
+    { id: '1069739468', name: 'Cigarettes After Sex' },
+    { id: '28673423', name: 'Fall Out Boy' },
+    { id: '75950796', name: 'Paramore' },
+    { id: '14748659', name: 'My Chemical Romance' },
+    { id: '567072', name: 'Gorillaz' },
+    { id: '542640016', name: 'The 1975' },
+    { id: '497546276', name: 'Mitski' },
+    { id: '122782', name: 'Bon Jovi' },
+    { id: '106621', name: 'Guns N\' Roses' },
+    { id: '78500', name: 'U2' },
+    { id: '6483093', name: 'The Killers' },
+    { id: '5468295', name: 'Daft Punk' },
+    { id: '5557599', name: 'David Guetta' },
+    { id: '298496035', name: 'Avicii' },
+    { id: '1062085272', name: 'Alan Walker' },
+    { id: '980795202', name: 'Marshmello' },
+    { id: '580391756', name: 'The Chainsmokers' },
+    { id: '635806094', name: 'Kygo' },
+    { id: '368433979', name: 'Zedd' },
+    { id: '1126808565', name: 'Bad Bunny' },
+    { id: '889327', name: 'Shakira' },
+    { id: '290814601', name: 'Karol G' },
+    { id: '25514958', name: 'Daddy Yankee' },
+    { id: '444520760', name: 'J Balvin' },
+    { id: '1107186883', name: 'Rauw Alejandro' },
+    { id: '90895', name: 'Enrique Iglesias' },
+    { id: '1258279972', name: 'Joji' },
+    { id: '290699', name: 'Earth, Wind & Fire' },
+    { id: '807028', name: 'Westlife' },
+    { id: '16586443', name: 'John Legend' },
+    { id: '1260160', name: 'Nelly Furtado' },
+    { id: '155138', name: 'Sean Paul' },
+    { id: '259118085', name: 'Jason Derulo' },
+    { id: '161541223', name: 'Gotye' },
+    { id: '1104179033', name: 'Dominic Fike' },
+    { id: '4416594', name: 'John Lennon' },
+    { id: '2307230', name: 'Yellowcard' },
+    { id: '85932', name: 'Bryan Adams' },
+    { id: '148377', name: 'Depeche Mode' },
+    { id: '27044968', name: 'Pitbull' },
+    { id: '201955086', name: 'Calvin Harris' },
+    { id: '398128', name: 'Justin Timberlake' },
+    { id: '1352449404', name: 'JAY-Z' },
+    { id: '1237012992', name: 'Don Toliver' },
+    { id: '349736311', name: 'Twenty One Pilots' }
+  ];
+  const CUSTOM_RECENT_KEY = 'tl:custom:recent';
+  function shuffledPopular(exclude) {
+    const list = POPULAR_ARTISTS.slice();
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+    }
+    if (exclude && exclude.size && list.length > exclude.size * 2) {
+      const head = [], tail = [];
+      for (const a of list) (exclude.has(norm(a.name)) ? tail : head).push(a);
+      return head.concat(tail);
+    }
+    return list;
+  }
+  let popularPool = shuffledPopular();
+  let popularOffset = 0;
+  const recentArtists = () => LS.get(CUSTOM_RECENT_KEY, []).filter((a) => a && a.id && a.name);
+  function pushRecentArtist(id, name) {
+    const next = [{ id: String(id), name }, ...recentArtists().filter((a) => String(a.id) !== String(id) && norm(a.name) !== norm(name))];
+    LS.set(CUSTOM_RECENT_KEY, next.slice(0, 6));
+  }
+  function clearRecentArtists() {
+    LS.set(CUSTOM_RECENT_KEY, []);
+    renderQuickArtists(true);
+  }
+  function popularState() {
+    const recent = recentArtists();
+    const seen = new Set(recent.map((a) => norm(a.name)));
+    const avail = popularPool.filter((a) => !seen.has(norm(a.name)));
+    const size = recent.length ? 4 : 8;
+    const start = avail.length ? (popularOffset % avail.length) : 0;
+    const popular = avail.slice(start).concat(avail.slice(0, start)).slice(0, size);
+    return { recent, avail, size, popular };
+  }
+  function refreshPopularArtists() {
+    const { avail, size, popular } = popularState();
+    popularOffset += size;
+    if (popularOffset >= avail.length) {
+      popularPool = shuffledPopular(new Set(popular.map((a) => norm(a.name))));
+      popularOffset = 0;
+    }
+    renderQuickArtists(true);
+  }
+  function surprisePopularArtist() {
+    const last = recentArtists()[0];
+    const pool = POPULAR_ARTISTS.filter((a) => !last || (String(a.id) !== String(last.id) && norm(a.name) !== norm(last.name)));
+    const source = pool.length ? pool : POPULAR_ARTISTS;
+    if (!source.length) return;
+    const pick = source[Math.floor(Math.random() * source.length)];
+    startCustom(pick.id, pick.name);
+  }
+  function localArtistSongs(artistName) {
+    const key = norm(artistName);
+    return ALL.filter((s) => norm(s.artist) === key)
+      .slice()
+      .sort((a, b) => a.tier - b.tier)
+      .map((s, idx) => ({ ...s, rank: idx }));
+  }
+  function localArtistMatches(q) {
+    const nq = norm(q);
+    if (!nq) return [];
+    const counts = new Map();
+    for (const s of ALL) counts.set(s.artist, (counts.get(s.artist) || 0) + 1);
+    const list = [];
+    for (const [name, count] of counts) {
+      if (count < STAGES) continue;
+      const na = norm(name);
+      if (na.indexOf(nq) < 0) continue;
+      const sc = na === nq ? 0 : na.indexOf(nq) === 0 ? 1 : 2;
+      list.push({ id: 'local:' + name, name, genre: count + ' tracks', sc });
+    }
+    list.sort((a, b) => a.sc - b.sc || a.name.length - b.name.length);
+    return list.slice(0, 6);
+  }
+
+  let customStartReq = 0;
+  function setCustomBusy(busy) {
+    if (typeof document.querySelectorAll === 'function') {
+      document.querySelectorAll('#artistResults button, #customQuick button').forEach((b) => { b.disabled = busy; });
+    }
+  }
+
   // Mulai satu sesi kustom dari artis terpilih.
   async function startCustom(artistId, artistName) {
+    const req = ++customStartReq;
     const hint = $('#customHint');
+    setCustomBusy(true);
     hint.className = 'custom-hint'; hint.textContent = 'Loading ' + artistName + '…';
     let songs;
-    try { songs = await fetchArtistSongs(artistId); }
-    catch (e) { hint.className = 'custom-hint warn'; hint.textContent = 'Could not load that artist. Try another.'; return; }
+    try {
+      songs = await fetchArtistSongs(artistId);
+    } catch (e) {
+      songs = localArtistSongs(artistName);
+      if (songs.length < STAGES) {
+        if (req !== customStartReq) return;
+        setCustomBusy(false);
+        hint.className = 'custom-hint warn'; hint.textContent = 'Could not load that artist. Try another.'; return;
+      }
+    }
+    if (req !== customStartReq || ($('#customModal') && $('#customModal').hidden)) {
+      setCustomBusy(false);
+      return;
+    }
+    setCustomBusy(false);
     if (songs.length < STAGES) {
       hint.className = 'custom-hint warn';
       hint.textContent = 'Only ' + songs.length + ' original tracks found — need at least ' + STAGES + '. Try another artist.';
       return;
     }
+    pushRecentArtist(artistId, artistName);
     delete RUNS['custom:' + artistId];              // dari modal selalu mulai sesi baru
+    S.challenge = null; S.runChallenge = null; S.daily = null;
     S.custom = { id: String(artistId), label: artistName, songs };
     switchRun();                                    // parkir sesi katalog, pindah ke slot kustom
     S.stages = []; S.stage = 0; S.runDone = false;
@@ -728,33 +1113,69 @@
   }
 
   const CUSTOM_HINT = 'Pick an artist — we pick 5 of their songs.';
+  function renderQuickArtists(visible = true) {
+    const host = $('#customQuick');
+    if (!host) return;
+    if (!visible) { host.hidden = true; return; }
+    const { recent, avail, size, popular } = popularState();
+    const chipGroup = (lbl, items, actionHtml) => items.length
+      ? '<div class="custom-quick-group"><div class="custom-quick-head"><span class="custom-quick-lbl">' + lbl + '</span>' +
+        (actionHtml || '') +
+        '</div><div class="custom-chips">' +
+        items.map((a) => '<button type="button" class="artist-chip" data-id="' + esc(String(a.id)) +
+        '" data-name="' + esc(a.name) + '">' + esc(a.name) + '</button>').join('') + '</div></div>'
+      : '';
+    const clearBtn = '<button type="button" class="custom-quick-clear" id="clearRecentArtists">Clear</button>';
+    const refreshBtn = avail.length > size
+      ? '<button type="button" class="custom-quick-clear" id="refreshPopularArtists">&#8635; Refresh</button>'
+      : '';
+    const surpriseBtn = '<button type="button" class="custom-quick-clear" id="surprisePopularArtist">&#10022; Surprise me</button>';
+    const popularActions = '<div class="custom-quick-actions">' + surpriseBtn + refreshBtn + '</div>';
+    host.innerHTML = chipGroup('Recent artists', recent, clearBtn) + chipGroup('Popular artists', popular, popularActions);
+    host.hidden = !host.innerHTML;
+  }
   function openCustom() {
     closeAll();
+    customStartReq++;
+    setCustomBusy(false);
     $('#artistQ').value = '';
+    if ($('#artistClear')) $('#artistClear').hidden = true;
     const box = $('#artistResults'); box.hidden = true; box.innerHTML = '';
+    renderQuickArtists(true);
     const h = $('#customHint'); h.className = 'custom-hint'; h.textContent = CUSTOM_HINT;
     $('#customModal').hidden = false;
     setTimeout(() => $('#artistQ').focus(), 40);
   }
   function renderArtists(list) {
     const box = $('#artistResults');
-    if (!list.length) { box.hidden = true; box.innerHTML = ''; return; }
+    if (!list.length) { box.hidden = true; box.innerHTML = ''; renderQuickArtists(true); return; }
     box.innerHTML = list.map((a) =>
       '<li><button type="button" class="artist-row" data-id="' + esc(String(a.id)) +
       '" data-name="' + esc(a.name) + '"><span class="artist-name">' + esc(a.name) + '</span>' +
       (a.genre ? '<span class="artist-genre">' + esc(a.genre) + '</span>' : '') +
       '</button></li>').join('');
     box.hidden = false;
+    renderQuickArtists(false);
   }
 
   /* ================= daily challenge ================= */
 
+  const DUEL_BEST_KEYS = { streams: 'tl:duel:streams:best', year: 'tl:duel:best' };
+  function duelStats() {
+    const saved = LS.get('tl:duel:stats', {});
+    const streamsBest = Math.max(0, Number(LS.get(DUEL_BEST_KEYS.streams, 0)) || 0, Number(saved.streamsBest) || 0);
+    const yearBest = Math.max(0, Number(LS.get(DUEL_BEST_KEYS.year, 0)) || 0, Number(saved.yearBest) || 0);
+    const runs = Math.max(0, Number(saved.runs) || 0);
+    return { streamsBest, yearBest, best: Math.max(streamsBest, yearBest), runs };
+  }
+
   const dailyKey = (day) => 'tl:daily:v2:' + day;
-  function dailyStreak() {
+  function dailyStats() {
     const daily = window.DailyGame, today = daily.day();
     const completed = LS.get('tl:daily:completed', []);
     const wins = [];
-    let lostToday = false;
+    const dist = [0, 0, 0, 0, 0, 0];
+    let lostToday = false, played = 0;
     for (const date of new Set(Array.isArray(completed) ? completed : [])) {
       if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today) continue;
       const saved = LS.get(dailyKey(date)) || LS.get('tl:daily:v1:' + date);
@@ -762,13 +1183,22 @@
       const slugs = daily.plan(window.DAILY_POOL_V1, date).map(slug);
       const result = daily.restore(saved, slugs);
       if (!result || !result.runDone) continue;
-      if (result.stages[0].won) wins.push(date);
-      else if (date === today) lostToday = true;
+      played++;
+      const stage = result.stages[0];
+      if (stage.won) {
+        wins.push(date);
+        const at = stage.guesses.findIndex((g) => g.t === 'right');
+        if (at >= 0 && at < TRIES) dist[at]++;
+      } else {
+        dist[TRIES]++;
+        if (date === today) lostToday = true;
+      }
     }
     const streak = daily.streak(wins, today);
     if (lostToday) streak.current = 0;
-    return streak;
+    return { ...streak, played, won: wins.length, dist };
   }
+  const dailyStreak = dailyStats;
   function refreshDaily() {
     const day = window.DailyGame.day(), saved = LS.get(dailyKey(day)) || LS.get('tl:daily:v1:' + day);
     const current = dailyStreak().current;
@@ -798,7 +1228,7 @@
       slug: slug(s), hay: norm(s[0] + ' ' + s[1])
     }));
     S.daily = { day, songs };
-    S.custom = null; S.challenge = null;
+    S.custom = null; S.challenge = null; S.runChallenge = null;
     switchRun();
     const saved = window.DailyGame.restore(LS.get(dailyKey(day)) || LS.get('tl:daily:v1:' + day), songs.map((s) => s.slug));
     Object.assign(S, saved || { stage: 0, stages: [], runDone: false });
@@ -812,55 +1242,127 @@
 
   /* ================= friend challenge ================= */
 
+  function trackToSong(r) {
+    const title = r.trackName, artist = r.artistName;
+    const art = (r.artworkUrl100 || '').replace('100x100', '600x600');
+    const year = (r.releaseDate || '').slice(0, 4);
+    return {
+      title, artist, tier: 0, region: '', genre: '', year, art, trackId: r.trackId,
+      slug: slug([title, artist]), hay: norm(title + ' ' + artist),
+      pre: { trackId: r.trackId, preview: r.previewUrl, art, title, artist,
+        album: r.collectionName || '', year, link: r.trackViewUrl || '' }
+    };
+  }
+
   async function acceptChallenge() {
-    const incoming = window.TrackChallenge.parse(location.hash);
-    if (!incoming) return;
+    if (location.hash.startsWith('#duel=')) {
+      const duelIncoming = window.ReleaseDuel ? window.ReleaseDuel.parseChallenge(location.hash) : null;
+      if (!duelIncoming || !launchDuelChallenge) return;
+      if (!launchDuelChallenge(duelIncoming)) {
+        $('#challengeMessage').textContent = 'Could not load the tracks from this duel link. Ask your friend for a new link.';
+      }
+      return;
+    }
+    const single = window.TrackChallenge.parse(location.hash);
+    const run = single ? null : window.TrackChallenge.parseRun(location.hash);
+    if (!single && !run) return;
     const ticket = ++S.epoch;
     const button = $('#acceptChallenge'), message = $('#challengeMessage');
     button.disabled = true;
     message.textContent = 'Loading your challenge…';
     try {
-      const r = await window.TrackChallenge.lookup(incoming.id);
+      const tracks = single
+        ? [await window.TrackChallenge.lookup(single.id)]
+        : await window.TrackChallenge.lookupRun(run.ids);
+      const artistId = single ? tracks[0].artistId : run.artistId;
       // Include the artist catalogue for custom challenges, alongside normal suggestions.
       let extras = [];
-      if (r.artistId) {
-        try { extras = await fetchArtistSongs(r.artistId); } catch (e) { /* Main catalogue remains available. */ }
+      if (artistId) {
+        try { extras = await fetchArtistSongs(artistId); } catch (e) { /* Main catalogue remains available. */ }
       }
       if (ticket !== S.epoch) return;
-      const title = r.trackName, artist = r.artistName;
-      const art = (r.artworkUrl100 || '').replace('100x100', '600x600');
-      const song = {
-        title, artist, tier: 0, genre: '', year: (r.releaseDate || '').slice(0, 4), art,
-        slug: slug([title, artist]), hay: norm(title + ' ' + artist),
-        pre: { trackId: r.trackId, preview: r.previewUrl, art, title, artist,
-          album: r.collectionName || '', year: (r.releaseDate || '').slice(0, 4), link: r.trackViewUrl || '' }
-      };
-      const songs = new Map([...ALL, ...extras, song].map((s) => [s.slug, s]));
-      S.challenge = { ...incoming, song };
-      S.custom = { id: 'challenge:' + incoming.id, label: 'Friend challenge', songs: [...songs.values()] };
-      delete RUNS['challenge:' + incoming.id];
+      const challengeSongs = tracks.map(trackToSong);
+      const songs = new Map([...ALL, ...extras, ...challengeSongs].map((s) => [s.slug, s]));
+      S.daily = null;
+      if (single) {
+        S.runChallenge = null;
+        S.challenge = { ...single, song: challengeSongs[0] };
+        S.custom = { id: 'challenge:' + single.id, label: 'Friend challenge', songs: [...songs.values()] };
+        delete RUNS['challenge:' + single.id];
+      } else {
+        const artistLabel = run.artistId
+          ? ((extras[0] && extras[0].artist) || (challengeSongs[0] && challengeSongs[0].artist) || null)
+          : null;
+        S.challenge = null;
+        S.runChallenge = { ...run, artistLabel, songs: challengeSongs };
+        S.custom = { id: 'run:' + run.ids.join('-'), label: artistLabel || 'Friend challenge', songs: [...songs.values()] };
+        delete RUNS['run:' + run.ids.join('-')];
+      }
       switchRun();
       UI.clearInput();
       UI.game();
       await load();
     } catch (e) {
       if (ticket !== S.epoch) return;
-      message.textContent = 'Could not load this exact song. Check your connection or try again. The preview may no longer be available.';
+      message.textContent = run
+        ? 'Could not load all songs in this challenge. Check your connection or try again. A preview may no longer be available.'
+        : 'Could not load this exact song. Check your connection or try again. The preview may no longer be available.';
       button.textContent = 'Try again';
     } finally {
-      if (ticket === S.epoch || S.challenge) button.disabled = false;
+      if (ticket === S.epoch || S.challenge || S.runChallenge) button.disabled = false;
     }
   }
 
   function showIncomingChallenge() {
-    if (!location.hash.startsWith('#challenge=')) return false;
-    const incoming = window.TrackChallenge.parse(location.hash);
+    const isSingle = location.hash.startsWith('#challenge=');
+    const isRun = location.hash.startsWith('#run=');
+    const isDuel = location.hash.startsWith('#duel=');
+    if (!isSingle && !isRun && !isDuel) return false;
+    const kicker = $('#challengeKicker');
+    const title = $('#challengeTitle');
+    if (isDuel) {
+      const incoming = window.ReleaseDuel ? window.ReleaseDuel.parseChallenge(location.hash) : null;
+      const duelModeLabel = incoming && incoming.kind === 'streams' ? 'Spotify Streams' : 'Release Year';
+      $('#lobby').hidden = true;
+      $('#challengeIntro').hidden = false;
+      $('#acceptChallenge').hidden = !incoming;
+      $('#acceptChallenge').disabled = false;
+      $('#acceptChallenge').textContent = 'Accept duel';
+      if (kicker) {
+        kicker.textContent = incoming ? ('Music Duel · ' + duelModeLabel) : 'Music Duel';
+        kicker.dataset.mode = 'duel';
+      }
+      if (title) title.textContent = 'Friend duel';
+      $('#challengeRules').innerHTML = incoming
+        ? 'Exact same song sequence as your friend.<br>Beat their score of ' + incoming.score + ' to win!'
+        : 'Head-to-head music duel.<br>Ask your friend for a valid duel link.';
+      $('#challengeMessage').textContent = !incoming
+        ? 'This challenge link is invalid or uses an unsupported version. Ask your friend for a new link.'
+        : 'Your friend scored ' + incoming.score + ' in ' + duelModeLabel + ' Duel. Can you beat them?';
+      return true;
+    }
+    if (kicker) {
+      kicker.textContent = 'Song Challenge';
+      if (kicker.dataset) delete kicker.dataset.mode;
+    }
+    if (title) title.textContent = 'Friend challenge';
+    const incoming = isRun
+      ? window.TrackChallenge.parseRun(location.hash)
+      : window.TrackChallenge.parse(location.hash);
     $('#lobby').hidden = true;
     $('#challengeIntro').hidden = false;
     $('#acceptChallenge').hidden = !incoming;
-    $('#challengeMessage').textContent = incoming
-      ? 'Your friend ' + window.TrackChallenge.describe(incoming.result) + '. Can you beat them?'
-      : 'This challenge link is invalid or uses an unsupported version. Ask your friend for a new link.';
+    $('#acceptChallenge').textContent = 'Accept challenge';
+    const count = incoming && isRun ? incoming.ids.length : 1;
+    $('#challengeRules').innerHTML = isRun && incoming
+      ? count + (count === 1 ? ' song. Five tries. ' : ' songs. Five tries each. ') +
+        'Same recordings, same clip lengths:<br>0.1s → 0.5s → 2s → 8s → 15s.'
+      : 'One song. Five tries. Same recording, same clip lengths:<br>0.1s → 0.5s → 2s → 8s → 15s.';
+    $('#challengeMessage').textContent = !incoming
+      ? 'This challenge link is invalid or uses an unsupported version. Ask your friend for a new link.'
+      : isRun
+      ? 'Your friend scored ' + window.TrackChallenge.describeRun(incoming.results) + '. Can you beat them?'
+      : 'Your friend ' + window.TrackChallenge.describe(incoming.result) + '. Can you beat them?';
     return true;
   }
 
@@ -871,7 +1373,7 @@
   const blankStats = () => ({ runs: 0, total: 0, best: 0, perfect: 0, dist: [0, 0, 0, 0, 0, 0] });
 
   function recordStats() {
-    if (S.custom || S.challenge || S.daily) return;   // mode kustom tak masuk statistik harian
+    if (S.custom || S.challenge || S.runChallenge || S.daily) return;   // mode kustom tak masuk statistik harian
     const st = Object.assign(blankStats(), LS.get(statKey(), {}));
     const sc = score();
     st.runs++;
@@ -880,6 +1382,193 @@
     st.best = Math.max(st.best, sc);
     if (sc === STAGES) st.perfect++;
     LS.set(statKey(), st);
+  }
+
+  function allClassicStats() {
+    const agg = blankStats();
+    let filtersUsed = 0;
+    for (const g in GENRES) {
+      for (const e in ERAS) {
+        const raw = LS.get('tl:stats:gl:' + g + ':' + e);
+        if (!raw || !raw.runs) continue;
+        filtersUsed++;
+        agg.runs += raw.runs || 0;
+        agg.total += raw.total || 0;
+        agg.best = Math.max(agg.best, raw.best || 0);
+        agg.perfect += raw.perfect || 0;
+        for (let i = 0; i <= STAGES; i++) agg.dist[i] += (raw.dist && raw.dist[i]) || 0;
+      }
+    }
+    return { ...agg, filtersUsed };
+  }
+
+  let statsTab = 'filter';
+  const SONG_STREAK_KEY = 'tl:song:streak';
+  const CUSTOM_STREAK_KEY = 'tl:custom:streak';
+  let lastStreak = null;
+  function streakKey(mode) {
+    if (mode === 'classic') return SONG_STREAK_KEY;
+    if (mode === 'custom') return CUSTOM_STREAK_KEY;
+    if (S.challenge || S.runChallenge || S.daily) return '';
+    return S.custom ? CUSTOM_STREAK_KEY : SONG_STREAK_KEY;
+  }
+  function songStreak(mode) {
+    const key = streakKey(mode);
+    if (!key) return { current: 0, best: 0 };
+    const d = LS.get(key, {});
+    const current = Number.isInteger(d && d.current) && d.current >= 0 ? d.current : 0;
+    const best = Number.isInteger(d && d.best) && d.best >= current ? d.best : current;
+    return { current, best };
+  }
+  function updateSongStreak(won) {
+    const key = streakKey();
+    if (!key) return null;
+    const prev = songStreak();
+    const current = won ? prev.current + 1 : 0;
+    const best = Math.max(prev.best, current);
+    LS.set(key, { current, best });
+    return { current, best, isNewBest: won && current > prev.best && current >= 2 };
+  }
+
+  let stopDuel = null, stopDuelAudio = null, syncDuelVolume = null, duelEnded = () => false, launchDuelChallenge = null;
+
+  // Susun kipas sampul album (maks. 3 sampul unik) atau satu sampul + piringan vinyl
+  function renderRunFan(el, arts) {
+    if (!el) return;
+    const raw = [];
+    for (const src of arts) if (src && raw.indexOf(src) < 0) raw.push(src);
+    const list = raw.slice(0, 3);
+    if (!list.length) {
+      el.hidden = true;
+      el.innerHTML = '';
+      el.className = 'run-fan';
+      return;
+    }
+    el.hidden = false;
+    if (list.length === 1) {
+      el.className = 'run-fan single';
+      el.innerHTML =
+        '<span class="fan-disc" aria-hidden="true"></span>' +
+        '<img class="fan-card f2" src="' + esc(list[0]) + '" alt="">';
+      return;
+    }
+    // Tempatkan sampul terbaik (index 0) di kartu depan tengah (f2)
+    const ordered = list.length === 3 ? [list[1], list[0], list[2]] : [list[1], list[0]];
+    const slots = list.length === 3 ? ['f1', 'f2', 'f3'] : ['f1', 'f2'];
+    el.className = 'run-fan count-' + list.length;
+    el.innerHTML =
+      '<span class="fan-disc" aria-hidden="true"></span>' +
+      ordered.map((src, idx) =>
+        '<img class="fan-card ' + slots[idx] + '" src="' + esc(src) + '" alt="">'
+      ).join('');
+  }
+
+  let summaryAudio = null, summaryKey = '', summaryEpoch = 0;
+  const summarySongs = new Map();
+
+  function setSummaryBtnState(key, state) {
+    [].forEach.call(document.querySelectorAll('.runlist.run-shelf li'), (li) => {
+      const btn = li.querySelector('.run-playbtn');
+      const on = !!(btn && btn.dataset.sKey === key && state !== 'idle');
+      li.classList.toggle('is-playing', state === 'playing' && on);
+      if (btn) btn.dataset.s = on ? state : 'idle';
+    });
+  }
+
+  function stopSummaryPreview() {
+    summaryEpoch++;
+    summaryKey = '';
+    if (summaryAudio) {
+      try { summaryAudio.pause(); summaryAudio.removeAttribute('src'); summaryAudio.load(); } catch (e) {}
+    }
+    setSummaryBtnState('', 'idle');
+  }
+
+  function syncSummaryVolume() {
+    if (summaryAudio) summaryAudio.volume = S.muted ? 0 : S.vol;
+  }
+
+  async function toggleSummaryPreview(key) {
+    const song = summarySongs.get(key);
+    if (!song) return;
+    if (summaryKey === key && summaryAudio && !summaryAudio.paused) {
+      stopSummaryPreview();
+      return;
+    }
+    if (typeof Audio !== 'function') return;
+    stopAudio();
+    if (stopDuelAudio) stopDuelAudio();
+    stopSummaryPreview();
+
+    const ticket = ++summaryEpoch;
+    summaryKey = key;
+    setSummaryBtnState(key, 'loading');
+
+    try {
+      let preview = (song.pre && song.pre.preview) || '';
+      if (!preview && song.slug) {
+        const cached = LS.get('tl:trk5:' + song.slug);
+        if (cached && cached.exp > Date.now() && cached.preview) preview = cached.preview;
+      }
+      if (!preview) {
+        const meta = await resolve(song);
+        preview = meta && meta.preview;
+      }
+      if (ticket !== summaryEpoch || !preview) {
+        if (ticket === summaryEpoch) stopSummaryPreview();
+        return;
+      }
+      if (!summaryAudio) {
+        summaryAudio = new Audio();
+        summaryAudio.preload = 'auto';
+        summaryAudio.addEventListener('ended', () => { if (summaryKey) stopSummaryPreview(); });
+        summaryAudio.addEventListener('error', () => {
+          if (summaryKey) { stopSummaryPreview(); toast('Preview unavailable for this track.'); }
+        });
+      }
+      syncSummaryVolume();
+      summaryAudio.src = preview;
+      summaryAudio.currentTime = 0;
+      await summaryAudio.play();
+      if (ticket !== summaryEpoch) {
+        try { summaryAudio.pause(); } catch (e) {}
+        return;
+      }
+      setSummaryBtnState(key, 'playing');
+    } catch (e) {
+      if (ticket === summaryEpoch) {
+        stopSummaryPreview();
+        toast('Could not play preview.');
+      }
+    }
+  }
+
+  function renderShelfCard(item) {
+    const cls = item.kosong ? 'kosong' : (item.won ? 'win' : 'lose');
+    const thumb = item.art
+      ? '<img class="thumb" src="' + esc(item.art) + '" alt="">'
+      : '<span class="thumb ph"></span>';
+    const playHtml = item.playKey
+      ? '<button class="run-playbtn" type="button" data-s="idle" data-s-key="' + esc(item.playKey) + '" aria-label="' + esc('Play preview: ' + item.title) + '">' +
+          '<svg class="ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg>' +
+          '<svg class="ico-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.4"/><rect x="13.5" y="5" width="4" height="14" rx="1.4"/></svg>' +
+          '<svg class="ico-load" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="12 38"/></svg>' +
+        '</button>'
+      : '';
+    const badge = item.badge
+      ? '<span class="at">' + esc(item.badge) + '</span>'
+      : '';
+    return '<li class="' + cls + (item.playKey ? ' has-preview' : '') + '" data-diff="' + esc(item.diff || 'easy') + '">' +
+      '<div class="run-artwrap">' + thumb + '<span class="lvl">' + esc(item.lvl) + '</span>' + playHtml + badge + '</div>' +
+      '<span class="txt"><b>' + esc(item.title) + '</b>' +
+      (item.artist ? '<small>' + esc(item.artist) + '</small>' : '') +
+      '</span></li>';
+  }
+
+  function applyShelfAttrs(el, count) {
+    if (!el || !el.dataset) return;
+    el.dataset.count = String(count);
+    el.dataset.odd = (count >= 3 && count % 2 === 1) ? 'true' : 'false';
   }
 
   /* ================= UI ================= */
@@ -917,18 +1606,24 @@
     steps(host, live) {
       host.innerHTML = '';
       host.hidden = !!(S.challenge || S.daily);
+      if ($('#dailyGameBadge')) {
+        $('#dailyGameBadge').hidden = !S.daily && !S.challenge;
+        if (S.daily) $('#dailyGameBadge').textContent = 'Daily Challenge · 1 song';
+        else if (S.challenge) $('#dailyGameBadge').textContent = 'Friend Challenge · 1 song';
+      }
       if (S.challenge || S.daily) return;
-      ORDER.forEach((k, i) => {
+      const artistMode = S.runChallenge ? !!S.runChallenge.artistId : !!S.custom;
+      ORDER.slice(0, stageCount()).forEach((k, i) => {
         if (i) { const a = el('li', 'arrow'); a.textContent = '›'; host.appendChild(a); }
         const li = el('li');
-        li.dataset.k = S.custom ? 'custom' : k;
+        li.dataset.k = artistMode ? 'custom' : k;
         const rec = S.stages[i];
         let mark = '';
         if (live) {
           if (rec && rec.done) { li.classList.add(rec.won ? 'win' : 'lose'); mark = rec.won ? '✓' : '✕'; }
           else if (i === S.stage) li.classList.add('now');
         }
-        const label = S.custom ? (i + 1) : DIFFS[k].label;
+        const label = artistMode ? (i + 1) : DIFFS[k].label;
         li.innerHTML = label + (mark ? ' <span class="mark">' + mark + '</span>' : '');
         host.appendChild(li);
       });
@@ -948,12 +1643,13 @@
       $('#coverPlay').dataset.playing = s === 'playing' ? '1' : '0';
     },
     readout(t) {
-      this.out.textContent = t === null ? fmt(S.done ? maxLen() : limit()) : t.toFixed(1) + 's';
+      const label = t === null ? fmt(S.done ? maxLen() : limit()) : t.toFixed(1) + 's';
+      if (this.out.textContent !== label) this.out.textContent = label;
     },
     head(f) {
       if (f === null) { this.headEl.classList.remove('on'); return; }
       this.headEl.classList.add('on');
-      this.headEl.style.left = Math.min(100, f * 100) + '%';
+      this.headEl.style.transform = 'translate3d(' + Math.max(0, Math.min(100, f * 100)) + '%, -50%, 0)';
     },
     status(msg, err) {
       this.st.textContent = msg || '';
@@ -975,16 +1671,25 @@
       $('#start').disabled = !S.pool.length;
       $('#start').textContent = S.runDone ? 'See result'
         : (jalan || S.guesses.length ? 'Continue' : 'Start');
+      const duelSub = $('#duelLobbySub');
+      if (duelSub) {
+        const bestDuel = duelStats().best;
+        duelSub.textContent = bestDuel > 0
+          ? 'Spotify streams & release year · Best ' + bestDuel
+          : 'Spotify streams & release year';
+      }
     },
 
     lobby() {
       stopAudio();
+      if (stopDuel) stopDuel();
       $('#challengeIntro').hidden = true;
-      if (S.challenge || S.daily) history.replaceState(null, '', location.pathname + location.search);
-      if (S.custom || S.challenge || S.daily) { S.custom = null; S.challenge = null; S.daily = null; switchRun(); }   // keluar dari mode kustom, pulihkan sesi katalog
+      if (S.challenge || S.runChallenge || S.daily) history.replaceState(null, '', location.pathname + location.search);
+      if (S.custom || S.challenge || S.runChallenge || S.daily) { S.custom = null; S.challenge = null; S.runChallenge = null; S.daily = null; switchRun(); }   // keluar dari mode kustom, pulihkan sesi katalog
       S.epoch++;                       // batalkan pemuatan yang masih berjalan
       document.body.removeAttribute('data-diff');   // lobi tak terikat satu kesulitan
       $('#game').hidden = true;
+      if ($('#duel')) $('#duel').hidden = true;
       $('#lobby').hidden = false;
       this.buildControls();
       this.refreshLobby();
@@ -994,18 +1699,35 @@
       $('#lobby').hidden = true;
       $('#challengeIntro').hidden = true;
       $('#game').hidden = false;
-      document.body.dataset.diff = S.custom ? 'custom' : ORDER[S.stage];  // warna mewarnai seluruh halaman
-      $('#gameMode').textContent = S.daily ? 'Daily · ' + S.daily.day : S.custom ? S.custom.label : [
-        S.genre === 'all' ? null : GENRES[S.genre],
-        S.era === 'all' ? null : ERAS[S.era].label
-      ].filter(Boolean).join(' · ');
+      const artistMode = S.runChallenge ? !!S.runChallenge.artistId : !!S.custom;
+      document.body.dataset.diff = artistMode ? 'custom' : ORDER[S.stage];  // warna mewarnai seluruh halaman
+      $('#gameMode').textContent = S.daily ? S.daily.day
+        : S.runChallenge ? (S.runChallenge.artistLabel ? 'Friend challenge · ' + S.runChallenge.artistLabel : 'Friend challenge')
+        : S.custom ? S.custom.label
+        : [
+          S.genre === 'all' ? null : GENRES[S.genre],
+          S.era === 'all' ? null : ERAS[S.era].label
+        ].filter(Boolean).join(' · ');
       $('#gameMode').hidden = !$('#gameMode').textContent;
       this.steps($('#steps'), true);
       $('#stageNow').innerHTML = S.daily ? 'One song · <b>5 tries</b>' : S.challenge
         ? 'Friend challenge · Your friend ' + window.TrackChallenge.describe(S.challenge.result)
+        : S.runChallenge
+        ? (artistMode ? 'Song <b>' + (S.stage + 1) + '</b> of ' + stageCount() : 'Stage <b>' + (S.stage + 1) + '</b> of ' + stageCount() + ' · <b>' + D().label + '</b>') +
+          ' · Friend ' + window.TrackChallenge.describe(S.runChallenge.results[S.stage] || 0)
         : S.custom
         ? 'Song <b>' + (S.stage + 1) + '</b> of ' + STAGES + ' · <b>' + esc(S.custom.label) + '</b>'
         : 'Stage <b>' + (S.stage + 1) + '</b> of ' + STAGES + ' · <b>' + D().label + '</b>';
+      this.streak();
+    },
+    streak() {
+      const badge = $('#songStreak');
+      if (!badge) return;
+      const cur = songStreak().current;
+      if (!cur) { badge.hidden = true; badge.textContent = ''; badge.className = 'streak-pill'; return; }
+      badge.hidden = false;
+      badge.className = 'streak-pill' + (cur >= 3 ? ' hot' : '');
+      badge.textContent = '\uD83D\uDD25 ' + cur;
     },
 
     poolInfo() {
@@ -1050,6 +1772,57 @@
       this.q.disabled = S.done || !S.song || S.loading || S.audioFailed;
       this.play.disabled = !S.meta || S.loading || S.audioFailed || playPending;
       $('#coverPlay').disabled = this.play.disabled;
+
+      const gHost = $('#guesses');
+      if (gHost) {
+        if (!S.guesses.length) {
+          gHost.hidden = true;
+          gHost.innerHTML = '';
+        } else {
+          gHost.hidden = false;
+          gHost.innerHTML = S.guesses.map((g, i) => {
+            const ico = g.t === 'right' ? '✓' : g.t === 'near' ? '≈' : g.t === 'skip' ? '»' : '✕';
+            const txt = g.t === 'skip'
+              ? 'Skipped'
+              : '<b>' + esc(g.title || '') + '</b> <span>· ' + esc(g.artist || '') + '</span>';
+            const hint = g.t === 'near' ? '<span class="g-hint">Right artist</span>' : '';
+            const len = fmt(LADDER[Math.min(i, TRIES - 1)]);
+            return '<li class="' + g.t + '"><span class="g-ico" aria-hidden="true">' + ico + '</span>' +
+              '<span class="g-txt">' + txt + '</span>' +
+              '<span class="g-tag">' + hint + '<span>' + len + '</span></span></li>';
+          }).join('');
+        }
+      }
+
+      if ($('#clipMax')) $('#clipMax').textContent = fmt(maxLen());
+      const slotsHost = $('#trySlots');
+      if (slotsHost) {
+        slotsHost.innerHTML = Array.from({ length: TRIES }, (_, i) => {
+          const g = S.guesses[i];
+          const len = fmt(L[Math.min(i, L.length - 1)]);
+          if (g) {
+            const ico = g.t === 'right' ? '✓' : g.t === 'near' ? '≈' : g.t === 'skip' ? '»' : '✕';
+            const txt = g.t === 'skip'
+              ? '<span class="slot-skip">Skipped</span>'
+              : '<b>' + esc(g.title || '') + '</b> <small>· ' + esc(g.artist || '') + '</small>';
+            const hint = g.t === 'near' ? '<span class="slot-pill warn">Right artist</span>' : '';
+            return '<li class="slot ' + g.t + '"><span class="slot-n" aria-hidden="true">' + ico + '</span>' +
+              '<span class="slot-txt">' + txt + '</span>' + hint +
+              '<span class="slot-len">' + len + '</span></li>';
+          }
+          if (!S.done && i === S.guesses.length) {
+            const hintMsg = S.audioFailed ? 'Clip unavailable — tap Try again'
+              : !S.song || S.loading ? 'Loading clip…'
+              : 'Attempt ' + (i + 1) + ' · Listen to ' + len + ' clip';
+            return '<li class="slot active"><span class="slot-n">' + (i + 1) + '</span>' +
+              '<span class="slot-txt slot-active-lbl">' + hintMsg + '</span>' +
+              '<span class="slot-len on">' + len + '</span></li>';
+          }
+          return '<li class="slot locked"><span class="slot-n">' + (i + 1) + '</span>' +
+            '<span class="slot-txt"></span>' +
+            '<span class="slot-len">' + len + '</span></li>';
+        }).join('');
+      }
     },
 
     /* --- dropdown pencarian --- */
@@ -1062,45 +1835,49 @@
         this.dd.appendChild(e);
       }
       list.forEach((s, i) => {
-        const b = el('button', 'dd-item');
+        const tried = S.guesses.some((g) => sameStageGuess(g, s));
+        const b = el('button', 'dd-item' + (tried ? ' tried' : ''));
         b.type = 'button';
+        b.disabled = tried;
         // Sepuluh baris pertama dimuat biasa -- itu yang langsung terlihat,
         // dan loading="lazy" di situ justru menunda gambar sampai browser
-        // menganggap dropdown terlihat. Sisanya (daftar bisa 60 baris saat
-        // mengetik nama artis) baru dimuat ketika digulung ke bawah.
+        // menganggap dropdown terlihat. Sisanya baru dimuat saat digulung.
         const malas = i >= 10 ? ' loading="lazy"' : '';
         b.innerHTML =
           (s.art ? '<img class="dd-art"' + malas + ' src="' + esc(s.art) + '" alt="">'
                  : '<span class="dd-art ph" aria-hidden="true"></span>') +
           '<span class="dd-txt">' + esc(s.title) +
-          '<small>' + esc(s.artist) + '</small></span>';
-        // Di HP jangan pernah memilih saat touchstart: jari baru menempel dan
-        // browser belum tahu ini ketukan atau geseran, jadi setiap usaha
-        // menggulung daftar malah mengirim tebakan. Diputuskan di touchend,
-        // hanya kalau jarinya nyaris tidak bergeser.
-        let mulai = null;
-        b.addEventListener('touchstart', (e) => {
-          const t = e.touches[0];
-          mulai = { x: t.clientX, y: t.clientY, ms: Date.now() };
-        }, { passive: true });          // passive: biarkan gulungan tetap mulus
+          '<small>' + esc(s.artist) + '</small></span>' +
+          (tried ? '<span class="dd-badge">Tried</span>' : '');
+        if (!tried) {
+          // Di HP jangan pernah memilih saat touchstart: jari baru menempel dan
+          // browser belum tahu ini ketukan atau geseran, jadi setiap usaha
+          // menggulung daftar malah mengirim tebakan. Diputuskan di touchend,
+          // hanya kalau jarinya nyaris tidak bergeser.
+          let mulai = null;
+          b.addEventListener('touchstart', (e) => {
+            const t = e.touches[0];
+            mulai = { x: t.clientX, y: t.clientY, ms: Date.now() };
+          }, { passive: true });          // passive: biarkan gulungan tetap mulus
 
-        b.addEventListener('touchend', (e) => {
-          if (!mulai) return;
-          const t = e.changedTouches[0];
-          const geser = Math.abs(t.clientX - mulai.x) + Math.abs(t.clientY - mulai.y);
-          const lama = Date.now() - mulai.ms;
-          mulai = null;
-          UI.lastTouch = Date.now();
-          if (geser < 12 && lama < 700) { e.preventDefault(); UI.choose(i); }
-        }, { passive: false });
+          b.addEventListener('touchend', (e) => {
+            if (!mulai) return;
+            const t = e.changedTouches[0];
+            const geser = Math.abs(t.clientX - mulai.x) + Math.abs(t.clientY - mulai.y);
+            const lama = Date.now() - mulai.ms;
+            mulai = null;
+            UI.lastTouch = Date.now();
+            if (geser < 12 && lama < 700) { e.preventDefault(); UI.choose(i); }
+          }, { passive: false });
 
-        // mousedown dipakai desktop; dilewati kalau baru saja ada sentuhan
-        // supaya klik tiruan dari layar sentuh tidak memilih dua kali.
-        b.onmousedown = (e) => {
-          if (Date.now() - (UI.lastTouch || 0) < 900) return;
-          e.preventDefault();
-          UI.choose(i);
-        };
+          // mousedown dipakai desktop; dilewati kalau baru saja ada sentuhan
+          // supaya klik tiruan dari layar sentuh tidak memilih dua kali.
+          b.onmousedown = (e) => {
+            if (Date.now() - (UI.lastTouch || 0) < 900) return;
+            e.preventDefault();
+            UI.choose(i);
+          };
+        }
         this.dd.appendChild(b);
       });
       this.dd.hidden = false;
@@ -1112,7 +1889,15 @@
     },
     move(d) {
       if (this.dd.hidden || !this.list.length) return;
-      this.sel = (this.sel + d + this.list.length) % this.list.length;
+      const len = this.list.length;
+      for (let step = 1; step <= len; step++) {
+        const idx = ((this.sel < 0 ? (d > 0 ? -1 : 0) : this.sel) + d * step + len) % len;
+        if (!S.guesses.some((g) => sameStageGuess(g, this.list[idx]))) {
+          this.sel = idx;
+          break;
+        }
+        if (step === len) return;
+      }
       [].forEach.call(this.dd.children, (c, i) => c.classList.toggle('sel', i === this.sel));
       const n = this.dd.children[this.sel];
       if (n && n.scrollIntoView) n.scrollIntoView({ block: 'nearest' });
@@ -1120,7 +1905,7 @@
     // Memilih dari daftar LANGSUNG mengirim tebakan -- tidak ada tombol terpisah.
     choose(i) {
       const s = this.list[i];
-      if (!s) return;
+      if (!s || S.guesses.some((g) => sameStageGuess(g, s))) return;
       this.q.value = s.title + ' · ' + s.artist;
       this.closeDD();
       submitGuess(s);
@@ -1137,7 +1922,6 @@
       const n = S.guesses.length;
 
       $('#resultModal .reveal').className = 'reveal ' + (S.won ? 'win' : 'lose');
-      $('#ghostStage').textContent = (S.daily ? 'Daily' : S.custom ? S.custom.label : D().label).toLowerCase();
 
       // Label kecil di atas judul: menang -> pujian, kalah -> "it was"
       $('#verdict').textContent = S.won
@@ -1156,9 +1940,22 @@
         badge.textContent = 'Lost!';
       }
 
+      const sn = $('#streakNote');
+      if (sn) {
+        const st = songStreak();
+        if (S.won && streakKey() && st.current >= 1) {
+          sn.hidden = false;
+          sn.textContent = '\uD83D\uDD25 ' + st.current + (S.custom ? ' custom streak' : ' song streak') +
+            (lastStreak && lastStreak.isNewBest ? ' · New best!' : st.best > st.current ? ' · Best ' + st.best : '');
+        } else {
+          sn.hidden = true;
+          sn.textContent = '';
+        }
+      }
+
       const img = $('#cover');
       img.src = m.art || '';
-      img.alt = 'Sampul ' + (m.title || sg.title || '');
+      img.alt = 'Cover for ' + (m.title || sg.title || '');
       $('#rTitle').textContent = m.title || sg.title || '';
       $('#rArtist').textContent =
         [m.artist || sg.artist, m.album, m.year].filter(Boolean).join(' · ');
@@ -1170,14 +1967,14 @@
       const link = $('#listen');
       if (m.link) { link.href = m.link; link.hidden = false; } else link.hidden = true;
 
-      $('#next').textContent = S.challenge ? 'Play regular game' : (S.daily ? 'Daily result' : S.stage >= STAGES - 1 ? 'See result' : 'Next');
+      $('#next').textContent = S.challenge ? 'Play regular game' : (S.daily ? 'Daily result' : S.stage >= stageCount() - 1 ? 'See result' : 'Next');
+      const friendResult = S.challenge ? S.challenge.result : S.runChallenge ? (S.runChallenge.results[S.stage] || 0) : null;
       const comparison = $('#challengeComparison');
-      comparison.hidden = !S.challenge;
-      comparison.textContent = S.challenge
-        ? window.TrackChallenge.compare(S.challenge.result, S.won ? n : 0) +
-          ' Your friend ' + window.TrackChallenge.describe(S.challenge.result) +
-          '; you ' + window.TrackChallenge.describe(S.won ? n : 0) + '.'
-        : '';
+      comparison.hidden = friendResult === null;
+      comparison.textContent = friendResult === null ? ''
+        : window.TrackChallenge.compare(friendResult, S.won ? n : 0) +
+          ' Your friend ' + window.TrackChallenge.describe(friendResult) +
+          '; you ' + window.TrackChallenge.describe(S.won ? n : 0) + '.';
 
       open($('#resultModal'));
       confetti('#confetti', S.won ? 'win' : 'lose');
@@ -1186,52 +1983,120 @@
     /* --- hasil satu sesi penuh --- */
     runResult() {
       document.body.removeAttribute('data-diff');   // rangkuman lintas kelima kesulitan
-      const sc = score();
+      const sc = score(), count = stageCount();
+      const artistMode = S.runChallenge ? !!S.runChallenge.artistId : !!S.custom;
+      const wonRun = sc >= (S.daily ? 1 : Math.ceil(count * 0.6));
       const v = $('#runVerdict');
-      v.className = 'verdict ' + (sc >= (S.daily ? 1 : 3) ? 'win' : 'lose');
-      v.textContent = ['Zero. Try again tomorrow.', 'One down.', 'Not bad.',
-                       'Nice run!', 'So close to perfect!', 'Perfect. Every stage.'][sc];
-      if (S.daily) v.textContent = sc ? 'Daily solved!' : 'New song tomorrow.';
+      v.className = 'verdict ' + (wonRun ? 'win' : 'lose');
+      v.textContent = S.daily
+        ? (sc ? 'Daily solved!' : 'New song tomorrow.')
+        : (count !== STAGES && sc === count)
+        ? 'Perfect. Every stage.'
+        : ['Zero. Try again!', 'One down.', 'Not bad.',
+           'Nice run!', 'So close to perfect!', 'Perfect. Every stage.'][Math.min(5, sc)];
       $('#runScore').textContent = sc;
-      $('#runScoreLabel').textContent = S.daily ? '/1 song' : '/5 stages';
+      $('#runScoreLabel').textContent = S.daily ? '/1 song' : '/' + count + (count === 1 ? ' stage' : ' stages');
 
-      $('#runList').innerHTML = ORDER.slice(0, stageCount()).map((k, i) => {
-        const r = S.stages[i];
-        const lvl = '<span class="lvl">' + (S.daily ? 'Daily' : DIFFS[k].label) + '</span>';
-        if (!r || !r.done) {
-          return '<li class="kosong"><span class="thumb ph"></span>' +
-                 '<span class="txt">' + lvl + '<b>Not played</b></span></li>';
+      const modeKind = S.daily ? 'daily' : artistMode ? 'custom' : 'classic';
+      const runSheet = $('#runModal .run-sheet');
+      if (runSheet && runSheet.dataset) {
+        runSheet.dataset.mode = modeKind;
+        runSheet.dataset.won = wonRun ? 'true' : 'false';
+      }
+
+      const modeTag = $('#runModeTag');
+      if (modeTag) {
+        if (modeTag.dataset) modeTag.dataset.mode = modeKind;
+        if (S.daily) {
+          modeTag.textContent = 'Daily Challenge · ' + S.daily.day;
+        } else if (S.runChallenge) {
+          modeTag.textContent = S.runChallenge.artistId
+            ? ('Friend Challenge · ' + (S.runChallenge.artistLabel || 'Artist'))
+            : ('Friend Challenge · ' + count + ' Stages');
+        } else if (S.custom) {
+          modeTag.textContent = 'Custom · ' + (S.custom.label || 'Artist');
+        } else {
+          const parts = [];
+          if (S.genre !== 'all' && GENRES[S.genre]) parts.push(GENRES[S.genre]);
+          if (S.era !== 'all' && ERAS[S.era]) parts.push(ERAS[S.era].label);
+          modeTag.textContent = 'Classic · ' + (parts.length ? parts.join(' · ') : (count + ' Stages'));
         }
-        const cat = findSong(r.slug);
+      }
+
+      stopSummaryPreview();
+      const stageArtsWin = [], stageArtsAll = [];
+      const listEl = $('#runList');
+      listEl.innerHTML = ORDER.slice(0, count).map((k, i) => {
+        const r = S.stages[i];
+        const lvl = S.daily ? "Today's song" : artistMode ? ('Song ' + (i + 1)) : DIFFS[k].label;
+        const diff = S.daily ? 'daily' : artistMode ? 'custom' : k;
+        if (!r || !r.done) {
+          return renderShelfCard({ diff, kosong: true, art: '', lvl, title: 'Not played' });
+        }
+        const cat = (S.runChallenge && S.runChallenge.songs[i]) || findSong(r.slug);
+        const art = (cat && cat.art) || '';
+        if (art) {
+          if (r.won) stageArtsWin.push(art);
+          stageArtsAll.push(art);
+        }
+        const playKey = 'run:' + i;
+        summarySongs.set(playKey, {
+          slug: r.slug,
+          trackId: r.trackId || (cat && cat.trackId) || null,
+          title: r.title,
+          artist: r.artist,
+          pre: (cat && cat.pre) || null,
+        });
         const at = r.guesses.findIndex((g) => g.t === 'right');
-        const thumb = cat && cat.art
-          ? '<img class="thumb" src="' + esc(cat.art) + '" alt="">'
-          : '<span class="thumb ph"></span>';
-        return '<li class="' + (r.won ? 'win' : 'lose') + '">' + thumb +
-          '<span class="txt">' + lvl +
-            '<b>' + esc(r.title) + '</b>' +
-            '<small>' + esc(r.artist) + '</small></span>' +
-          '<span class="at">' + (r.won ? fmt(LADDER[at]) : 'missed') + '</span></li>';
+        return renderShelfCard({
+          diff,
+          won: r.won,
+          art,
+          lvl,
+          playKey,
+          badge: r.won ? fmt(LADDER[at]) : 'missed',
+          title: r.title,
+          artist: r.artist,
+        });
       }).join('');
+      applyShelfAttrs(listEl, count);
+      renderRunFan($('#runFan'), [...stageArtsWin, ...stageArtsAll]);
 
       $('#againRun').hidden = false;
-      $('#againRun').textContent = S.daily ? 'Play regular game' : 'Play again';
+      $('#againRun').textContent = (S.daily || S.runChallenge) ? 'Play regular game' : 'Play again';
       $('#dailyResult').hidden = !S.daily;
       if (S.daily) {
         const streak = dailyStreak();
-        $('#dailyResult').textContent = 'Daily Challenge · ' + S.daily.day + ' · Win streak ' + streak.current + ' · Best ' + streak.best + '. Next daily in ' + window.DailyGame.remaining() + '.';
+        $('#dailyResult').textContent = 'Win streak ' + streak.current + ' · Best ' + streak.best + ' · Next daily in ' + window.DailyGame.remaining();
+      }
+      const runComp = $('#runChallengeResult');
+      if (S.runChallenge) {
+        const yourResults = Array.from({ length: count }, (_, i) => {
+          const r = S.stages[i];
+          if (!r || !r.done || !r.won) return 0;
+          const at = r.guesses.findIndex((g) => g.t === 'right');
+          return at >= 0 ? Math.min(TRIES, at + 1) : 0;
+        });
+        runComp.hidden = false;
+        runComp.textContent =
+          window.TrackChallenge.compareRun(S.runChallenge.results, yourResults) +
+          ' Your friend scored ' + window.TrackChallenge.describeRun(S.runChallenge.results) +
+          '; you scored ' + window.TrackChallenge.describeRun(yourResults) + '.';
+      } else {
+        runComp.hidden = true;
+        runComp.textContent = '';
       }
 
       // latar dari sampul lagu terakhir yang berhasil ditebak
       const menang = S.stages.filter((x) => x && x.won);
       const seed = menang.length ? menang[menang.length - 1] : null;
-      const art = seed && (ALL.find((s) => s.slug === seed.slug) || {}).art;
+      const art = seed && ((findSong(seed.slug) || {}).art || (S.runChallenge && (S.runChallenge.songs.find((x) => x.slug === seed.slug) || {}).art));
       const bgr = $('#artBgRun');
       if (art) { bgr.style.backgroundImage = 'url("' + art + '")'; bgr.classList.add('on'); }
       else bgr.classList.remove('on');
 
       open($('#runModal'));
-      confetti('#runConfetti', sc >= (S.daily ? 1 : 3) ? 'win' : 'lose');
+      confetti('#runConfetti', wonRun ? 'win' : 'lose');
     },
 
     // Begitu tebakan benar, langsung putar lagunya. Dipanggil dari dalam
@@ -1242,20 +2107,70 @@
       playClip();
     },
 
-    stats() {
-      const st = Object.assign(blankStats(), LS.get(statKey(), {}));
-      $('#statScope').textContent = [
-        GENRES[S.genre], ERAS[S.era].label
-      ].join(' · ');
-      const avg = st.runs ? (st.total / st.runs).toFixed(1) : '0';
-      $('#statgrid').innerHTML =
-        cell(st.runs, 'runs') + cell(avg, 'average') +
-        cell(st.best, 'best') + cell(st.perfect || 0, 'perfect');
-      const top = Math.max.apply(null, st.dist.concat([1]));
-      $('#dist').innerHTML = st.dist.map((c, i) =>
-        '<div class="row"><span class="n">' + i + '</span>' +
-        '<div class="bar' + (c && c === top ? ' hot' : '') + '" style="width:' +
-        Math.max(8, c / top * 100) + '%">' + c + '</div></div>').join('');
+    stats(tab = statsTab) {
+      statsTab = (tab === 'overall' || tab === 'daily' || tab === 'duel') ? tab : 'filter';
+      const tabs = $('#statsTabs');
+      if (tabs && typeof tabs.querySelectorAll === 'function') {
+        tabs.querySelectorAll('[data-tab]').forEach((b) => {
+          const on = b.dataset.tab === statsTab;
+          b.setAttribute('aria-selected', String(on));
+          b.setAttribute('aria-pressed', String(on));
+        });
+      }
+      const dh = $('#distHeading');
+      const rt = $('#reset');
+      if (statsTab === 'daily') {
+        const d = dailyStats();
+        $('#statScope').textContent = 'Daily Challenge · all saved days';
+        $('#statgrid').innerHTML =
+          cell(d.played, 'played') + cell(d.won, 'wins') +
+          cell(d.current, 'streak') + cell(d.best, 'best');
+        if (dh) dh.textContent = 'Attempt spread';
+        const labels = ['0.1s', '0.5s', '2s', '8s', '15s', 'Miss'];
+        const top = Math.max.apply(null, d.dist.concat([1]));
+        $('#dist').innerHTML = d.dist.map((c, i) =>
+          '<div class="row"><span class="n wide">' + labels[i] + '</span>' +
+          '<div class="bar' + (c && c === top ? ' hot' : '') + '" style="width:' +
+          Math.max(8, c / top * 100) + '%">' + c + '</div></div>').join('');
+        if (rt) rt.hidden = true;
+      } else if (statsTab === 'duel') {
+        const d = duelStats();
+        $('#statScope').textContent = 'Music Duel · Spotify Streams & Release Year';
+        $('#statgrid').innerHTML =
+          cell(d.streamsBest, 'streams best') + cell(d.yearBest, 'year best') +
+          cell(d.best, 'best streak') + cell(d.runs, 'duels');
+        if (dh) dh.textContent = 'Deck comparison';
+        const peak = Math.max(d.streamsBest, d.yearBest);
+        const top = Math.max(peak, 1);
+        const rows = [
+          { label: 'Streams', val: d.streamsBest },
+          { label: 'Year', val: d.yearBest }
+        ];
+        $('#dist').innerHTML = rows.map((r) =>
+          '<div class="row"><span class="n wide duel">' + r.label + '</span>' +
+          '<div class="bar' + (r.val && r.val === peak ? ' hot' : '') + '" style="width:' +
+          Math.max(8, r.val / top * 100) + '%">' + r.val + '</div></div>').join('');
+        if (rt) rt.hidden = true;
+      } else {
+        const overall = statsTab === 'overall';
+        const st = overall ? allClassicStats() : Object.assign(blankStats(), LS.get(statKey(), {}));
+        const bestStreak = overall ? songStreak('classic').best : 0;
+        $('#statScope').textContent = overall
+          ? [(st.filtersUsed ? 'All Classic filters · ' + st.filtersUsed + (st.filtersUsed === 1 ? ' preset' : ' presets') : 'All Classic filters'),
+             bestStreak ? 'Best song streak ' + bestStreak : ''].filter(Boolean).join(' · ')
+          : [GENRES[S.genre], ERAS[S.era].label].join(' · ');
+        const avg = st.runs ? (st.total / st.runs).toFixed(1) : '0';
+        $('#statgrid').innerHTML =
+          cell(st.runs, 'runs') + cell(avg, 'average') +
+          cell(st.best, 'best') + cell(st.perfect || 0, 'perfect');
+        if (dh) dh.textContent = 'Score spread';
+        const top = Math.max.apply(null, st.dist.concat([1]));
+        $('#dist').innerHTML = st.dist.map((c, i) =>
+          '<div class="row"><span class="n">' + i + '</span>' +
+          '<div class="bar' + (c && c === top ? ' hot' : '') + '" style="width:' +
+          Math.max(8, c / top * 100) + '%">' + c + '</div></div>').join('');
+        if (rt) rt.hidden = overall;
+      }
       open($('#statsModal'));
     }
   };
@@ -1274,28 +2189,54 @@
     return s;
   }
 
+  function runSubtitle() {
+    if (S.runChallenge) {
+      return S.runChallenge.artistLabel ? 'Friend challenge · ' + S.runChallenge.artistLabel : 'Friend challenge';
+    }
+    if (S.custom) return S.custom.label;
+    const tags = [
+      S.genre === 'all' ? null : GENRES[S.genre],
+      S.era === 'all' ? null : ERAS[S.era].label
+    ].filter(Boolean);
+    return tags.length ? tags.join(' · ') : 'All songs';
+  }
+
   function shareText() {
-    if (S.daily) return 'Name The Track · Daily Challenge · ' + S.daily.day + '\n' +
+    if (S.daily) return 'TuneUp · Daily Challenge · ' + S.daily.day + '\n' +
       (S.stages[0] && S.stages[0].won ? 'Guessed in ' + fmt(LADDER[S.stages[0].guesses.findIndex((g) => g.t === 'right')]) : 'Missed') + '\n' + squares((S.stages[0] || {}).guesses || []) +
       '\nWin streak: ' + dailyStreak().current + '\n' + siteUrl() + '#daily';
-    const tags = [];
-    if (S.custom) tags.push(S.custom.label);
-    else {
-      if (S.genre !== 'all') tags.push(GENRES[S.genre]);
-      if (S.era !== 'all') tags.push(ERAS[S.era].label);
-      if (!tags.length) tags.push('All songs');
-    }
+    const count = stageCount();
+    const artistMode = S.runChallenge ? !!S.runChallenge.artistId : !!S.custom;
 
-    const lines = ORDER.map((k, i) => {
-      const name = S.custom ? ('Song ' + (i + 1)) : DIFFS[k].label;
+    const lines = ORDER.slice(0, count).map((k, i) => {
+      const name = artistMode ? ('Song ' + (i + 1)) : DIFFS[k].label;
       const r = S.stages[i];
       if (!r || !r.done) return '⬜ ' + name;
       const at = r.guesses.findIndex((g) => g.t === 'right');
       return (r.won ? '🟩 ' : '🟥 ') + name + (r.won ? ' ' + fmt(LADDER[at]) : '');
     });
 
-    return 'Guess The Song · ' + tags.join(' · ') + ' · ' + score() + '/' + STAGES +
-           '\n' + lines.join('\n');
+    const ids = [], results = [];
+    for (let i = 0; i < count; i++) {
+      const r = S.stages[i];
+      const cs = S.runChallenge && S.runChallenge.songs[i];
+      const tid = (r && r.trackId) || (cs && (cs.trackId || (cs.pre && cs.pre.trackId))) ||
+        (i === S.stage && ((S.meta && S.meta.trackId) || (S.song && S.song.trackId))) ||
+        (r && r.slug && (findSong(r.slug) || {}).trackId) || null;
+      if (tid == null || !/^[1-9]\d{0,15}$/.test(String(tid))) continue;
+      ids.push(String(tid));
+      const at = r && r.done && r.won ? r.guesses.findIndex((g) => g.t === 'right') : -1;
+      results.push(at >= 0 ? Math.min(TRIES, at + 1) : 0);
+    }
+    const artistId = S.runChallenge ? S.runChallenge.artistId
+      : (S.custom && /^[1-9]\d{0,15}$/.test(String(S.custom.id)) ? String(S.custom.id) : null);
+    let url = siteUrl();
+    if (ids.length && window.TrackChallenge && typeof window.TrackChallenge.createRun === 'function') {
+      url = window.TrackChallenge.createRun(url, ids, results, artistId);
+    }
+
+    return 'TuneUp · ' + runSubtitle() + ' · ' + score() + '/' + count +
+           '\n' + lines.join('\n') + '\n' + url;
   }
 
   // Alamat situs mengikuti domain tempat game dibuka (github.io, pages.dev,
@@ -1306,7 +2247,7 @@
   function shareStage() {
     const at = S.guesses.findIndex((g) => g.t === 'right');
     const hasil = S.won ? 'I got it in ' + fmt(LADDER[at]) : 'I lost this one';
-    return 'Guess The Song · ' + (S.custom ? S.custom.label : D().label) + '\n' +
+    return 'TuneUp · ' + (S.custom ? S.custom.label : D().label) + '\n' +
            squares(S.guesses) + '  ' + hasil + '\n' +
            'Beat me: ' + window.TrackChallenge.create(siteUrl(), S.meta.trackId, S.won ? at + 1 : 0);
   }
@@ -1321,13 +2262,11 @@
   /* ================= confetti ================= */
 
   // Hujan kertas di layar hasil. Canvas polos, tanpa pustaka luar.
-  //   mode 'win'  -> ledakan hijau ke atas, meriah
-  //   mode 'lose' -> serpihan merah kelabu jatuh lesu dari atas
+  // Hanya tampil saat menang; saat kalah layar hasil tampil bersih tanpa perayaan.
   let confettiStop = null;
   function confetti(sel, mode) {
     if (confettiStop) { confettiStop(); confettiStop = null; }
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const lose = mode === 'lose';
+    if (mode === 'lose' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const cv = $(sel);
     const ctx = cv.getContext('2d');
     if (!ctx) return;
@@ -1337,28 +2276,23 @@
       Math.sqrt(1200000 / Math.max(1, innerWidth * innerHeight)));
     const W = cv.width = Math.max(1, Math.floor(innerWidth * dpr));
     const H = cv.height = Math.max(1, Math.floor(innerHeight * dpr));
-    const cols = lose
-      ? ['#f2555a', '#8e3b3f', '#5c6b62', '#3d4a43', '#a8524f']
-      : ['#25e07d', '#ffffff', '#12b862', '#8ef7bd', '#d8fbe8'];
+    const cols = ['#25e07d', '#ffffff', '#12b862', '#8ef7bd', '#d8fbe8'];
     const bits = [];
 
-    const n = lose ? 90 : 120;
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < 120; i++) {
       bits.push({
-        x: lose ? W * Math.random() : W * (0.34 + Math.random() * 0.32),
-        // Mulai tepat di atas bingkai dan langsung punya kecepatan jatuh, kalau
-        // tidak partikelnya masih di luar layar saat animasinya sudah lewat.
-        y: lose ? -H * 0.22 * Math.random() : H * 0.44,
-        vx: (Math.random() - 0.5) * (lose ? 2.2 : 11) * dpr,
-        vy: lose ? (4 + Math.random() * 4) * dpr : (-4 - Math.random() * 9) * dpr,
+        x: W * (0.34 + Math.random() * 0.32),
+        y: H * 0.44,
+        vx: (Math.random() - 0.5) * 11 * dpr,
+        vy: (-4 - Math.random() * 9) * dpr,
         w: (4 + Math.random() * 5) * dpr,
         h: (6 + Math.random() * 8) * dpr,
         rot: Math.random() * Math.PI * 2,
-        vr: (Math.random() - 0.5) * (lose ? 0.1 : 0.32),
+        vr: (Math.random() - 0.5) * 0.32,
         col: cols[(Math.random() * cols.length) | 0]
       });
     }
-    const grav = lose ? 0.12 : 0.28;
+    const grav = 0.28;
 
     let rafc = 0, prev = performance.now();
     confettiStop = () => { cancelAnimationFrame(rafc); ctx.clearRect(0, 0, W, H); };
@@ -1392,17 +2326,27 @@
 
   function open(m) { m.hidden = false; }
   function closeAll() {
+    if (typeof stopSummaryPreview === 'function') stopSummaryPreview();
     if (confettiStop) { confettiStop(); confettiStop = null; }
     [].forEach.call(document.querySelectorAll('.modal'), (m) => m.hidden = true);
   }
 
   function dismissModal() {
     const completedDaily = S.daily && S.runDone && !$('#runModal').hidden;
+    const finishedDuel = $('#duelModal') && !$('#duelModal').hidden && $('#duel') && !$('#duel').hidden && duelEnded();
     closeAll();
-    if (completedDaily) UI.lobby();
+    if (completedDaily || finishedDuel) UI.lobby();
   }
 
   document.addEventListener('click', (e) => {
+    const summaryLi = e.target && typeof e.target.closest === 'function'
+      ? e.target.closest('.runlist.run-shelf li.has-preview')
+      : null;
+    if (summaryLi) {
+      const pb = summaryLi.querySelector('.run-playbtn');
+      if (pb && pb.dataset && pb.dataset.sKey) toggleSummaryPreview(pb.dataset.sKey);
+      return;
+    }
     if (e.target.classList.contains('modal') || e.target.hasAttribute('data-close')) dismissModal();
   });
 
@@ -1426,7 +2370,7 @@
     load();
   };
   window.addEventListener('hashchange', () => {
-    if (location.hash.startsWith('#challenge=') || location.hash === '#daily') location.reload();
+    if (location.hash.startsWith('#challenge=') || location.hash.startsWith('#run=') || location.hash.startsWith('#duel=') || location.hash === '#daily') location.reload();
   });
   $('#openDaily').onclick = startDaily;
   $('#retrySong').onclick = () => load(S.song || S.retrySong);
@@ -1448,24 +2392,64 @@
 
   $('#openFeedback').onclick = () => {
     stopAudio();
-    const details = [S.daily ? 'Mode: Daily ' + S.daily.day : S.challenge ? 'Mode: Friend challenge' :
-      S.custom ? 'Mode: Custom artist — ' + S.custom.label : 'Mode: Free play',
-      !$('#game').hidden && !S.daily && !S.challenge ? 'Stage: ' + D().label : '',
+    if (stopDuelAudio) stopDuelAudio();
+    const inDuelMode = $('#duel') && !$('#duel').hidden;
+    const artistMode = S.custom && (!S.runChallenge || S.runChallenge.artistId);
+    const details = [inDuelMode ? 'Mode: Music Duel'
+      : S.daily ? 'Mode: Daily ' + S.daily.day
+      : (S.challenge || S.runChallenge) ? ('Mode: Friend challenge' + (S.runChallenge && S.runChallenge.artistLabel ? ' — ' + S.runChallenge.artistLabel : ''))
+      : S.custom ? 'Mode: Custom artist — ' + S.custom.label
+      : 'Mode: Free play',
+      !$('#game').hidden && !S.daily && !S.challenge
+        ? ('Stage: ' + (artistMode ? 'Song ' + (S.stage + 1) : D().label))
+        : '',
       S.done && S.meta ? 'Song: ' + S.meta.title + ' — ' + S.meta.artist : ''].filter(Boolean).join('\n');
     closeAll();
     window.PlayerFeedback.open(details);
   };
+  $('#reportSong').onclick = () => {
+    if (!S.done || !S.song || !S.meta) return;
+    const meta = S.meta, song = S.song;
+    const short = value => String(value || '').slice(0, 110);
+    const details = [
+      'Mode: ' + gameMode(),
+      'Track ID: ' + short(meta.trackId || song.trackId),
+      'Song: ' + short(meta.title) + ' — ' + short(meta.artist),
+      'Catalogue: ' + short(song.title) + ' — ' + short(song.artist)
+    ].join('\n').slice(0, 600);
+    stopAudio(); closeAll();
+    window.PlayerFeedback.openSong(details);
+  };
   let artistT = 0, artistReq = 0;
   $('#artistQ').addEventListener('input', () => {
+    if ($('#artistClear')) $('#artistClear').hidden = !$('#artistQ').value;
     const v = $('#artistQ').value.trim();
     clearTimeout(artistT);
-    if (v.length < 2) { $('#artistResults').hidden = true; $('#artistResults').innerHTML = ''; return; }
+    if (v.length < 2) {
+      $('#artistResults').hidden = true; $('#artistResults').innerHTML = '';
+      renderQuickArtists(true);
+      return;
+    }
     const my = ++artistReq;
     artistT = setTimeout(async () => {
-      try { const list = await searchArtists(v); if (my === artistReq) renderArtists(list); }
-      catch (e) { /* diam */ }
+      let list = [];
+      try { list = await searchArtists(v); } catch (e) { list = []; }
+      if (!list.length) list = localArtistMatches(v);
+      if (my === artistReq) renderArtists(list);
     }, 260);
   });
+  if ($('#artistClear')) {
+    $('#artistClear').onclick = () => {
+      clearTimeout(artistT);
+      artistReq++;
+      $('#artistQ').value = '';
+      $('#artistClear').hidden = true;
+      $('#artistResults').hidden = true;
+      $('#artistResults').innerHTML = '';
+      renderQuickArtists(true);
+      $('#artistQ').focus();
+    };
+  }
   $('#artistQ').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -1475,8 +2459,26 @@
   });
   $('#artistResults').addEventListener('click', (e) => {
     const b = e.target.closest('.artist-row');
-    if (b) startCustom(b.dataset.id, b.dataset.name);
+    if (b && !b.disabled) startCustom(b.dataset.id, b.dataset.name);
   });
+  if ($('#customQuick')) {
+    $('#customQuick').addEventListener('click', (e) => {
+      const clr = e.target.closest('#clearRecentArtists');
+      if (clr && !clr.disabled) { clearRecentArtists(); return; }
+      const sur = e.target.closest('#surprisePopularArtist');
+      if (sur && !sur.disabled) { surprisePopularArtist(); return; }
+      const ref = e.target.closest('#refreshPopularArtists');
+      if (ref && !ref.disabled) { refreshPopularArtists(); return; }
+      const b = e.target.closest('.artist-chip');
+      if (b && !b.disabled) startCustom(b.dataset.id, b.dataset.name);
+    });
+  }
+  if ($('#statsTabs')) {
+    $('#statsTabs').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-tab]');
+      if (b) UI.stats(b.dataset.tab);
+    });
+  }
   $('#shareStage').onclick = () => {
     try { salin(shareStage(), 'challenge_copy'); }
     catch (e) { toast('This recording cannot be shared right now. Try another song.'); }
@@ -1496,7 +2498,7 @@
     else if (e.key === 'Enter') {
       e.preventDefault();
       if (!UI.dd.hidden && UI.sel >= 0) UI.choose(UI.sel);
-      else if (!UI.dd.hidden && UI.list.length === 1) UI.choose(0);
+      else if (!UI.dd.hidden && UI.list.length === 1 && !S.guesses.some((g) => sameStageGuess(g, UI.list[0]))) UI.choose(0);
       else toast('Pick a song from the list first');
     }
   });
@@ -1504,15 +2506,35 @@
   $('#clear').onclick = () => { UI.clearInput(); UI.q.focus(); };
 
   const inGame = () => !$('#game').hidden;
+  const inDuel = () => $('#duel') && !$('#duel').hidden;
   document.addEventListener('keydown', (e) => {
     const typing = e.target === UI.q;
     if (e.key === 'Escape') { dismissModal(); return; }
     // Dialogs and focused controls keep their native keyboard behavior.
     if (document.querySelector('.modal:not([hidden])') || !$('#challengeIntro').hidden) return;
     if (!typing && e.target.closest('button, input, select, textarea, a')) return;
+    if (inDuel()) {
+      if (e.key === 'ArrowUp' && !$('#duelLater').disabled) { e.preventDefault(); $('#duelLater').click(); }
+      else if (e.key === 'ArrowDown' && !$('#duelEarlier').disabled) { e.preventDefault(); $('#duelEarlier').click(); }
+      else if (e.code === 'Space') {
+        e.preventDefault();
+        const playingA = $('#duelPlayA') && $('#duelPlayA').dataset.s === 'playing';
+        const btn = playingA ? $('#duelPlayA') : $('#duelPlayB');
+        if (btn) btn.click();
+      }
+      return;
+    }
     if (!inGame()) {
-      // di lobi, Enter = mulai main
-      if (e.key === 'Enter' && !$('#start').disabled) { e.preventDefault(); $('#start').click(); }
+      // di lobi, Enter = mulai main sesuai tab aktif Classic
+      if (!$('#lobby').hidden && e.key === 'Enter') {
+        if ($('#classicArtistPanel') && !$('#classicArtistPanel').hidden && $('#openCustom')) {
+          e.preventDefault();
+          $('#openCustom').click();
+        } else if (!$('#start').disabled) {
+          e.preventDefault();
+          $('#start').click();
+        }
+      }
       return;
     }
     if (e.code === 'Space' && !typing) { e.preventDefault(); playClip(); }
@@ -1525,12 +2547,16 @@
     S.muted = false;
     LS.set('tl:vol', S.vol); LS.set('tl:muted', false);
     audio.volume = S.vol;
+    if (syncDuelVolume) syncDuelVolume();
+    syncSummaryVolume();
     $('#mute').classList.remove('muted');
   };
   $('#mute').onclick = () => {
     S.muted = !S.muted;
     LS.set('tl:muted', S.muted);
     audio.volume = S.muted ? 0 : S.vol;
+    if (syncDuelVolume) syncDuelVolume();
+    syncSummaryVolume();
     $('#mute').classList.toggle('muted', S.muted);
   };
   $('#mute').classList.toggle('muted', S.muted);
@@ -1541,6 +2567,17 @@
     toast('Stats reset');
   };
 
+  function copyTextSync(txt) {
+    const ta = el('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let copied = false;
+    try { copied = document.execCommand('copy'); }
+    catch (e) { /* Caller shows failure below. */ }
+    ta.remove();
+    return copied;
+  }
+
   async function salin(txt, eventName) {
     const mode = gameMode();
     let copied = false;
@@ -1548,17 +2585,13 @@
       await navigator.clipboard.writeText(txt);
       copied = true;
     } catch (e) {
-      const ta = el('textarea');
-      ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
-      document.body.appendChild(ta); ta.select();
-      try { copied = document.execCommand('copy'); }
-      catch (e2) { /* Show failure below. */ }
-      ta.remove();
+      copied = copyTextSync(txt);
     }
     toast(copied ? 'Copied — paste it to a friend' : 'Copy failed');
     if (copied && eventName) trackActivity(eventName, { mode });
     return copied;
   }
+
   $('#share').onclick = () => salin(shareText(), 'result_copy');
 
   audio.addEventListener('ended', stopAudio);
@@ -1579,6 +2612,497 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden && (playing || playPending)) stopAudio(); });
 
   /* ================= mulai ================= */
+
+  (() => {
+    const Duel = window.ReleaseDuel;
+    if (!Duel || !$('#duel') || !$('#openDuel')) return;
+    const duelPools = {
+      streams: Duel.buildPool(ALL, window.DUEL_STREAMS_V1, 'streams'),
+      year: Duel.buildPool(ALL, null, 'year')
+    };
+    const readBest = (kind) => Math.max(0, Number(LS.get(DUEL_BEST_KEYS[kind] || DUEL_BEST_KEYS.year, 0)) || 0);
+    const duelPos = new Map();
+    const slotPlayers = {
+      a: { audio: null, preview: '', slug: '' },
+      b: { audio: null, preview: '', slug: '' }
+    };
+    let duelAudioEpoch = 0, activeSlot = null, lastMouseCard = null, manualPausedSlot = null;
+    let duelTimer = 0, duelEpoch = 0;
+    const ds = { kind: 'streams', a: null, b: null, score: 0, best: 0, newBest: false, seen: new Set(), history: [], busy: false, over: false, challenge: null, queue: [], qIndex: 0 };
+
+    const btnOf = (slot) => slot === 'a' ? $('#duelPlayA') : $('#duelPlayB');
+    const cardOf = (slot) => slot === 'a' ? $('#duelA') : $('#duelB');
+    const setPlayBtn = (slot, state) => {
+      const btn = btnOf(slot), card = cardOf(slot);
+      if (btn) btn.dataset.s = state;
+      if (card) card.classList.toggle('playing', state === 'playing');
+    };
+    const pauseSlot = (slot) => {
+      const sp = slotPlayers[slot];
+      if (sp && sp.audio) {
+        sp.audio.pause();
+        if (sp.slug && Number.isFinite(sp.audio.currentTime) && !sp.audio.ended) {
+          duelPos.set(sp.slug, sp.audio.currentTime);
+        }
+      }
+      setPlayBtn(slot, 'idle');
+    };
+
+    stopDuelAudio = () => {
+      duelAudioEpoch++;
+      activeSlot = null;
+      pauseSlot('a');
+      pauseSlot('b');
+    };
+    syncDuelVolume = () => {
+      const v = S.muted ? 0 : S.vol;
+      for (const slot of ['a', 'b']) {
+        if (slotPlayers[slot].audio) slotPlayers[slot].audio.volume = v;
+      }
+    };
+    stopDuel = () => {
+      clearTimeout(duelTimer);
+      duelEpoch++;
+      lastMouseCard = null;
+      manualPausedSlot = null;
+      ds.busy = false;
+      ds.over = false;
+      if (ds.challenge) {
+        ds.challenge = null;
+        ds.queue = [];
+        ds.qIndex = 0;
+        if (location.hash.startsWith('#duel=')) history.replaceState(null, '', location.pathname + location.search);
+      }
+      stopDuelAudio();
+    };
+    duelEnded = () => ds.over;
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && activeSlot) stopDuelAudio();
+    });
+
+    function ensureSlotAudio(slot) {
+      const sp = slotPlayers[slot];
+      if (sp.audio) return sp;
+      const a = new Audio();
+      a.preload = 'auto';
+      a.addEventListener('ended', () => {
+        if (sp.slug) duelPos.delete(sp.slug);
+        if (activeSlot === slot) activeSlot = null;
+        setPlayBtn(slot, 'idle');
+      });
+      a.addEventListener('error', () => {
+        if (activeSlot !== slot) return;
+        activeSlot = null;
+        setPlayBtn(slot, 'idle');
+        $('#duelStatus').textContent = 'Preview unavailable right now — you can still guess!';
+      });
+      sp.audio = a;
+      return sp;
+    }
+
+    function seekOnceReady(a, targetTime) {
+      return new Promise((done) => {
+        if (!(targetTime > 0.05)) return done();
+        const apply = () => {
+          try {
+            const cap = Number.isFinite(a.duration) ? Math.max(0, a.duration - 0.3) : targetTime;
+            a.currentTime = Math.min(targetTime, cap);
+          } catch (e) {}
+          done();
+        };
+        if (a.readyState >= 1) return apply();
+        const onMeta = () => { a.removeEventListener('loadedmetadata', onMeta); apply(); };
+        a.addEventListener('loadedmetadata', onMeta);
+        setTimeout(() => { a.removeEventListener('loadedmetadata', onMeta); done(); }, 1500);
+      });
+    }
+
+    async function playDuelSlot(slot) {
+      const song = slot === 'a' ? ds.a : ds.b;
+      if (!song || $('#duel').hidden || ds.over) return;
+      stopAudio();
+      const other = slot === 'a' ? 'b' : 'a';
+      if (activeSlot === other) pauseSlot(other);
+      const myEpoch = ++duelAudioEpoch;
+      activeSlot = slot;
+      const sp = slotPlayers[slot];
+      const fastResume = sp.audio && sp.slug === song.slug && sp.preview;
+
+      try {
+        let previewUrl = fastResume ? sp.preview : '';
+        if (!previewUrl) {
+          setPlayBtn(slot, 'loading');
+          const meta = await resolve(song);
+          if (myEpoch !== duelAudioEpoch || activeSlot !== slot || $('#duel').hidden || !meta || !meta.preview) return;
+          previewUrl = meta.preview;
+        }
+        ensureSlotAudio(slot);
+        sp.audio.volume = S.muted ? 0 : S.vol;
+        if (sp.slug !== song.slug || sp.preview !== previewUrl) {
+          sp.slug = song.slug;
+          sp.preview = previewUrl;
+          sp.audio.src = previewUrl;
+          const saved = duelPos.get(song.slug) || 0;
+          await seekOnceReady(sp.audio, saved);
+          if (myEpoch !== duelAudioEpoch || activeSlot !== slot || $('#duel').hidden) return;
+        }
+        await sp.audio.play();
+        if (myEpoch !== duelAudioEpoch || activeSlot !== slot || $('#duel').hidden) {
+          sp.audio.pause();
+          return;
+        }
+        setPlayBtn(slot, 'playing');
+        $('#duelStatus').textContent = '';
+      } catch (err) {
+        if (myEpoch !== duelAudioEpoch || activeSlot !== slot) return;
+        activeSlot = null;
+        setPlayBtn(slot, 'idle');
+        if (err && err.name !== 'NotAllowedError') {
+          $('#duelStatus').textContent = 'Preview unavailable right now — you can still guess!';
+        }
+      }
+    }
+
+    function toggleDuelPreview(slot) {
+      if (activeSlot === slot) {
+        manualPausedSlot = slot;
+        duelAudioEpoch++;
+        activeSlot = null;
+        pauseSlot(slot);
+        return;
+      }
+      manualPausedSlot = null;
+      playDuelSlot(slot);
+    }
+
+    function syncDuelChrome(a) {
+      const isStreams = ds.kind === 'streams';
+      const mA = Duel.formatMetric(a, ds.kind);
+      $('#duelModeLabel').textContent = isStreams ? 'Spotify Streams' : 'Release Year';
+      if ($('#duelTabs')) {
+        $('#duelTabs').querySelectorAll('[data-duel]').forEach((b) => {
+          b.setAttribute('aria-pressed', String(b.dataset.duel === ds.kind));
+          if (b.dataset.duel === 'streams') b.disabled = duelPools.streams.length < 2;
+        });
+      }
+      $('#duelTagA').textContent = isStreams ? 'Known streams' : 'Released';
+      $('#duelPrompt').innerHTML = isStreams
+        ? 'Does the challenger have <b>more</b> or <b>fewer</b> Spotify streams?'
+        : 'Guess if the challenger came out <b>earlier</b> or <b>later</b>.';
+      $('#duelLaterLbl').textContent = isStreams ? '\u25B2 Higher' : '\u25B2 Later';
+      $('#duelEarlierLbl').textContent = isStreams ? '\u25BC Lower' : '\u25BC Earlier';
+      $('#duelLaterSub').textContent = (isStreams ? 'More than ' : 'After ') + mA.main;
+      $('#duelEarlierSub').textContent = (isStreams ? 'Fewer than ' : 'Before ') + mA.main;
+    }
+
+    function syncDuelTarget() {
+      const el = $('#duelTarget');
+      if (!el) return;
+      if (!ds.challenge) {
+        el.hidden = true;
+        if (el.dataset) delete el.dataset.passed;
+        return;
+      }
+      const target = ds.challenge.score;
+      const passed = ds.score > target;
+      el.hidden = false;
+      if (el.dataset) el.dataset.passed = passed ? '1' : '0';
+      el.textContent = passed ? ('Beat ' + target + '!') : ('Target ' + target);
+    }
+
+    function renderDuelPair() {
+      const { a, b } = ds;
+      const mA = Duel.formatMetric(a, ds.kind);
+      syncDuelChrome(a);
+
+      $('#duelArtA').src = a.art || '';
+      $('#duelArtA').alt = a.title + ' by ' + a.artist;
+      $('#duelTitleA').textContent = a.title;
+      $('#duelArtistA').textContent = a.artist;
+      $('#duelYearA').textContent = mA.main;
+      $('#duelSubA').textContent = mA.sub;
+      $('#duelSubA').hidden = !mA.sub;
+
+      $('#duelArtB').src = b.art || '';
+      $('#duelArtB').alt = b.title + ' by ' + b.artist;
+      $('#duelTitleB').textContent = b.title;
+      $('#duelArtistB').textContent = b.artist;
+      $('#duelYearB').textContent = '?';
+      $('#duelYearB').className = 'duel-year duel-unknown';
+      $('#duelSubB').textContent = '';
+      $('#duelSubB').hidden = true;
+      $('#duelB').className = 'duel-card duel-challenger';
+
+      $('#duelLater').disabled = false;
+      $('#duelEarlier').disabled = false;
+      $('#duelScore').textContent = 'Score ' + ds.score;
+      $('#duelBest').hidden = ds.best <= 0;
+      $('#duelBest').textContent = 'Best ' + ds.best;
+      syncDuelTarget();
+      $('#duelStatus').textContent = '';
+      $('#duelStatus').className = 'status duel-status';
+      if (lastMouseCard && !ds.over && !$('#duel').hidden && manualPausedSlot !== lastMouseCard) {
+        playDuelSlot(lastMouseCard);
+      }
+    }
+
+    function openDuelSummary() {
+      ds.over = true;
+      const curStats = LS.get('tl:duel:stats', {});
+      LS.set('tl:duel:stats', {
+        runs: (Number(curStats.runs) || 0) + 1,
+        streamsBest: Math.max(Number(curStats.streamsBest) || 0, ds.kind === 'streams' ? ds.best : 0),
+        yearBest: Math.max(Number(curStats.yearBest) || 0, ds.kind === 'year' ? ds.best : 0)
+      });
+      const isStreams = ds.kind === 'streams';
+      const last = ds.history[ds.history.length - 1];
+      const friendTarget = ds.challenge ? ds.challenge.score : null;
+      const beatFriend = friendTarget !== null && ds.score > friendTarget;
+      const tiedFriend = friendTarget !== null && ds.score === friendTarget;
+      if (friendTarget !== null) {
+        $('#duelVerdict').textContent = beatFriend ? 'You won the duel!' : tiedFriend ? 'Duel tied!' : 'Friend wins this round';
+        $('#duelVerdict').className = 'verdict ' + (beatFriend ? 'win' : tiedFriend ? '' : 'lose');
+      } else {
+        $('#duelVerdict').textContent = ds.score === 0 ? 'Zero. Try again!' : ds.newBest ? 'New personal best!' : ds.score >= 5 ? 'On fire!' : 'Good run!';
+        $('#duelVerdict').className = 'verdict ' + (ds.newBest || ds.score >= 3 ? 'win' : ds.score === 0 ? 'lose' : '');
+      }
+      $('#duelFinalScore').textContent = ds.score;
+      $('#duelFinalBest').textContent = 'best ' + ds.best;
+      const metricNote = last
+        ? (isStreams
+            ? last.b.title + ' (' + Duel.formatMetric(last.b, ds.kind).main + ') has ' + (last.b.streams >= last.a.streams ? 'more' : 'fewer') + ' Spotify streams than ' + last.a.title + ' (' + Duel.formatMetric(last.a, ds.kind).main + ').'
+            : last.b.title + ' (' + Duel.formatMetric(last.b, ds.kind).main + ') came out ' + (last.b.year > last.a.year ? 'after ' : 'before ') + last.a.title + ' (' + Duel.formatMetric(last.a, ds.kind).main + ').')
+        : '';
+      const summaryCopy = friendTarget !== null
+        ? (Duel.compareChallenge(friendTarget, ds.score) + ' (Friend: ' + friendTarget + ' · You: ' + ds.score + ').' + (metricNote ? ' ' + metricNote : ''))
+        : metricNote;
+      $('#duelSummaryNote').textContent = summaryCopy;
+      const modeTag = $('#duelModeTag');
+      if (modeTag) {
+        if (modeTag.dataset) modeTag.dataset.mode = 'duel';
+        modeTag.textContent = (friendTarget !== null ? 'Friend Duel · ' : 'Music Duel · ') + (isStreams ? 'Spotify Streams' : 'Release Year');
+      }
+      stopSummaryPreview();
+      const entries = ds.history.length ? [{ song: ds.history[0].a, won: true }, ...ds.history.map((h) => ({ song: h.b, won: h.won }))] : [];
+      const duelList = $('#duelRunList');
+      duelList.innerHTML = entries.map((e, i) => {
+        const playKey = 'duel:' + i;
+        summarySongs.set(playKey, e.song);
+        return renderShelfCard({
+          diff: 'duel',
+          won: e.won,
+          art: e.song.art || '',
+          lvl: i === 0 ? 'Start' : ('Round ' + i),
+          playKey,
+          badge: Duel.formatMetric(e.song, ds.kind).main,
+          title: e.song.title,
+          artist: e.song.artist,
+        });
+      }).join('');
+      applyShelfAttrs(duelList, entries.length);
+      const fanArts = [
+        ...entries.filter((e) => e.won && e.song.art).reverse().map((e) => e.song.art),
+        ...entries.filter((e) => e.song.art).map((e) => e.song.art),
+      ];
+      renderRunFan($('#duelFan'), fanArts);
+      const bgr = $('#artBgDuel');
+      if (bgr) {
+        if (fanArts[0]) { bgr.style.backgroundImage = 'url("' + fanArts[0] + '")'; bgr.classList.add('on'); }
+        else bgr.classList.remove('on');
+      }
+      open($('#duelModal'));
+      if (beatFriend || (friendTarget === null && ds.newBest && ds.score > 0)) confetti('#duelConfetti', 'win');
+    }
+
+    function guessDuel(direction) {
+      if (ds.busy || ds.over || !ds.a || !ds.b) return;
+      ds.busy = true;
+      $('#duelLater').disabled = true;
+      $('#duelEarlier').disabled = true;
+      const choice = ds.kind === 'streams'
+        ? (direction === 'hi' ? 'higher' : 'lower')
+        : (direction === 'hi' ? 'later' : 'earlier');
+      const res = Duel.evaluate(ds.a, ds.b, choice, ds.kind);
+      const mB = Duel.formatMetric(ds.b, ds.kind);
+      $('#duelYearB').textContent = mB.main;
+      $('#duelYearB').className = 'duel-year';
+      $('#duelSubB').textContent = mB.sub;
+      $('#duelSubB').hidden = !mB.sub;
+      $('#duelB').className = 'duel-card duel-challenger ' + (res.won ? 'ok' : 'no');
+      ds.history.push({ a: ds.a, b: ds.b, pick: choice, won: res.won });
+
+      if (res.won) {
+        ds.score++;
+        if (ds.score > ds.best) {
+          ds.best = ds.score;
+          ds.newBest = true;
+          LS.set(DUEL_BEST_KEYS[ds.kind] || DUEL_BEST_KEYS.year, ds.best);
+        }
+        $('#duelScore').textContent = 'Score ' + ds.score;
+        $('#duelBest').hidden = false;
+        $('#duelBest').textContent = 'Best ' + ds.best;
+        syncDuelTarget();
+        $('#duelStatus').textContent = ds.kind === 'streams'
+          ? 'Correct! ' + mB.sub + '.'
+          : 'Correct! Released in ' + ds.b.year + '.';
+        $('#duelStatus').className = 'status duel-status';
+      } else {
+        $('#duelStatus').textContent = ds.kind === 'streams'
+          ? 'Missed — ' + mB.sub + '.'
+          : 'Missed — released in ' + ds.b.year + '.';
+        $('#duelStatus').className = 'status duel-status err';
+      }
+
+      const pool = duelPools[ds.kind] || duelPools.year;
+      const myEpoch = ++duelEpoch;
+      clearTimeout(duelTimer);
+      duelTimer = setTimeout(() => {
+        if (myEpoch !== duelEpoch || $('#duel').hidden) return;
+        stopDuelAudio();
+        if (!res.won) {
+          ds.busy = false;
+          openDuelSummary();
+          return;
+        }
+        const prevB = ds.b;
+        const queuedNext = (ds.challenge && ds.qIndex < ds.queue.length) ? ds.queue[ds.qIndex++] : null;
+        const nextB = queuedNext || Duel.pickNext(pool, prevB, ds.seen, ds.score, ds.kind);
+        if (!nextB) {
+          ds.busy = false;
+          openDuelSummary();
+          return;
+        }
+        ds.a = prevB;
+        ds.b = nextB;
+        ds.seen.add(nextB.slug);
+        ds.busy = false;
+        renderDuelPair();
+      }, 900);
+    }
+
+    function startDuel(kind, incoming) {
+      closeAll();
+      stopAudio();
+      stopDuel();
+      duelPos.clear();
+      const target = incoming ? incoming.kind : ((kind === 'streams' || kind === 'year') ? kind : ds.kind);
+      const resolvedKind = (target === 'streams' && duelPools.streams.length >= 2) ? 'streams' : 'year';
+      const pool = duelPools[resolvedKind];
+      if (!pool || pool.length < 2) { toast('Not enough songs for Music Duel.'); return false; }
+
+      let first = null, second = null, queue = [], qIndex = 0;
+      const seen = new Set();
+      if (incoming) {
+        const byTid = new Map();
+        for (const s of pool) {
+          if (s && s.trackId && !byTid.has(Number(s.trackId))) byTid.set(Number(s.trackId), s);
+        }
+        queue = (incoming.ids || []).map((id) => byTid.get(Number(id))).filter(Boolean);
+        if (queue.length < 2) return false;
+        first = queue[0];
+        second = queue[1];
+        qIndex = 2;
+        for (const s of queue) seen.add(s.slug);
+      } else {
+        if (location.hash.startsWith('#duel=')) history.replaceState(null, '', location.pathname + location.search);
+        first = Duel.pickFirst(pool, resolvedKind);
+        if (first) seen.add(first.slug);
+        second = Duel.pickNext(pool, first, seen, 0, resolvedKind);
+        if (!first || !second) { toast('Could not start Music Duel.'); return false; }
+        seen.add(second.slug);
+      }
+
+      ds.kind = resolvedKind;
+      ds.a = first;
+      ds.b = second;
+      ds.score = 0;
+      ds.best = readBest(resolvedKind);
+      ds.newBest = false;
+      ds.seen = seen;
+      ds.history = [];
+      ds.busy = false;
+      ds.over = false;
+      ds.challenge = incoming || null;
+      ds.queue = queue;
+      ds.qIndex = qIndex;
+
+      $('#lobby').hidden = true;
+      $('#challengeIntro').hidden = true;
+      $('#game').hidden = true;
+      document.body.dataset.diff = 'duel';
+      $('#duel').hidden = false;
+      renderDuelPair();
+      trackActivity(incoming ? 'duel_challenge_start' : 'duel_start');
+      return true;
+    }
+
+    launchDuelChallenge = (incoming) => startDuel(incoming && incoming.kind, incoming);
+
+    $('#openDuel').onclick = () => startDuel(ds.kind);
+    if ($('#duelTabs')) {
+      $('#duelTabs').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-duel]');
+        if (b && !b.disabled && b.dataset.duel !== ds.kind) startDuel(b.dataset.duel);
+      });
+    }
+    $('#duelBack').onclick = () => { closeAll(); UI.lobby(); };
+    $('#duelPlayA').onclick = () => toggleDuelPreview('a');
+    $('#duelPlayB').onclick = () => toggleDuelPreview('b');
+    for (const [slot, card] of [['a', $('#duelA')], ['b', $('#duelB')]]) {
+      if (!card) continue;
+      card.addEventListener('pointerenter', (e) => {
+        if (e.pointerType !== 'mouse' || ds.over || $('#duel').hidden) return;
+        lastMouseCard = slot;
+        if (manualPausedSlot === slot) return;
+        playDuelSlot(slot);
+      });
+      card.addEventListener('pointerleave', (e) => {
+        if (e.pointerType !== 'mouse') return;
+        if (lastMouseCard === slot) lastMouseCard = null;
+        manualPausedSlot = null;
+        if (activeSlot === slot) {
+          duelAudioEpoch++;
+          activeSlot = null;
+          pauseSlot(slot);
+        }
+      });
+    }
+    $('#duelLater').onclick = () => guessDuel('hi');
+    $('#duelEarlier').onclick = () => guessDuel('lo');
+    $('#duelAgain').onclick = () => startDuel(ds.kind);
+    $('#duelShare').onclick = () => {
+      const ids = ds.history.length
+        ? [ds.history[0].a, ...ds.history.map((h) => h.b)].map((s) => s && s.trackId).filter(Boolean).slice(0, 25)
+        : [];
+      const challengeUrl = ids.length >= 2
+        ? Duel.createChallenge(siteUrl(), { kind: ds.kind, score: ds.score, ids })
+        : '';
+      salin(Duel.shareText({
+        score: ds.score, best: ds.best, history: ds.history, url: siteUrl(), kind: ds.kind, challengeUrl
+      }), 'duel_copy');
+    };
+    $('#duelMenu').onclick = () => { closeAll(); UI.lobby(); $('#openDuel').focus(); };
+  })();
+
+  function setClassicTab(mode) {
+    const artist = mode === 'artist';
+    if ($('#classicFiltersPanel')) $('#classicFiltersPanel').hidden = artist;
+    if ($('#classicArtistPanel')) $('#classicArtistPanel').hidden = !artist;
+    if ($('#classicTabs')) {
+      for (const b of $('#classicTabs').querySelectorAll('[data-classic-tab]')) {
+        const on = b.dataset.classicTab === (artist ? 'artist' : 'filters');
+        b.setAttribute('aria-pressed', String(on));
+        b.setAttribute('aria-selected', String(on));
+      }
+    }
+  }
+  if ($('#classicTabs')) {
+    $('#classicTabs').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-classic-tab]');
+      if (b) setClassicTab(b.dataset.classicTab);
+    });
+  }
 
   UI.buildControls();
   UI.render();

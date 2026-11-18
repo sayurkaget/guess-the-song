@@ -163,3 +163,10 @@ test('legacy completion dates require a saved correct answer to earn a win', asy
   assert.equal(t.dailyStreak().current, 1);
   assert.equal(t.dailyStreak().best, 1);
 });
+
+test('classic result shareText includes score summary and site link', () => {
+  const { t } = setup();
+  const text = t.shareText();
+  assert.match(text, /TuneUp · All songs · 0\/5/);
+  assert.ok(text.endsWith('https://game.example/'));
+});

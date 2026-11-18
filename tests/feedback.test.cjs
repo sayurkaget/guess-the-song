@@ -7,12 +7,12 @@ const source=fs.readFileSync(path.join(__dirname,'..','feedback.js'),'utf8');
 function setup() {
  const handlers={},nodes=new Map();
  function node(id){return {value:'',textContent:'',hidden:true,disabled:false,setCustomValidity(value){this.validation=value},focus(){},addEventListener(type,fn){handlers[id+':'+type]=fn}}}
- for(const id of ['feedbackForm','feedbackFields','feedbackMessage','feedbackStatus','sendFeedback','feedbackDetails','feedbackModal','feedbackCategory'])nodes.set('#'+id,node(id));
+ for(const id of ['feedbackForm','feedbackFields','feedbackMessage','feedbackStatus','sendFeedback','feedbackDetails','feedbackModal','feedbackCategory','feedbackEmail','feedbackReason','feedbackReasonField','feedbackCategoryField','feedbackTitle','feedbackIntro','feedbackMessageLabel'])nodes.set('#'+id,node(id));
  const form=nodes.get('#feedbackForm'),message=nodes.get('#feedbackMessage');
  form.hasAttribute=()=>false;
  form.reportValidity=()=>!message.validation;
  form.getAttribute=()=>'/feedback-received.html';
- form.reset=()=>{message.value='';nodes.get('#feedbackDetails').value=''};
+ form.reset=()=>{for(const id of ['feedbackMessage','feedbackDetails','feedbackEmail','feedbackReason'])nodes.get('#'+id).value='';nodes.get('#feedbackCategory').value='bug'};
  const calls=[];
  const c=vm.createContext({window:{},document:{querySelector:id=>nodes.get(id)},URLSearchParams,AbortSignal,
  FormData:class{constructor(){return [['form-name','player-feedback'],['category','bug'],['message',message.value],['email',''],['game-details',nodes.get('#feedbackDetails').value],['bot-field','']]}},
@@ -60,4 +60,50 @@ test('Cloudflare feedback requires a JSON receipt before clearing the draft',asy
  await send();assert.equal(message.value,'Feedback draft');
  c.fetch=async()=>({ok:true,json:async()=>({ok:true})});
  await send();assert.equal(message.value,'');
+});
+
+test('song report requires a reason and sends it with recording details, without requiring notes',async()=>{
+ const {c,nodes,calls,send}=setup();
+ c.window.PlayerFeedback.openSong('Track ID: 123\nSong: Original');
+ assert.equal(calls.length,0);
+ await send();assert.equal(calls.length,0);
+ nodes.get('#feedbackReason').value='live';await send();
+ const body=new URLSearchParams(calls[0].options.body);
+ assert.equal(body.get('category'),'bug');assert.match(body.get('message'),/Live version/);
+ assert.equal(body.get('game-details'),'Track ID: 123\nSong: Original');
+});
+
+test('general feedback and each song retain their own draft and identity',()=>{
+ const {c,nodes,message}=setup();
+ c.window.PlayerFeedback.open('General details');message.value='General draft';
+ c.window.PlayerFeedback.openSong('Song A');message.value='First song note';nodes.get('#feedbackReason').value='audio';
+ c.window.PlayerFeedback.openSong('Song B');assert.equal(message.value,'');assert.equal(nodes.get('#feedbackDetails').value,'Song B');
+ c.window.PlayerFeedback.openSong('Song A');assert.equal(message.value,'First song note');assert.equal(nodes.get('#feedbackReason').value,'audio');assert.equal(nodes.get('#feedbackDetails').value,'Song A');
+ c.window.PlayerFeedback.open('Fresh general details');assert.equal(message.value,'General draft');assert.equal(nodes.get('#feedbackDetails').value,'General details');
+});
+
+test('failed song report preserves reason and note; sending cannot switch its song',async()=>{
+ const {c,nodes,message,send}=setup();c.window.PlayerFeedback.openSong('Song A');nodes.get('#feedbackReason').value='title';message.value='Wrong credit';
+ let release;c.fetch=()=>new Promise(r=>release=r);const pending=send();
+ c.window.PlayerFeedback.openSong('Song B');assert.equal(nodes.get('#feedbackDetails').value,'Song A');
+ release({ok:false});await pending;assert.equal(message.value,'Wrong credit');assert.equal(nodes.get('#feedbackReason').value,'title');
+});
+
+test('reporting the same song again after success retains its recording identity',async()=>{
+ const {c,nodes,calls,send}=setup();c.window.PlayerFeedback.openSong('Track ID: 456');
+ nodes.get('#feedbackReason').value='audio';await send();
+ c.window.PlayerFeedback.openSong('Track ID: 456');nodes.get('#feedbackReason').value='title';await send();
+ assert.equal(new URLSearchParams(calls[1].options.body).get('game-details'),'Track ID: 456');
+});
+
+test('result report attaches both catalogue and played recording, bounded to the inbox limit',()=>{
+ const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+ const handler=app.slice(app.indexOf("  $('#reportSong').onclick"),app.indexOf('  let artistT ='));
+ const button={},reports=[];
+ const S={done:false,song:{title:'Catalogue song',artist:'Catalogue artist',trackId:1},meta:{title:'Played song',artist:'Played artist',trackId:2}};
+ let stopped=0,closed=0;
+ vm.runInNewContext(handler,{$:()=>button,S,gameMode:()=>'daily',stopAudio(){stopped++},closeAll(){closed++},window:{PlayerFeedback:{openSong:details=>reports.push(details)}}});
+ button.onclick();assert.equal(reports.length,0);
+ S.done=true;button.onclick();assert.match(reports[0],/Track ID: 2/);assert.match(reports[0],/Played song — Played artist/);assert.match(reports[0],/Catalogue song — Catalogue artist/);assert.equal(stopped,1);assert.equal(closed,1);
+ S.meta.title='Long title '.repeat(100);S.song.artist='Artist '.repeat(100);button.onclick();assert.ok(reports[1].length<=600);assert.match(reports[1],/Track ID: 2/);
 });

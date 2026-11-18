@@ -79,3 +79,66 @@ test('custom artist pool uses 200 results and filters live versions without drop
   assert.match(requested,/limit=200/);
   assert.deepEqual(Array.from(songs,s=>s.title),['Live Forever','Supersonic (Remastered)']);
 });
+
+test('near artist hint recognizes collaborations, featuring credits, and Silk Sonic / Bruno Mars aliases', () => {
+  {
+    const t = setup();
+    t.S.song = song('Leave the Door Open', 'Silk Sonic');
+    t.S.meta = song('Leave The Door Open', 'Silk Sonic, Bruno Mars & Anderson .Paak');
+    t.submitGuess(song('24K Magic', 'Bruno Mars'));
+    assert.equal(t.S.won, false);
+    assert.equal(t.S.guesses[0].t, 'near');
+  }
+  {
+    const t = setup();
+    t.S.song = song('24K Magic', 'Bruno Mars');
+    t.S.meta = song('24K Magic', 'Bruno Mars');
+    t.submitGuess(song('Leave the Door Open', 'Silk Sonic'));
+    assert.equal(t.S.guesses[0].t, 'near');
+  }
+  {
+    const t = setup();
+    t.S.song = song('We Found Love', 'Rihanna');
+    t.S.meta = song('We Found Love (feat. Calvin Harris)', 'Rihanna');
+    t.submitGuess(song('Summer', 'Calvin Harris'));
+    assert.equal(t.S.guesses[0].t, 'near');
+  }
+  {
+    const t = setup();
+    t.S.song = song('bad guy', 'Billie Eilish');
+    t.S.meta = song('bad guy', 'Billie Eilish');
+    t.submitGuess(song('Guess (feat. Billie Eilish)', 'Charli XCX'));
+    assert.equal(t.S.guesses[0].t, 'near');
+  }
+  {
+    const t = setup();
+    t.S.custom = { id: '1' };
+    t.S.song = song('Leave the Door Open', 'Silk Sonic');
+    t.S.meta = song('Leave The Door Open', 'Silk Sonic, Bruno Mars & Anderson .Paak');
+    t.submitGuess(song('24K Magic', 'Bruno Mars'));
+    assert.equal(t.S.guesses[0].t, 'wrong');
+  }
+  {
+    const t = setup();
+    t.S.song = song('September', 'Earth, Wind & Fire');
+    t.S.meta = song('September', 'Earth, Wind & Fire');
+    t.submitGuess(song('Playing With Fire', 'BLACKPINK'));
+    assert.equal(t.S.guesses[0].t, 'wrong');
+  }
+  {
+    const t = setup();
+    t.S.song = song('Die With A Smile', 'Lady Gaga & Bruno Mars');
+    t.S.meta = song('Die With A Smile', 'Lady Gaga & Bruno Mars');
+    t.submitGuess(song("I'm With You", 'Avril Lavigne'));
+    assert.equal(t.S.guesses[0].t, 'wrong');
+  }
+  {
+    const t = setup();
+    t.S.song = song('See You Again', 'Tyler, The Creator');
+    t.S.meta = song('See You Again (feat. Kali Uchis)', 'Tyler, The Creator');
+    t.submitGuess(song('Song', 'Tyler'));
+    assert.equal(t.S.guesses[0].t, 'wrong');
+    t.submitGuess(song('After the Storm (feat. Tyler, The Creator & Bootsy Collins)', 'Kali Uchis'));
+    assert.equal(t.S.guesses[1].t, 'near');
+  }
+});

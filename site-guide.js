@@ -12,7 +12,8 @@
   const showMenu = () => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.querySelector('.wrap').scrollIntoView({behavior:reduced ? 'auto' : 'smooth',block:'start'});
-    const start = document.querySelector('#start');
+    const customCta = document.querySelector('#classicArtistPanel:not([hidden]) #openCustom');
+    const start = customCta || document.querySelector('#start');
     (start.disabled ? document.querySelector('#openDaily') : start).focus({preventScroll:true});
   };
   guide.addEventListener('click', event => {
@@ -27,6 +28,8 @@
     const value = genreChoice !== null ? genreChoice : eraChoice;
     if (!Array.from(target.options).some(option => option.value === value)) return;
     goToMenu();
+    const filtersTab = document.querySelector('#classicTabs [data-classic-tab="filters"]');
+    if (filtersTab && filtersTab.getAttribute('aria-pressed') !== 'true') filtersTab.click();
     // Each shortcut starts broad; players can combine filters in the menu.
     const other = document.querySelector(genreChoice !== null ? '#era' : '#genre');
     if (other.value !== 'all') {

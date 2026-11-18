@@ -1,11 +1,11 @@
-/* Service worker Guess The Song.
+/* Service worker TuneUp.
    Strategi: network-first dengan cadangan cache.
    Sengaja BUKAN cache-first -- kalau cache didahulukan, setiap kali kamu
    memperbarui game-nya pemain akan tetap melihat versi lama sampai cache
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v25-layout-audio';
+const CACHE = 'gts-v66-fan-disc-faq';
 const SHELL = [
   './',
   './index.html',
@@ -15,6 +15,7 @@ const SHELL = [
   './site-guide.js',
   './fonts/GeneralSans-Variable.woff2',
   './fonts/CabinetGrotesk-Variable.woff2',
+  './fonts/Unbounded-Bold.woff2',
   './app.js',
   './recordings.js',
   './feedback.js',
@@ -22,6 +23,8 @@ const SHELL = [
   './challenge.js',
   './daily.js',
   './daily-pool-v1.js',
+  './duel-streams-v1.js',
+  './duel.js',
   './songs.js',
   './app.webmanifest',
   './icon-32.png',
