@@ -1504,6 +1504,7 @@
 
   let summaryAudio = null, summaryKey = '', summaryEpoch = 0;
   const summarySongs = new Map();
+  const summaryPos = new Map();
 
   function setSummaryBtnState(key, state) {
     [].forEach.call(document.querySelectorAll('.runlist.run-shelf li'), (li) => {
@@ -1514,11 +1515,16 @@
     });
   }
 
-  function stopSummaryPreview() {
+  function stopSummaryPreview(resetPos = false) {
     summaryEpoch++;
+    const prevKey = summaryKey;
     summaryKey = '';
+    if (resetPos) summaryPos.clear();
     if (summaryAudio) {
-      try { summaryAudio.pause(); summaryAudio.removeAttribute('src'); summaryAudio.load(); } catch (e) {}
+      if (!resetPos && prevKey && Number.isFinite(summaryAudio.currentTime) && !summaryAudio.ended && summaryAudio.currentTime > 0.05) {
+        summaryPos.set(prevKey, summaryAudio.currentTime);
+      }
+      try { summaryAudio.pause(); } catch (e) {}
     }
     setSummaryBtnState('', 'idle');
   }
@@ -1561,14 +1567,18 @@
       if (!summaryAudio) {
         summaryAudio = new Audio();
         summaryAudio.preload = 'auto';
-        summaryAudio.addEventListener('ended', () => { if (summaryKey) stopSummaryPreview(); });
+        summaryAudio.addEventListener('ended', () => {
+          if (summaryKey) summaryPos.delete(summaryKey);
+          if (summaryKey) stopSummaryPreview();
+        });
         summaryAudio.addEventListener('error', () => {
           if (summaryKey) { stopSummaryPreview(); toast('Preview unavailable for this track.'); }
         });
       }
       syncSummaryVolume();
-      summaryAudio.src = preview;
-      summaryAudio.currentTime = 0;
+      if (summaryAudio.src !== preview) summaryAudio.src = preview;
+      const resumeAt = summaryPos.get(key) || 0;
+      try { summaryAudio.currentTime = resumeAt; } catch (e) {}
       await summaryAudio.play();
       if (ticket !== summaryEpoch) {
         try { summaryAudio.pause(); } catch (e) {}
@@ -3154,6 +3164,8 @@
       target: null,
       preloadedSlug: '',
       preloadedUrl: '',
+      playingSlug: '',
+      pausedAt: 0,
       guesses: [],
       done: false,
       won: false,
@@ -3166,7 +3178,13 @@
       if (agAudio || typeof Audio !== 'function') return agAudio;
       agAudio = new Audio();
       agAudio.preload = 'auto';
-      agAudio.addEventListener('ended', () => stopArtistAudio());
+      agAudio.addEventListener('ended', () => {
+        ag.pausedAt = 0;
+        if (agAudio) {
+          try { agAudio.currentTime = 0; } catch (e) {}
+        }
+        stopArtistAudio();
+      });
       agAudio.addEventListener('error', () => {
         if (agAudioKind) {
           stopArtistAudio();
@@ -3179,6 +3197,8 @@
     function preloadTargetHit(target) {
       ag.preloadedSlug = '';
       ag.preloadedUrl = '';
+      ag.playingSlug = '';
+      ag.pausedAt = 0;
       if (!target || !target.topSong) return;
       const song = target.topSong;
       const myEpoch = agAudioEpoch;
@@ -3206,6 +3226,9 @@
       agAudioEpoch++;
       agAudioKind = '';
       if (agAudio) {
+        if (Number.isFinite(agAudio.currentTime) && !agAudio.ended && agAudio.currentTime > 0.05) {
+          ag.pausedAt = agAudio.currentTime;
+        }
         try { agAudio.pause(); } catch (e) {}
       }
       syncAudioBtns();
@@ -3217,6 +3240,8 @@
 
     stopArtistGame = () => {
       stopArtistAudio();
+      ag.playingSlug = '';
+      ag.pausedAt = 0;
       closeAgDD();
       if (ag.challenge) {
         ag.challenge = null;
@@ -3254,8 +3279,18 @@
         const a = ensureAgAudio();
         if (!a) return;
         a.volume = S.muted ? 0 : S.vol;
-        if (a.src !== previewUrl) a.src = previewUrl;
-        try { a.currentTime = 0; } catch (e) {}
+        const sameTrack = ag.playingSlug === song.slug && a.src === previewUrl;
+        if (!sameTrack || isAuto) {
+          ag.playingSlug = song.slug;
+          ag.pausedAt = 0;
+          if (a.src !== previewUrl) a.src = previewUrl;
+          try { a.currentTime = 0; } catch (e) {}
+        } else if (a.ended) {
+          ag.pausedAt = 0;
+          try { a.currentTime = 0; } catch (e) {}
+        } else if (ag.pausedAt > 0.05 && Math.abs((a.currentTime || 0) - ag.pausedAt) > 0.25) {
+          try { a.currentTime = ag.pausedAt; } catch (e) {}
+        }
         await a.play();
         if (myEpoch !== agAudioEpoch || $('#artistGame').hidden) {
           stopArtistAudio();

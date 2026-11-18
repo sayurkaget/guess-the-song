@@ -556,6 +556,8 @@ test('Artist Detective lobby card, arena DOM, and #artist= challenge intro work 
   assert.match(css, /\.challenge-kicker\[data-mode="artist"\]/);
   assert.match(appCode, /preloadTargetHit\(ag\.target\)/);
   assert.match(appCode, /playArtistTrack\(ag\.target\.topSong,\s*'hit',\s*true\)/);
+  assert.match(appCode, /ag\.pausedAt\s*=\s*agAudio\.currentTime/);
+  assert.match(appCode, /summaryPos\.set\(prevKey,\s*summaryAudio\.currentTime\)/);
 
   const storage = new Map([
     ['tl:artist:stats', JSON.stringify({ won: 6, current: 2, best: 4 })]
