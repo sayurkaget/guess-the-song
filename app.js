@@ -3152,6 +3152,8 @@
     const ag = {
       mode: 'free',
       target: null,
+      preloadedSlug: '',
+      preloadedUrl: '',
       guesses: [],
       done: false,
       won: false,
@@ -3159,6 +3161,38 @@
       sel: -1,
       matches: []
     };
+
+    function ensureAgAudio() {
+      if (agAudio || typeof Audio !== 'function') return agAudio;
+      agAudio = new Audio();
+      agAudio.preload = 'auto';
+      agAudio.addEventListener('ended', () => stopArtistAudio());
+      agAudio.addEventListener('error', () => {
+        if (agAudioKind) {
+          stopArtistAudio();
+          toast('Audio preview unavailable right now.');
+        }
+      });
+      return agAudio;
+    }
+
+    function preloadTargetHit(target) {
+      ag.preloadedSlug = '';
+      ag.preloadedUrl = '';
+      if (!target || !target.topSong) return;
+      const song = target.topSong;
+      const myEpoch = agAudioEpoch;
+      resolve(song).then((meta) => {
+        if (myEpoch !== agAudioEpoch || !ag.target || ag.target.id !== target.id || !meta || !meta.preview) return;
+        ag.preloadedSlug = song.slug;
+        ag.preloadedUrl = meta.preview;
+        const a = ensureAgAudio();
+        if (a && !agAudioKind) {
+          a.src = meta.preview;
+          a.load();
+        }
+      }).catch(() => {});
+    }
 
     function syncAudioBtns() {
       const hitBtn = $('#agPlaySongBtn');
@@ -3192,9 +3226,9 @@
       }
     };
 
-    async function playArtistTrack(song, kind) {
+    async function playArtistTrack(song, kind, isAuto = false) {
       if (!song || typeof Audio !== 'function') return;
-      if (agAudioKind === kind && agAudio && !agAudio.paused) {
+      if (!isAuto && agAudioKind === kind && agAudio && !agAudio.paused) {
         stopArtistAudio();
         return;
       }
@@ -3205,27 +3239,24 @@
 
       const myEpoch = ++agAudioEpoch;
       agAudioKind = kind;
-      if (kind === 'hit') $('#agPlaySongBtn').textContent = 'Loading…';
+      if (kind === 'hit' && !isAuto) $('#agPlaySongBtn').textContent = 'Loading…';
 
       try {
-        const meta = await resolve(song);
-        if (myEpoch !== agAudioEpoch || !meta || !meta.preview || $('#artistGame').hidden) {
-          if (myEpoch === agAudioEpoch) stopArtistAudio();
-          return;
+        let previewUrl = (ag.preloadedSlug === song.slug && ag.preloadedUrl) ? ag.preloadedUrl : '';
+        if (!previewUrl) {
+          const meta = await resolve(song);
+          if (myEpoch !== agAudioEpoch || !meta || !meta.preview || $('#artistGame').hidden) {
+            if (myEpoch === agAudioEpoch) stopArtistAudio();
+            return;
+          }
+          previewUrl = meta.preview;
         }
-        if (!agAudio) {
-          agAudio = new Audio();
-          agAudio.preload = 'auto';
-          agAudio.addEventListener('ended', () => stopArtistAudio());
-          agAudio.addEventListener('error', () => {
-            stopArtistAudio();
-            toast('Audio preview unavailable right now.');
-          });
-        }
-        agAudio.volume = S.muted ? 0 : S.vol;
-        agAudio.src = meta.preview;
-        agAudio.currentTime = 0;
-        await agAudio.play();
+        const a = ensureAgAudio();
+        if (!a) return;
+        a.volume = S.muted ? 0 : S.vol;
+        if (a.src !== previewUrl) a.src = previewUrl;
+        try { a.currentTime = 0; } catch (e) {}
+        await a.play();
         if (myEpoch !== agAudioEpoch || $('#artistGame').hidden) {
           stopArtistAudio();
           return;
@@ -3234,7 +3265,7 @@
       } catch (e) {
         if (myEpoch === agAudioEpoch) {
           stopArtistAudio();
-          toast('Could not play audio preview.');
+          if (!isAuto) toast('Could not play audio preview.');
         }
       }
     }
@@ -3412,6 +3443,7 @@
         ag.won = true;
         recordArtistOutcome(true);
         renderAgBoard();
+        if (ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit', true);
         return;
       }
       if (ag.guesses.length >= AD.MAX_TRIES) {
@@ -3419,6 +3451,7 @@
         ag.won = false;
         recordArtistOutcome(false);
         renderAgBoard();
+        if (ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit', true);
         return;
       }
       renderAgBoard();
@@ -3431,6 +3464,7 @@
       closeAgDD();
       recordArtistOutcome(false);
       renderAgBoard();
+      if (ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit', true);
     }
 
     function pickFreeTarget() {
@@ -3478,6 +3512,7 @@
         ag.done = false;
         ag.won = false;
       }
+      preloadTargetHit(ag.target);
 
       $('#lobby').hidden = true;
       $('#challengeIntro').hidden = true;

@@ -545,6 +545,7 @@ test('Artist Detective lobby card, arena DOM, and #artist= challenge intro work 
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const css = fs.readFileSync(path.join(root, 'layout.css'), 'utf8');
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  const appCode = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 
   assert.match(html, /class="arcade-row"[\s\S]*id="openDuel"[\s\S]*id="openArtistGame"/);
   assert.match(html, /id="artistGame"[\s\S]*id="agQ"[\s\S]*id="agGiveUp"[\s\S]*id="agResultBanner"[\s\S]*id="agBoard"/);
@@ -553,6 +554,8 @@ test('Artist Detective lobby card, arena DOM, and #artist= challenge intro work 
   assert.match(sw, /'\.\/artist-game\.js'/);
   assert.match(css, /#lobby \.arcade-row/);
   assert.match(css, /\.challenge-kicker\[data-mode="artist"\]/);
+  assert.match(appCode, /preloadTargetHit\(ag\.target\)/);
+  assert.match(appCode, /playArtistTrack\(ag\.target\.topSong,\s*'hit',\s*true\)/);
 
   const storage = new Map([
     ['tl:artist:stats', JSON.stringify({ won: 6, current: 2, best: 4 })]
