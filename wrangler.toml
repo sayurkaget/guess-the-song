@@ -1,0 +1,8 @@
+﻿name = "tuneup"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-11-01"
+
+[[d1_databases]]
+binding = "FEEDBACK_DB"
+database_name = "namethetrack-feedback"
+database_id = "38221d51-138d-4acb-b3cd-58f1aad4d597"
