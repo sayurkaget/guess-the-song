@@ -1,10 +1,10 @@
-# PROGRESS — Name The Track
+# PROGRESS — TuneUp
 
 > File ini dipakai bersama oleh **Codex (ChatGPT)** dan **Antigravity**.
 > Baca dulu sebelum mulai kerja, dan perbarui setelah selesai (tambahkan entri log di bawah).
 
 ## Ringkasan
-- Game tebak lagu, tayang di https://namethetrack.pages.dev/ (Cloudflare Pages).
+- Game musik **TuneUp**, tayang di https://tuneup.pages.dev/ (Cloudflare Pages project: `tuneup`; project lama `namethetrack` sudah dihapus).
 - Audio: preview iTunes (sering mulai dari tengah lagu; Deezer sudah dites, sama saja).
 - Katalog: `songs.js` (~30.8k lagu Western). Tool: `node tools/expand-catalog.cjs`.
 - Aturan katalog: lagu **Western** untuk mode utama, **tanpa versi live**, **duplikat disaring**.
@@ -129,4 +129,4 @@
 - **Verification & Deployment**:
   - Bumped SW caches to `gts-v73-tuneup-domain` (`sw.js`) and `gts-cf-v53-tuneup-domain` (`tools/build-cloudflare.cjs`).
   - Verified with `node --test tests\*.test.cjs` (`127/127` pass) and Playwright Desktop (`1180x800`) + Mobile (`390x844`) E2E on `dist/`.
-  - Claimed Cloudflare Pages project **`tuneup`** and deployed `dist/` live to **`https://tuneup.pages.dev/`** (with `FEEDBACK_DB` D1 binding `38221d51-138d-4acb-b3cd-58f1aad4d597`, while keeping `https://namethetrack.pages.dev/` updated as well).
+  - Claimed Cloudflare Pages project **`tuneup`**, deployed `dist/` live to **`https://tuneup.pages.dev/`** (with `FEEDBACK_DB` D1 binding `38221d51-138d-4acb-b3cd-58f1aad4d597`), and deleted old project `namethetrack` per user request.
