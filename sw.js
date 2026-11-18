@@ -5,7 +5,7 @@
    kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
    hanya dipakai saat jaringan mati. */
 
-const CACHE = 'gts-v72-artist-roster-250';
+const CACHE = 'gts-v73-tuneup-domain';
 const SHELL = [
   './',
   './index.html',

@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
 const output = path.join(root, 'dist');
-const site = new URL(process.env.SITE_URL || 'https://namethetrack.pages.dev');
+const site = new URL(process.env.SITE_URL || 'https://tuneup.pages.dev');
 if (site.protocol !== 'https:' || site.pathname !== '/' || site.search || site.hash) {
   throw new Error('SITE_URL must be an HTTPS site origin');
 }
@@ -16,12 +16,15 @@ const files = ['index.html', 'styles.css', 'layout.css', 'site-guide.css', 'site
 for (const file of files) {
   let contents = fs.readFileSync(path.join(root, file));
   if (/\.(html|xml|txt|js)$/.test(file)) {
-    contents = contents.toString().replaceAll('https://namethetrack.netlify.app', site.origin);
+    contents = contents.toString()
+      .replaceAll('https://namethetrack.netlify.app', site.origin)
+      .replaceAll('https://namethetrack.pages.dev', site.origin)
+      .replaceAll('https://tuneup.pages.dev', site.origin);
     if (file === 'index.html') contents = contents
       .replace('action="/feedback-received.html" data-netlify="true"', 'action="/api/feedback" data-feedback-api="true"');
     if (file === 'analytics.js') contents = contents
       .replace("location.hostname === 'namethetrack.netlify.app'", 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v52-artist-roster-250'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v53-tuneup-domain'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }

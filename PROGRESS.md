@@ -127,6 +127,6 @@
   - Placed `#openDuel` (Music Duel) and `#openArtistGame` (Artist Detective) side-by-side inside `.arcade-row` on desktop (`> 680px`) and stacked on mobile (`<= 680px`), with dynamic `#artistLobbySub` (`Best streak X` / `Solved X`).
   - Built `#artistGame` as a pure endless deduction mode (no `Daily Artist` tab or `Audio Clue` button, per user feedback), featuring prefix-prioritized artist autocomplete dropdown (`#agQ` / `#agDD`) with circular photos, `Give up` (`#agGiveUp`), inline completion/reveal banner (`#agResultBanner`) with preloaded instant auto-play of the mystery artist's `Top Hit` on solve/reveal (`preloadTargetHit` + `playArtistTrack(..., 'hit', true)` + seamless pause/resume from `ag.pausedAt` without restarting from 0, plus `summaryPos` resume on summary cards), spoiler-free emoji grid + opaque hash-encoded `#artist=1.<code>.<triesOrX>` friend challenge sharing (`#agShareBtn`, `ID_TO_CODE` / `CODE_TO_ID`), and full `#challengeIntro` integration for `#artist=` links.
 - **Verification & Deployment**:
-  - Bumped SW caches to `gts-v72-artist-roster-250` (`sw.js`) and `gts-cf-v52-artist-roster-250` (`tools/build-cloudflare.cjs`).
+  - Bumped SW caches to `gts-v73-tuneup-domain` (`sw.js`) and `gts-cf-v53-tuneup-domain` (`tools/build-cloudflare.cjs`).
   - Verified with `node --test tests\*.test.cjs` (`127/127` pass) and Playwright Desktop (`1180x800`) + Mobile (`390x844`) E2E on `dist/`.
-  - Deployed `dist/` to Cloudflare Pages (`https://namethetrack.pages.dev/`).
+  - Claimed Cloudflare Pages project **`tuneup`** and deployed `dist/` live to **`https://tuneup.pages.dev/`** (with `FEEDBACK_DB` D1 binding `38221d51-138d-4acb-b3cd-58f1aad4d597`, while keeping `https://namethetrack.pages.dev/` updated as well).
