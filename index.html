@@ -608,10 +608,11 @@
 <script src="app.js"></script>
 <script src="site-guide.js"></script>
 <script>
-  // Service worker hanya jalan di HTTPS (atau localhost). Di alamat LAN biasa
-  // ia diabaikan diam-diam -- itu wajar, bukan error.
+  if ("caches" in window) {
+    caches.keys().then((ks) => ks.forEach((k) => caches.delete(k))).catch(() => {});
+  }
   if ("serviceWorker" in navigator) {
-    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    addEventListener("load", () => navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then((r) => r.update()).catch(() => {}));
   }
 </script>
 </body>

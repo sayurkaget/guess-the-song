@@ -1,11 +1,8 @@
-/* Service worker TuneUp.
-   Strategi: network-first dengan cadangan cache.
-   Sengaja BUKAN cache-first -- kalau cache didahulukan, setiap kali kamu
-   memperbarui game-nya pemain akan tetap melihat versi lama sampai cache
-   kedaluwarsa. Dengan network-first, versi terbaru selalu menang, dan cache
-   hanya dipakai saat jaringan mati. */
+/* Service worker TuneUp — 100% Online-Only (tanpa cache offline).
+   Semua cache lama dihapus saat aktivasi dan setiap request selalu diambil
+   langsung dari jaringan (no-store). */
 
-const CACHE = 'gts-v73-tuneup-domain';
+const CACHE = 'gts-v74-online-only';
 const SHELL = [
   './',
   './index.html',
@@ -35,41 +32,22 @@ const SHELL = [
   './icon-512.png'
 ];
 
-self.addEventListener('install', (e) => {
-  // { cache: 'reload' } memaksa tiap berkas diambil segar dari jaringan saat
-  // dipasang -- tanpa ini, addAll bisa menyalin versi lama dari cache HTTP.
-  e.waitUntil(
-    caches.open(CACHE)
-      .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' }))))
-      .then(() => self.skipWaiting())
-  );
+self.addEventListener('install', () => {
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((k) => Promise.all(k.filter((n) => n !== CACHE).map((n) => caches.delete(n))))
+      .then((keys) => Promise.all(keys.map((n) => caches.delete(n))))
       .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (e) => {
+  if (e.request.cache === 'only-if-cached' && e.request.mode !== 'same-origin') return;
   const url = new URL(e.request.url);
-
-  // Hanya tangani berkas game itu sendiri. Permintaan ke iTunes dan CDN audio
-  // dibiarkan lewat apa adanya -- tidak boleh di-cache dan tidak boleh diganggu.
   if (url.origin !== self.location.origin) return;
   if (e.request.method !== 'GET') return;
-
-  // 'no-store' melewati cache HTTP browser: versi terbaru selalu menang saat
-  // online. Cache milik SW ini tetap diisi sebagai cadangan untuk mode luring.
-  e.respondWith(
-    fetch(e.request, { cache: 'no-store' })
-      .then((res) => {
-        const salinan = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, salinan)).catch(() => {});
-        return res;
-      })
-      .catch(() => caches.match(e.request).then((hit) => hit || caches.match('./index.html')))
-  );
+  e.respondWith(fetch(e.request, { cache: 'no-store' }));
 });

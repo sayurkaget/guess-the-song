@@ -552,6 +552,7 @@ test('Artist Detective lobby card, arena DOM, and #artist= challenge intro work 
   assert.doesNotMatch(html, /id="agTabs"|id="agAudioHint"/);
   assert.match(html, /src="artist-game\.js"/);
   assert.match(sw, /'\.\/artist-game\.js'/);
+  assert.doesNotMatch(sw, /c\.put|caches\.match/);
   assert.match(css, /#lobby \.arcade-row/);
   assert.match(css, /\.challenge-kicker\[data-mode="artist"\]/);
   assert.match(appCode, /preloadTargetHit\(ag\.target\)/);
