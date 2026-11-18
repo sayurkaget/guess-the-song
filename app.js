@@ -3147,32 +3147,20 @@
     const roster = AD.buildRoster(ALL, window.DUEL_STREAMS_V1);
     const byId = new Map(roster.map((a) => [a.id, a]));
     const seenFree = new Set();
-    let agAudio = null, agAudioKind = '', agAudioEpoch = 0, agClipTimer = 0;
+    let agAudio = null, agAudioKind = '', agAudioEpoch = 0;
 
     const ag = {
-      mode: 'daily',
-      day: '',
+      mode: 'free',
       target: null,
       guesses: [],
       done: false,
       won: false,
       challenge: null,
-      hintHeard: false,
       sel: -1,
       matches: []
     };
 
-    const dailyStorageKey = (day) => 'tl:artist:daily:' + day;
-
     function syncAudioBtns() {
-      const hintBtn = $('#agAudioHint');
-      if (hintBtn) {
-        const playingHint = agAudioKind === 'hint' && agAudio && !agAudio.paused;
-        hintBtn.dataset.playing = playingHint ? '1' : '0';
-        hintBtn.textContent = playingHint
-          ? '\u23F9 Playing 5s Clue…'
-          : (ag.hintHeard ? '\u25B6 Replay 5s Clue' : '\u25B6 Audio Clue');
-      }
       const hitBtn = $('#agPlaySongBtn');
       if (hitBtn) {
         const playingHit = agAudioKind === 'hit' && agAudio && !agAudio.paused;
@@ -3183,7 +3171,6 @@
     stopArtistAudio = () => {
       agAudioEpoch++;
       agAudioKind = '';
-      clearTimeout(agClipTimer);
       if (agAudio) {
         try { agAudio.pause(); } catch (e) {}
       }
@@ -3205,7 +3192,7 @@
       }
     };
 
-    async function playArtistTrack(song, kind, maxSec) {
+    async function playArtistTrack(song, kind) {
       if (!song || typeof Audio !== 'function') return;
       if (agAudioKind === kind && agAudio && !agAudio.paused) {
         stopArtistAudio();
@@ -3218,8 +3205,7 @@
 
       const myEpoch = ++agAudioEpoch;
       agAudioKind = kind;
-      if (kind === 'hint') $('#agAudioHint').textContent = 'Loading clue…';
-      else if (kind === 'hit') $('#agPlaySongBtn').textContent = 'Loading…';
+      if (kind === 'hit') $('#agPlaySongBtn').textContent = 'Loading…';
 
       try {
         const meta = await resolve(song);
@@ -3244,30 +3230,13 @@
           stopArtistAudio();
           return;
         }
-        if (kind === 'hint') ag.hintHeard = true;
         syncAudioBtns();
-        if (maxSec > 0) {
-          clearTimeout(agClipTimer);
-          agClipTimer = setTimeout(() => {
-            if (myEpoch === agAudioEpoch) stopArtistAudio();
-          }, maxSec * 1000);
-        }
       } catch (e) {
         if (myEpoch === agAudioEpoch) {
           stopArtistAudio();
           toast('Could not play audio preview.');
         }
       }
-    }
-
-    function saveAgDaily() {
-      if (ag.mode !== 'daily' || !ag.day || !ag.target) return;
-      LS.set(dailyStorageKey(ag.day), {
-        targetId: ag.target.id,
-        guesses: ag.guesses.map((g) => g.id),
-        done: ag.done,
-        won: ag.won
-      });
     }
 
     function recordArtistOutcome(won) {
@@ -3315,13 +3284,6 @@
           : ('Guess ' + Math.min(AD.MAX_TRIES, ag.guesses.length + 1) + ' / ' + AD.MAX_TRIES);
       }
 
-      if ($('#agTabs')) {
-        $('#agTabs').hidden = !!ag.challenge;
-        $('#agTabs').querySelectorAll('[data-ag-mode]').forEach((b) => {
-          b.setAttribute('aria-pressed', String(b.dataset.agMode === ag.mode));
-        });
-      }
-
       $('#agQ').disabled = ag.done;
       $('#agGiveUp').hidden = ag.done;
       syncAudioBtns();
@@ -3350,7 +3312,7 @@
               noteEl.textContent = '';
             }
           }
-          $('#agNextBtn').textContent = ag.mode === 'free' ? 'Next artist' : 'Play Unlimited';
+          $('#agNextBtn').textContent = 'Next artist';
         }
       }
 
@@ -3449,7 +3411,6 @@
         ag.done = true;
         ag.won = true;
         recordArtistOutcome(true);
-        saveAgDaily();
         renderAgBoard();
         return;
       }
@@ -3457,11 +3418,9 @@
         ag.done = true;
         ag.won = false;
         recordArtistOutcome(false);
-        saveAgDaily();
         renderAgBoard();
         return;
       }
-      saveAgDaily();
       renderAgBoard();
     }
 
@@ -3471,7 +3430,6 @@
       ag.won = false;
       closeAgDD();
       recordArtistOutcome(false);
-      saveAgDaily();
       renderAgBoard();
     }
 
@@ -3486,7 +3444,7 @@
       return pick;
     }
 
-    function startArtistGame(mode = 'daily', incoming = null) {
+    function startArtistGame(incoming = null) {
       if (!roster.length) {
         toast('Artist roster unavailable.');
         return false;
@@ -3497,7 +3455,6 @@
       stopArtistAudio();
       closeAgDD();
 
-      ag.hintHeard = false;
       $('#agQ').value = '';
       $('#agClear').hidden = true;
 
@@ -3505,7 +3462,6 @@
         const target = byId.get(incoming.id);
         if (!target) return false;
         ag.mode = 'challenge';
-        ag.day = '';
         ag.target = target;
         ag.guesses = [];
         ag.done = false;
@@ -3516,30 +3472,11 @@
         if (location.hash.startsWith('#artist=')) {
           history.replaceState(null, '', location.pathname + location.search);
         }
-        const resolvedMode = mode === 'free' ? 'free' : 'daily';
-        ag.mode = resolvedMode;
-        if (resolvedMode === 'daily') {
-          const day = window.DailyGame ? window.DailyGame.day() : '2026-01-01';
-          const dailyTarget = AD.dailyArtist(roster, day) || roster[0];
-          const saved = LS.get(dailyStorageKey(day));
-          ag.day = day;
-          ag.target = dailyTarget;
-          if (saved && saved.targetId === dailyTarget.id && Array.isArray(saved.guesses)) {
-            ag.guesses = saved.guesses.map((id) => byId.get(id)).filter(Boolean);
-            ag.done = !!saved.done;
-            ag.won = !!saved.won;
-          } else {
-            ag.guesses = [];
-            ag.done = false;
-            ag.won = false;
-          }
-        } else {
-          ag.day = '';
-          ag.target = pickFreeTarget();
-          ag.guesses = [];
-          ag.done = false;
-          ag.won = false;
-        }
+        ag.mode = 'free';
+        ag.target = pickFreeTarget();
+        ag.guesses = [];
+        ag.done = false;
+        ag.won = false;
       }
 
       $('#lobby').hidden = true;
@@ -3549,21 +3486,15 @@
       document.body.dataset.diff = 'artist';
       $('#artistGame').hidden = false;
       renderAgBoard();
-      trackActivity(incoming ? 'artist_challenge_start' : ('artist_' + ag.mode + '_start'));
+      trackActivity(incoming ? 'artist_challenge_start' : 'artist_free_start');
       if (!ag.done) setTimeout(() => $('#agQ').focus(), 40);
       return true;
     }
 
-    launchArtistChallenge = (incoming) => startArtistGame('challenge', incoming);
+    launchArtistChallenge = (incoming) => startArtistGame(incoming);
 
-    $('#openArtistGame').onclick = () => startArtistGame('daily');
+    $('#openArtistGame').onclick = () => startArtistGame();
     $('#artistGameBack').onclick = () => { closeAll(); UI.lobby(); };
-    if ($('#agTabs')) {
-      $('#agTabs').addEventListener('click', (e) => {
-        const b = e.target.closest('[data-ag-mode]');
-        if (b && b.dataset.agMode !== ag.mode) startArtistGame(b.dataset.agMode);
-      });
-    }
     $('#agQ').addEventListener('input', () => {
       $('#agClear').hidden = !$('#agQ').value;
       const v = $('#agQ').value.trim();
@@ -3600,12 +3531,9 @@
       const idx = Number(b.dataset.idx);
       if (ag.matches[idx]) submitArtistGuess(ag.matches[idx]);
     });
-    $('#agAudioHint').onclick = () => {
-      if (ag.target && ag.target.hintSong) playArtistTrack(ag.target.hintSong, 'hint', 5);
-    };
     $('#agGiveUp').onclick = () => giveUpArtist();
     $('#agPlaySongBtn').onclick = () => {
-      if (ag.target && ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit', 0);
+      if (ag.target && ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit');
     };
     $('#agShareBtn').onclick = () => {
       if (!ag.target) return;
@@ -3615,8 +3543,7 @@
         won: ag.won
       });
       salin(AD.shareText({
-        mode: ag.mode,
-        day: ag.day,
+        mode: 'free',
         guesses: ag.guesses,
         target: ag.target,
         won: ag.won,
@@ -3624,7 +3551,7 @@
         challengeUrl
       }), 'artist_copy');
     };
-    $('#agNextBtn').onclick = () => startArtistGame('free');
+    $('#agNextBtn').onclick = () => startArtistGame();
   })();
 
   function setClassicTab(mode) {

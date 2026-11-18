@@ -547,7 +547,8 @@ test('Artist Detective lobby card, arena DOM, and #artist= challenge intro work 
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 
   assert.match(html, /class="arcade-row"[\s\S]*id="openDuel"[\s\S]*id="openArtistGame"/);
-  assert.match(html, /id="artistGame"[\s\S]*id="agTabs"[\s\S]*id="agQ"[\s\S]*id="agResultBanner"[\s\S]*id="agBoard"/);
+  assert.match(html, /id="artistGame"[\s\S]*id="agQ"[\s\S]*id="agGiveUp"[\s\S]*id="agResultBanner"[\s\S]*id="agBoard"/);
+  assert.doesNotMatch(html, /id="agTabs"|id="agAudioHint"/);
   assert.match(html, /src="artist-game\.js"/);
   assert.match(sw, /'\.\/artist-game\.js'/);
   assert.match(css, /#lobby \.arcade-row/);
