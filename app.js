@@ -211,7 +211,7 @@
   const maxLen  = () => ladder()[TRIES - 1];
   const step    = () => Math.min(S.guesses.length, TRIES - 1);
   const limit   = () => ladder()[step()];
-  const CLIP_STOPS = [0.12, 0.26, 0.46, 0.74, 1];
+  const CLIP_STOPS = [0.06, 0.16, 0.32, 0.58, 1];
   const clipStop = (i, n) => (n === CLIP_STOPS.length ? CLIP_STOPS[i] : (i + 1) / n);
   const clipProgress = (t) => {
     const L = ladder(), n = L.length;
@@ -1834,9 +1834,9 @@
       p.hidden = !msg;
       p.classList.toggle('warn', warn);
     },
-    // Scrubber gaya pemutar musik: rel mulus dengan rentang klip terbuka,
-    // tanda batas detik saat ini (pin + tag mengambang), titik halus untuk
-    // tahap berikutnya, dan sapuan hijau terang + playhead saat diputar.
+    // Bar kapsul bersekat gaya Songspot: isian warna penuh sampai batas klip
+    // terbuka, sekat tipis di dalam kapsul, tanda segitiga ▲ + durasi tepat
+    // di bawah batas aktif, dan sapuan terang + playhead saat diputar.
     bar() {
       const L = ladder(), n = L.length, max = maxLen();
       const unlockedIdx = S.done ? n - 1 : Math.min(S.guesses.length, n - 1);
@@ -1847,22 +1847,20 @@
 
       const pin = $('#trackLimitPin');
       if (pin) {
-        pin.style.left = pct + '%';
-        pin.hidden = pct >= 99.5;
+        pin.hidden = false;
+        pin.style.left = Math.min(97, pct) + '%';
       }
       const tag = $('#trackLimitTag');
       if (tag) {
         tag.textContent = fmt(curLim);
-        tag.style.left = Math.max(9, Math.min(91, pct)) + '%';
+        tag.style.left = Math.max(8, Math.min(92, pct)) + '%';
       }
-      const endEl = $('#trackEnd');
-      if (endEl) endEl.innerHTML = '<b>' + fmt(curLim) + '</b> / ' + fmt(max);
 
       this.seams.innerHTML = '';
-      for (let i = unlockedIdx + 1; i < n - 1; i++) {
-        const dot = el('i');
-        dot.style.left = (clipStop(i, n) * 100) + '%';
-        this.seams.appendChild(dot);
+      for (let i = 0; i < n - 1; i++) {
+        const cut = el('i');
+        cut.style.left = (clipStop(i, n) * 100) + '%';
+        this.seams.appendChild(cut);
       }
     },
 

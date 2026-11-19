@@ -159,44 +159,36 @@
       <div class="vinyl-card">
         <div class="vinyl-top">
           <p class="stagenow" id="stageNow"></p>
-          <div class="clip-pill"><span class="readout" id="readout">0.0s</span><small> / <span id="clipMax">15s</span></small></div>
+          <div class="clip-pill"><small>Max </small><span id="clipMax">15s</span></div>
+        </div>
+
+        <div class="track spot-track" id="track">
+          <div class="track-bar-row">
+            <div class="track-rail" id="trackWave">
+              <div class="track-fill" id="trackFill"></div>
+              <div class="track-played" id="trackPlayed"></div>
+              <div class="track-seams" id="trackSeams"></div>
+            </div>
+            <div class="track-head" id="trackHead"></div>
+          </div>
+          <div class="track-caret-row" aria-hidden="true">
+            <span class="track-caret" id="trackLimitPin"></span>
+            <span class="track-caret-lbl" id="trackLimitTag">0.1s</span>
+          </div>
         </div>
 
         <div class="player">
-          <div class="mystery-cover">
-            <div class="mystery-grid" aria-hidden="true"></div>
-            <span class="mystery-tag" aria-hidden="true">
-              <span class="mystery-eq"><i></i><i></i><i></i></span>
-              <span class="mystery-tag-txt">? Mystery</span>
-            </span>
-            <svg class="mystery-note" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/></svg>
+          <div class="spot-play-wrap">
             <button class="playbtn" id="play" aria-label="Play the clip">
               <svg class="ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg>
               <svg class="ico-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.4"/><rect x="13.5" y="5" width="4" height="14" rx="1.4"/></svg>
               <svg class="ico-load" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="12 38"/></svg>
             </button>
+            <span class="readout spot-readout" id="readout">0.1s</span>
           </div>
         </div>
 
         <div class="vinyl-foot">
-          <div class="track" id="track">
-            <div class="track-pin-row" aria-hidden="true">
-              <span class="track-limit-tag" id="trackLimitTag">0.1s</span>
-            </div>
-            <div class="track-bar-row">
-              <div class="track-rail" id="trackWave">
-                <div class="track-fill" id="trackFill"></div>
-                <div class="track-played" id="trackPlayed"></div>
-              </div>
-              <div class="track-seams" id="trackSeams"></div>
-              <div class="track-limit-pin" id="trackLimitPin" aria-hidden="true"></div>
-              <div class="track-head" id="trackHead"></div>
-            </div>
-            <div class="track-times" aria-hidden="true">
-              <span id="trackCur">0.0s</span>
-              <span id="trackEnd"><b>0.1s</b> / 15s</span>
-            </div>
-          </div>
           <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true">Loading song…</p>
           <button class="btn ghostbtn" id="retrySong" type="button" hidden>Try again</button>
         </div>

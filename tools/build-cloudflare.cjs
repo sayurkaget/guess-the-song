@@ -24,7 +24,7 @@ for (const file of files) {
       .replace('action="/feedback-received.html" data-netlify="true"', 'action="/api/feedback" data-feedback-api="true"');
     if (file === 'analytics.js') contents = contents
       .replace("location.hostname === 'namethetrack.netlify.app'", 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v57-spotify-scrubber'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v58-songspot-player'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }

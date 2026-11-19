@@ -457,7 +457,7 @@ test('Wave 12 polish: Other genre button, artistClear, Surprise me, and text-onl
 
   assert.match(html, /class="classic-section"[\s\S]*id="classicTabs"[\s\S]*id="classicFiltersPanel"[\s\S]*id="classicArtistPanel"[\s\S]*id="openCustom"/);
   assert.match(html, /class="duel-card-wide"[^>]*id="openDuel"/);
-  assert.match(html, /class="arena-grid"[\s\S]*class="mystery-cover"[\s\S]*id="trackLimitTag"[\s\S]*id="trackLimitPin"[\s\S]*id="trySlots"/);
+  assert.match(html, /class="arena-grid"[\s\S]*class="track spot-track"[\s\S]*id="trackLimitPin"[\s\S]*id="trackLimitTag"[\s\S]*class="spot-play-wrap"[\s\S]*id="trySlots"/);
   assert.match(html, /class="reveal-grid"[\s\S]*class="reveal-disc"[\s\S]*class="reveal-foot"/);
   assert.match(html, /id="runFan"[\s\S]*class="runlist run-shelf"[\s\S]*id="duelFan"[\s\S]*class="runlist duel-runlist run-shelf"/);
   assert.match(html, /id="customModal"[\s\S]*class="search-ico"[\s\S]*id="artistQ"/);
@@ -481,11 +481,11 @@ test('Play button centering CSS, viewport cleanup, and #duel challenge intro wor
   assert.doesNotMatch(appCode, /Guess The Song/);
   assert.doesNotMatch(swCode, /Guess The Song/);
 
-  assert.match(css, /\.mystery-cover\{[\s\S]*width:176px;height:176px/);
-  assert.match(css, /\.vinyl-card \.playbtn\{[\s\S]*width:68px;height:68px/);
-  assert.match(css, /\.track-limit-tag\{[\s\S]*\.track-limit-pin\{/);
+  assert.match(css, /\.spot-track \.track-rail\{[\s\S]*height:20px;border-radius:999px/);
+  assert.match(css, /\.track-caret\{[\s\S]*border-bottom:5\.5px solid var\(--acc\)/);
+  assert.match(css, /\.vinyl-card \.playbtn\{[\s\S]*width:112px;height:112px/);
   assert.match(css, /@media\(max-width:680px\)[\s\S]*\.vinyl-card\{[^}]*flex-direction:column;align-items:center/);
-  assert.match(css, /@media\(max-width:680px\)[\s\S]*\.vinyl-card \.playbtn\{width:50px;height:50px\}/);
+  assert.match(css, /@media\(max-width:680px\)[\s\S]*\.vinyl-card \.playbtn\{width:84px;height:84px\}/);
   assert.match(css, /\.challenge-kicker\[data-mode="duel"\]/);
 
   const duelHarness = setupGame();

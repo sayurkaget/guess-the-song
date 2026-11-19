@@ -164,3 +164,12 @@
     - During playback, a bright glowing fill (`#trackPlayed`) and circular white Spotify playhead thumb (`#trackHead`) sweep smoothly from `0.0s` right up to the limit pin (`CLIP_STOPS = [0.12, 0.26, 0.46, 0.74, 1]`), updating `#trackCur` live alongside `#trackEnd`.
 - **Verification & Deploy**:
   - Updated `tests/game-ui.test.cjs` and guarded `UI.playSweep` for isolated `tests/audio.test.cjs` mocks (`127/127` passing), bumped SW cache (`gts-v77-spotify-scrubber` / `gts-cf-v57-spotify-scrubber`), verified Desktop & Mobile (`390x844`) in Playwright, built `dist/`, and deployed to `https://tuneup.pages.dev/`.
+
+
+## Wave 34 — Songspot-Style Segmented Capsule Bar & Large Play Button in Song Arena (2026-11-19)
+- **Songspot-Inspired Left Player (`index.html`, `layout.css`, `app.js`)**:
+  - Replaced the left player widget inside `#game`'s `.vinyl-card` (keeping TuneUp's existing 2-column `.arena-grid`, right `.guess-card`, and 5-stage progressive Easy → Impossible run intact) with:
+    - **Segmented Capsule Progress Bar (`.spot-track`)**: Thick rounded capsule (`20px` desktop / `18px` mobile) with crisp internal hairline divider cuts (`CLIP_STOPS = [0.06, 0.16, 0.32, 0.58, 1]`), solid difficulty-colored unlocked fill that softens during playback as the bright play sweep (`#trackPlayed`) and glowing playhead (`#trackHead`) glide smoothly up to the active seam, plus a clean upward caret (`▲`) and duration label (`0.1s` / `0.5s` / `2s` / `8s` / `15s`) directly beneath the active seam.
+    - **Large Centered Play Button + Side Readout (`.spot-play-wrap`)**: Clean `112px` (`84px` mobile) glowing circular `#play` button centered in the card with live monospace `#readout` (`0.1s`..`15s`, ticking live during playback) floating right beside it.
+- **Verification & Deploy**:
+  - Updated `tests/game-ui.test.cjs`, bumped SW cache (`gts-v78-songspot-player` / `gts-cf-v58-songspot-player`), verified `127/127` automated tests and Playwright Desktop (`1180x780`) + Mobile (`390x844`) across `0.1s`, `8s` idle, and `8s` playing states, built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
