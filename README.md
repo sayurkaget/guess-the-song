@@ -1,14 +1,16 @@
-# Guess The Song
+# TuneUp
 
-Game tebak lagu ala [Songly](https://quizly.gg/songly) / Heardle.
-Dengarkan potongan pendek sebuah lagu, tebak judulnya. Salah tebak atau melewati akan
-membuka potongan yang lebih panjang.
+🎮 **Main langsung di browser:** **<https://tuneup.pages.dev/>**
 
-> Nama folder dan berkas peluncurnya masih `tebak-lagu` / `Tebak Lagu.*` — dibiarkan
-> supaya entri autostart Windows tidak perlu dipasang ulang. Antarmuka gamenya sendiri
-> berbahasa Inggris.
+Game musik gratis di browser dengan 4 mode utama:
+- **Daily Challenge** — 1 lagu harian yang sama untuk semua pemain (5 kesempatan, klip `0.1s → 15s`).
+- **Classic & Custom Artist** — 5 tahap bertingkat (*Easy* hingga *Impossible*) dengan filter Genre/Era atau pilih artis favoritmu.
+- **Music Duel** — adu *Higher or Lower* jumlah Spotify Streams dan tahun rilis lagu.
+- **Artist Detective** — tebak artis misteri dari 250 artis global lewat 6 petunjuk (*Debut, Type, Gender, Genre, Country, Rank*).
 
-## Menjalankan
+> Nama repositori/folder masih memakai nama lama (`guess-the-song` / `tebak-lagu`) agar riwayat dan autostart tetap aman. Antarmuka gamenya sendiri berbahasa Inggris.
+
+## Menjalankan Lokal
 
 Servernya **nyala sendiri tiap kali kamu login Windows**, tanpa jendela apa pun. Tinggal
 buka <http://localhost:8080> kapan saja.
@@ -20,25 +22,22 @@ tidak menyalakan yang kedua.
 Jangan buka `index.html` langsung lewat klik dua kali: sebagian browser memblokir
 permintaan jaringan dari halaman `file://`, jadi lagunya gagal dimuat.
 
-## Main di HP
+## Main Online (HP & Desktop)
 
-Gamenya sudah online dan tidak butuh laptop sama sekali:
+Gamenya sudah online penuh di Cloudflare Pages dan tidak butuh laptop sama sekali:
 
-**<https://sayurkaget.github.io/guess-the-song/>**
+**<https://tuneup.pages.dev/>**
 
 Buka di HP, lalu tambahkan ke layar depan — **Android (Chrome)**: menu titik tiga →
 *Add to Home screen*; **iPhone (Safari)**: tombol Share → *Add to Home Screen*. Ikonnya
 muncul di layar depan dan terbuka layar penuh tanpa bilah alamat.
 
-Sumbernya ada di repo <https://github.com/sayurkaget/guess-the-song>. Untuk memperbarui
-versi online setelah mengubah game di folder ini:
+Kode sumber ada di repo <https://github.com/sayurkaget/guess-the-song>. Untuk build & deploy ke Cloudflare Pages:
 
 ```bash
-robocopy . ..\guess-the-song index.html styles.css app.js songs.js app.webmanifest sw.js icon-180.png icon-192.png icon-512.png
+node tools/build-cloudflare.cjs
+npx wrangler pages deploy dist --project-name tuneup --branch main
 ```
-
-lalu di folder `guess-the-song`: `git add -A`, `git commit -m "..."`, `git push`.
-GitHub Pages membangun ulang sendiri dalam ~1 menit.
 
 ### Lewat jaringan lokal (saat laptop menyala)
 
