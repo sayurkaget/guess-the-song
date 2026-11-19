@@ -3,7 +3,7 @@
    ke server (no-cache / ETag) agar update langsung masuk dan file besar seperti
    songs.js tetap hemat kuota via 304 Not Modified saat belum berubah. */
 
-const CACHE = 'gts-v85-spotify-rounds-picker';
+const CACHE = 'gts-v86-spotify-oauth';
 const SHELL = [
   './',
   './index.html',
@@ -25,6 +25,7 @@ const SHELL = [
   './duel.js',
   './artist-game.js',
   './score-card.js',
+  './spotify-auth.js',
   './songs.js',
   './app.webmanifest',
   './icon-32.png',

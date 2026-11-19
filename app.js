@@ -342,18 +342,35 @@
 
   /* ================= iTunes ================= */
 
+  function cleanSearchTitle(t) {
+    return String(t || '')
+      .replace(/\s*[-–—]\s*(?:\d{4}\s+)?(?:remaster(?:ed)?|radio\s+edit|single\s+version|album\s+version|original\s+mix|mono|stereo|explicit|clean|bonus\s+track|deluxe).*$/i, '')
+      .replace(/\s*[\[(](?:feat\.?|ft\.?|with|remaster(?:ed)?|radio\s+edit|\d{4}\s+remaster)[^)\]]*[\])]/ig, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  function primaryArtist(a) {
+    return String(a || '').split(/\s*(?:,|&|;|\bfeat\.?\b|\bft\.?\b|\bx\b)\s*/i)[0].trim();
+  }
+
   function scoreResult(r, song, rank) {
     if (!r.previewUrl || !window.RecordingPolicy.isStudio(r)) return -1;
     const rt = norm(r.trackName), ra = norm(r.artistName);
     const wt = norm(song.title),  wa = norm(song.artist);
+    const crt = norm(cleanSearchTitle(r.trackName));
+    const cwt = norm(cleanSearchTitle(song.title));
     let sc = 0;
 
     if (rt === wt) sc += 6; else if (rt.indexOf(wt) === 0) sc += 4;
-    else if (rt.indexOf(wt) >= 0 || wt.indexOf(rt) >= 0) sc += 2; else return -1;
+    else if (rt.indexOf(wt) >= 0 || wt.indexOf(rt) >= 0) sc += 2;
+    else if (cwt && crt && (crt === cwt || crt.indexOf(cwt) === 0 || cwt.indexOf(crt) === 0)) sc += 3;
+    else return -1;
 
     // Hanya izinkan artis yang cocok / alias resmi; blokir cover band saat trackId tidak dikunci.
+    const pa = norm(primaryArtist(song.artist));
     if (ra === wa) sc += 5;
     else if (ra.indexOf(wa) >= 0 || wa.indexOf(ra) >= 0 || sameArtist({ title: r.trackName, artist: r.artistName }, song)) sc += 4;
+    else if (pa && pa.length >= 2 && (ra.indexOf(pa) >= 0 || norm(primaryArtist(r.artistName)) === pa)) sc += 3;
     else if (!song.trackId) return -1;
     else sc -= 5;
 
@@ -371,41 +388,53 @@
     }
     const ck = 'tl:trk5:' + song.slug;
     const c = LS.get(ck);
-    if (c && c.exp > Date.now() && c.preview && window.RecordingPolicy.isStudio(c)) return c;
+    if (c && c.exp > Date.now() && c.preview && window.RecordingPolicy.isStudio(c)) {
+      if (!song.art && c.art) song.art = c.art;
+      return c;
+    }
 
-    // Aksen di kata kunci bikin pencarian iTunes gagal total: "No One Noticed
-    // The Marías" nol hasil, "No One Noticed The Marias" ketemu. Tanda baca lain
-    // (' # $ &) justru membantu, jadi hanya diakritiknya yang dibuang.
-    const term = encodeURIComponent(
-      (song.title + ' ' + song.artist).normalize('NFD').replace(/\p{M}/gu, ''));
-    // Use the same storefront as the catalogue import.
-    const url = song.trackId
-      ? 'https://itunes.apple.com/lookup?id=' + encodeURIComponent(song.trackId) + '&entity=song&country=US'
-      : 'https://itunes.apple.com/search?term=' + term + '&entity=song&limit=14&country=US';
-    const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
-    if (!res.ok) throw new Error('http ' + res.status);
-    const data = JSON.parse(await res.text()); // endpoint balas text/javascript
+    const searchItunes = async (rawQuery, useTrackId) => {
+      // Aksen di kata kunci bikin pencarian iTunes gagal total: "No One Noticed
+      // The Marías" nol hasil, "No One Noticed The Marias" ketemu. Tanda baca lain
+      // (' # $ &) justru membantu, jadi hanya diakritiknya yang dibuang.
+      const term = encodeURIComponent(rawQuery.normalize('NFD').replace(/\p{M}/gu, ''));
+      const url = useTrackId
+        ? 'https://itunes.apple.com/lookup?id=' + encodeURIComponent(song.trackId) + '&entity=song&country=US'
+        : 'https://itunes.apple.com/search?term=' + term + '&entity=song&limit=14&country=US';
+      const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
+      if (!res.ok) throw new Error('http ' + res.status);
+      const data = JSON.parse(await res.text()); // endpoint balas text/javascript
+      const results = data.results || [];
+      let best = null, bs = 0;
+      for (let i = 0; i < results.length; i++) {
+        if (useTrackId && String(results[i].trackId) !== String(song.trackId)) continue;
+        const sc = scoreResult(results[i], song, i);
+        if (sc > bs) { bs = sc; best = results[i]; }
+      }
+      return best;
+    };
 
-    const results = data.results || [];
-    let best = null, bs = 0;
-    for (let i = 0; i < results.length; i++) {
-      if (song.trackId && String(results[i].trackId) !== String(song.trackId)) continue;
-      const sc = scoreResult(results[i], song, i);
-      if (sc > bs) { bs = sc; best = results[i]; }
+    let best = await searchItunes(song.title + ' ' + song.artist, !!song.trackId);
+    if (!best && !song.trackId) {
+      const cleaned = cleanSearchTitle(song.title) + ' ' + primaryArtist(song.artist);
+      if (cleaned.trim().toLowerCase() !== (song.title + ' ' + song.artist).trim().toLowerCase()) {
+        best = await searchItunes(cleaned, false);
+      }
     }
     if (!best) throw new Error('tidak ketemu');
 
     const rec = {
       trackId: best.trackId,
       preview: best.previewUrl,
-      art: (best.artworkUrl100 || '').replace('100x100', '600x600'),
+      art: song.hdArt || (best.artworkUrl100 || '').replace('100x100', '600x600'),
       title: best.trackName,
       artist: best.artistName,
       album: best.collectionName || '',
       year: (best.releaseDate || '').slice(0, 4),
-      link: best.trackViewUrl || '',
+      link: song.spotifyUrl || best.trackViewUrl || '',
       exp: Date.now() + 7 * 864e5
     };
+    if (!song.art && rec.art) song.art = rec.art;
     LS.set(ck, rec);
     return rec;
   }
@@ -3950,7 +3979,7 @@
     const saved = LS.get(SPOTIFY_ROUNDS_KEY, 'all');
     if (saved === 'all') return 'all';
     const n = parseInt(saved, 10);
-    return Number.isFinite(n) && n >= 1 ? Math.min(500, n) : 'all';
+    return Number.isFinite(n) && n >= 1 ? Math.min(1000, n) : 'all';
   })();
 
   function spotifyRoundsPillLabel() {
@@ -3988,7 +4017,7 @@
     } else {
       const n = parseInt(val, 10);
       if (!Number.isFinite(n) || n < 1) return;
-      spotifyRoundsChoice = Math.min(500, n);
+      spotifyRoundsChoice = Math.min(1000, n);
     }
     LS.set(SPOTIFY_ROUNDS_KEY, spotifyRoundsChoice);
     syncSpotifyRoundsUI();
@@ -4049,6 +4078,26 @@
     return null;
   }
 
+  function spotifyDefaultHint() {
+    return (window.SpotifyAuth && window.SpotifyAuth.isConnected())
+      ? 'Connected · loads full playlists (100+) & private'
+      : 'Public links load up to 100 songs';
+  }
+
+  function syncSpotifyAuthUI() {
+    const auth = window.SpotifyAuth;
+    const connected = !!(auth && auth.isConnected());
+    const session = connected ? auth.getSession() : null;
+    if ($('#spotifyConnectBtn')) $('#spotifyConnectBtn').hidden = connected;
+    if ($('#spotifyConnectedBadge')) $('#spotifyConnectedBadge').hidden = !connected;
+    if ($('#spotifyUserLabel')) {
+      $('#spotifyUserLabel').textContent = (session && session.userName) ? session.userName : 'Connected';
+    }
+    const st = $('#spotifyStatus');
+    if (st && !st.classList.contains('err')) st.textContent = spotifyDefaultHint();
+    if ($('#spotifyRedirectUri') && auth) $('#spotifyRedirectUri').textContent = auth.redirectUri();
+  }
+
   let spotifyBusy = false;
   async function startSpotifyPlaylist(rawInput, overrideRounds) {
     const raw = String(rawInput || ($('#spotifyUrl') ? $('#spotifyUrl').value : '')).trim();
@@ -4060,7 +4109,7 @@
       st.classList.toggle('err', !!err);
     };
     if (!raw) {
-      setStatus('Paste a public Spotify playlist or album link first.', true);
+      setStatus('Paste a Spotify playlist or album link first.', true);
       if ($('#spotifyUrl')) $('#spotifyUrl').focus();
       return false;
     }
@@ -4073,13 +4122,51 @@
       const apiParam = raw.startsWith('album:')
         ? 'https://open.spotify.com/album/' + raw.slice(6)
         : raw;
-      const res = await fetch('/api/spotify?url=' + encodeURIComponent(apiParam), {
-        signal: AbortSignal.timeout(14000)
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data || !data.ok || !Array.isArray(data.tracks) || data.tracks.length < 1) {
-        setStatus((data && data.error) || 'Could not load that Spotify link. Make sure it is a Public playlist or album.', true);
-        return false;
+
+      const auth = window.SpotifyAuth;
+      const target = auth ? auth.parseSpotifyTarget(apiParam) : null;
+      let data = null;
+
+      if (auth && auth.isConnected() && target) {
+        // Load full tracklist via official OAuth API in parallel with public embed
+        // (embed supplies instant p.scdn.co previews for tracks 1..100 & fallback for 3rd-party playlists).
+        const embedPromise = fetch('/api/spotify?url=' + encodeURIComponent(apiParam), {
+          signal: AbortSignal.timeout(12000)
+        }).then((r) => r.json().catch(() => null)).catch(() => null);
+
+        const oauthRes = await auth.fetchPlaylistWithAuth(target.type, target.id);
+        syncSpotifyAuthUI();
+        if (oauthRes && oauthRes.ok && oauthRes.data && oauthRes.data.tracks.length >= 1) {
+          data = oauthRes.data;
+          const embedData = await embedPromise;
+          if (embedData && embedData.ok && Array.isArray(embedData.tracks)) {
+            const previewById = new Map();
+            for (const et of embedData.tracks) {
+              if (et && et.id && et.preview) previewById.set(et.id, et.preview);
+            }
+            for (const t of data.tracks) {
+              if (!t.preview && t.id && previewById.has(t.id)) t.preview = previewById.get(t.id);
+            }
+          }
+        } else {
+          const embedData = await embedPromise;
+          if (embedData && embedData.ok && Array.isArray(embedData.tracks) && embedData.tracks.length >= 1) {
+            data = embedData;
+          } else {
+            setStatus((embedData && embedData.error) || 'Could not load that Spotify link. Make sure it is accessible.', true);
+            return false;
+          }
+        }
+      } else {
+        const res = await fetch('/api/spotify?url=' + encodeURIComponent(apiParam), {
+          signal: AbortSignal.timeout(14000)
+        });
+        const embedData = await res.json().catch(() => null);
+        if (!res.ok || !embedData || !embedData.ok || !Array.isArray(embedData.tracks) || embedData.tracks.length < 1) {
+          setStatus((embedData && embedData.error) || 'Could not load that Spotify link. Make sure it is a Public playlist or album.', true);
+          return false;
+        }
+        data = embedData;
       }
 
       const isAlbum = data.type === 'album';
@@ -4087,19 +4174,20 @@
         const local = matchLocalCatalogTrack(t.title, t.artist);
         const localThumb = local && local.art ? local.art : '';
         const localHd = localThumb ? localThumb.replace('300x300', '600x600') : '';
+        const apiThumb = t.artThumb || t.art || '';
+        const apiHd = t.art || t.artThumb || '';
         // Album: semua lagu memang memakai cover album itu. Playlist: JANGAN
-        // pakai foto playlist untuk lagu -- tunggu cover asli dari oEmbed
-        // (dropdown sementara menampilkan placeholder ♪).
-        const listArt = localThumb || (isAlbum ? data.cover : '');
-        const revealArt = localHd || data.cover || '';
+        // pakai foto playlist untuk lagu -- pakai cover asli dari OAuth API / katalog / oEmbed.
+        const listArt = apiThumb || localThumb || (isAlbum ? data.cover : '');
+        const revealArt = apiHd || localHd || (isAlbum ? data.cover : '');
         const pre = t.preview ? {
           trackId: (local && local.trackId) || 0,
           preview: t.preview,
-          art: revealArt,
+          art: revealArt || data.cover || '',
           title: t.title,
           artist: t.artist,
-          album: isAlbum ? data.name : '',
-          year: local && local.year ? String(local.year) : '',
+          album: t.album || (isAlbum ? data.name : ''),
+          year: t.year ? String(t.year) : (local && local.year ? String(local.year) : ''),
           link: t.spotifyUrl || ('https://open.spotify.com/' + data.type + '/' + data.id),
           fromSpotify: true
         } : null;
@@ -4109,10 +4197,11 @@
           artist: t.artist,
           tier: 1,
           genre: 'spotify',
-          year: (local && local.year) || 0,
+          year: t.year || (local && local.year) || 0,
           art: listArt,
+          hdArt: revealArt,
           spotifyUrl: t.spotifyUrl || '',
-          artTried: !!(localThumb || isAlbum),
+          artTried: !!(listArt || isAlbum),
           trackId: (local && local.trackId) || 0,
           pre,
           hay: norm(t.title + ' ' + t.artist)
@@ -4139,7 +4228,7 @@
       switchRun();
       S.stages = []; S.stage = 0; S.runDone = false;
       saveRun();
-      setStatus('Public Spotify playlists & albums (Spotify embeds up to 100 tracks)', false);
+      setStatus(spotifyDefaultHint(), false);
       if ($('#spotifyUrl') && typeof $('#spotifyUrl').blur === 'function') $('#spotifyUrl').blur();
       if ($('#spotifyRoundsCustom') && typeof $('#spotifyRoundsCustom').blur === 'function') $('#spotifyRoundsCustom').blur();
       UI.clearInput();
@@ -4154,6 +4243,79 @@
       spotifyBusy = false;
       if (btn) { btn.disabled = false; btn.textContent = 'Play'; }
     }
+  }
+
+  if ($('#spotifyConnectBtn')) {
+    $('#spotifyConnectBtn').onclick = async () => {
+      const auth = window.SpotifyAuth;
+      if (!auth) return;
+      try {
+        const res = await auth.startLogin();
+        if (res && res.needsClientId) {
+          closeAll();
+          if ($('#spotifyRedirectUri')) $('#spotifyRedirectUri').textContent = auth.redirectUri();
+          if ($('#spotifyClientIdInput')) $('#spotifyClientIdInput').value = auth.getClientId() || '';
+          if ($('#spotifyAuthErr')) { $('#spotifyAuthErr').textContent = ''; $('#spotifyAuthErr').className = 'spotify-hint'; }
+          open($('#spotifyAuthModal'));
+          if ($('#spotifyClientIdInput')) $('#spotifyClientIdInput').focus();
+        }
+      } catch (e) {
+        toast((e && e.message) || 'Could not start Spotify login.');
+      }
+    };
+  }
+  if ($('#spotifyDisconnectBtn')) {
+    $('#spotifyDisconnectBtn').onclick = () => {
+      if (window.SpotifyAuth) window.SpotifyAuth.disconnect();
+      syncSpotifyAuthUI();
+      toast('Disconnected from Spotify.');
+    };
+  }
+  if ($('#copySpotifyRedirect')) {
+    $('#copySpotifyRedirect').onclick = () => {
+      const uri = ($('#spotifyRedirectUri') && $('#spotifyRedirectUri').textContent) || 'https://tuneup.pages.dev/';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(uri).then(() => toast('Redirect URI copied!')).catch(() => toast(uri));
+      } else {
+        toast(uri);
+      }
+    };
+  }
+  if ($('#spotifyAuthGo')) {
+    $('#spotifyAuthGo').onclick = async () => {
+      const auth = window.SpotifyAuth;
+      const errEl = $('#spotifyAuthErr');
+      const cid = ($('#spotifyClientIdInput') && $('#spotifyClientIdInput').value || '').trim();
+      if (!auth) return;
+      try {
+        await auth.startLogin(cid);
+      } catch (e) {
+        if (errEl) {
+          errEl.textContent = (e && e.message) || 'Invalid Client ID.';
+          errEl.className = 'spotify-hint err';
+        }
+      }
+    };
+  }
+  if ($('#spotifyClientIdInput')) {
+    $('#spotifyClientIdInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); if ($('#spotifyAuthGo')) $('#spotifyAuthGo').click(); }
+    });
+  }
+  syncSpotifyAuthUI();
+  if (window.SpotifyAuth) {
+    window.SpotifyAuth.loadServerConfig().catch(() => {});
+    window.SpotifyAuth.handleCallback().then((cb) => {
+      if (!cb) return;
+      syncSpotifyAuthUI();
+      setClassicTab('spotify');
+      if (cb.ok) {
+        toast('Connected to Spotify' + (cb.session && cb.session.userName ? ' as ' + cb.session.userName : '') + '!');
+      } else if (cb.error) {
+        const st = $('#spotifyStatus');
+        if (st) { st.textContent = cb.error; st.classList.add('err'); }
+      }
+    }).catch(() => {});
   }
 
   if ($('#spotifyUrl')) {

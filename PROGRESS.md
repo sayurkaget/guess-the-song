@@ -251,3 +251,15 @@
   - Raised the internal `functions/api/spotify.js` loop ceiling from `100` to `500` so our server never truncates if Spotify embed returns more.
 - **Verification & Deploy**:
   - Updated `tests/spotify.test.cjs` (`131/131` passing), verified Playwright Desktop + Mobile (`360×800`) screenshots for Lobby round picker, 5-song Spotify subset run, and `#runModal` playlist cover + vinyl disc, bumped SW cache (`gts-v85-spotify-rounds-picker` / `gts-cf-v65-spotify-rounds-picker`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
+
+
+## Wave 42 — Connect Spotify (Official OAuth 2.0 PKCE for 100+ & Private Playlists) (2026-11-19)
+- **Official OAuth 2.0 PKCE + Feb 2026 Spotify Web API Client (`spotify-auth.js`, `functions/api/spotify.js`)**:
+  - Added `window.SpotifyAuth` implementing full PKCE (`S256` challenge, CSRF state check, token exchange & auto-refresh) plus paginated playlist/album loading using Spotify's Feb 2026 `/items` & `items.items[].item` schema (with legacy `.track` compatibility), unlocking up to 1,000 tracks from the user's own public/private/collaborative playlists with direct 640px/300px album covers.
+  - Automatically merges direct `p.scdn.co` previews from public embed for tracks 1–100 and falls back cleanly to public embed when loading third-party public playlists not owned by the signed-in user.
+  - Added `/api/spotify?config=1` reading optional `env.SPOTIFY_CLIENT_ID` from Cloudflare Pages (with an inline 3-step Client ID modal `#spotifyAuthModal` if not preset server-side).
+- **Clean Lobby Integration & Smarter iTunes Audio Matching (`index.html`, `layout.css`, `app.js`)**:
+  - Kept the Lobby Spotify card compact by placing `Connect Spotify (100+ & private)` (and `● <Name> · Disconnect` once connected) cleanly on the bottom status row.
+  - Improved `scoreResult()` & `resolve(song)` with `cleanSearchTitle()` & `primaryArtist()` fallback so tracks #101+ (and private playlist tracks where Spotify API returns `preview_url: null`) match iTunes 30-second studio previews reliably.
+- **Verification & Deploy**:
+  - Added `tests/spotify-auth.test.cjs` (`135/135` automated tests passing), verified Desktop & Mobile (`360×800`) preview screenshots with user approval, bumped SW cache (`gts-v86-spotify-oauth` / `gts-cf-v66-spotify-oauth`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.

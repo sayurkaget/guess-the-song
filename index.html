@@ -112,9 +112,19 @@
             <button type="button" role="radio" data-rounds="50" aria-checked="false" aria-pressed="false">50</button>
             <button type="button" role="radio" data-rounds="all" aria-checked="true" aria-pressed="true">All</button>
           </div>
-          <input id="spotifyRoundsCustom" class="spotify-rounds-custom" type="number" min="1" max="100" inputmode="numeric" placeholder="Custom" aria-label="Custom number of songs">
+          <input id="spotifyRoundsCustom" class="spotify-rounds-custom" type="number" min="1" max="1000" inputmode="numeric" placeholder="Custom" aria-label="Custom number of songs">
         </div>
-        <p class="spotify-hint" id="spotifyStatus" role="status" aria-live="polite">Public Spotify playlists &amp; albums (Spotify embeds up to 100 tracks)</p>
+        <div class="spotify-status-row">
+          <p class="spotify-hint" id="spotifyStatus" role="status" aria-live="polite">Public links load up to 100 songs</p>
+          <div class="spotify-auth-inline" id="spotifyAuthInline">
+            <button class="spotify-auth-link" id="spotifyConnectBtn" type="button">Connect Spotify (100+ &amp; private)</button>
+            <span class="spotify-auth-badge" id="spotifyConnectedBadge" hidden>
+              <span class="spotify-auth-dot" aria-hidden="true"></span>
+              <span id="spotifyUserLabel">Connected</span>
+              <button class="spotify-auth-disconnect" id="spotifyDisconnectBtn" type="button">Disconnect</button>
+            </span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -571,6 +581,30 @@
   </div>
 </div>
 
+<!-- ====== connect spotify (OAuth PKCE setup if Client ID not preset) ====== -->
+<div class="modal" id="spotifyAuthModal" hidden>
+  <div class="sheet sp-auth-sheet" role="dialog" aria-modal="true" aria-labelledby="spAuthTitle">
+    <button class="x" data-close aria-label="Close" type="button">&times;</button>
+    <h2 id="spAuthTitle">Connect Spotify</h2>
+    <p class="dim sp-auth-sub">Play all 100+ songs from your own Spotify playlists (including private ones) using Spotify's official login.</p>
+    <ol class="sp-auth-steps">
+      <li>Open <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">Spotify Developer Dashboard &#8599;</a> &rarr; <b>Create app</b> (requires Spotify Premium).</li>
+      <li>Add this Redirect URI &amp; check <b>Web API</b>:
+        <div class="sp-uri-row">
+          <code id="spotifyRedirectUri">https://tuneup.pages.dev/</code>
+          <button class="btn ghostbtn sp-uri-copy" id="copySpotifyRedirect" type="button">Copy</button>
+        </div>
+      </li>
+      <li>Paste your app's <b>Client ID</b> below and sign in:</li>
+    </ol>
+    <div class="sp-auth-form">
+      <input id="spotifyClientIdInput" class="sp-client-input" type="text" maxlength="40" placeholder="32-character Spotify Client ID" autocomplete="off" spellcheck="false">
+      <button class="btn solid" id="spotifyAuthGo" type="button">Connect with Spotify</button>
+    </div>
+    <p class="spotify-hint" id="spotifyAuthErr" role="status" aria-live="polite"></p>
+  </div>
+</div>
+
 <!-- ====== stats ====== -->
 <div class="modal" id="statsModal" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle">
@@ -645,6 +679,7 @@
 <script src="duel.js"></script>
 <script src="artist-game.js"></script>
 <script src="score-card.js"></script>
+<script src="spotify-auth.js"></script>
 <script src="app.js"></script>
 <script src="site-guide.js"></script>
 <script>
