@@ -111,7 +111,9 @@ test('Spotify tab UI is present in index.html and wired in app.js', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const appCode = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
   assert.match(html, /data-classic-tab="spotify"/);
-  assert.match(html, /id="classicSpotifyPanel"[\s\S]*id="spotifyUrl"[\s\S]*id="loadSpotifyBtn"[\s\S]*id="spotifyPicks"/);
+  assert.match(html, /id="classicSpotifyPanel"[\s\S]*id="spotifyUrl"[\s\S]*id="loadSpotifyBtn"[\s\S]*id="spotifyRoundsSeg"[\s\S]*id="spotifyRoundsCustom"/);
+  assert.doesNotMatch(html, /id="spotifyPicks"/);
   assert.match(appCode, /async function startSpotifyPlaylist/);
   assert.match(appCode, /\/api\/spotify\?url=/);
+  assert.match(appCode, /S\.custom\.kind === 'spotify' && S\.custom\.cover/);
 });

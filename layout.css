@@ -1201,25 +1201,43 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 .spotify-go{min-height:46px;padding:0 1.35rem;border-radius:12px;font-weight:800;white-space:nowrap}
 .spotify-hint{margin:0;font-size:.76rem;color:var(--dim);line-height:1.4}
 .spotify-hint.err{color:#ff8a8e}
-.spotify-picks{display:flex;flex-wrap:wrap;gap:.42rem}
-.spotify-chip{
-  display:inline-flex;align-items:center;gap:.38rem;
-  padding:.34rem .72rem;border-radius:999px;
-  background:rgba(255,255,255,.045);border:1px solid var(--line);color:var(--dim);
-  font:inherit;font-size:.75rem;font-weight:600;cursor:pointer;
-  transition:background .15s,border-color .15s,color .15s;
+.spotify-rounds-row{
+  display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;
 }
-.spotify-chip:hover{background:rgba(37,224,125,.12);border-color:rgba(37,224,125,.42);color:var(--ink)}
-.spotify-chip:has(.sp-chip-cover){padding:.22rem .72rem .22rem .24rem}
-.sp-chip-cover{
-  width:20px;height:20px;border-radius:50%;object-fit:cover;flex:none;
-  border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);
+.spotify-rounds-lbl{
+  font-size:.78rem;font-weight:700;color:var(--dim);
 }
-.spotify-chip small{color:var(--dimmer);font-weight:600}
+.spotify-rounds-seg{
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.06);padding:3px;
+}
+.spotify-rounds-seg button{
+  padding:.3rem .72rem;font-size:.76rem;border-radius:999px;color:var(--dim);
+  font-variant-numeric:tabular-nums;
+}
+.spotify-rounds-seg button:hover{color:var(--ink)}
+.spotify-rounds-seg button[aria-pressed="true"]{
+  background:rgba(37,224,125,.18);color:#8ef7bd;
+}
+.spotify-rounds-custom{
+  width:84px;min-height:34px;padding:.3rem .65rem;border-radius:999px;
+  background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--ink);
+  font:inherit;font-size:.78rem;font-weight:700;text-align:center;
+  font-variant-numeric:tabular-nums;outline:none;
+  transition:border-color .16s,background .16s,color .16s;
+}
+.spotify-rounds-custom::placeholder{color:var(--dimmer);font-weight:600}
+.spotify-rounds-custom:focus,
+.spotify-rounds-custom.active{
+  border-color:rgba(37,224,125,.55);background:rgba(37,224,125,.12);color:#8ef7bd;
+}
+.spotify-rounds-custom::-webkit-outer-spin-button,
+.spotify-rounds-custom::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.spotify-rounds-custom{-moz-appearance:textfield}
 
 @media(max-width:680px){
   #lobby .arcade-row{grid-template-columns:minmax(0,1fr);gap:.75rem}
-  #artistGame #agQ,.spotle-search input,#spotifyUrl{font-size:16px}
+  #artistGame #agQ,.spotle-search input,#spotifyUrl,#spotifyRoundsCustom{font-size:16px}
+  .spotify-rounds-custom{width:92px;min-height:38px}
   .spotify-input-row{grid-template-columns:1fr}
   .spotify-go{width:100%}
   .spotle-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}

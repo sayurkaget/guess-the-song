@@ -239,3 +239,15 @@
   - Albums still use the album cover (that is each track's real art). The playlist name no longer shows as the album name on the reveal screen.
   - Moved the playlist cover into the round badge (`Playlist · N songs` with a circular thumbnail) and into the recent Spotify chips in the Lobby.
 - **Verification**: `131/131` tests pass; Playwright check found 0 of 45 dropdown items using the playlist cover and the reveal cover was the real 600px album art. SW cache bumped (`gts-v84-spotify-real-art` / `gts-cf-v64-spotify-real-art`).
+
+
+## Wave 41 — Spotify Summary Vinyl Cover, Clean Lobby & Song Count Picker (2026-11-19)
+- **Playlist Cover + Vinyl Disc in `#runModal` (`app.js`)**:
+  - Updated `UI.runResult()` so Spotify runs pass `[S.custom.cover]` to `renderRunFan($('#runFan'), ...)` — displaying the crisp 640px playlist photo on the front sleeve while preserving the peeking spinning `.fan-disc` vinyl record beside it (and using the playlist cover for `#artBgRun`).
+- **Removed Preset/Recent Spotify Chips (`index.html`, `layout.css`, `app.js`)**:
+  - Removed `#spotifyPicks` (and `SPOTIFY_STARTERS` / `renderSpotifyPicks`) from the Lobby Spotify tab per user request.
+- **Pre-Game Song Count Picker (`index.html`, `layout.css`, `app.js`, `functions/api/spotify.js`)**:
+  - Added `#spotifyRoundsRow` (`5`, `10`, `20`, `50`, `All`, plus a custom numeric `#spotifyRoundsCustom` input) in the Spotify tab, persisted in `tl:spotify:rounds`, updating the Classic badge live (`All songs` / `N songs`), clamping cleanly to `Math.min(chosen, songs.length)` while keeping the full playlist searchable in `#dd`, updating `#dailyGameBadge` (`N of Total songs`), and supporting `&songs=N` deep-links.
+  - Raised the internal `functions/api/spotify.js` loop ceiling from `100` to `500` so our server never truncates if Spotify embed returns more.
+- **Verification & Deploy**:
+  - Updated `tests/spotify.test.cjs` (`131/131` passing), verified Playwright Desktop + Mobile (`360×800`) screenshots for Lobby round picker, 5-song Spotify subset run, and `#runModal` playlist cover + vinyl disc, bumped SW cache (`gts-v85-spotify-rounds-picker` / `gts-cf-v65-spotify-rounds-picker`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.

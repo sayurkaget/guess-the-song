@@ -103,8 +103,18 @@
           </div>
           <button class="btn solid spotify-go" id="loadSpotifyBtn" type="button">Play</button>
         </div>
-        <p class="spotify-hint" id="spotifyStatus" role="status" aria-live="polite">Plays every track in your public playlist or album (up to 100)</p>
-        <div class="spotify-picks" id="spotifyPicks"></div>
+        <div class="spotify-rounds-row" id="spotifyRoundsRow">
+          <span class="spotify-rounds-lbl">Songs</span>
+          <div class="seg spotify-rounds-seg" id="spotifyRoundsSeg" role="radiogroup" aria-label="Number of songs">
+            <button type="button" role="radio" data-rounds="5" aria-checked="false" aria-pressed="false">5</button>
+            <button type="button" role="radio" data-rounds="10" aria-checked="false" aria-pressed="false">10</button>
+            <button type="button" role="radio" data-rounds="20" aria-checked="false" aria-pressed="false">20</button>
+            <button type="button" role="radio" data-rounds="50" aria-checked="false" aria-pressed="false">50</button>
+            <button type="button" role="radio" data-rounds="all" aria-checked="true" aria-pressed="true">All</button>
+          </div>
+          <input id="spotifyRoundsCustom" class="spotify-rounds-custom" type="number" min="1" max="100" inputmode="numeric" placeholder="Custom" aria-label="Custom number of songs">
+        </div>
+        <p class="spotify-hint" id="spotifyStatus" role="status" aria-live="polite">Public Spotify playlists &amp; albums (Spotify embeds up to 100 tracks)</p>
       </div>
     </section>
 

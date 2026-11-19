@@ -111,7 +111,7 @@ export function extractEmbedPayload(html, type, id) {
       spotifyUrl: tidMatch ? 'https://open.spotify.com/track/' + tidMatch[1] : '',
       duration: Number(item.duration) || 0
     });
-    if (tracks.length >= 100) break;
+    if (tracks.length >= 500) break;
   }
 
   if (tracks.length < 1) {
