@@ -2547,6 +2547,8 @@
       ? window.TrackChallenge.create(siteUrl(), S.meta.trackId, S.won ? at + 1 : 0)
       : (S.custom && S.custom.kind === 'spotify' && S.custom.spotifyId)
       ? siteUrl() + '?spotify=' + encodeURIComponent((S.custom.spotifyType === 'album' ? 'album:' : '') + S.custom.spotifyId)
+      : (S.custom && S.custom.kind === 'spotify')
+      ? siteUrl()
       : (() => { throw new Error('No shareable track id'); })();
     return 'TuneUp · ' + (S.custom ? S.custom.label : D().label) + '\n' +
            squares(S.guesses) + '  ' + hasil + '\n' +
@@ -4078,6 +4080,90 @@
     return null;
   }
 
+  const SPOTIFY_DEFAULT_HINT = '100+ songs? Paste 2 playlist links, or Ctrl+A → Ctrl+C tracks from Spotify';
+
+  function parseSpotifyMultiInput(raw) {
+    const s = String(raw || '').trim();
+    const collections = [];
+    const trackIds = [];
+    const shortUrls = [];
+    if (!s) return { collections, trackIds, shortUrls };
+
+    const seenCol = new Set();
+    const seenTrk = new Set();
+    const seenShort = new Set();
+
+    const addCol = (type, id) => {
+      const k = type + ':' + id;
+      if (!seenCol.has(k) && collections.length < 10) {
+        seenCol.add(k);
+        collections.push({ type, id });
+      }
+    };
+    const addTrk = (id) => {
+      if (!seenTrk.has(id) && trackIds.length < 500) {
+        seenTrk.add(id);
+        trackIds.push(id);
+      }
+    };
+
+    // Match all Spotify URLs & URIs (works even when pasted without spaces)
+    const urlRe = /(?:https?:\/\/)?(?:open|play)\.spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?(playlist|album|track)\/([A-Za-z0-9]{22})/gi;
+    let m;
+    while ((m = urlRe.exec(s)) !== null) {
+      const kind = m[1].toLowerCase();
+      if (kind === 'track') addTrk(m[2]);
+      else addCol(kind, m[2]);
+    }
+    const uriRe = /spotify:(playlist|album|track):([A-Za-z0-9]{22})/gi;
+    while ((m = uriRe.exec(s)) !== null) {
+      const kind = m[1].toLowerCase();
+      if (kind === 'track') addTrk(m[2]);
+      else addCol(kind, m[2]);
+    }
+    const shortRe = /https?:\/\/(?:spotify\.link|spoti\.fi)\/[A-Za-z0-9_-]+/gi;
+    while ((m = shortRe.exec(s)) !== null) {
+      if (!seenShort.has(m[0]) && shortUrls.length < 5) {
+        seenShort.add(m[0]);
+        shortUrls.push(m[0]);
+      }
+    }
+
+    // Backwards-compatible bare 22-char playlist ID or deep-link `album:<id>`
+    if (!collections.length && !trackIds.length && !shortUrls.length) {
+      if (/^album:[A-Za-z0-9]{22}$/.test(s)) addCol('album', s.slice(6));
+      else if (/^[A-Za-z0-9]{22}$/.test(s)) addCol('playlist', s);
+    }
+    return { collections, trackIds, shortUrls };
+  }
+
+  function updateSpotifyInputHint() {
+    const inp = $('#spotifyUrl');
+    const st = $('#spotifyStatus');
+    if (!inp || !st || spotifyBusy) return;
+    const raw = inp.value || '';
+    if (!raw.trim()) {
+      st.textContent = SPOTIFY_DEFAULT_HINT;
+      st.classList.remove('err');
+      return;
+    }
+    const parsed = parseSpotifyMultiInput(raw);
+    const cCount = parsed.collections.length + parsed.shortUrls.length;
+    const tCount = parsed.trackIds.length;
+    st.classList.remove('err');
+    if (cCount > 1 && tCount) {
+      st.textContent = cCount + ' playlists + ' + tCount + ' tracks detected — will merge all';
+    } else if (cCount > 1) {
+      st.textContent = cCount + ' playlists detected — will merge all tracks';
+    } else if (cCount === 1 && tCount) {
+      st.textContent = 'Playlist + ' + tCount + ' track links detected — will auto-merge without duplicates';
+    } else if (tCount > 0) {
+      st.textContent = tCount + ' Spotify ' + (tCount === 1 ? 'track' : 'tracks') + ' detected — ready to play';
+    } else {
+      st.textContent = SPOTIFY_DEFAULT_HINT;
+    }
+  }
+
   let spotifyBusy = false;
   async function startSpotifyPlaylist(rawInput, overrideRounds) {
     const raw = String(rawInput || ($('#spotifyUrl') ? $('#spotifyUrl').value : '')).trim();
@@ -4089,7 +4175,7 @@
       st.classList.toggle('err', !!err);
     };
     if (!raw) {
-      setStatus('Paste a public Spotify playlist or album link first.', true);
+      setStatus('Paste a Spotify playlist, album, or track links first.', true);
       if ($('#spotifyUrl')) $('#spotifyUrl').focus();
       return false;
     }
@@ -4099,49 +4185,135 @@
     setStatus('Loading Spotify tracks…', false);
 
     try {
-      const apiParam = raw.startsWith('album:')
-        ? 'https://open.spotify.com/album/' + raw.slice(6)
-        : raw;
-      const res = await fetch('/api/spotify?url=' + encodeURIComponent(apiParam), {
-        signal: AbortSignal.timeout(14000)
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data || !data.ok || !Array.isArray(data.tracks) || data.tracks.length < 1) {
-        setStatus((data && data.error) || 'Could not load that Spotify link. Make sure it is a Public playlist or album.', true);
+      const parsed = parseSpotifyMultiInput(raw);
+      const colUrls = [
+        ...parsed.collections.map((c) => 'https://open.spotify.com/' + c.type + '/' + c.id),
+        ...parsed.shortUrls
+      ];
+      if (!colUrls.length && !parsed.trackIds.length) {
+        setStatus('Paste a valid Spotify playlist, album, or Ctrl+A track links.', true);
         return false;
       }
 
-      const isAlbum = data.type === 'album';
-      const songs = data.tracks.map((t, i) => {
+      let primaryMeta = null;
+      const mergedTracks = [];
+      const seenKeys = new Set();
+      const loadedTrackIds = new Set();
+
+      const appendTrack = (t, fallbackAlbumName) => {
+        if (!t || !t.title || !t.artist) return;
+        const key = (t.title + '\0' + t.artist).toLowerCase();
+        if (seenKeys.has(key)) return;
+        seenKeys.add(key);
+        if (t.id && /^[A-Za-z0-9]{22}$/.test(t.id)) loadedTrackIds.add(t.id);
+        mergedTracks.push(fallbackAlbumName && !t.album ? { ...t, album: fallbackAlbumName } : t);
+      };
+
+      // 1. Fetch all playlist/album links in parallel
+      if (colUrls.length) {
+        const colResults = await Promise.all(colUrls.map(async (u) => {
+          const r = await fetch('/api/spotify?url=' + encodeURIComponent(u), {
+            signal: AbortSignal.timeout(14000)
+          });
+          const d = await r.json().catch(() => null);
+          return { ok: r.ok && d && d.ok, data: d };
+        }));
+        let lastErr = '';
+        for (const item of colResults) {
+          if (!item.ok) { lastErr = (item.data && item.data.error) || lastErr; continue; }
+          const d = item.data;
+          if (!primaryMeta) primaryMeta = d;
+          for (const t of (d.tracks || [])) {
+            appendTrack(t, d.type === 'album' ? d.name : '');
+          }
+        }
+        if (!mergedTracks.length && !parsed.trackIds.length) {
+          setStatus(lastErr || 'Could not load that Spotify link. Make sure it is a Public playlist or album.', true);
+          return false;
+        }
+      }
+
+      // 2. Fetch ONLY missing track IDs (skips tracks already loaded from the playlist!)
+      const missingTrackIds = parsed.trackIds.filter((id) => !loadedTrackIds.has(id));
+      if (missingTrackIds.length) {
+        const batchSize = 20;
+        const batches = [];
+        for (let i = 0; i < missingTrackIds.length; i += batchSize) {
+          batches.push(missingTrackIds.slice(i, i + batchSize));
+        }
+        let doneTracks = 0;
+        const totalNeed = missingTrackIds.length;
+        const baseCount = mergedTracks.length;
+        const batchOut = new Array(batches.length);
+        let cursor = 0;
+
+        const runWorker = async () => {
+          while (cursor < batches.length) {
+            const idx = cursor++;
+            const chunk = batches[idx];
+            try {
+              const r = await fetch('/api/spotify?tracks=' + encodeURIComponent(chunk.join(',')), {
+                signal: AbortSignal.timeout(15000)
+              });
+              const d = await r.json().catch(() => null);
+              batchOut[idx] = (r.ok && d && d.ok && Array.isArray(d.tracks)) ? d.tracks : [];
+            } catch {
+              batchOut[idx] = [];
+            }
+            doneTracks += chunk.length;
+            setStatus('Loading Spotify tracks… ' + Math.min(baseCount + doneTracks, baseCount + totalNeed) + '/' + (baseCount + totalNeed), false);
+          }
+        };
+        await Promise.all(Array.from({ length: Math.min(3, batches.length) }, runWorker));
+        for (const list of batchOut) {
+          for (const t of (list || [])) appendTrack(t, '');
+        }
+      }
+
+      if (!mergedTracks.length) {
+        setStatus('No playable Spotify tracks found. Check your links and try again.', true);
+        return false;
+      }
+
+      const isSingleAlbum = !!(primaryMeta && primaryMeta.type === 'album' && colUrls.length === 1 && !missingTrackIds.length);
+      const customId = primaryMeta ? primaryMeta.id : ('tracks:' + mergedTracks.length + ':' + Date.now().toString(36));
+      const label = primaryMeta
+        ? (colUrls.length > 1 ? primaryMeta.name + ' +' + (colUrls.length - 1) : primaryMeta.name)
+        : 'Spotify Mix';
+      const cover = (primaryMeta && primaryMeta.cover) || '';
+
+      const songs = mergedTracks.map((t, i) => {
         const local = matchLocalCatalogTrack(t.title, t.artist);
         const localThumb = local && local.art ? local.art : '';
         const localHd = localThumb ? localThumb.replace('300x300', '600x600') : '';
-        // Album: semua lagu memang memakai cover album itu. Playlist: JANGAN
-        // pakai foto playlist untuk lagu -- tunggu cover asli dari oEmbed
-        // (dropdown sementara menampilkan placeholder ♪).
-        const listArt = localThumb || (isAlbum ? data.cover : '');
-        const revealArt = localHd || data.cover || '';
+        const directThumb = t.artThumb || t.art || '';
+        const directHd = t.art || t.artThumb || '';
+        // Album: semua lagu memang memakai cover album itu. Playlist/tracks: JANGAN
+        // pakai foto playlist untuk lagu -- pakai cover asli track / katalog / oEmbed.
+        const listArt = directThumb || localThumb || (isSingleAlbum ? cover : '');
+        const revealArt = directHd || localHd || (isSingleAlbum ? cover : '');
         const pre = t.preview ? {
           trackId: (local && local.trackId) || 0,
           preview: t.preview,
-          art: revealArt,
+          art: revealArt || cover || '',
           title: t.title,
           artist: t.artist,
-          album: isAlbum ? data.name : '',
-          year: local && local.year ? String(local.year) : '',
-          link: t.spotifyUrl || ('https://open.spotify.com/' + data.type + '/' + data.id),
+          album: t.album || (isSingleAlbum ? label : ''),
+          year: t.year ? String(t.year) : (local && local.year ? String(local.year) : ''),
+          link: t.spotifyUrl || (primaryMeta ? ('https://open.spotify.com/' + primaryMeta.type + '/' + primaryMeta.id) : ''),
           fromSpotify: true
         } : null;
         return {
-          slug: 'sp:' + data.id + ':' + (t.id || i),
+          slug: 'sp:' + customId + ':' + (t.id || i),
           title: t.title,
           artist: t.artist,
           tier: 1,
           genre: 'spotify',
-          year: (local && local.year) || 0,
+          year: t.year || (local && local.year) || 0,
           art: listArt,
+          hdArt: revealArt,
           spotifyUrl: t.spotifyUrl || '',
-          artTried: !!(localThumb || isAlbum),
+          artTried: !!(listArt || isSingleAlbum),
           trackId: (local && local.trackId) || 0,
           pre,
           hay: norm(t.title + ' ' + t.artist)
@@ -4155,20 +4327,20 @@
 
       S.daily = null; S.challenge = null; S.runChallenge = null;
       S.custom = {
-        id: 'sp:' + data.id,
+        id: 'sp:' + customId,
         kind: 'spotify',
-        spotifyId: data.id,
-        spotifyType: data.type,
-        label: data.name,
-        owner: data.owner,
-        cover: data.cover,
+        spotifyId: (primaryMeta && colUrls.length === 1 && !missingTrackIds.length) ? primaryMeta.id : '',
+        spotifyType: isSingleAlbum ? 'album' : 'playlist',
+        label,
+        owner: (primaryMeta && primaryMeta.owner) || 'Spotify',
+        cover,
         rounds,
         songs
       };
       switchRun();
       S.stages = []; S.stage = 0; S.runDone = false;
       saveRun();
-      setStatus('Public Spotify playlists & albums (Spotify embeds up to 100 tracks)', false);
+      setStatus(SPOTIFY_DEFAULT_HINT, false);
       if ($('#spotifyUrl') && typeof $('#spotifyUrl').blur === 'function') $('#spotifyUrl').blur();
       if ($('#spotifyRoundsCustom') && typeof $('#spotifyRoundsCustom').blur === 'function') $('#spotifyRoundsCustom').blur();
       UI.clearInput();
@@ -4186,8 +4358,25 @@
   }
 
   if ($('#spotifyUrl')) {
+    $('#spotifyUrl').addEventListener('paste', (e) => {
+      const txt = e.clipboardData && e.clipboardData.getData('text');
+      if (!txt || !/[\r\n]/.test(txt)) return;
+      e.preventDefault();
+      const inp = $('#spotifyUrl');
+      const normalized = txt.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+      const start = inp.selectionStart ?? inp.value.length;
+      const end = inp.selectionEnd ?? inp.value.length;
+      const before = inp.value.slice(0, start);
+      const after = inp.value.slice(end);
+      const joinBefore = before && !/\s$/.test(before) ? ' ' : '';
+      const joinAfter = after && !/^\s/.test(after) ? ' ' : '';
+      inp.value = (before + joinBefore + normalized + joinAfter + after).trim();
+      if ($('#spotifyClear')) $('#spotifyClear').hidden = !inp.value;
+      updateSpotifyInputHint();
+    });
     $('#spotifyUrl').addEventListener('input', () => {
       if ($('#spotifyClear')) $('#spotifyClear').hidden = !$('#spotifyUrl').value;
+      updateSpotifyInputHint();
     });
     $('#spotifyUrl').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); startSpotifyPlaylist(); }
@@ -4197,6 +4386,7 @@
     $('#spotifyClear').onclick = () => {
       $('#spotifyUrl').value = '';
       $('#spotifyClear').hidden = true;
+      updateSpotifyInputHint();
       $('#spotifyUrl').focus();
     };
   }

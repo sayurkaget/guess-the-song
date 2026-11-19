@@ -107,6 +107,47 @@ test('extractEmbedPayload cleans NBSP artists, strips episodes, deduplicates, an
   assert.equal(spCard.scoreSub, '/ 50');
 });
 
+test('extractTrackEmbedPayload extracts track title, multi-artists, year, 640px/300px covers, and p.scdn.co preview', async () => {
+  const { extractTrackEmbedPayload, onRequest } = await modPromise;
+  const payload = {
+    props: {
+      pageProps: {
+        state: {
+          data: {
+            entity: {
+              type: 'track',
+              name: 'Die With A Smile',
+              artists: [{ name: 'Lady Gaga' }, { name: 'Bruno Mars' }],
+              duration: 251667,
+              releaseDate: { isoString: '2024-08-16T00:00:00Z' },
+              audioPreview: { url: 'https://p.scdn.co/mp3-preview/abc123' },
+              visualIdentity: {
+                image: [
+                  { url: 'https://image-cdn-fa.spotifycdn.com/image/300', maxWidth: 300, maxHeight: 300 },
+                  { url: 'https://image-cdn-fa.spotifycdn.com/image/64', maxWidth: 64, maxHeight: 64 },
+                  { url: 'https://image-cdn-fa.spotifycdn.com/image/640', maxWidth: 640, maxHeight: 640 }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+  const html = `<script id="__NEXT_DATA__">${JSON.stringify(payload)}</script>`;
+  const track = extractTrackEmbedPayload(html, '2plbrEY59IikOBgBGLjaoe');
+  assert.equal(track.title, 'Die With A Smile');
+  assert.equal(track.artist, 'Lady Gaga, Bruno Mars');
+  assert.equal(track.year, 2024);
+  assert.equal(track.art, 'https://image-cdn-fa.spotifycdn.com/image/640');
+  assert.equal(track.artThumb, 'https://image-cdn-fa.spotifycdn.com/image/300');
+  assert.equal(track.preview, 'https://p.scdn.co/mp3-preview/abc123');
+  assert.equal(track.spotifyUrl, 'https://open.spotify.com/track/2plbrEY59IikOBgBGLjaoe');
+
+  const badBatch = await onRequest({ request: new Request('https://tuneup.pages.dev/api/spotify?tracks=invalid,bad') });
+  assert.equal(badBatch.status, 400);
+});
+
 test('Spotify tab UI is present in index.html and wired in app.js', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const appCode = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
@@ -114,6 +155,8 @@ test('Spotify tab UI is present in index.html and wired in app.js', () => {
   assert.match(html, /id="classicSpotifyPanel"[\s\S]*id="spotifyUrl"[\s\S]*id="loadSpotifyBtn"[\s\S]*id="spotifyRoundsSeg"[\s\S]*id="spotifyRoundsCustom"/);
   assert.doesNotMatch(html, /id="spotifyPicks"/);
   assert.match(appCode, /async function startSpotifyPlaylist/);
+  assert.match(appCode, /function parseSpotifyMultiInput/);
   assert.match(appCode, /\/api\/spotify\?url=/);
+  assert.match(appCode, /\/api\/spotify\?tracks=/);
   assert.match(appCode, /S\.custom\.kind === 'spotify' && S\.custom\.cover/);
 });

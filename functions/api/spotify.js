@@ -44,14 +44,14 @@ export function parseSpotifyInput(raw) {
   return null;
 }
 
-function pickBestCover(entity) {
+function pickCoverPair(entity) {
   const candidates = [];
   if (Array.isArray(entity?.visualIdentity?.image)) {
     for (const img of entity.visualIdentity.image) {
       if (img && typeof img.url === 'string' && /^https:\/\//.test(img.url)) {
         const w = Number(img.maxWidth || img.width) || 0;
         const h = Number(img.maxHeight || img.height) || 0;
-        candidates.push({ url: img.url, area: w && h ? w * h : (w || h ? Math.max(w, h) ** 2 : 90000) });
+        candidates.push({ url: img.url, w: w || 300, area: w && h ? w * h : (w || h ? Math.max(w, h) ** 2 : 90000) });
       }
     }
   }
@@ -60,13 +60,54 @@ function pickBestCover(entity) {
       if (img && typeof img.url === 'string' && /^https:\/\//.test(img.url)) {
         const w = Number(img.width || img.maxWidth) || 0;
         const h = Number(img.height || img.maxHeight) || 0;
-        candidates.push({ url: img.url, area: w && h ? w * h : (w || h ? Math.max(w, h) ** 2 : 90000) });
+        candidates.push({ url: img.url, w: w || 300, area: w && h ? w * h : (w || h ? Math.max(w, h) ** 2 : 90000) });
       }
     }
   }
-  if (!candidates.length) return '';
+  if (!candidates.length) return { hd: '', thumb: '' };
   candidates.sort((a, b) => b.area - a.area);
-  return candidates[0].url;
+  const hd = candidates[0].url;
+  const med = candidates.find((c) => c.w >= 200 && c.w <= 400);
+  return { hd, thumb: (med && med.url) || hd };
+}
+
+function pickBestCover(entity) {
+  return pickCoverPair(entity).hd;
+}
+
+export function extractTrackEmbedPayload(html, id) {
+  const match = String(html || '').match(/<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (!match) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(match[1]);
+  } catch {
+    return null;
+  }
+  const entity = parsed?.props?.pageProps?.state?.data?.entity;
+  if (!entity || entity.type === 'episode') return null;
+  const title = cleanText(entity.name || entity.title);
+  const artist = Array.isArray(entity.artists)
+    ? entity.artists.map((a) => cleanText(a && a.name)).filter(Boolean).join(', ')
+    : cleanText(entity.subtitle);
+  if (!title || !artist) return null;
+
+  const covers = pickCoverPair(entity);
+  const preview = typeof entity.audioPreview?.url === 'string' && /^https:\/\/p\.scdn\.co\//.test(entity.audioPreview.url)
+    ? entity.audioPreview.url
+    : '';
+  const yearMatch = String(entity.releaseDate?.isoString || '').match(/\b(19|20)\d{2}\b/);
+  return {
+    id,
+    title,
+    artist,
+    year: yearMatch ? Number(yearMatch[0]) : 0,
+    art: covers.hd,
+    artThumb: covers.thumb,
+    preview,
+    spotifyUrl: 'https://open.spotify.com/track/' + id,
+    duration: Number(entity.duration) || 0
+  };
 }
 
 export function extractEmbedPayload(html, type, id) {
@@ -139,6 +180,40 @@ export async function onRequest({ request }) {
   if (request.method !== 'GET') return jsonReply(405, { ok: false, error: 'Method not allowed.' });
 
   const reqUrl = new URL(request.url);
+  const tracksParam = reqUrl.searchParams.get('tracks');
+  if (tracksParam !== null) {
+    const uniqueIds = [];
+    const seen = new Set();
+    for (const part of tracksParam.split(',')) {
+      const id = part.trim();
+      if (!BASE62_ID.test(id) || seen.has(id)) continue;
+      seen.add(id);
+      uniqueIds.push(id);
+      if (uniqueIds.length >= 25) break;
+    }
+    if (!uniqueIds.length) {
+      return jsonReply(400, { ok: false, error: 'Provide at least one valid Spotify track ID.' });
+    }
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36',
+      'Accept-Language': 'en-US,en;q=0.9'
+    };
+    const fetched = await Promise.all(uniqueIds.map(async (id) => {
+      try {
+        const r = await fetch(`https://open.spotify.com/embed/track/${id}`, {
+          signal: AbortSignal.timeout(9000),
+          headers
+        });
+        if (!r.ok) return null;
+        return extractTrackEmbedPayload(await r.text(), id);
+      } catch {
+        return null;
+      }
+    }));
+    const tracks = fetched.filter(Boolean);
+    return jsonReply(200, { ok: true, tracks }, 'public, max-age=600');
+  }
+
   const raw = reqUrl.searchParams.get('url') || reqUrl.searchParams.get('id') || '';
   let target = parseSpotifyInput(raw);
   if (!target) {

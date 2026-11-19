@@ -98,7 +98,7 @@
         <div class="spotify-input-row">
           <div class="spotify-field">
             <svg class="spotify-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7.5 9.6c3.2-.9 6.8-.6 9.6.8M8.3 12.7c2.6-.7 5.5-.4 7.8.7M9.2 15.6c2-.5 4.2-.3 6 .6" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"/></svg>
-            <input id="spotifyUrl" type="url" placeholder="Paste public Spotify playlist or album link…" autocomplete="off" spellcheck="false" enterkeyhint="go">
+            <input id="spotifyUrl" type="text" placeholder="Paste Spotify playlist, album, or Ctrl+A track links…" autocomplete="off" spellcheck="false" enterkeyhint="go">
             <button class="clear" id="spotifyClear" type="button" aria-label="Clear Spotify link" hidden>&times;</button>
           </div>
           <button class="btn solid spotify-go" id="loadSpotifyBtn" type="button">Play</button>
@@ -112,9 +112,9 @@
             <button type="button" role="radio" data-rounds="50" aria-checked="false" aria-pressed="false">50</button>
             <button type="button" role="radio" data-rounds="all" aria-checked="true" aria-pressed="true">All</button>
           </div>
-          <input id="spotifyRoundsCustom" class="spotify-rounds-custom" type="number" min="1" max="100" inputmode="numeric" placeholder="Custom" aria-label="Custom number of songs">
+          <input id="spotifyRoundsCustom" class="spotify-rounds-custom" type="number" min="1" max="500" inputmode="numeric" placeholder="Custom" aria-label="Custom number of songs">
         </div>
-        <p class="spotify-hint" id="spotifyStatus" role="status" aria-live="polite">Public Spotify playlists &amp; albums (Spotify embeds up to 100 tracks)</p>
+        <p class="spotify-hint" id="spotifyStatus" role="status" aria-live="polite">100+ songs? Paste 2 playlist links, or Ctrl+A &rarr; Ctrl+C tracks from Spotify</p>
       </div>
     </section>
 

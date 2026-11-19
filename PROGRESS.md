@@ -268,3 +268,15 @@
 ## Wave 43 — Remove Manual Connect Spotify Setup UI (Keep Smarter iTunes Fallback) (2026-11-19)
 - Removed `spotify-auth.js`, `tests/spotify-auth.test.cjs`, `#spotifyConnectBtn`, `#spotifyAuthModal`, and `/api/spotify?config=1` per user preference so the Lobby Spotify tab stays completely clean and zero-setup (retaining the improved `cleanSearchTitle()` & `primaryArtist()` iTunes fallback in `app.js`).
 - Bumped SW cache (`gts-v87-spotify-clean` / `gts-cf-v67-spotify-clean`), verified `131/131` tests, rebuilt `dist/`, and deployed live to `https://tuneup.pages.dev/`.
+
+
+## Wave 44 — Multi-Link & `Ctrl+A` Track Batch Merging (Play 100+ & Private Spotify Playlists Keylessly) (2026-11-19)
+- **Batch Track Embed Endpoint (`functions/api/spotify.js`)**:
+  - Added `extractTrackEmbedPayload()` and `GET /api/spotify?tracks=id1,id2,...,id25` fetching up to 25 Spotify `/embed/track/<id>` pages in parallel (with direct `p.scdn.co` 30s MP3 previews, exact release years, and `640px` + `300px` real album covers; `Cache-Control: public, max-age=600`).
+- **Zero-Clutter Smart Input Box (`index.html`, `app.js`)**:
+  - Upgraded the existing single `#spotifyUrl` box (zero extra buttons or modals) with `parseSpotifyMultiInput()` + newline-normalizing `paste` handler + live count status so players can break past Spotify's 100-track embed ceiling in 3 effortless ways:
+    1. Paste **2+ Spotify playlist links** → merges all tracks without duplicates.
+    2. Paste **playlist link + `Ctrl+A` → `Ctrl+C` tracks** from Spotify → preserves the playlist's name & 640px cover, fetches tracks 1–100 via playlist embed, and fetches ONLY the missing track IDs (#101+) in parallel batches.
+    3. Paste **`Ctrl+A` → `Ctrl+C` track links directly** (even from a Private 110–500 song playlist!) → plays all tracks with direct Spotify MP3 previews & 640px/300px album covers.
+- **Verification & Deploy**:
+  - Added batch track parser unit tests in `tests/spotify.test.cjs` (`132/132` passing), verified live E2E merging a 100-song Spotify playlist + 10 extra real Spotify track links (`110 songs`, `Song 1 of 110`, 0 errors), bumped SW cache (`gts-v88-spotify-multi-tracks` / `gts-cf-v68-spotify-multi-tracks`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
