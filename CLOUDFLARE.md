@@ -7,10 +7,10 @@ URLs so existing Netlify and GitHub Pages installations remain compatible.
 
 1. Use the official Wrangler CLI and sign in to the owner's Cloudflare account.
 2. Run `node tools/build-cloudflare.cjs`. Set `SITE_URL` to the final HTTPS origin
-   if it differs from `https://namethetrack.pages.dev`.
+   if it differs from `https://tuneup.pages.dev`.
 3. Apply `migrations/0001_feedback.sql` to the D1 database configured as
    `FEEDBACK_DB`. The schema creation is safe to repeat.
-4. Run `wrangler pages deploy dist --project-name namethetrack --branch main`.
+4. Run `wrangler pages deploy dist --project-name tuneup --branch main`.
 
 The output only contains public game assets. Local metadata, tests, deployment
 tools, and account credentials must never be uploaded. `functions/api/feedback.js`

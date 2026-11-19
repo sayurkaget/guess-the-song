@@ -5,7 +5,7 @@ const ladder = [.1, .5, 2, 8, 15];
 const win = { done: true, won: true, title: 'SECRET SONG', artist: 'SECRET ARTIST', guesses: [{t:'skip'}, {t:'wrong'}, {t:'right'}] };
 
 test('score card uses completed outcomes and exact clip lengths without leaking songs', () => {
-  const m = createModel({ mode:'regular', stages:[win, {done:true,won:false,guesses:[{t:'near'}]}, {done:false,won:true}], ladder, url:'https://namethetrack.pages.dev/' });
+  const m = createModel({ mode:'regular', stages:[win, {done:true,won:false,guesses:[{t:'near'}]}, {done:false,won:true}], ladder, url:'https://tuneup.pages.dev/' });
   assert.equal(m.score, 1);
   assert.equal(m.rows.length, 5);
   assert.equal(m.rows[0].result, '2s');
@@ -43,7 +43,7 @@ test('unsupported and failed sharing download the image', async () => {
 
 test('copy writes PNG image and text+link together via ClipboardItem', async () => {
   const file = { type: 'image/png', name: 'card.png' };
-  const text = 'TuneUp · All songs · 4/5\nhttps://namethetrack.pages.dev/';
+  const text = 'TuneUp · All songs · 4/5\nhttps://tuneup.pages.dev/';
   let written = null;
   class FakeClipboardItem { constructor(data) { this.data = data; } }
   class FakeBlob { constructor(parts, opts) { this.parts = parts; this.type = opts.type; } }
@@ -69,7 +69,7 @@ test('copy handles async image promise and retries resolved blob when browser re
     }
   }
   class FakeBlob { constructor(parts, opts) { this.parts = parts; this.type = opts.type; } }
-  const res = await copy(Promise.resolve(file), 'Score text https://namethetrack.pages.dev/', {
+  const res = await copy(Promise.resolve(file), 'Score text https://tuneup.pages.dev/', {
     ClipboardItem: PromiseHostileClipboardItem,
     Blob: FakeBlob,
     navigator: { clipboard: { write: async () => { writes++; } } }
@@ -79,7 +79,7 @@ test('copy handles async image promise and retries resolved blob when browser re
 });
 
 test('copy falls back cleanly to writeText, legacy copyText, and failed state', async () => {
-  const text = 'TuneUp · 5/5\nhttps://namethetrack.pages.dev/';
+  const text = 'TuneUp · 5/5\nhttps://tuneup.pages.dev/';
   class FakeClipboardItem { constructor(data) { this.data = data; } }
   class FakeBlob { constructor(parts, opts) { this.parts = parts; this.type = opts.type; } }
   let copiedText = '';

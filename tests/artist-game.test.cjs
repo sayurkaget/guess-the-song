@@ -32,7 +32,7 @@ test('ArtistDetective buildRoster resolves all 250 iconic artists against songs.
     if (a.type === 'Solo') assert.equal(a.members, 1, 'Solo must have 1 member: ' + a.name);
     else if (a.type === 'Duo') assert.equal(a.members, 2, 'Duo must have 2 members: ' + a.name);
     else assert.ok(a.members >= 3, 'Group must have >= 3 members: ' + a.name);
-    const chUrl = ArtistDetective.createChallenge('https://namethetrack.pages.dev/', { id: a.id, tries: 3, won: true });
+    const chUrl = ArtistDetective.createChallenge('https://tuneup.pages.dev/', { id: a.id, tries: 3, won: true });
     assert.ok(chUrl && !codes.has(chUrl), 'duplicate challenge URL for ' + a.name);
     codes.add(chUrl);
     assert.deepEqual(ArtistDetective.parseChallenge(chUrl), { version: 1, id: a.id, won: true, tries: 3 });
@@ -103,12 +103,12 @@ test('ArtistDetective dailyArtist is deterministic per date string', () => {
 });
 
 test('ArtistDetective createChallenge, parseChallenge, compareChallenge, and shareText round-trip cleanly without spoiling artist name in URL', () => {
-  const winUrl = ArtistDetective.createChallenge('https://namethetrack.pages.dev/#daily', {
+  const winUrl = ArtistDetective.createChallenge('https://tuneup.pages.dev/#daily', {
     id: 'The Weeknd',
     tries: 4,
     won: true
   });
-  assert.match(winUrl, /^https:\/\/namethetrack\.pages\.dev\/#artist=1\.[a-z0-9]+\.4$/);
+  assert.match(winUrl, /^https:\/\/tuneup\.pages\.dev\/#artist=1\.[a-z0-9]+\.4$/);
   assert.doesNotMatch(winUrl, /weeknd/i);
   assert.deepEqual(ArtistDetective.parseChallenge(winUrl), {
     version: 1,
@@ -117,7 +117,7 @@ test('ArtistDetective createChallenge, parseChallenge, compareChallenge, and sha
     tries: 4
   });
 
-  const fmUrl = ArtistDetective.createChallenge('https://namethetrack.pages.dev/', {
+  const fmUrl = ArtistDetective.createChallenge('https://tuneup.pages.dev/', {
     id: 'fleetwood-mac',
     tries: 3,
     won: true
@@ -130,7 +130,7 @@ test('ArtistDetective createChallenge, parseChallenge, compareChallenge, and sha
     tries: 3
   });
 
-  const loseUrl = ArtistDetective.createChallenge('https://namethetrack.pages.dev/', {
+  const loseUrl = ArtistDetective.createChallenge('https://tuneup.pages.dev/', {
     id: 'taylor-swift',
     tries: 10,
     won: false
@@ -174,10 +174,10 @@ test('ArtistDetective createChallenge, parseChallenge, compareChallenge, and sha
     guesses: [guess1, target],
     target,
     won: true,
-    url: 'https://namethetrack.pages.dev/#daily'
+    url: 'https://tuneup.pages.dev/#daily'
   });
   assert.equal(
     shared,
-    'TuneUp · Daily Artist · 2026-11-18 · 2/10\n🟨🟩🟩⬛🟩🟨\n🟩🟩🟩🟩🟩🟩\nhttps://namethetrack.pages.dev/'
+    'TuneUp · Daily Artist · 2026-11-18 · 2/10\n🟨🟩🟩⬛🟩🟨\n🟩🟩🟩🟩🟩🟩\nhttps://tuneup.pages.dev/'
   );
 });

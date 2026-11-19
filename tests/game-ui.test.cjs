@@ -84,7 +84,7 @@ function setupGame(options = {}) {
     requestAnimationFrame: () => 0,
     matchMedia: () => ({ matches: true }),
     history: { replaceState: () => {} },
-    location: { origin: 'https://namethetrack.pages.dev', pathname: '/', search: '', hash: '' },
+    location: { origin: 'https://tuneup.pages.dev', pathname: '/', search: '', hash: '' },
     Audio: class extends EventTarget { pause() {} load() {} },
     localStorage: {
       getItem: (k) => (storage.has(k) ? storage.get(k) : null),
