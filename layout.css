@@ -258,49 +258,58 @@
 }
 .vinyl-card .playbtn.playing{box-shadow:0 0 0 10px rgba(var(--acc-rgb),.18),0 0 30px rgba(var(--acc-rgb),.75)}
 .vinyl-card .playbtn svg{width:46%;height:46%}
-.vinyl-foot{width:100%;display:flex;flex-direction:column;align-items:center;gap:.5rem}
+.vinyl-foot{width:100%;display:flex;flex-direction:column;align-items:center;gap:.42rem}
 .vinyl-foot .track{
   margin:0;height:auto;overflow:visible;
   display:flex;flex-direction:column;align-items:stretch;
 }
+.track-pin-row{position:relative;width:100%;height:22px;margin-bottom:2px}
+.track-limit-tag{
+  position:absolute;bottom:3px;left:12%;transform:translateX(-50%);
+  padding:.1rem .42rem;border-radius:99px;
+  background:rgba(var(--acc-rgb),.16);border:1px solid rgba(var(--acc-rgb),.42);
+  color:var(--acc-l);font-size:.63rem;font-weight:800;font-variant-numeric:tabular-nums;
+  line-height:1.2;white-space:nowrap;transition:left .32s ease;
+}
+.track-limit-tag::after{
+  content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);
+  border:3.5px solid transparent;border-top-color:rgba(var(--acc-rgb),.65);
+}
 .track-bar-row{
-  position:relative;width:100%;height:16px;display:flex;align-items:center;
+  position:relative;width:100%;height:14px;display:flex;align-items:center;
 }
-.vinyl-foot .track-rail{display:none}
-.vinyl-foot .track-seams{
-  position:relative;inset:auto;width:100%;height:7px;
-  display:grid;grid-template-columns:repeat(5,1fr);gap:5px;pointer-events:none;
+.vinyl-foot .track-rail{
+  display:block;height:5px;overflow:hidden;background:rgba(255,255,255,.10);
 }
-.vinyl-foot .track-seams .seg{
-  position:static;top:auto;transform:none;width:100%;height:100%;
-  border-radius:99px;background:rgba(255,255,255,.10);
-  transition:background .28s ease,box-shadow .28s ease;
+.vinyl-foot .track-fill{
+  background:rgba(var(--acc-rgb),.34);box-shadow:none;
+  transition:width .32s ease;
 }
-.vinyl-foot .track-seams .seg.skip{background:rgba(255,255,255,.28)}
-.vinyl-foot .track-seams .seg.wrong{background:rgba(242,85,90,.64)}
-.vinyl-foot .track-seams .seg.near{background:rgba(245,177,61,.78)}
-.vinyl-foot .track-seams .seg.unlocked{background:rgba(var(--acc-rgb),.36)}
-.vinyl-foot .track-seams .seg.active,
-.vinyl-foot .track-seams .seg.right{
+.track-played{
+  position:absolute;left:0;top:0;height:100%;width:0;border-radius:99px;
   background:linear-gradient(90deg,var(--acc-d),var(--acc-l));
-  box-shadow:0 0 11px -1px rgba(var(--acc-rgb),.7);
+  box-shadow:0 0 10px rgba(var(--acc-rgb),.7);
 }
-.vinyl-foot .track-head{height:15px}
+.vinyl-foot .track-seams{position:absolute;inset:0;pointer-events:none}
+.vinyl-foot .track-seams i{
+  position:absolute;top:50%;width:3px;height:3px;border-radius:50%;
+  background:rgba(255,255,255,.22);transform:translate(-50%,-50%);
+}
+.track-limit-pin{
+  position:absolute;top:50%;left:12%;width:3px;height:13px;border-radius:99px;
+  background:var(--acc-l);box-shadow:0 0 9px rgba(var(--acc-rgb),.9);
+  transform:translate(-50%,-50%);pointer-events:none;transition:left .32s ease;
+}
+.vinyl-foot .track-head{height:12px}
 .vinyl-foot .track-head::before{
-  left:-2.5px;width:5px;height:15px;border-radius:99px;
-  background:#f2fff8;box-shadow:0 0 10px 2px rgba(var(--acc-rgb),.95);
+  left:-5.5px;width:11px;height:11px;border-radius:50%;
+  background:#f2fff8;box-shadow:0 0 10px 1px rgba(var(--acc-rgb),.95);
 }
-.track-labels{
-  display:grid;grid-template-columns:repeat(5,1fr);gap:5px;width:100%;margin-top:4px;
+.track-times{
+  display:flex;justify-content:space-between;align-items:center;margin-top:4px;
+  font-size:.69rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--dim);
 }
-.seg-lbl{
-  text-align:center;font-size:.64rem;font-weight:700;font-variant-numeric:tabular-nums;
-  color:var(--dimmer);transition:color .25s ease;
-}
-.seg-lbl.active,.seg-lbl.right{color:var(--acc-l)}
-.seg-lbl.skip,.seg-lbl.unlocked{color:var(--dim)}
-.seg-lbl.wrong{color:rgba(255,155,158,.86)}
-.seg-lbl.near{color:var(--warn)}
+.track-times b{color:var(--acc-l);font-weight:700}
 .vinyl-foot .status{margin:0;min-height:1.25em;font-size:.78rem;color:var(--dim)}
 .vinyl-foot #retrySong{margin-top:.25rem}
 

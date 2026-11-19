@@ -180,12 +180,22 @@
 
         <div class="vinyl-foot">
           <div class="track" id="track">
+            <div class="track-pin-row" aria-hidden="true">
+              <span class="track-limit-tag" id="trackLimitTag">0.1s</span>
+            </div>
             <div class="track-bar-row">
-              <div class="track-rail" id="trackWave"><div class="track-fill" id="trackFill"></div></div>
+              <div class="track-rail" id="trackWave">
+                <div class="track-fill" id="trackFill"></div>
+                <div class="track-played" id="trackPlayed"></div>
+              </div>
               <div class="track-seams" id="trackSeams"></div>
+              <div class="track-limit-pin" id="trackLimitPin" aria-hidden="true"></div>
               <div class="track-head" id="trackHead"></div>
             </div>
-            <div class="track-labels" id="trackLabels" aria-hidden="true"></div>
+            <div class="track-times" aria-hidden="true">
+              <span id="trackCur">0.0s</span>
+              <span id="trackEnd"><b>0.1s</b> / 15s</span>
+            </div>
           </div>
           <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true">Loading song…</p>
           <button class="btn ghostbtn" id="retrySong" type="button" hidden>Try again</button>

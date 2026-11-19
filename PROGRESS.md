@@ -154,3 +154,13 @@
   - Added piecewise `clipProgress(t)` mapping so the glowing vertical playhead pill (`#trackHead`) glides smoothly and visibly across each unlocked segment (including short `0.1s` and `0.5s` windows) while preserving GPU-only `translate3d` transforms.
 - **Verification & Deploy**:
   - Updated `tests/game-ui.test.cjs`, bumped SW cache (`gts-v76-mystery-cover` / `gts-cf-v56-mystery-cover`), verified `127/127` automated tests and Playwright Desktop (`1180x780`) + Mobile (`390x844`) live gameplay states, built `dist/`, and deployed to `https://tuneup.pages.dev/`.
+
+
+## Wave 33 — Spotify-Style Clip Scrubber with Active Limit Marker (2026-11-19)
+- **Scrubber Upgrade (`index.html`, `layout.css`, `app.js`)**:
+  - Replaced the 5-capsule bar inside `#game`'s `.vinyl-foot` with a sleek Spotify-style continuous scrubber matching `.mystery-cover`:
+    - Continuous translucent unlocked fill (`#trackFill`) ending cleanly at a glowing vertical limit pin (`#trackLimitPin`) paired with a floating duration badge (`#trackLimitTag`: `0.1s`, `0.5s`, `2s`, `8s`, `15s`) so players immediately see where the current attempt stops.
+    - Subtle embedded micro-dots (`#trackSeams i`) mark upcoming locked unlock thresholds on the dark rail.
+    - During playback, a bright glowing fill (`#trackPlayed`) and circular white Spotify playhead thumb (`#trackHead`) sweep smoothly from `0.0s` right up to the limit pin (`CLIP_STOPS = [0.12, 0.26, 0.46, 0.74, 1]`), updating `#trackCur` live alongside `#trackEnd`.
+- **Verification & Deploy**:
+  - Updated `tests/game-ui.test.cjs` and guarded `UI.playSweep` for isolated `tests/audio.test.cjs` mocks (`127/127` passing), bumped SW cache (`gts-v77-spotify-scrubber` / `gts-cf-v57-spotify-scrubber`), verified Desktop & Mobile (`390x844`) in Playwright, built `dist/`, and deployed to `https://tuneup.pages.dev/`.

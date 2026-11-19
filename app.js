@@ -211,14 +211,19 @@
   const maxLen  = () => ladder()[TRIES - 1];
   const step    = () => Math.min(S.guesses.length, TRIES - 1);
   const limit   = () => ladder()[step()];
+  const CLIP_STOPS = [0.12, 0.26, 0.46, 0.74, 1];
+  const clipStop = (i, n) => (n === CLIP_STOPS.length ? CLIP_STOPS[i] : (i + 1) / n);
   const clipProgress = (t) => {
     const L = ladder(), n = L.length;
     if (!n || t <= 0) return 0;
-    let prev = 0;
+    let prevT = 0, prevP = 0;
     for (let i = 0; i < n; i++) {
-      const cur = L[i];
-      if (t <= cur) return (i + Math.max(0, t - prev) / Math.max(0.001, cur - prev)) / n;
-      prev = cur;
+      const curT = L[i], curP = clipStop(i, n);
+      if (t <= curT) {
+        const ratio = Math.max(0, t - prevT) / Math.max(0.001, curT - prevT);
+        return prevP + ratio * (curP - prevP);
+      }
+      prevT = curT; prevP = curP;
     }
     return 1;
   };
@@ -449,6 +454,7 @@
     audio.pause();
     audio.volume = S.muted ? 0 : S.vol;
     UI.head(null);
+    if (UI.playSweep) UI.playSweep(null, null);
     UI.playState('idle');
     UI.readout(null);
   }
@@ -499,7 +505,9 @@
       const batas = curBatas();
       const t = Math.max(0, audio.currentTime);
       S.heard = Math.max(S.heard, Math.min(t, batas));
-      UI.head(clipProgress(t));
+      const prog = clipProgress(t);
+      UI.head(prog);
+      if (UI.playSweep) UI.playSweep(prog, t);
       UI.readout(t);
       const left = batas - t;
       if (left <= 0) { stopAudio(); return; }
@@ -1723,6 +1731,15 @@
       $('#resultAudioStatus').classList.toggle('err', !!err);
       $('#resultAudioStatus').hidden = !msg;
     },
+    playSweep(f, t) {
+      const pEl = $('#trackPlayed');
+      if (pEl) pEl.style.width = f === null ? '0%' : (Math.max(0, Math.min(100, f * 100)) + '%');
+      const curEl = $('#trackCur');
+      if (curEl) {
+        const lbl = t === null ? '0.0s' : t.toFixed(1) + 's';
+        if (curEl.textContent !== lbl) curEl.textContent = lbl;
+      }
+    },
 
     // Lobi hanya menghitung ulang kumpulan lagunya -- tidak memuat apa pun.
     // Lagu baru diambil saat tombol "Mulai main" ditekan.
@@ -1817,33 +1834,35 @@
       p.hidden = !msg;
       p.classList.toggle('warn', warn);
     },
-    // Garis progres bersegmen 5 tahap: tiap segmen mencerminkan jendela klip
-    // (0.1s / 0.5s / 2s / 8s / 15s) dan status percobaan, sedangkan playhead
-    // bergerak mulus melintasi segmen yang sudah terbuka saat lagu diputar.
+    // Scrubber gaya pemutar musik: rel mulus dengan rentang klip terbuka,
+    // tanda batas detik saat ini (pin + tag mengambang), titik halus untuk
+    // tahap berikutnya, dan sapuan hijau terang + playhead saat diputar.
     bar() {
-      const L = ladder(), n = L.length;
+      const L = ladder(), n = L.length, max = maxLen();
       const unlockedIdx = S.done ? n - 1 : Math.min(S.guesses.length, n - 1);
-      this.fill.style.width = (((unlockedIdx + 1) / n) * 100) + '%';
+      const pct = clipStop(unlockedIdx, n) * 100;
+      const curLim = S.done ? max : L[unlockedIdx];
+
+      this.fill.style.width = pct + '%';
+
+      const pin = $('#trackLimitPin');
+      if (pin) {
+        pin.style.left = pct + '%';
+        pin.hidden = pct >= 99.5;
+      }
+      const tag = $('#trackLimitTag');
+      if (tag) {
+        tag.textContent = fmt(curLim);
+        tag.style.left = Math.max(9, Math.min(91, pct)) + '%';
+      }
+      const endEl = $('#trackEnd');
+      if (endEl) endEl.innerHTML = '<b>' + fmt(curLim) + '</b> / ' + fmt(max);
 
       this.seams.innerHTML = '';
-      const labelsEl = $('#trackLabels');
-      if (labelsEl) labelsEl.innerHTML = '';
-      for (let i = 0; i < n; i++) {
-        const g = S.guesses[i];
-        let state = 'locked';
-        if (S.done) {
-          state = g && g.t ? g.t : 'unlocked';
-        } else if (i < unlockedIdx) {
-          state = g && g.t ? g.t : 'skip';
-        } else if (i === unlockedIdx) {
-          state = 'active';
-        }
-        this.seams.appendChild(el('i', 'seg ' + state));
-        if (labelsEl) {
-          const lbl = el('span', 'seg-lbl ' + state);
-          lbl.textContent = fmt(L[i]);
-          labelsEl.appendChild(lbl);
-        }
+      for (let i = unlockedIdx + 1; i < n - 1; i++) {
+        const dot = el('i');
+        dot.style.left = (clipStop(i, n) * 100) + '%';
+        this.seams.appendChild(dot);
       }
     },
 
