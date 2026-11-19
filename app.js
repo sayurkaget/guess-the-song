@@ -508,17 +508,6 @@
     $('#resultRetry').hidden = false;
   }
 
-  function seek(t) {
-    return new Promise((done) => {
-      if (Math.abs(audio.currentTime - t) < 0.03) return done();
-      let fin = false;
-      const ok = () => { if (fin) return; fin = true; audio.removeEventListener('seeked', ok); done(); };
-      audio.addEventListener('seeked', ok);
-      setTimeout(ok, 900);
-      try { audio.currentTime = t; } catch (e) { ok(); }
-    });
-  }
-
   function stopAudio() {
     playbackEpoch++;
     playPending = false;
@@ -753,6 +742,20 @@
     $('#resultRetry').hidden = false;
   }
 
+  function swapDropdownArt(slugKey, src) {
+    if (!slugKey || !src || !UI.dd || typeof UI.dd.querySelectorAll !== 'function') return;
+    const nodes = UI.dd.querySelectorAll('.dd-art.ph');
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].dataset && nodes[i].dataset.spArt === slugKey && nodes[i].parentNode) {
+        const img = document.createElement('img');
+        img.className = 'dd-art';
+        img.src = src;
+        img.alt = '';
+        nodes[i].parentNode.replaceChild(img, nodes[i]);
+      }
+    }
+  }
+
   // Cover asli tiap lagu playlist Spotify (bukan foto playlist), lewat oEmbed
   // resmi Spotify (CORS terbuka). Thumbnail 300px dipakai di dropdown pilihan,
   // versi 640px dipakai di layar reveal.
@@ -769,6 +772,7 @@
         const hd = raw.replace('ab67616d00001e02', 'ab67616d0000b273');
         song.art = raw;
         if (song.pre) song.pre.art = hd;
+        swapDropdownArt(song.slug, raw);
         if (S.song === song && S.meta) {
           S.meta.art = hd;
           if (S.done && $('#resultModal') && !$('#resultModal').hidden) {
@@ -785,14 +789,14 @@
   let spotifyArtJob = 0;
   function prefetchSpotifyArt(songs) {
     const job = ++spotifyArtJob;
-    const queue = songs.filter((s) => !s.artTried && s.spotifyUrl);
+    const queue = songs.filter((s) => !s.artTried && s.spotifyUrl).slice(0, 60);
     let i = 0;
     const worker = async () => {
       while (i < queue.length && job === spotifyArtJob) {
         await fetchSpotifyTrackArt(queue[i++]);
       }
     };
-    for (let w = 0; w < 6; w++) worker();
+    for (let w = 0; w < 4; w++) worker();
   }
 
   /* ================= alur permainan ================= */
@@ -873,6 +877,7 @@
   function newRun() {
     closeAll();
     if (S.daily || S.runChallenge) { UI.lobby(); return; }
+    if (S.custom && S.custom.fullRounds) S.custom.rounds = S.custom.fullRounds;
     S.stages.filter(Boolean).forEach((x) => pushRecent(x.slug));
     S.stages = []; S.stage = 0; S.runDone = false;
     S.guesses = []; S.done = false; S.won = false;
@@ -1774,6 +1779,7 @@
     if (!el || !el.dataset) return;
     el.dataset.count = String(count);
     el.dataset.odd = (count >= 3 && count % 2 === 1) ? 'true' : 'false';
+    el.dataset.many = count > STAGES ? 'true' : 'false';
   }
 
   /* ================= UI ================= */
@@ -2112,12 +2118,14 @@
         // dan loading="lazy" di situ justru menunda gambar sampai browser
         // menganggap dropdown terlihat. Sisanya baru dimuat saat digulung.
         const malas = i >= 10 ? ' loading="lazy"' : '';
+        const spAttr = (!s.art && s.spotifyUrl) ? ' data-sp-art="' + esc(s.slug) + '"' : '';
         b.innerHTML =
           (s.art ? '<img class="dd-art"' + malas + ' src="' + esc(s.art) + '" alt="">'
-                 : '<span class="dd-art ph" aria-hidden="true"></span>') +
+                 : '<span class="dd-art ph"' + spAttr + ' aria-hidden="true"></span>') +
           '<span class="dd-txt">' + esc(s.title) +
           '<small>' + esc(s.artist) + '</small></span>' +
           (tried ? '<span class="dd-badge">Tried</span>' : '');
+        if (!s.art && !s.artTried && s.spotifyUrl && i < 12) fetchSpotifyTrackArt(s);
         if (!tried) {
           // Di HP jangan pernah memilih saat touchstart: jari baru menempel dan
           // browser belum tahu ini ketukan atau geseran, jadi setiap usaha
@@ -2701,7 +2709,40 @@
   $('#resultRetry').onclick = () => load(S.song || S.retrySong);
   $('#acceptChallenge').onclick = acceptChallenge;
   $('#leaveChallenge').onclick = () => { history.replaceState(null, '', location.pathname + location.search); UI.lobby(); };
-  $('#back').onclick = () => { closeAll(); UI.lobby(); };
+  $('#back').onclick = () => {
+    const isLongSpotify = !!(S.custom && S.custom.kind === 'spotify' && !S.runDone && stageCount() > STAGES);
+    const hasProgress = S.stage > 0 || S.done || S.guesses.length > 0;
+    if (isLongSpotify && hasProgress && $('#leaveRunModal')) {
+      const played = S.stages.filter((x) => x && x.done).length;
+      const sum = $('#leaveRunSummary');
+      if (sum) {
+        sum.textContent = played
+          ? (played + ' of ' + stageCount() + ' songs played · Score ' + score() + '/' + played)
+          : ('Song ' + (S.stage + 1) + ' of ' + stageCount() + ' in progress');
+      }
+      if ($('#leaveFinishEarly')) $('#leaveFinishEarly').hidden = played < 1;
+      closeAll();
+      open($('#leaveRunModal'));
+      return;
+    }
+    closeAll();
+    UI.lobby();
+  };
+  if ($('#leaveKeepPlaying')) $('#leaveKeepPlaying').onclick = () => closeAll();
+  if ($('#leaveConfirmExit')) $('#leaveConfirmExit').onclick = () => { closeAll(); UI.lobby(); };
+  if ($('#leaveFinishEarly')) {
+    $('#leaveFinishEarly').onclick = () => {
+      const doneStages = S.stages.filter((x) => x && x.done);
+      if (!doneStages.length || !S.custom) { closeAll(); UI.lobby(); return; }
+      stopAudio();
+      S.stages = doneStages;
+      S.custom.rounds = doneStages.length;
+      S.stage = doneStages.length - 1;
+      S.runDone = true;
+      closeAll();
+      UI.runResult();
+    };
+  }
   $('#next').onclick = nextStage;
   $('#againRun').onclick = newRun;
   $('#backToMenu').onclick = () => {
@@ -2725,7 +2766,7 @@
       : inArtistMode ? 'Mode: Artist Detective'
       : S.daily ? 'Mode: Daily ' + S.daily.day
       : (S.challenge || S.runChallenge) ? ('Mode: Friend challenge' + (S.runChallenge && S.runChallenge.artistLabel ? ' — ' + S.runChallenge.artistLabel : ''))
-      : S.custom ? 'Mode: Custom artist — ' + S.custom.label
+      : S.custom ? (S.custom.kind === 'spotify' ? 'Mode: Spotify playlist — ' : 'Mode: Custom artist — ') + S.custom.label
       : 'Mode: Free play',
       !$('#game').hidden && !S.daily && !S.challenge
         ? ('Stage: ' + (artistMode ? 'Song ' + (S.stage + 1) : D().label))
@@ -2863,7 +2904,10 @@
     if (!inGame()) {
       // di lobi, Enter = mulai main sesuai tab aktif Classic
       if (!$('#lobby').hidden && e.key === 'Enter') {
-        if ($('#classicArtistPanel') && !$('#classicArtistPanel').hidden && $('#openCustom')) {
+        if ($('#classicSpotifyPanel') && !$('#classicSpotifyPanel').hidden && $('#loadSpotifyBtn')) {
+          e.preventDefault();
+          $('#loadSpotifyBtn').click();
+        } else if ($('#classicArtistPanel') && !$('#classicArtistPanel').hidden && $('#openCustom')) {
           e.preventDefault();
           $('#openCustom').click();
         } else if (!$('#start').disabled) {
@@ -4356,6 +4400,7 @@
         owner: (primaryMeta && primaryMeta.owner) || 'Spotify',
         cover,
         rounds,
+        fullRounds: rounds,
         songs
       };
       switchRun();

@@ -289,3 +289,14 @@
   3. Added `unlockSfx()` on `playClip()`, scheduled `playSfx()` notes after `ctx.resume()` when `suspended`, and raised win chime gain (`0.16 * S.vol`, max `0.20`) so victory chimes remain crisp alongside revealed song playback.
 - **Verification & Deploy**:
   - Verified `132/132` automated unit tests and real Chromium Playwright playback across Play-only, Skip-only, replay `0.1s`, and Enter-key win flows, bumped SW cache (`gts-v89-audio-play-fix` / `gts-cf-v69-audio-play-fix`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
+
+
+## Wave 46 — Audit Fixes & Long-Playlist UX Polish (2026-11-20)
+- **Lobby Keyboard, Scrollable Summary, Live Dropdown Art & Cleanup (`index.html`, `layout.css`, `app.js`)**:
+  1. Fixed Lobby `Enter` shortcut on the Spotify tab to trigger `#loadSpotifyBtn` instead of falling through to Classic Genre & Era `#start`.
+  2. Added `data-many="true"` + scrollable `max-height: min(44vh, 360px)` on `.runlist.run-shelf` when `count > 5` so 50–110+ song summaries keep the playlist-cover/vinyl hero header and action buttons pinned neatly on screen.
+  3. Added `swapDropdownArt()` + on-demand dropdown hydration for up to 12 visible Spotify tracks in `openDD()` (and capped background `prefetchSpotifyArt` to 60 uncached tracks) so real album covers pop directly into an already-open dropdown without re-typing.
+  4. Removed dead `seek()` helper and fixed Feedback modal details to label Spotify runs as `Mode: Spotify playlist — <name>`.
+  5. Added `#leaveRunModal` guard when clicking `< Change mode` mid-way through a >5-song Spotify run (`Keep playing`, `Finish & see result` summarizing only completed songs with full score card support and `fullRounds` restored on `Play again`, or `Leave to menu`).
+- **Verification & Deploy**:
+  - Updated `tests/spotify.test.cjs` (`132/132` passing), verified Playwright E2E for Lobby `Enter` on Spotify tab, `#leaveRunModal` + `Finish & see result`, and scrollable `#runList`, bumped SW cache (`gts-v90-audit-polish` / `gts-cf-v70-audit-polish`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.

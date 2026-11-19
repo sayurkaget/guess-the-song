@@ -635,6 +635,14 @@
   margin:0;padding:0;list-style:none;
   display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.7rem;
 }
+.runlist.run-shelf[data-many="true"]{
+  max-height:min(44vh,360px);overflow-y:auto;padding-right:4px;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.22) transparent;
+}
+.runlist.run-shelf[data-many="true"]::-webkit-scrollbar{width:6px}
+.runlist.run-shelf[data-many="true"]::-webkit-scrollbar-track{background:rgba(255,255,255,.04);border-radius:999px}
+.runlist.run-shelf[data-many="true"]::-webkit-scrollbar-thumb{background:rgba(255,255,255,.22);border-radius:999px}
 .runlist.run-shelf[data-count="2"]{grid-template-columns:repeat(2,minmax(0,180px));justify-content:center}
 .runlist.run-shelf[data-count="3"]{grid-template-columns:repeat(3,minmax(0,185px));justify-content:center}
 .runlist.run-shelf[data-count="4"]{grid-template-columns:repeat(4,minmax(0,176px));justify-content:center}
@@ -1233,6 +1241,17 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 .spotify-rounds-custom::-webkit-outer-spin-button,
 .spotify-rounds-custom::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .spotify-rounds-custom{-moz-appearance:textfield}
+
+.leave-sheet{width:min(400px,100%);text-align:center}
+.leave-sheet h2{margin:0 0 .35rem}
+.leave-summary{margin:0 0 1.1rem;font-size:.86rem}
+.leave-actions{display:flex;flex-direction:column;gap:.55rem;align-items:stretch}
+.leave-actions .btn{width:100%;min-height:44px}
+.leave-exit-link{
+  margin-top:.15rem;padding:.45rem .6rem;border:0;background:none;
+  color:var(--dim);font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;
+}
+.leave-exit-link:hover{color:#ff8a8e;text-decoration:underline}
 
 @media(max-width:680px){
   #lobby .arcade-row{grid-template-columns:minmax(0,1fr);gap:.75rem}

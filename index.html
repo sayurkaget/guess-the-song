@@ -571,6 +571,20 @@
   </div>
 </div>
 
+<!-- ====== leave long playlist guard ====== -->
+<div class="modal" id="leaveRunModal" hidden>
+  <div class="sheet leave-sheet" role="dialog" aria-modal="true" aria-labelledby="leaveRunTitle">
+    <button class="x" data-close aria-label="Close" type="button">&times;</button>
+    <h2 id="leaveRunTitle">Leave this playlist?</h2>
+    <p class="dim leave-summary" id="leaveRunSummary"></p>
+    <div class="leave-actions">
+      <button class="btn solid" id="leaveKeepPlaying" type="button">Keep playing</button>
+      <button class="btn ghostbtn" id="leaveFinishEarly" type="button" hidden>Finish &amp; see result</button>
+      <button class="leave-exit-link" id="leaveConfirmExit" type="button">Leave to menu</button>
+    </div>
+  </div>
+</div>
+
 <!-- ====== stats ====== -->
 <div class="modal" id="statsModal" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle">
