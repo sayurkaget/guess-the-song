@@ -44,6 +44,31 @@ export function parseSpotifyInput(raw) {
   return null;
 }
 
+function pickBestCover(entity) {
+  const candidates = [];
+  if (Array.isArray(entity?.visualIdentity?.image)) {
+    for (const img of entity.visualIdentity.image) {
+      if (img && typeof img.url === 'string' && /^https:\/\//.test(img.url)) {
+        const w = Number(img.maxWidth || img.width) || 0;
+        const h = Number(img.maxHeight || img.height) || 0;
+        candidates.push({ url: img.url, area: w && h ? w * h : (w || h ? Math.max(w, h) ** 2 : 90000) });
+      }
+    }
+  }
+  if (Array.isArray(entity?.coverArt?.sources)) {
+    for (const img of entity.coverArt.sources) {
+      if (img && typeof img.url === 'string' && /^https:\/\//.test(img.url)) {
+        const w = Number(img.width || img.maxWidth) || 0;
+        const h = Number(img.height || img.maxHeight) || 0;
+        candidates.push({ url: img.url, area: w && h ? w * h : (w || h ? Math.max(w, h) ** 2 : 90000) });
+      }
+    }
+  }
+  if (!candidates.length) return '';
+  candidates.sort((a, b) => b.area - a.area);
+  return candidates[0].url;
+}
+
 export function extractEmbedPayload(html, type, id) {
   const match = String(html || '').match(/<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
   if (!match) return { error: 'Could not read Spotify playlist data.', status: 502 };
@@ -93,9 +118,7 @@ export function extractEmbedPayload(html, type, id) {
     return { error: 'No playable tracks found in this Spotify ' + type + '.', status: 422 };
   }
 
-  const cover = entity.visualIdentity?.image?.[0]?.url
-    || entity.coverArt?.sources?.[0]?.url
-    || '';
+  const cover = pickBestCover(entity);
 
   return {
     status: 200,
@@ -105,7 +128,7 @@ export function extractEmbedPayload(html, type, id) {
       id,
       name: cleanText(entity.name) || 'Spotify Playlist',
       owner: cleanText(entity.subtitle) || 'Spotify',
-      cover: typeof cover === 'string' && /^https:\/\//.test(cover) ? cover : '',
+      cover,
       total: tracks.length,
       tracks
     }

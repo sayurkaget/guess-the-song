@@ -218,3 +218,14 @@
   - Updated the Lobby pill dynamically (`Full playlist` on the Spotify tab vs `5 stages` on Genre & Era / By Artist) and lowered the `/api/spotify` minimum from 5 to 1 playable track.
 - **Verification & Deploy**:
   - Updated `tests/spotify.test.cjs` (`131/131` passing), verified live 50-song Spotify run E2E in Playwright, bumped SW cache (`gts-v82-spotify-full-length` / `gts-cf-v62-spotify-full-length`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
+
+
+## Wave 39 — Full Round Rail (`1..N`) & HD 640px Spotify Artwork (2026-11-19)
+- **All-Rounds Step Bar (`app.js`, `layout.css`)**:
+  - Replaced the 5-pill sliding window in `UI.steps()` with all `1..N` round pills matching the exact number of songs in the playlist/album (`1..100`).
+  - Uses dynamic `--step-cols` grid when `count <= 5` and switches to a sleek horizontally scrollable single-row pill rail (`.steps.live.many`, `flex: 1 0 46px` desktop / `40px` mobile) when `count > 5`, auto-centering the active round via `scrollLeft` without vertical page jumps and supporting mouse-wheel horizontal scroll on desktop.
+- **HD 640×640 Playlist & Song Covers (`functions/api/spotify.js`, `app.js`)**:
+  - Fixed blurry `64×64` playlist artwork caused by taking `entity.visualIdentity.image[0]` directly: added `pickBestCover(entity)` to select the highest-resolution image (`640×640`) across `visualIdentity.image` and `coverArt.sources`.
+  - Upgraded matched local-catalog artwork from `300x300` to `600x600`, and added non-blocking background `enrichSpotifyTrackArt()` via Spotify's CORS-enabled oEmbed endpoint (`640×640` track cover with instant `640×640` playlist cover fallback).
+- **Verification & Deploy**:
+  - Added 640px cover selection assertion in `tests/spotify.test.cjs` (`131/131` passing), verified desktop + mobile (`360×800`) Playwright screenshots & `naturalWidth === 640` on `#cover`, bumped SW cache (`gts-v83-spotify-rounds-hd` / `gts-cf-v63-spotify-rounds-hd`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.

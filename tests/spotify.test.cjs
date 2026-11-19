@@ -48,7 +48,13 @@ test('extractEmbedPayload cleans NBSP artists, strips episodes, deduplicates, an
             entity: {
               name: 'My\u00A0Mix',
               subtitle: 'Tester',
-              visualIdentity: { image: [{ url: 'https://image-cdn-ak.spotifycdn.com/cover.jpg' }] },
+              visualIdentity: {
+                image: [
+                  { url: 'https://image-cdn-ak.spotifycdn.com/cover-64.jpg', maxWidth: 64, maxHeight: 64 },
+                  { url: 'https://image-cdn-ak.spotifycdn.com/cover-640.jpg', maxWidth: 640, maxHeight: 640 },
+                  { url: 'https://image-cdn-ak.spotifycdn.com/cover-300.jpg', maxWidth: 300, maxHeight: 300 }
+                ]
+              },
               trackList: [
                 { uri: 'spotify:track:1111111111111111111111', title: 'Song One', subtitle: 'Artist\u00A0A, Artist\u00A0B', entityType: 'track', duration: 200000, audioPreview: { url: 'https://p.scdn.co/mp3-preview/a' } },
                 { uri: 'spotify:track:1111111111111111111111', title: 'Song One', subtitle: 'Artist A, Artist B', entityType: 'track', duration: 200000, audioPreview: { url: 'https://p.scdn.co/mp3-preview/a' } },
@@ -68,6 +74,7 @@ test('extractEmbedPayload cleans NBSP artists, strips episodes, deduplicates, an
   const ok = extractEmbedPayload(html, 'playlist', '37i9dQZF1DXcBWIGoYBM5M');
   assert.equal(ok.status, 200);
   assert.equal(ok.data.name, 'My Mix');
+  assert.equal(ok.data.cover, 'https://image-cdn-ak.spotifycdn.com/cover-640.jpg');
   assert.equal(ok.data.tracks.length, 5);
   assert.equal(ok.data.tracks[0].artist, 'Artist A, Artist B');
   assert.equal(ok.data.tracks[0].preview, 'https://p.scdn.co/mp3-preview/a');

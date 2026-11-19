@@ -684,6 +684,7 @@
         UI.playState('idle');
         UI.status(S.done ? '' : 'Press Play to hear ' + fmt(limit()) + '.');
         UI.render();
+        enrichSpotifyTrackArt(cand, meta, me);
         if (S.done) setTimeout(() => { if (me === S.epoch && S.done) UI.result(); }, 250);
         return;
       } catch (e) {
@@ -700,6 +701,37 @@
     UI.status('Could not load the song. Check your connection and try again.', true);
     $('#retrySong').hidden = false;
     $('#resultRetry').hidden = false;
+  }
+
+  function enrichSpotifyTrackArt(song, meta, epoch) {
+    if (!meta || !meta.fromSpotify || meta.hasTrackArt || !meta.link || !/\/track\/[A-Za-z0-9]{22}/.test(meta.link)) return;
+    meta.hasTrackArt = true;
+    fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(meta.link))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const raw = d && typeof d.thumbnail_url === 'string' && /^https:\/\//.test(d.thumbnail_url) ? d.thumbnail_url : '';
+        if (!raw) return;
+        const hd = raw.replace('ab67616d00001e02', 'ab67616d0000b273');
+        const applyArt = (src) => {
+          meta.art = src;
+          if (song) song.art = src;
+          if (epoch === S.epoch && S.song === song && S.done) {
+            const img = $('#cover');
+            if (img) img.src = src;
+            const bg = $('#artBg');
+            if (bg) bg.style.backgroundImage = 'url("' + src + '")';
+          }
+        };
+        if (hd !== raw && typeof Image === 'function') {
+          const probe = new Image();
+          probe.onload = () => applyArt(hd);
+          probe.onerror = () => applyArt(raw);
+          probe.src = hd;
+        } else {
+          applyArt(raw);
+        }
+      })
+      .catch(() => {});
   }
 
   /* ================= alur permainan ================= */
@@ -1721,33 +1753,47 @@
       const isSpotify = !!(S.custom && S.custom.kind === 'spotify');
       host.hidden = !!(S.challenge || S.daily);
       if ($('#dailyGameBadge')) {
-        const showSpBadge = isSpotify && count > 5;
+        const showSpBadge = isSpotify;
         $('#dailyGameBadge').hidden = !S.daily && !S.challenge && !showSpBadge;
         if (S.daily) $('#dailyGameBadge').textContent = 'Daily Challenge · 1 song';
         else if (S.challenge) $('#dailyGameBadge').textContent = 'Friend Challenge · 1 song';
         else if (showSpBadge) {
           const played = S.stages.filter((x) => x && x.done).length;
-          $('#dailyGameBadge').textContent = 'Playlist · ' + count + ' songs' + (played ? ' · Score ' + score() + '/' + played : '');
+          const kindLbl = S.custom.spotifyType === 'album' ? 'Album' : 'Playlist';
+          $('#dailyGameBadge').textContent = kindLbl + ' · ' + count + (count === 1 ? ' song' : ' songs') +
+            (played ? ' · Score ' + score() + '/' + played : '');
         }
       }
       if (S.challenge || S.daily) return;
       const artistMode = S.runChallenge ? !!S.runChallenge.artistId : !!S.custom;
-      const winStart = count > STAGES ? Math.floor(S.stage / STAGES) * STAGES : 0;
-      const winEnd = count > STAGES ? Math.min(count, winStart + STAGES) : count;
-      for (let i = winStart; i < winEnd; i++) {
+      const many = count > STAGES;
+      host.classList.toggle('many', many);
+      if (host.style && typeof host.style.setProperty === 'function') {
+        if (!many) host.style.setProperty('--step-cols', String(Math.max(1, count)));
+        else host.style.removeProperty('--step-cols');
+      }
+
+      let activeEl = null;
+      for (let i = 0; i < count; i++) {
         const k = ORDER[i] || ORDER[ORDER.length - 1];
-        if (i > winStart) { const a = el('li', 'arrow'); a.textContent = '›'; host.appendChild(a); }
+        if (i > 0 && !many) { const a = el('li', 'arrow'); a.textContent = '›'; host.appendChild(a); }
         const li = el('li');
         li.dataset.k = artistMode ? 'custom' : k;
         const rec = S.stages[i];
         let mark = '';
         if (live) {
           if (rec && rec.done) { li.classList.add(rec.won ? 'win' : 'lose'); mark = rec.won ? '✓' : '✕'; }
-          else if (i === S.stage) li.classList.add('now');
+          else if (i === S.stage) { li.classList.add('now'); activeEl = li; }
         }
         const label = artistMode ? (i + 1) : DIFFS[k].label;
         li.innerHTML = label + (mark ? ' <span class="mark">' + mark + '</span>' : '');
         host.appendChild(li);
+      }
+      if (many && live && activeEl && typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => {
+          const targetLeft = activeEl.offsetLeft - (host.clientWidth - activeEl.offsetWidth) / 2;
+          host.scrollLeft = Math.max(0, targetLeft);
+        });
       }
     },
 
@@ -3983,11 +4029,13 @@
 
       const songs = data.tracks.map((t, i) => {
         const local = matchLocalCatalogTrack(t.title, t.artist);
-        const art = (local && local.art) || data.cover || '';
+        const localArt = local && local.art ? local.art.replace('300x300', '600x600') : '';
+        const art = localArt || data.cover || '';
         const pre = t.preview ? {
           trackId: (local && local.trackId) || 0,
           preview: t.preview,
           art,
+          hasTrackArt: !!(localArt || data.type === 'album'),
           title: t.title,
           artist: t.artist,
           album: data.name,
@@ -4060,6 +4108,16 @@
   }
   if ($('#loadSpotifyBtn')) {
     $('#loadSpotifyBtn').onclick = () => startSpotifyPlaylist();
+  }
+  if ($('#steps')) {
+    $('#steps').addEventListener('wheel', (e) => {
+      const h = $('#steps');
+      if (!h.classList.contains('many') || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      if (h.scrollWidth > h.clientWidth) {
+        e.preventDefault();
+        h.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
   }
   renderSpotifyPicks();
 
