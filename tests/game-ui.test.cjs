@@ -457,7 +457,7 @@ test('Wave 12 polish: Other genre button, artistClear, Surprise me, and text-onl
 
   assert.match(html, /class="classic-section"[\s\S]*id="classicTabs"[\s\S]*id="classicFiltersPanel"[\s\S]*id="classicArtistPanel"[\s\S]*id="openCustom"/);
   assert.match(html, /class="duel-card-wide"[^>]*id="openDuel"/);
-  assert.match(html, /class="arena-grid"[\s\S]*class="vinyl-disc"[\s\S]*id="trySlots"/);
+  assert.match(html, /class="arena-grid"[\s\S]*class="mystery-cover"[\s\S]*id="trackLabels"[\s\S]*id="trySlots"/);
   assert.match(html, /class="reveal-grid"[\s\S]*class="reveal-disc"[\s\S]*class="reveal-foot"/);
   assert.match(html, /id="runFan"[\s\S]*class="runlist run-shelf"[\s\S]*id="duelFan"[\s\S]*class="runlist duel-runlist run-shelf"/);
   assert.match(html, /id="customModal"[\s\S]*class="search-ico"[\s\S]*id="artistQ"/);
@@ -481,8 +481,9 @@ test('Play button centering CSS, viewport cleanup, and #duel challenge intro wor
   assert.doesNotMatch(appCode, /Guess The Song/);
   assert.doesNotMatch(swCode, /Guess The Song/);
 
-  assert.match(css, /\.vinyl-disc\{[\s\S]*width:158px;height:158px/);
-  assert.match(css, /\.vinyl-card \.playbtn\{[\s\S]*width:74px;height:74px/);
+  assert.match(css, /\.mystery-cover\{[\s\S]*width:176px;height:176px/);
+  assert.match(css, /\.vinyl-card \.playbtn\{[\s\S]*width:68px;height:68px/);
+  assert.match(css, /\.vinyl-foot \.track-seams\{[\s\S]*grid-template-columns:repeat\(5,1fr\)/);
   assert.match(css, /@media\(max-width:680px\)[\s\S]*\.vinyl-card\{[^}]*flex-direction:column;align-items:center/);
   assert.match(css, /@media\(max-width:680px\)[\s\S]*\.vinyl-card \.playbtn\{width:50px;height:50px\}/);
   assert.match(css, /\.challenge-kicker\[data-mode="duel"\]/);

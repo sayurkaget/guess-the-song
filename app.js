@@ -211,6 +211,17 @@
   const maxLen  = () => ladder()[TRIES - 1];
   const step    = () => Math.min(S.guesses.length, TRIES - 1);
   const limit   = () => ladder()[step()];
+  const clipProgress = (t) => {
+    const L = ladder(), n = L.length;
+    if (!n || t <= 0) return 0;
+    let prev = 0;
+    for (let i = 0; i < n; i++) {
+      const cur = L[i];
+      if (t <= cur) return (i + Math.max(0, t - prev) / Math.max(0.001, cur - prev)) / n;
+      prev = cur;
+    }
+    return 1;
+  };
   const stageCount = () => S.daily ? 1 : S.runChallenge ? S.runChallenge.songs.length : STAGES;
   const score   = () => S.stages.filter((x) => x && x.won).length;
   const gameMode = () => S.daily ? 'daily' : (S.challenge || S.runChallenge) ? 'challenge' : S.custom ? 'custom' : 'regular';
@@ -488,7 +499,7 @@
       const batas = curBatas();
       const t = Math.max(0, audio.currentTime);
       S.heard = Math.max(S.heard, Math.min(t, batas));
-      UI.head(t / maxLen());
+      UI.head(clipProgress(t));
       UI.readout(t);
       const left = batas - t;
       if (left <= 0) { stopAudio(); return; }
@@ -1806,19 +1817,33 @@
       p.hidden = !msg;
       p.classList.toggle('warn', warn);
     },
-    // Garis progres: rel gelap dengan isian terang sepanjang bagian klip yang
-    // sudah terbuka. Penanda menandai ambang buka (0.5/2/8 dst), dan playhead
-    // (titik) bergerak di atasnya saat lagu diputar. Skala penuh = maxLen().
+    // Garis progres bersegmen 5 tahap: tiap segmen mencerminkan jendela klip
+    // (0.1s / 0.5s / 2s / 8s / 15s) dan status percobaan, sedangkan playhead
+    // bergerak mulus melintasi segmen yang sudah terbuka saat lagu diputar.
     bar() {
-      const L = ladder(), max = maxLen();
-      const unlocked = (S.done ? max : limit()) / max;
-      this.fill.style.width = (unlocked * 100) + '%';
+      const L = ladder(), n = L.length;
+      const unlockedIdx = S.done ? n - 1 : Math.min(S.guesses.length, n - 1);
+      this.fill.style.width = (((unlockedIdx + 1) / n) * 100) + '%';
 
       this.seams.innerHTML = '';
-      for (let i = 0; i < L.length - 1; i++) {
-        const s = el('i');
-        s.style.left = (L[i] / max * 100) + '%';
-        this.seams.appendChild(s);
+      const labelsEl = $('#trackLabels');
+      if (labelsEl) labelsEl.innerHTML = '';
+      for (let i = 0; i < n; i++) {
+        const g = S.guesses[i];
+        let state = 'locked';
+        if (S.done) {
+          state = g && g.t ? g.t : 'unlocked';
+        } else if (i < unlockedIdx) {
+          state = g && g.t ? g.t : 'skip';
+        } else if (i === unlockedIdx) {
+          state = 'active';
+        }
+        this.seams.appendChild(el('i', 'seg ' + state));
+        if (labelsEl) {
+          const lbl = el('span', 'seg-lbl ' + state);
+          lbl.textContent = fmt(L[i]);
+          labelsEl.appendChild(lbl);
+        }
       }
     },
 

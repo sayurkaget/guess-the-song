@@ -144,3 +144,13 @@
   - Added 5th `Artist` tab (`data-tab="artist"`) in `#statsModal` showing `played`, `solved`, `streak`, `best`, and 6-row `Guesses to solve` (`1–2`..`Miss`) breakdown (`tl:artist:stats` backwards-compatible).
   - Whitelisted `duel_*` and `artist_*` events + `duel`/`artist` modes in `analytics.js`.
   - Updated meta/OG/Twitter/JSON-LD descriptions, `app.webmanifest`, *About the game*, and FAQ to include **Artist Detective**.
+
+
+## Wave 32 — Song Arena Mystery Cover & 5-Segment Clip Progress Bar (2026-11-19)
+- **Left Player Redesign (`index.html`, `layout.css`)**:
+  - Replaced the flat `.vinyl-disc` inside `#game`'s left `.vinyl-card` with the user-chosen **Mystery Album Cover** (`.mystery-cover`, `176px × 176px` desktop / `124px × 124px` mobile): difficulty-reactive ambient gradient, subtle grid overlay, `? Mystery` frosted pill with live animated 3-bar mini equalizer (`.mystery-eq`) while audio plays, music-note watermark, and centered glowing `.playbtn` (`68px` desktop / `50px` mobile).
+- **5-Segment Stepped Clip Progress Bar (`index.html`, `layout.css`, `app.js`)**:
+  - Replaced the cramped linear progress rail & protruding seam ticks (`#track`) with 5 clean evenly spaced capsule segments (`.seg`) plus tabular duration labels (`#trackLabels`: `0.1s`, `0.5s`, `2s`, `8s`, `15s`) reflecting live attempt state (`skip`, `wrong`, `near`, `active`, `right`, `locked`, `unlocked`).
+  - Added piecewise `clipProgress(t)` mapping so the glowing vertical playhead pill (`#trackHead`) glides smoothly and visibly across each unlocked segment (including short `0.1s` and `0.5s` windows) while preserving GPU-only `translate3d` transforms.
+- **Verification & Deploy**:
+  - Updated `tests/game-ui.test.cjs`, bumped SW cache (`gts-v76-mystery-cover` / `gts-cf-v56-mystery-cover`), verified `127/127` automated tests and Playwright Desktop (`1180x780`) + Mobile (`390x844`) live gameplay states, built `dist/`, and deployed to `https://tuneup.pages.dev/`.
