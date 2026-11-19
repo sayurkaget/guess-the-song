@@ -300,3 +300,16 @@
   5. Added `#leaveRunModal` guard when clicking `< Change mode` mid-way through a >5-song Spotify run (`Keep playing`, `Finish & see result` summarizing only completed songs with full score card support and `fullRounds` restored on `Play again`, or `Leave to menu`).
 - **Verification & Deploy**:
   - Updated `tests/spotify.test.cjs` (`132/132` passing), verified Playwright E2E for Lobby `Enter` on Spotify tab, `#leaveRunModal` + `Finish & see result`, and scrollable `#runList`, bumped SW cache (`gts-v90-audit-polish` / `gts-cf-v70-audit-polish`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
+
+
+## Wave 47 — Custom Share Banner (`og-image.png`), Global D1 Leaderboard & 1-Song Play Button Fix (2026-11-20)
+- **Custom Open Graph / Social Share Banner (`og-image.png`, `index.html`, `tools/build-cloudflare.cjs`, `sw.js`)**:
+  - Generated crisp `1200×630` dark-emerald social preview banner (`og-image.png`) featuring the TuneUp wordmark, headline, 2×2 game mode badges (`Daily`, `Classic`, `Spotify Playlists`, `Music Duel & Detective`), and miniature vinyl + 5-step clip player preview; wired `og:image`, `og:image:width`, `og:image:height`, `twitter:card="summary_large_image"`, and `twitter:image`.
+- **Global Leaderboard Backed by Cloudflare D1 (`functions/api/leaderboard.js`, `index.html`, `layout.css`, `app.js`)**:
+  - Added `/api/leaderboard` (`GET` Top 20 + player rank lookup outside Top 20, `POST` same-origin validated upsert-if-better) on existing `FEEDBACK_DB` (`leaderboard_scores` table) with zero login (2–16 char nickname + stable local `playerId`), supporting **Today's Daily** (fastest guess `0.1s..15s`, `score ASC`), **Music Duel · Streams**, and **Music Duel · Year** (`streak DESC`).
+  - Added `Leaderboard` entry in Lobby footer (`#openLeaderboard`), `#leaderboardModal` with 3 tabs + medal ranks `#1/#2/#3` + `You` highlight + sticky rank footer, and compact inline submit bars inside `#runModal` (when Daily is won) and `#duelModal` (when Duel score ≥ 1).
+- **UI Bug Fixes (`layout.css`)**:
+  - Fixed floating `.run-playbtn` teleporting to the bottom-left corner of `.sheet.run-sheet` on hover/mouse-leave in 1-song non-daily summaries (`.runlist.run-shelf[data-count="1"]`) caused by `.run-artwrap { display: contents }`: added 4-column grid (`76px minmax(0,1fr) auto auto`, `62px` mobile) keeping `.run-playbtn` inline (`position: static; grid-column: 3; grid-row: 1 / 3`) and `position: relative` on `.runlist.run-shelf li`.
+  - Changed `.modal` to `overflow: clip` so focusing inputs inside modals with `.artbg { transform: scale(6.25) }` can never horizontally scroll the backdrop and shift the modal card off-center.
+- **Verification & Deploy**:
+  - Added `tests/leaderboard.test.cjs` (`137/137` passing), verified desktop & `360px` mobile zero overflow and bounding-box stability via Playwright, created `leaderboard_scores` schema on remote D1 `namethetrack-feedback`, bumped SW cache (`gts-v91-og-leaderboard` / `gts-cf-v71-og-leaderboard`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.

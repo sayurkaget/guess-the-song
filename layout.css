@@ -101,7 +101,8 @@
 #lobby .duel-card-wide:hover .duel-cta-pill{background:rgba(245,177,61,.12);border-color:#ffd06b}
 #lobby .duel-cta-pill svg{width:16px;height:16px;flex:none}
 #lobby :is(button,select):focus-visible{outline:2px solid var(--acc);outline-offset:4px}
-.menu-stats{display:none}
+.foot-menu-links{display:none}
+.wrap:has(#lobby:not([hidden])) .foot-menu-links{display:flex;align-items:center;gap:1.05rem}
 .wrap:has(#lobby:not([hidden])) .menu-stats{display:block;min-height:40px;padding:.4rem .2rem;background:transparent;border:0;color:var(--dim);font:inherit;font-size:.82rem}
 .wrap:has(#lobby:not([hidden])) .menu-stats:hover{color:var(--acc)}
 .wrap:has(#lobby:not([hidden])) .foot{width:100%;justify-content:space-between;margin-top:.55rem}
@@ -542,7 +543,7 @@
 *::-webkit-scrollbar-track{background:transparent;margin:12px 0}
 *::-webkit-scrollbar-thumb{background:rgba(143,174,157,.24);border-radius:999px}
 *::-webkit-scrollbar-thumb:hover{background:rgba(143,174,157,.42)}
-.modal{background:rgba(4,10,7,.78);backdrop-filter:blur(10px)}
+.modal{background:rgba(4,10,7,.78);backdrop-filter:blur(10px);overflow:clip}
 
 /* ====== Run Result & Duel Summary (S4 Album Shelf + S6 Cover Fan Hero) ====== */
 #runModal{--acc:#25e07d;--acc-l:#41f596;--acc-d:#12b862;--acc-rgb:37,224,125}
@@ -655,7 +656,7 @@
 }
 .runlist.run-shelf.duel-runlist[data-count="5"]{grid-template-columns:repeat(5,minmax(0,1fr))}
 .runlist.run-shelf li{
-  min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:.48rem;
+  position:relative;min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:.48rem;
   padding:.5rem;border-radius:16px;
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
   text-align:left;
@@ -707,11 +708,11 @@
 .runlist.run-shelf .txt b{font-size:.82rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .runlist.run-shelf .txt small{font-size:.72rem;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Daily 1-song showcase */
+/* 1-song showcase (Daily, 1-song Spotify, or early-finish 1-song run) */
 .runlist.run-shelf[data-count="1"]{grid-template-columns:minmax(0,1fr)}
 .runlist.run-shelf[data-count="1"] li{
-  display:grid;grid-template-columns:76px minmax(0,1fr) auto;grid-template-rows:auto auto;
-  align-items:center;column-gap:.9rem;row-gap:.15rem;padding:.7rem .95rem;
+  display:grid;grid-template-columns:76px minmax(0,1fr) auto auto;grid-template-rows:auto auto;
+  align-items:center;column-gap:.75rem;row-gap:.15rem;padding:.7rem .95rem;
 }
 .runlist.run-shelf[data-count="1"] .run-artwrap{display:contents}
 .runlist.run-shelf[data-count="1"] .thumb{grid-column:1;grid-row:1 / 3;width:76px;height:76px;border-radius:12px}
@@ -719,7 +720,8 @@
 .runlist.run-shelf[data-count="1"] .txt{grid-column:2;grid-row:2;padding:0}
 .runlist.run-shelf[data-count="1"] .txt b{font-size:1rem;white-space:normal}
 .runlist.run-shelf[data-count="1"] .txt small{font-size:.82rem;white-space:normal}
-.runlist.run-shelf[data-count="1"] .at{position:static;grid-column:3;grid-row:1 / 3;padding:.3rem .75rem;font-size:.78rem}
+.runlist.run-shelf[data-count="1"] .run-playbtn{position:static;grid-column:3;grid-row:1 / 3;width:34px;height:34px}
+.runlist.run-shelf[data-count="1"] .at{position:static;grid-column:4;grid-row:1 / 3;padding:.3rem .75rem;font-size:.78rem}
 
 /* Daily 1-song showcase: kartu 580px seimbang tanpa cover ganda & tanpa pengulangan tanggal */
 .sheet.run-sheet[data-mode="daily"]{width:min(580px,100%)}
@@ -783,8 +785,10 @@
   .runlist.run-shelf[data-odd="true"] li:last-child .lvl{position:static;grid-column:2;grid-row:1;justify-self:start;padding:0;background:none;border:0;backdrop-filter:none;font-size:.62rem}
   .runlist.run-shelf[data-odd="true"] li:last-child .txt{grid-column:2;grid-row:2;padding:0}
   .runlist.run-shelf[data-odd="true"] li:last-child .at{position:static;grid-column:3;grid-row:1 / 3;padding:.24rem .58rem;font-size:.72rem}
-  .runlist.run-shelf[data-count="1"] li{grid-template-columns:62px minmax(0,1fr) auto;column-gap:.72rem;padding:.6rem .75rem}
+  .runlist.run-shelf[data-count="1"] li{grid-template-columns:62px minmax(0,1fr) auto auto;column-gap:.58rem;padding:.6rem .75rem}
   .runlist.run-shelf[data-count="1"] .thumb{width:62px;height:62px}
+  .runlist.run-shelf[data-count="1"] .run-playbtn{position:static;grid-column:3;grid-row:1 / 3;width:30px;height:30px}
+  .runlist.run-shelf[data-count="1"] .at{grid-column:4}
   .sheet.run-sheet[data-mode="daily"] .run-hero{gap:.78rem;padding:0 2.35rem .85rem 0}
   .sheet.run-sheet[data-mode="daily"] .run-fan.single{width:84px;height:70px}
   .sheet.run-sheet[data-mode="daily"] .run-fan.single .f2{width:66px;height:66px;border-radius:11px}
@@ -1253,13 +1257,119 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 }
 .leave-exit-link:hover{color:#ff8a8e;text-decoration:underline}
 
+/* ====== Global Leaderboard (#leaderboardModal & inline submit) ====== */
+.lb-inline{
+  margin-top:.85rem;padding:.65rem .78rem;border-radius:14px;
+  background:rgba(37,224,125,.06);border:1px solid rgba(37,224,125,.24);
+  display:flex;flex-direction:column;gap:.45rem;
+}
+.lb-inline.is-duel{
+  background:rgba(245,177,61,.06);border-color:rgba(245,177,61,.26);
+}
+.lb-inline-row{display:flex;align-items:center;gap:.5rem;min-width:0}
+.lb-inline-tag{
+  flex:none;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;
+  background:rgba(37,224,125,.14);color:#41f596;font-size:.9rem;
+}
+.lb-inline.is-duel .lb-inline-tag{background:rgba(245,177,61,.16);color:#ffd06b}
+.lb-inline-input{
+  flex:1 1 auto;min-width:0;min-height:38px;padding:.45rem .75rem;border-radius:10px;
+  background:rgba(5,16,11,.74);border:1px solid rgba(255,255,255,.14);color:var(--ink);
+  font:inherit;font-size:.86rem;outline:none;transition:border-color .16s,background .16s;
+}
+.lb-inline-input::placeholder{color:var(--dimmer)}
+.lb-inline-input:focus{border-color:rgba(37,224,125,.6);background:rgba(5,16,11,.9)}
+.lb-inline.is-duel .lb-inline-input:focus{border-color:rgba(245,177,61,.62)}
+.lb-inline-btn{
+  flex:none;min-height:38px;padding:.45rem .92rem;border-radius:10px;font-size:.8rem;
+  font-weight:700;white-space:nowrap;
+}
+.lb-inline-msg{
+  margin:0;font-size:.76rem;color:#8ef7bd;display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;
+}
+.lb-inline.is-duel .lb-inline-msg{color:#ffd06b}
+.lb-inline-msg.err{color:#ff8a8e}
+.lb-view-link{
+  padding:0;border:0;background:none;color:var(--ink);font:inherit;font-weight:700;
+  text-decoration:underline;text-underline-offset:3px;cursor:pointer;
+}
+.lb-view-link:hover{color:#41f596}
+
+#leaderboardModal .sheet.lb-sheet{width:min(500px,100%)}
+#leaderboardModal h2{margin:0 0 .8rem;font-family:'Cabinet Grotesk',var(--fs);font-size:1.55rem}
+#leaderboardModal .stats-tabs{margin:0 0 .6rem;width:100%}
+#leaderboardModal .stats-tabs button{flex:1 1 auto;white-space:nowrap}
+.lb-sub{margin:0 0 .75rem;font-size:.8rem;color:var(--dim)}
+.lb-list{
+  list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.42rem;
+  max-height:min(46vh,360px);overflow-y:auto;padding-right:2px;
+}
+.lb-row{
+  display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:.65rem;
+  padding:.58rem .78rem;border-radius:13px;
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);
+}
+.lb-row.is-you{
+  background:rgba(37,224,125,.11);border-color:rgba(37,224,125,.42);
+}
+.lb-row.is-duel.is-you{
+  background:rgba(245,177,61,.11);border-color:rgba(245,177,61,.44);
+}
+.lb-rank{
+  width:28px;height:28px;border-radius:9px;display:grid;place-items:center;
+  font-family:'Cabinet Grotesk',var(--fs);font-size:.82rem;font-weight:800;
+  background:rgba(255,255,255,.06);color:var(--dim);font-variant-numeric:tabular-nums;
+}
+.lb-row[data-rank="1"] .lb-rank{background:rgba(250,204,21,.2);color:#fde047;border:1px solid rgba(250,204,21,.45)}
+.lb-row[data-rank="2"] .lb-rank{background:rgba(226,232,240,.16);color:#e2e8f0;border:1px solid rgba(226,232,240,.34)}
+.lb-row[data-rank="3"] .lb-rank{background:rgba(249,115,22,.18);color:#fdba74;border:1px solid rgba(249,115,22,.38)}
+.lb-name{
+  min-width:0;display:flex;align-items:center;gap:.45rem;
+  font-weight:700;font-size:.9rem;color:var(--ink);
+}
+.lb-name-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-you-pill{
+  flex:none;padding:.1rem .44rem;border-radius:999px;font-size:.64rem;font-weight:800;
+  text-transform:uppercase;letter-spacing:.06em;
+  background:rgba(37,224,125,.18);color:#8ef7bd;border:1px solid rgba(37,224,125,.36);
+}
+.lb-row.is-duel .lb-you-pill{background:rgba(245,177,61,.18);color:#ffd06b;border-color:rgba(245,177,61,.38)}
+.lb-score{
+  padding:.22rem .62rem;border-radius:999px;font-size:.76rem;font-weight:800;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+  background:rgba(37,224,125,.14);color:#41f596;border:1px solid rgba(37,224,125,.3);
+}
+.lb-row.is-duel .lb-score{
+  background:rgba(245,177,61,.14);color:#ffd06b;border-color:rgba(245,177,61,.32);
+}
+.lb-empty{
+  padding:1.6rem 1rem;border-radius:16px;text-align:center;
+  background:rgba(255,255,255,.025);border:1px dashed rgba(255,255,255,.11);
+  color:var(--dim);font-size:.86rem;display:flex;flex-direction:column;align-items:center;gap:.7rem;
+}
+.lb-empty .btn{min-height:40px;padding:.5rem 1.05rem;font-size:.82rem}
+.lb-you-foot{
+  margin-top:.72rem;padding:.58rem .78rem;border-radius:12px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:space-between;gap:.65rem;
+  font-size:.82rem;color:var(--dim);
+}
+.lb-you-foot b{color:var(--ink)}
+
 @media(max-width:680px){
   #lobby .arcade-row{grid-template-columns:minmax(0,1fr);gap:.75rem}
-  #artistGame #agQ,.spotle-search input,#spotifyUrl,#spotifyRoundsCustom{font-size:16px}
+  #artistGame #agQ,.spotle-search input,#spotifyUrl,#spotifyRoundsCustom,.lb-inline-input{font-size:16px}
   .spotify-rounds-custom{width:92px;min-height:38px}
   .spotify-input-row{grid-template-columns:1fr}
   .spotify-go{width:100%}
   .spotle-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}
   .spotle-result-banner{flex-direction:column;align-items:stretch}
   .spotle-result-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:440px){
+  .lb-inline-row{flex-wrap:wrap}
+  .lb-inline-tag{display:none}
+  .lb-inline-input{width:100%;flex:1 1 100%}
+  .lb-inline-btn{width:100%}
+  #leaderboardModal .stats-tabs button{padding:.38rem .28rem;font-size:.71rem}
 }
