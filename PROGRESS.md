@@ -263,3 +263,8 @@
   - Improved `scoreResult()` & `resolve(song)` with `cleanSearchTitle()` & `primaryArtist()` fallback so tracks #101+ (and private playlist tracks where Spotify API returns `preview_url: null`) match iTunes 30-second studio previews reliably.
 - **Verification & Deploy**:
   - Added `tests/spotify-auth.test.cjs` (`135/135` automated tests passing), verified Desktop & Mobile (`360×800`) preview screenshots with user approval, bumped SW cache (`gts-v86-spotify-oauth` / `gts-cf-v66-spotify-oauth`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
+
+
+## Wave 43 — Remove Manual Connect Spotify Setup UI (Keep Smarter iTunes Fallback) (2026-11-19)
+- Removed `spotify-auth.js`, `tests/spotify-auth.test.cjs`, `#spotifyConnectBtn`, `#spotifyAuthModal`, and `/api/spotify?config=1` per user preference so the Lobby Spotify tab stays completely clean and zero-setup (retaining the improved `cleanSearchTitle()` & `primaryArtist()` iTunes fallback in `app.js`).
+- Bumped SW cache (`gts-v87-spotify-clean` / `gts-cf-v67-spotify-clean`), verified `131/131` tests, rebuilt `dist/`, and deployed live to `https://tuneup.pages.dev/`.

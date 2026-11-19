@@ -1234,66 +1234,10 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 .spotify-rounds-custom::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .spotify-rounds-custom{-moz-appearance:textfield}
 
-.spotify-status-row{
-  display:flex;align-items:center;justify-content:space-between;gap:.45rem .8rem;flex-wrap:wrap;
-}
-.spotify-auth-inline{display:inline-flex;align-items:center;gap:.45rem;flex-wrap:wrap}
-.spotify-auth-link{
-  padding:0;border:0;background:none;color:var(--acc-l);
-  font:inherit;font-size:.76rem;font-weight:700;cursor:pointer;
-  text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(37,224,125,.42);
-  transition:color .15s,text-decoration-color .15s;
-}
-.spotify-auth-link:hover{color:#fff;text-decoration-color:#fff}
-.spotify-auth-badge{
-  display:inline-flex;align-items:center;gap:.42rem;
-  font-size:.75rem;font-weight:700;color:#8ef7bd;
-}
-.spotify-auth-dot{
-  width:7px;height:7px;border-radius:50%;background:#25e07d;
-  box-shadow:0 0 8px rgba(37,224,125,.8);flex:none;
-}
-.spotify-auth-disconnect{
-  padding:0;margin-left:.2rem;border:0;background:none;color:var(--dim);
-  font:inherit;font-size:.73rem;font-weight:600;cursor:pointer;
-  text-decoration:underline;text-underline-offset:2px;
-}
-.spotify-auth-disconnect:hover{color:#ff8a8e}
-
-.sp-auth-sheet{width:min(480px,100%);text-align:left}
-.sp-auth-sheet h2{margin:0 0 .35rem}
-.sp-auth-sub{margin:0 0 .85rem;font-size:.82rem;line-height:1.48}
-.sp-auth-steps{
-  margin:0 0 .95rem;padding-left:1.2rem;display:flex;flex-direction:column;gap:.55rem;
-  font-size:.81rem;line-height:1.45;color:var(--dim);
-}
-.sp-auth-steps b{color:var(--ink)}
-.sp-auth-steps a{color:var(--acc-l);text-decoration:none;border-bottom:1px solid rgba(37,224,125,.35)}
-.sp-auth-steps a:hover{color:#fff;border-color:#fff}
-.sp-uri-row{
-  display:flex;align-items:center;gap:.45rem;margin-top:.38rem;
-  padding:.38rem .42rem .38rem .68rem;border-radius:10px;
-  background:rgba(255,255,255,.045);border:1px solid var(--line);
-}
-.sp-uri-row code{
-  flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.76rem;color:#8ef7bd;
-}
-.sp-uri-copy{min-height:30px;padding:.24rem .68rem;border-radius:7px;font-size:.74rem}
-.sp-auth-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.5rem;margin-bottom:.5rem}
-.sp-client-input{
-  width:100%;min-height:42px;padding:.55rem .8rem;border-radius:11px;
-  background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--ink);
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem;outline:none;
-}
-.sp-client-input:focus{border-color:rgba(var(--acc-rgb),.55);background:rgba(255,255,255,.08)}
-.sp-client-input::placeholder{color:var(--dimmer);font-family:var(--fs)}
-
 @media(max-width:680px){
   #lobby .arcade-row{grid-template-columns:minmax(0,1fr);gap:.75rem}
-  #artistGame #agQ,.spotle-search input,#spotifyUrl,#spotifyRoundsCustom,#spotifyClientIdInput{font-size:16px}
+  #artistGame #agQ,.spotle-search input,#spotifyUrl,#spotifyRoundsCustom{font-size:16px}
   .spotify-rounds-custom{width:92px;min-height:38px}
-  .sp-auth-form{grid-template-columns:1fr}
   .spotify-input-row{grid-template-columns:1fr}
   .spotify-go{width:100%}
   .spotle-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}

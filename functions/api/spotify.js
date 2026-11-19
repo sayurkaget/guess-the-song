@@ -135,14 +135,10 @@ export function extractEmbedPayload(html, type, id) {
   };
 }
 
-export async function onRequest({ request, env }) {
+export async function onRequest({ request }) {
   if (request.method !== 'GET') return jsonReply(405, { ok: false, error: 'Method not allowed.' });
 
   const reqUrl = new URL(request.url);
-  if (reqUrl.searchParams.get('config') === '1') {
-    const clientId = String(env?.SPOTIFY_CLIENT_ID || '').trim();
-    return jsonReply(200, { ok: true, clientId: /^[a-f0-9]{32}$/i.test(clientId) ? clientId : '' }, 'public, max-age=300');
-  }
   const raw = reqUrl.searchParams.get('url') || reqUrl.searchParams.get('id') || '';
   let target = parseSpotifyInput(raw);
   if (!target) {
