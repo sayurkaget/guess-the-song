@@ -187,3 +187,15 @@
   - Added `applyDeepLink()` supporting `?mode=daily|duel|artist|classic`, `?deck=streams|year`, `?genre=...`, `?era=2000s|2010s|2020s|classic`, plus `#daily`, `#duel`, and `#artist` hashes.
 - **Verification & Deploy**:
   - Added Wave 35 unit test (`128/128` passing), bumped SW cache (`gts-v79-sfx-card-deeplink` / `gts-cf-v59-sfx-card-deeplink`), verified Playwright screenshots & deep-links, built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
+
+
+## Wave 36 — Fix Mobile Viewport Zoom & Horizontal Stretch After Guessing (2026-11-19)
+- **Root Causes Diagnosed via Mobile Emulation (`360×800`, `isMobile: true`)**:
+  1. `.track-bar-row` lacked `overflow: hidden` so `#trackHead` (`width: 100%` shifted right via `translate3d(...)` during playback/autoplay) pushed `window.innerWidth` from `360px` to `498px`.
+  2. `.artbg` inside `#resultModal` / `#runModal` / `#duelModal` used `position: fixed` with `scale(6.25)` (`450px` wide) without `.modal { overflow: hidden }`, widening the mobile viewport to `382px` and clipping the right edge of the reveal modal.
+  3. `html` lacked `overflow-x: clip`, `#agQ` computed to `15.04px` (`< 16px`, triggering iOS/mobile input auto-zoom), and `#q`/`#agQ` stayed focused when submitting guesses.
+- **Fixes (`styles.css`, `layout.css`, `app.js`)**:
+  - Locked `html, body { max-width: 100%; overflow-x: clip }`, `.modal { overflow: hidden }`, `.artbg { position: absolute; top: 40%; left: 40%; width: 20%; height: 20%; }`, `.track-bar-row { overflow: hidden; border-radius: 999px }`, and `font-size: 16px` on `#game #q`, `#artistGame #agQ`, and `#artistQ` for mobile (`<= 680px`).
+  - Blurred `#q` on guess/stage finish and `#agQ` on solve so mobile keyboards dismiss cleanly before reveal modals open.
+- **Verification & Deploy**:
+  - Verified `vw === 360`, `htmlSw === 360`, `bodySw === 360`, `qFont === "16px"`, `agQFont === "16px"` across all 6 gameplay/modal stages in mobile Playwright (`360×800`), `128/128` tests passing, bumped SW cache (`gts-v80-mobile-viewport-fix` / `gts-cf-v60-mobile-viewport-fix`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.

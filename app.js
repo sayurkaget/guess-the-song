@@ -722,6 +722,7 @@
     UI.status(near ? 'Right artist, wrong song. ' + fmt(limit()) + ' unlocked.'
                    : 'Not it. ' + fmt(limit()) + ' unlocked now.');
     UI.clearInput();
+    if (UI.q && typeof UI.q.blur === 'function') UI.q.blur();
   }
 
   function skip() {
@@ -749,6 +750,7 @@
     if (S.daily) trackActivity('daily_complete', { won, attempts: S.guesses.length });
     if (S.runDone) { if (S.daily) completeDaily(); else recordStats(); }
     UI.render(); UI.streak(); UI.clearInput();
+    if (UI.q && typeof UI.q.blur === 'function') UI.q.blur();
     UI.status('');
     S.heard = 0;      // saat terungkap, putar lagunya dari awal
     // Diputar SEKARANG, bukan setelah modal muncul: makin dekat ke klik aslinya,
@@ -3652,6 +3654,7 @@
       if (artist.id === ag.target.id) {
         ag.done = true;
         ag.won = true;
+        if ($('#agQ') && typeof $('#agQ').blur === 'function') $('#agQ').blur();
         playSfx('fanfare');
         recordArtistOutcome(true, ag.guesses.length);
         renderAgBoard();

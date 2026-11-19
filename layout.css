@@ -216,6 +216,7 @@
 }
 .track-bar-row{
   position:relative;width:100%;height:22px;display:flex;align-items:center;
+  overflow:hidden;border-radius:999px;
 }
 .spot-track .track-rail{
   position:relative;width:100%;height:20px;border-radius:999px;
@@ -343,7 +344,7 @@
   .vinyl-foot .status{text-align:center}
   .guess-card{padding:1rem}
   #game .guessbar{margin-top:0}
-  #game #q{font-size:16px}
+  #game #q,#agQ,#artistQ{font-size:16px}
   .slot-txt{white-space:normal;overflow-wrap:anywhere}
 }
 #coverPlay[aria-busy="true"] .cover-play svg{visibility:hidden}
@@ -1160,6 +1161,7 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 
 @media(max-width:680px){
   #lobby .arcade-row{grid-template-columns:minmax(0,1fr);gap:.75rem}
+  #artistGame #agQ,.spotle-search input{font-size:16px}
   .spotle-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}
   .spotle-result-banner{flex-direction:column;align-items:stretch}
   .spotle-result-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}

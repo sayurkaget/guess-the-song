@@ -31,14 +31,13 @@
    mengalahkannya dan elemennya tetap terlihat. Paksa di sini. */
 [hidden]{display:none!important}
 
-html,body{height:100%}
+html,body{height:100%;max-width:100%;overflow-x:clip}
 body{
   margin:0;
   font-family:var(--fs);
   color:var(--ink);
   background:var(--bg);
   -webkit-font-smoothing:antialiased;
-  overflow-x:hidden;
 }
 /* Latar aurora: tiga gumpalan cahaya yang bergerak sangat lambat.
    Murni CSS transform supaya tidak membebani HP. */
@@ -511,7 +510,7 @@ body[data-diff="impossible"]{--acc:#9b7bf5;--acc-l:#b49bff;--acc-d:#7355d6;--acc
 /* ===== modal ===== */
 .modal{
   position:fixed;inset:0;z-index:60;
-  contain:paint;
+  contain:paint;overflow:hidden;
   display:grid;place-items:center;padding:1rem;
   background:rgba(2,10,6,.88);
   animation:fade .18s ease-out;
@@ -530,7 +529,7 @@ body[data-diff="impossible"]{--acc:#9b7bf5;--acc-l:#b49bff;--acc-d:#7355d6;--acc
 /* sampul album jadi latar kabur di layar hasil */
 .artbg{
   /* Blur a small surface, then enlarge it: same crop, far fewer filtered pixels. */
-  position:fixed; top:40vh; left:40vw; width:20vw; height:20vh;
+  position:absolute; top:40%; left:40%; width:20%; height:20%;
   z-index:0; pointer-events:none;
   background-size:cover; background-position:center;
   filter:blur(9.28px) saturate(1.5); opacity:0;

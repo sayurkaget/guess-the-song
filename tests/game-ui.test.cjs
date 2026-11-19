@@ -607,6 +607,13 @@ test('Wave 35: #agPlaySongBtn removed, Auto-Play on Skip + SFX, TuneUpCard score
   assert.match(appCode, /function playSfx\(kind\)/);
   assert.match(appCode, /function applyDeepLink\(\)/);
   assert.match(appCode, /if \(!playing && !playPending && S\.meta && S\.meta\.preview && typeof audio\.play === 'function'\)[\s\S]*playClip\(\)/);
+  const stylesCss = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  const layoutCss = fs.readFileSync(path.join(root, 'layout.css'), 'utf8');
+  assert.match(stylesCss, /html,body\{[^}]*overflow-x:clip/);
+  assert.match(stylesCss, /\.modal\{[^}]*overflow:hidden/);
+  assert.match(stylesCss, /\.artbg\{[^}]*position:absolute/);
+  assert.match(layoutCss, /\.track-bar-row\{[^}]*overflow:hidden/);
+  assert.match(layoutCss, /#game #q,#agQ,#artistQ\{font-size:16px\}/);
 
   const runModel = TuneUpCard.buildCardData({
     kind: 'run',
