@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const root = path.join(__dirname, '..');
@@ -48,21 +49,33 @@ test('feedback storage failure is never reported as success', async () => {
 });
 test('Cloudflare bundle uses its own URLs, isolates APIs, and preserves the original site', () => {
   const original = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  execFileSync(process.execPath, [path.join(root, 'tools/build-cloudflare.cjs')], { env: { ...process.env, SITE_URL: 'https://namethetrack.pages.dev' } });
-  const html = fs.readFileSync(path.join(root, 'dist/index.html'), 'utf8');
-  assert.match(html, /action="\/api\/feedback" data-feedback-api="true"/);
-  assert.ok(!html.includes('data-netlify=')); assert.ok(!html.includes('namethetrack.netlify.app'));
-  assert.ok(fs.readFileSync(path.join(root, 'dist/analytics.js'), 'utf8').includes('location.hostname === "namethetrack.pages.dev"'));
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, 'dist/_routes.json'))).include, ['/api/*']);
-  assert.equal(fs.readFileSync(path.join(root, 'index.html'), 'utf8'), original);
-  assert.deepEqual(fs.readFileSync(path.join(root, 'dist/songs.js')), fs.readFileSync(path.join(root, 'songs.js')));
-  assert.deepEqual(fs.readFileSync(path.join(root, 'dist/daily-pool-v1.js')), fs.readFileSync(path.join(root, 'daily-pool-v1.js')));
-  assert.ok(!fs.existsSync(path.join(root, 'dist/.catalog-cache')));
-  assert.ok(!/noindex/i.test(html), 'Production must remain indexable');
-  const headers = path.join(root, 'dist/_headers');
-  assert.ok(!fs.existsSync(headers) || !/noindex/i.test(fs.readFileSync(headers, 'utf8')));
-  for (const asset of ['layout.css','site-guide.css','site-guide.js','fonts/GeneralSans-Variable.woff2','fonts/CabinetGrotesk-Variable.woff2']) {
-    assert.ok(fs.statSync(path.join(root, 'dist', asset)).size > 0, asset);
-    assert.ok(fs.readFileSync(path.join(root, 'dist/sw.js'),'utf8').includes(asset), 'Offline shell includes '+asset);
+  const tmpOut = fs.mkdtempSync(path.join(os.tmpdir(), 'tuneup-cf-'));
+  try {
+    execFileSync(process.execPath, [path.join(root, 'tools/build-cloudflare.cjs')], {
+      env: { ...process.env, SITE_URL: 'https://tuneup.pages.dev', OUT_DIR: tmpOut }
+    });
+    const html = fs.readFileSync(path.join(tmpOut, 'index.html'), 'utf8');
+    assert.match(html, /action="\/api\/feedback" data-feedback-api="true"/);
+    assert.ok(!html.includes('data-netlify='));
+    assert.ok(!html.includes('namethetrack.netlify.app'));
+    assert.ok(!html.includes('namethetrack.pages.dev'));
+    assert.ok(html.includes('https://tuneup.pages.dev/'));
+    assert.ok(fs.readFileSync(path.join(tmpOut, 'robots.txt'), 'utf8').includes('https://tuneup.pages.dev/sitemap.xml'));
+    assert.ok(fs.readFileSync(path.join(tmpOut, 'sitemap.xml'), 'utf8').includes('https://tuneup.pages.dev/'));
+    assert.ok(fs.readFileSync(path.join(tmpOut, 'analytics.js'), 'utf8').includes('location.hostname === "tuneup.pages.dev"'));
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(tmpOut, '_routes.json'))).include, ['/api/*']);
+    assert.equal(fs.readFileSync(path.join(root, 'index.html'), 'utf8'), original);
+    assert.deepEqual(fs.readFileSync(path.join(tmpOut, 'songs.js')), fs.readFileSync(path.join(root, 'songs.js')));
+    assert.deepEqual(fs.readFileSync(path.join(tmpOut, 'daily-pool-v1.js')), fs.readFileSync(path.join(root, 'daily-pool-v1.js')));
+    assert.ok(!fs.existsSync(path.join(tmpOut, '.catalog-cache')));
+    assert.ok(!/noindex/i.test(html), 'Production must remain indexable');
+    const headers = path.join(tmpOut, '_headers');
+    assert.ok(!fs.existsSync(headers) || !/noindex/i.test(fs.readFileSync(headers, 'utf8')));
+    for (const asset of ['layout.css','site-guide.css','site-guide.js','fonts/GeneralSans-Variable.woff2','fonts/CabinetGrotesk-Variable.woff2']) {
+      assert.ok(fs.statSync(path.join(tmpOut, asset)).size > 0, asset);
+      assert.ok(fs.readFileSync(path.join(tmpOut, 'sw.js'),'utf8').includes(asset), 'Offline shell includes '+asset);
+    }
+  } finally {
+    fs.rmSync(tmpOut, { recursive: true, force: true });
   }
 });

@@ -1,8 +1,9 @@
 /* Service worker TuneUp — 100% Online-Only (tanpa cache offline).
-   Semua cache lama dihapus saat aktivasi dan setiap request selalu diambil
-   langsung dari jaringan (no-store). */
+   Semua cache lama dihapus saat aktivasi dan setiap request selalu divalidasi
+   ke server (no-cache / ETag) agar update langsung masuk dan file besar seperti
+   songs.js tetap hemat kuota via 304 Not Modified saat belum berubah. */
 
-const CACHE = 'gts-v74-online-only';
+const CACHE = 'gts-v75-audit-fixes';
 const SHELL = [
   './',
   './index.html',
@@ -49,5 +50,5 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
   if (e.request.method !== 'GET') return;
-  e.respondWith(fetch(e.request, { cache: 'no-store' }));
+  e.respondWith(fetch(e.request, { cache: 'no-cache' }));
 });

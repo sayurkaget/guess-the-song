@@ -23,9 +23,13 @@ test('configured events allow only activity fields and exclude query/hash',()=>{
   const {c,scripts,events}=setup('G-TEST123');
   assert.equal(scripts.length,1);
   c.window.PlayerAnalytics.event('daily_complete',{mode:'daily',won:true,attempts:2,email:'secret',title:'secret'});
+  c.window.PlayerAnalytics.event('duel_start',{mode:'duel'});
+  c.window.PlayerAnalytics.event('artist_free_start',{mode:'artist'});
   c.window.PlayerAnalytics.event('arbitrary_name',{email:'secret'});
-  const entries=events();assert.equal(entries.length,3);
+  const entries=events();assert.equal(entries.length,5);
   assert.equal(entries[1][2].page_location,'https://namethetrack.netlify.app/');
   assert.equal(JSON.stringify(entries[2]),JSON.stringify(['event','daily_complete',{game_mode:'daily',result:'won',attempts:2}]));
+  assert.equal(JSON.stringify(entries[3]),JSON.stringify(['event','duel_start',{game_mode:'duel'}]));
+  assert.equal(JSON.stringify(entries[4]),JSON.stringify(['event','artist_free_start',{game_mode:'artist'}]));
   assert.ok(!JSON.stringify(entries).includes('secret'));
 });

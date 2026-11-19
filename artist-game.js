@@ -31,6 +31,7 @@
     BE: 'Belgium',
     ES: 'Spain',
     KR: 'South Korea',
+    JP: 'Japan',
     IS: 'Iceland',
     TT: 'Trinidad'
   };
@@ -170,7 +171,7 @@
     ['Daddy Yankee', 2004, 'Solo', 1, 'Male', 'Hip-hop', 'PR', 'Latin America', 128],
     ['Kygo', 2014, 'Solo', 1, 'Male', 'Electronic', 'NO', 'Europe', 129],
     ['Marshmello', 2015, 'Solo', 1, 'Male', 'Electronic', 'US', 'North America', 130],
-    ['Joji', 2017, 'Solo', 1, 'Male', 'R&B', 'AU', 'Oceania', 131],
+    ['Joji', 2017, 'Solo', 1, 'Male', 'R&B', 'JP', 'Asia', 131],
     ['The Rolling Stones', 1963, 'Group', 4, 'Male', 'Rock', 'UK', 'Europe', 132],
     ['Justin Timberlake', 2002, 'Solo', 1, 'Male', 'Pop', 'US', 'North America', 133],
     ['Elton John', 1969, 'Solo', 1, 'Male', 'Pop', 'UK', 'Europe', 134],
@@ -215,7 +216,7 @@
     ['Wham!', 1982, 'Duo', 2, 'Male', 'Pop', 'UK', 'Europe', 173],
     ['Ava Max', 2018, 'Solo', 1, 'Female', 'Pop', 'US', 'North America', 174],
     ['Lynyrd Skynyrd', 1973, 'Group', 6, 'Male', 'Rock', 'US', 'North America', 175],
-    ['The Lumineers', 2012, 'Group', 2, 'Male', 'Indie', 'US', 'North America', 176],
+    ['The Lumineers', 2012, 'Duo', 2, 'Male', 'Indie', 'US', 'North America', 176],
     ['Pink Floyd', 1967, 'Group', 4, 'Male', 'Rock', 'UK', 'Europe', 177],
     ['Ruth B.', 2015, 'Solo', 1, 'Female', 'Pop', 'CA', 'North America', 178],
     ['MGMT', 2007, 'Duo', 2, 'Male', 'Indie', 'US', 'North America', 179],

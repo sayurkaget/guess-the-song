@@ -29,6 +29,9 @@ test('ArtistDetective buildRoster resolves all 250 iconic artists against songs.
     assert.ok(a.art && a.art.startsWith('http'), 'missing cover art for ' + a.name);
     assert.ok(a.topSong && a.topSong.trackId > 0, 'missing topSong trackId for ' + a.name);
     assert.ok(a.hintSong && a.hintSong.trackId > 0, 'missing hintSong trackId for ' + a.name);
+    if (a.type === 'Solo') assert.equal(a.members, 1, 'Solo must have 1 member: ' + a.name);
+    else if (a.type === 'Duo') assert.equal(a.members, 2, 'Duo must have 2 members: ' + a.name);
+    else assert.ok(a.members >= 3, 'Group must have >= 3 members: ' + a.name);
     const chUrl = ArtistDetective.createChallenge('https://namethetrack.pages.dev/', { id: a.id, tries: 3, won: true });
     assert.ok(chUrl && !codes.has(chUrl), 'duplicate challenge URL for ' + a.name);
     codes.add(chUrl);

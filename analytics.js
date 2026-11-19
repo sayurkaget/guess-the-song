@@ -3,13 +3,17 @@
   'use strict';
   const id = document.querySelector('meta[name="ga-measurement-id"]')?.content.trim() || '';
   const enabled = /^G-[A-Z0-9]+$/.test(id) && location.hostname === 'namethetrack.netlify.app';
-  const events = new Set(['game_start', 'custom_start', 'daily_complete', 'challenge_copy', 'result_copy']);
+  const events = new Set([
+    'game_start', 'custom_start', 'daily_complete', 'challenge_copy', 'result_copy',
+    'duel_start', 'duel_challenge_start', 'duel_copy',
+    'artist_free_start', 'artist_challenge_start', 'artist_copy'
+  ]);
   window.PlayerAnalytics = {
     event(name, data = {}) {
       if (!enabled || !events.has(name)) return;
       // Explicit fields only: no guesses, search text, email or feedback content.
       const params = {};
-      if (['daily', 'challenge', 'custom', 'regular'].includes(data.mode)) params.game_mode = data.mode;
+      if (['daily', 'challenge', 'custom', 'regular', 'duel', 'artist'].includes(data.mode)) params.game_mode = data.mode;
       if (typeof data.won === 'boolean') params.result = data.won ? 'won' : 'lost';
       if (Number.isInteger(data.attempts) && data.attempts >= 1 && data.attempts <= 5) params.attempts = data.attempts;
       window.gtag('event', name, params);

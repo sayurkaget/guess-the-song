@@ -57,7 +57,7 @@ function setupGame(options = {}) {
     return nodes.get(sel);
   };
   // Pre-seed tab nodes on #statsTabs
-  const tabNodes = ['filter', 'overall', 'daily', 'duel'].map((t) => {
+  const tabNodes = ['filter', 'overall', 'daily', 'duel', 'artist'].map((t) => {
     const b = makeNode(t);
     b.dataset.tab = t;
     return b;
@@ -549,9 +549,12 @@ test('Artist Detective lobby card, arena DOM, and #artist= challenge intro work 
 
   assert.match(html, /class="arcade-row"[\s\S]*id="openDuel"[\s\S]*id="openArtistGame"/);
   assert.match(html, /id="artistGame"[\s\S]*id="agQ"[\s\S]*id="agGiveUp"[\s\S]*id="agResultBanner"[\s\S]*id="agBoard"/);
+  assert.match(html, /data-tab="artist"/);
+  assert.match(html, /About the game[\s\S]*Artist Detective/);
   assert.doesNotMatch(html, /id="agTabs"|id="agAudioHint"/);
   assert.match(html, /src="artist-game\.js"/);
   assert.match(sw, /'\.\/artist-game\.js'/);
+  assert.match(sw, /cache:\s*'no-cache'/);
   assert.doesNotMatch(sw, /c\.put|caches\.match/);
   assert.match(css, /#lobby \.arcade-row/);
   assert.match(css, /\.challenge-kicker\[data-mode="artist"\]/);
@@ -559,14 +562,26 @@ test('Artist Detective lobby card, arena DOM, and #artist= challenge intro work 
   assert.match(appCode, /playArtistTrack\(ag\.target\.topSong,\s*'hit',\s*true\)/);
   assert.match(appCode, /ag\.pausedAt\s*=\s*agAudio\.currentTime/);
   assert.match(appCode, /summaryPos\.set\(prevKey,\s*summaryAudio\.currentTime\)/);
+  assert.match(appCode, /if \(inArtist\(\)\)/);
+  assert.match(appCode, /\$\('#agDD'\)\.addEventListener\('mousedown'/);
 
   const storage = new Map([
-    ['tl:artist:stats', JSON.stringify({ won: 6, current: 2, best: 4 })]
+    ['tl:artist:stats', JSON.stringify({ played: 8, won: 6, current: 2, best: 4, dist: [1, 2, 1, 1, 1, 0, 0, 0, 0, 0, 2] })]
   ]);
   const harness = setupGame({ storage });
   harness.ctx.window.ArtistDetective = require('../artist-game.js');
   harness.t.UI.refreshLobby();
   assert.equal(harness.nodes.get('#artistLobbySub').textContent, '6 clues · Best streak 4');
+
+  harness.t.UI.stats('artist');
+  assert.equal(harness.tabNodes[4].getAttribute('aria-pressed'), 'true');
+  assert.match(harness.nodes.get('#statScope').textContent, /Artist Detective · Top 250 roster/);
+  assert.match(harness.nodes.get('#statgrid').innerHTML, /<b>8<\/b><small>played<\/small>/);
+  assert.match(harness.nodes.get('#statgrid').innerHTML, /<b>6<\/b><small>solved<\/small>/);
+  assert.match(harness.nodes.get('#statgrid').innerHTML, /<b>2<\/b><small>streak<\/small>/);
+  assert.match(harness.nodes.get('#statgrid').innerHTML, /<b>4<\/b><small>best<\/small>/);
+  assert.match(harness.nodes.get('#dist').innerHTML, /1–2[\s\S]*3[\s\S]*Miss[\s\S]*2/);
+  assert.equal(harness.nodes.get('#reset').hidden, true);
 
   harness.ctx.location.hash = '#artist=1.the-weeknd.3';
   assert.equal(harness.t.showIncomingChallenge(), true);

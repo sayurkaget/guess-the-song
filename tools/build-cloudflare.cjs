@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
-const output = path.join(root, 'dist');
+const output = process.env.OUT_DIR ? path.resolve(process.env.OUT_DIR) : path.join(root, 'dist');
 const site = new URL(process.env.SITE_URL || 'https://tuneup.pages.dev');
 if (site.protocol !== 'https:' || site.pathname !== '/' || site.search || site.hash) {
   throw new Error('SITE_URL must be an HTTPS site origin');
@@ -24,7 +24,7 @@ for (const file of files) {
       .replace('action="/feedback-received.html" data-netlify="true"', 'action="/api/feedback" data-feedback-api="true"');
     if (file === 'analytics.js') contents = contents
       .replace("location.hostname === 'namethetrack.netlify.app'", 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v54-online-only'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v55-audit-fixes'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }

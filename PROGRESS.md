@@ -130,3 +130,17 @@
   - Converted `sw.js` and `index.html` to **100% Online-Only** (`gts-v74-online-only` / `gts-cf-v54-online-only`): purges all `CacheStorage` entries on load/activate and fetches directly with `{ cache: 'no-store' }` without offline cache fallback.
   - Verified with `node --test tests\*.test.cjs` (`127/127` pass) and Playwright Desktop (`1180x800`) + Mobile (`390x844`) E2E on `dist/`.
   - Claimed Cloudflare Pages project **`tuneup`**, deployed `dist/` live to **`https://tuneup.pages.dev/`** (with `FEEDBACK_DB` D1 binding `38221d51-138d-4acb-b3cd-58f1aad4d597`), and deleted old project `namethetrack` per user request.
+
+## Wave 31 — Post-Migration Audit Fixes (Build Isolation, `no-cache` ETag, Artist Stats Tab, Analytics & UX Polish) (2026-11-19)
+- **Production `dist/` Isolation (`tools/build-cloudflare.cjs`, `tests/cloudflare.test.cjs`)**:
+  - Added `OUT_DIR` env override in `tools/build-cloudflare.cjs` and updated `tests/cloudflare.test.cjs` to build into a temporary OS directory with `https://tuneup.pages.dev` so running tests can never clobber production `dist/` with stale `namethetrack.pages.dev` URLs in `robots.txt`, `sitemap.xml`, `index.html`, and `analytics.js`.
+- **Bandwidth-Friendly Online-Only SW (`sw.js`)**:
+  - Switched `fetch(e.request, { cache: 'no-cache' })` (`gts-v75-audit-fixes` / `gts-cf-v55-audit-fixes`): keeps 100% online-only behavior (`CacheStorage` stays empty) while allowing Cloudflare ETag `304 Not Modified` validation so `songs.js` (`6.2 MB`) is not re-downloaded from scratch on every reload.
+- **Artist Detective Data, Dropdown, Audio & Keyboard Polish (`artist-game.js`, `app.js`)**:
+  - Fixed `The Lumineers` (`Group` -> `Duo`, 2 members) and `Joji` (`AU` -> `JP`, added `JP: 'Japan'` to `COUNTRY_NAMES`), enforced via unit test in `tests/artist-game.test.cjs`.
+  - Replaced fragile `#agQ` `140ms` blur timeout with `mousedown` `preventDefault()`, touch-scroll vs tap detection (`< 12px` / `< 450ms`), and outside `pointerdown` dismissal on `#agDD`.
+  - Paused `agAudio` and `summaryAudio` on `visibilitychange` when tab is hidden, and added `Space` (toggle Play/Stop Hit) & `Enter` (Next artist) shortcuts after solving/revealing in `#artistGame`.
+- **Stats `Artist` Tab, GA4 Events & SEO/Copy (`index.html`, `layout.css`, `app.js`, `analytics.js`, `app.webmanifest`)**:
+  - Added 5th `Artist` tab (`data-tab="artist"`) in `#statsModal` showing `played`, `solved`, `streak`, `best`, and 6-row `Guesses to solve` (`1–2`..`Miss`) breakdown (`tl:artist:stats` backwards-compatible).
+  - Whitelisted `duel_*` and `artist_*` events + `duel`/`artist` modes in `analytics.js`.
+  - Updated meta/OG/Twitter/JSON-LD descriptions, `app.webmanifest`, *About the game*, and FAQ to include **Artist Detective**.

@@ -1171,9 +1171,13 @@
   function artistStats() {
     const saved = LS.get('tl:artist:stats', {});
     const won = Math.max(0, Number(saved.won) || 0);
+    const played = Math.max(won, Number(saved.played) || 0);
     const best = Math.max(0, Number(saved.best) || 0);
     const current = Math.max(0, Number(saved.current) || 0);
-    return { won, best, current };
+    const rawDist = Array.isArray(saved.dist) && saved.dist.length === 11
+      ? saved.dist.map((n) => Math.max(0, Number(n) || 0))
+      : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    return { played, won, best, current, dist: rawDist };
   }
 
   const dailyKey = (day) => 'tl:daily:v2:' + day;
@@ -2169,7 +2173,7 @@
     },
 
     stats(tab = statsTab) {
-      statsTab = (tab === 'overall' || tab === 'daily' || tab === 'duel') ? tab : 'filter';
+      statsTab = (tab === 'overall' || tab === 'daily' || tab === 'duel' || tab === 'artist') ? tab : 'filter';
       const tabs = $('#statsTabs');
       if (tabs && typeof tabs.querySelectorAll === 'function') {
         tabs.querySelectorAll('[data-tab]').forEach((b) => {
@@ -2211,6 +2215,28 @@
           '<div class="row"><span class="n wide duel">' + r.label + '</span>' +
           '<div class="bar' + (r.val && r.val === peak ? ' hot' : '') + '" style="width:' +
           Math.max(8, r.val / top * 100) + '%">' + r.val + '</div></div>').join('');
+        if (rt) rt.hidden = true;
+      } else if (statsTab === 'artist') {
+        const d = artistStats();
+        $('#statScope').textContent = 'Artist Detective · Top 250 roster';
+        $('#statgrid').innerHTML =
+          cell(d.played, 'played') + cell(d.won, 'solved') +
+          cell(d.current, 'streak') + cell(d.best, 'best');
+        if (dh) dh.textContent = 'Guesses to solve';
+        const buckets = [
+          { label: '1–2', val: d.dist[0] + d.dist[1] },
+          { label: '3–4', val: d.dist[2] + d.dist[3] },
+          { label: '5–6', val: d.dist[4] + d.dist[5] },
+          { label: '7–8', val: d.dist[6] + d.dist[7] },
+          { label: '9–10', val: d.dist[8] + d.dist[9] },
+          { label: 'Miss', val: d.dist[10] }
+        ];
+        const peak = Math.max.apply(null, buckets.map((b) => b.val));
+        const top = Math.max(peak, 1);
+        $('#dist').innerHTML = buckets.map((b) =>
+          '<div class="row"><span class="n wide">' + b.label + '</span>' +
+          '<div class="bar' + (b.val && b.val === peak ? ' hot' : '') + '" style="width:' +
+          Math.max(8, b.val / top * 100) + '%">' + b.val + '</div></div>').join('');
         if (rt) rt.hidden = true;
       } else {
         const overall = statsTab === 'overall';
@@ -2571,12 +2597,21 @@
 
   const inGame = () => !$('#game').hidden;
   const inDuel = () => $('#duel') && !$('#duel').hidden;
+  const inArtist = () => $('#artistGame') && !$('#artistGame').hidden;
   document.addEventListener('keydown', (e) => {
-    const typing = e.target === UI.q;
+    const typing = e.target === UI.q || e.target === $('#agQ');
     if (e.key === 'Escape') { dismissModal(); return; }
     // Dialogs and focused controls keep their native keyboard behavior.
     if (document.querySelector('.modal:not([hidden])') || !$('#challengeIntro').hidden) return;
     if (!typing && e.target.closest('button, input, select, textarea, a')) return;
+    if (inArtist()) {
+      const doneBanner = $('#agResultBanner') && !$('#agResultBanner').hidden;
+      if (!typing && doneBanner) {
+        if (e.code === 'Space' && $('#agPlaySongBtn')) { e.preventDefault(); $('#agPlaySongBtn').click(); }
+        else if (e.key === 'Enter' && $('#agNextBtn')) { e.preventDefault(); $('#agNextBtn').click(); }
+      }
+      return;
+    }
     if (inDuel()) {
       if (e.key === 'ArrowUp' && !$('#duelLater').disabled) { e.preventDefault(); $('#duelLater').click(); }
       else if (e.key === 'ArrowDown' && !$('#duelEarlier').disabled) { e.preventDefault(); $('#duelEarlier').click(); }
@@ -2644,8 +2679,8 @@
     return copied;
   }
 
-  async function salin(txt, eventName) {
-    const mode = gameMode();
+  async function salin(txt, eventName, modeOverride) {
+    const mode = modeOverride || gameMode();
     let copied = false;
     try {
       await navigator.clipboard.writeText(txt);
@@ -2675,7 +2710,12 @@
     clearTimeout(bufferTimer);
     if (playing) { UI.playState('playing'); UI.status(''); }
   });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && (playing || playPending)) stopAudio(); });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) return;
+    if (playing || playPending) stopAudio();
+    if (stopArtistAudio) stopArtistAudio();
+    stopSummaryPreview();
+  });
 
   /* ================= mulai ================= */
 
@@ -3099,7 +3139,7 @@
       document.body.dataset.diff = 'duel';
       $('#duel').hidden = false;
       renderDuelPair();
-      trackActivity(incoming ? 'duel_challenge_start' : 'duel_start');
+      trackActivity(incoming ? 'duel_challenge_start' : 'duel_start', { mode: 'duel' });
       return true;
     }
 
@@ -3146,7 +3186,7 @@
         : '';
       salin(Duel.shareText({
         score: ds.score, best: ds.best, history: ds.history, url: siteUrl(), kind: ds.kind, challengeUrl
-      }), 'duel_copy');
+      }), 'duel_copy', 'duel');
     };
     $('#duelMenu').onclick = () => { closeAll(); UI.lobby(); $('#openDuel').focus(); };
   })();
@@ -3305,14 +3345,19 @@
       }
     }
 
-    function recordArtistOutcome(won) {
+    function recordArtistOutcome(won, tries = 0) {
       const prev = artistStats();
       const current = won ? prev.current + 1 : 0;
       const best = Math.max(prev.best, current);
+      const dist = prev.dist.slice();
+      if (won && tries >= 1 && tries <= AD.MAX_TRIES) dist[tries - 1]++;
+      else dist[AD.MAX_TRIES]++;
       LS.set('tl:artist:stats', {
+        played: prev.played + 1,
         won: prev.won + (won ? 1 : 0),
         current,
-        best
+        best,
+        dist
       });
     }
 
@@ -3483,7 +3528,7 @@
       if (artist.id === ag.target.id) {
         ag.done = true;
         ag.won = true;
-        recordArtistOutcome(true);
+        recordArtistOutcome(true, ag.guesses.length);
         renderAgBoard();
         if (ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit', true);
         return;
@@ -3491,7 +3536,7 @@
       if (ag.guesses.length >= AD.MAX_TRIES) {
         ag.done = true;
         ag.won = false;
-        recordArtistOutcome(false);
+        recordArtistOutcome(false, ag.guesses.length);
         renderAgBoard();
         if (ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit', true);
         return;
@@ -3504,7 +3549,7 @@
       ag.done = true;
       ag.won = false;
       closeAgDD();
-      recordArtistOutcome(false);
+      recordArtistOutcome(false, ag.guesses.length);
       renderAgBoard();
       if (ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit', true);
     }
@@ -3563,7 +3608,7 @@
       document.body.dataset.diff = 'artist';
       $('#artistGame').hidden = false;
       renderAgBoard();
-      trackActivity(incoming ? 'artist_challenge_start' : 'artist_free_start');
+      trackActivity(incoming ? 'artist_challenge_start' : 'artist_free_start', { mode: 'artist' });
       if (!ag.done) setTimeout(() => $('#agQ').focus(), 40);
       return true;
     }
@@ -3595,19 +3640,45 @@
         }
       }
     });
-    $('#agQ').addEventListener('blur', () => setTimeout(() => closeAgDD(), 140));
+    let agTouchStart = null, agLastTouch = 0;
+    $('#agDD').addEventListener('mousedown', (e) => e.preventDefault());
+    $('#agDD').addEventListener('touchstart', (e) => {
+      const t = e.touches && e.touches[0];
+      if (t) agTouchStart = { x: t.clientX, y: t.clientY, ms: Date.now() };
+    }, { passive: true });
+    $('#agDD').addEventListener('touchend', (e) => {
+      if (!agTouchStart) return;
+      const t = e.changedTouches && e.changedTouches[0];
+      const moved = t ? (Math.abs(t.clientX - agTouchStart.x) + Math.abs(t.clientY - agTouchStart.y)) : 999;
+      const dur = Date.now() - agTouchStart.ms;
+      agTouchStart = null;
+      if (moved < 12 && dur < 450) {
+        const b = e.target.closest('.dd-item');
+        if (b && !b.disabled) {
+          agLastTouch = Date.now();
+          e.preventDefault();
+          const idx = Number(b.dataset.idx);
+          if (ag.matches[idx]) submitArtistGuess(ag.matches[idx]);
+        }
+      }
+    });
+    $('#agDD').addEventListener('click', (e) => {
+      if (Date.now() - agLastTouch < 500) return;
+      const b = e.target.closest('.dd-item');
+      if (!b || b.disabled) return;
+      const idx = Number(b.dataset.idx);
+      if (ag.matches[idx]) submitArtistGuess(ag.matches[idx]);
+    });
+    document.addEventListener('pointerdown', (e) => {
+      if ($('#agDD').hidden) return;
+      if (!e.target.closest('.spotle-search')) closeAgDD();
+    });
     $('#agClear').onclick = () => {
       $('#agQ').value = '';
       $('#agClear').hidden = true;
       closeAgDD();
       $('#agQ').focus();
     };
-    $('#agDD').addEventListener('click', (e) => {
-      const b = e.target.closest('.dd-item');
-      if (!b || b.disabled) return;
-      const idx = Number(b.dataset.idx);
-      if (ag.matches[idx]) submitArtistGuess(ag.matches[idx]);
-    });
     $('#agGiveUp').onclick = () => giveUpArtist();
     $('#agPlaySongBtn').onclick = () => {
       if (ag.target && ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit');
@@ -3626,7 +3697,7 @@
         won: ag.won,
         url: siteUrl(),
         challengeUrl
-      }), 'artist_copy');
+      }), 'artist_copy', 'artist');
     };
     $('#agNextBtn').onclick = () => startArtistGame();
   })();
