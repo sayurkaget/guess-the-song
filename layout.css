@@ -1151,10 +1151,16 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 .sp-tile.close small{color:#fde68a}
 .sp-tile.close b{color:#ffd06b}
 
+.run-foot-links{
+  display:flex;align-items:center;justify-content:center;gap:1.15rem;flex-wrap:wrap;
+}
+.spotle-result-art{cursor:pointer;transition:transform .18s ease,box-shadow .22s ease}
+.spotle-result-art:hover{transform:scale(1.04)}
+.spotle-result-art[data-playing="1"]{box-shadow:0 0 0 3px rgba(155,123,245,.55),0 0 22px rgba(155,123,245,.5)}
+
 @media(max-width:680px){
   #lobby .arcade-row{grid-template-columns:minmax(0,1fr);gap:.75rem}
   .spotle-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}
   .spotle-result-banner{flex-direction:column;align-items:stretch}
   .spotle-result-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
-  .spotle-result-actions #agNextBtn{grid-column:1 / -1}
 }

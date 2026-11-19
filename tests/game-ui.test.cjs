@@ -591,3 +591,51 @@ test('Artist Detective lobby card, arena DOM, and #artist= challenge intro work 
   assert.equal(harness.nodes.get('#challengeTitle').textContent, 'Mystery artist challenge');
   assert.match(harness.nodes.get('#challengeMessage').textContent, /solved this Mystery Artist in 3 tries/);
 });
+
+
+test('Wave 35: #agPlaySongBtn removed, Auto-Play on Skip + SFX, TuneUpCard score card, and deep-link routing work cleanly', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const appCode = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  const swCode = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  const TuneUpCard = require('../score-card.js');
+
+  assert.doesNotMatch(html, /id="agPlaySongBtn"/);
+  assert.match(html, /id="saveRunCard"/);
+  assert.match(html, /id="saveDuelCard"/);
+  assert.match(html, /src="score-card\.js"/);
+  assert.match(swCode, /'\.\/score-card\.js'/);
+  assert.match(appCode, /function playSfx\(kind\)/);
+  assert.match(appCode, /function applyDeepLink\(\)/);
+  assert.match(appCode, /if \(!playing && !playPending && S\.meta && S\.meta\.preview && typeof audio\.play === 'function'\)[\s\S]*playClip\(\)/);
+
+  const runModel = TuneUpCard.buildCardData({
+    kind: 'run',
+    mode: 'regular',
+    stages: [
+      { done: true, won: true, guesses: [{ t: 'right', title: 'Secret Song' }] },
+      { done: true, won: false, guesses: [{ t: 'skip' }, { t: 'wrong' }, { t: 'near' }, { t: 'wrong' }, { t: 'skip' }] }
+    ],
+    ladder: [0.1, 0.5, 2, 8, 15],
+    subtitle: 'Pop · 2010s',
+    url: 'https://tuneup.pages.dev/'
+  });
+  assert.equal(runModel.kicker, 'CLASSIC RUN');
+  assert.equal(runModel.scoreMain, '1');
+  assert.equal(runModel.scoreSub, '/ 5');
+  assert.equal(runModel.rows[0].result, '0.1s');
+  assert.equal(runModel.rows[1].result, 'Missed');
+  assert.ok(!JSON.stringify(runModel).includes('Secret Song'));
+
+  const duelModel = TuneUpCard.buildCardData({
+    kind: 'duel',
+    deck: 'streams',
+    score: 7,
+    best: 9,
+    history: [{ won: true }, { won: true }, { won: false }],
+    url: 'https://tuneup.pages.dev/'
+  });
+  assert.equal(duelModel.kicker, 'MUSIC DUEL · SPOTIFY STREAMS');
+  assert.equal(duelModel.scoreMain, '7');
+  assert.deepEqual(duelModel.history, [true, true, false]);
+  assert.equal(duelModel.host, 'tuneup.pages.dev');
+});

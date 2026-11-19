@@ -235,6 +235,39 @@
     try { window.PlayerAnalytics?.event(name, { mode: gameMode(), ...details }); } catch (e) {}
   }
 
+  let sfxCtx = null;
+  function playSfx(kind) {
+    if (S.muted || !(S.vol > 0)) return;
+    const Ctx = (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)) || null;
+    if (!Ctx) return;
+    try {
+      if (!sfxCtx) sfxCtx = new Ctx();
+      if (sfxCtx.state === 'suspended') sfxCtx.resume().catch(() => {});
+      const now = sfxCtx.currentTime;
+      const gainScale = Math.min(0.08, Math.max(0.015, 0.065 * S.vol));
+      const notes = kind === 'fanfare'
+        ? [[523.25, 0, 0.13, 'triangle'], [659.25, 0.075, 0.14, 'triangle'], [783.99, 0.15, 0.16, 'triangle'], [1046.5, 0.23, 0.28, 'sine']]
+        : kind === 'win'
+        ? [[523.25, 0, 0.11, 'sine'], [659.25, 0.065, 0.13, 'sine'], [783.99, 0.13, 0.20, 'sine']]
+        : kind === 'near'
+        ? [[440, 0, 0.11, 'sine'], [554.37, 0.07, 0.14, 'sine']]
+        : [[293.66, 0, 0.09, 'triangle'], [220, 0.065, 0.15, 'triangle']];
+      for (const [freq, delay, dur, type] of notes) {
+        const osc = sfxCtx.createOscillator();
+        const g = sfxCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now + delay);
+        g.gain.setValueAtTime(0.0001, now + delay);
+        g.gain.linearRampToValueAtTime(gainScale, now + delay + 0.014);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + delay + dur);
+        osc.connect(g);
+        g.connect(sfxCtx.destination);
+        osc.start(now + delay);
+        osc.stop(now + delay + dur + 0.02);
+      }
+    } catch (e) {}
+  }
+
   /* ================= katalog & pencarian ================= */
 
   const ALL = (window.SONGS || []).filter((s) =>
@@ -684,6 +717,7 @@
     if (right) return finish(true);
     if (S.guesses.length >= TRIES) return finish(false);
     stopAudio();
+    playSfx(near ? 'near' : 'wrong');
     saveRun(); UI.render();
     UI.status(near ? 'Right artist, wrong song. ' + fmt(limit()) + ' unlocked.'
                    : 'Not it. ' + fmt(limit()) + ' unlocked now.');
@@ -697,10 +731,11 @@
     saveRun(); UI.render();
     UI.status('Skipped. ' + fmt(limit()) + ' unlocked now.');
     UI.clearInput();
-    // Tidak dihentikan, tapi juga TIDAK diputar otomatis. Kalau klip masih
-    // berputar saat di-skip, batas dinamis memperpanjangnya mulus tanpa
-    // memotong; kalau sudah berhenti, biarkan diam sampai pemain menekan
-    // play sendiri (yang lalu menyambung dari titik terakhir yang terdengar).
+    // Kalau klip masih berputar, curBatas() langsung memanjangkannya mulus;
+    // kalau sudah berhenti, otomatis putar sambungan klip baru tanpa klik ulang.
+    if (!playing && !playPending && S.meta && S.meta.preview && typeof audio.play === 'function') {
+      playClip();
+    }
   }
 
   function finish(won) {
@@ -708,6 +743,7 @@
     stopAudio();
     // Gagal tidak menghentikan sesi -- tahap berikutnya tetap jalan.
     if (S.stage === stageCount() - 1) S.runDone = true;
+    playSfx(won ? ((S.daily || (S.runDone && score() + 1 >= stageCount())) ? 'fanfare' : 'win') : 'wrong');
     saveRun();
     lastStreak = updateSongStreak(won);
     if (S.daily) trackActivity('daily_complete', { won, attempts: S.guesses.length });
@@ -1491,8 +1527,8 @@
     return { current, best, isNewBest: won && current > prev.best && current >= 2 };
   }
 
-  let stopDuel = null, stopDuelAudio = null, syncDuelVolume = null, duelEnded = () => false, launchDuelChallenge = null;
-  let stopArtistGame = null, stopArtistAudio = null, syncArtistVolume = null, launchArtistChallenge = null;
+  let stopDuel = null, stopDuelAudio = null, syncDuelVolume = null, duelEnded = () => false, launchDuelChallenge = null, launchDuelMode = null;
+  let stopArtistGame = null, stopArtistAudio = null, syncArtistVolume = null, launchArtistChallenge = null, launchArtistMode = null;
 
   // Susun kipas sampul album (maks. 3 sampul unik) atau satu sampul + piringan vinyl
   function renderRunFan(el, arts) {
@@ -2649,7 +2685,7 @@
     if (inArtist()) {
       const doneBanner = $('#agResultBanner') && !$('#agResultBanner').hidden;
       if (!typing && doneBanner) {
-        if (e.code === 'Space' && $('#agPlaySongBtn')) { e.preventDefault(); $('#agPlaySongBtn').click(); }
+        if (e.code === 'Space' && $('#agResultArt')) { e.preventDefault(); $('#agResultArt').click(); }
         else if (e.key === 'Enter' && $('#agNextBtn')) { e.preventDefault(); $('#agNextBtn').click(); }
       }
       return;
@@ -2736,6 +2772,30 @@
   }
 
   $('#share').onclick = () => salin(shareText(), 'result_copy');
+  if ($('#saveRunCard')) {
+    $('#saveRunCard').onclick = async () => {
+      if (!window.TuneUpCard) return;
+      try {
+        const sub = S.custom ? S.custom.label
+          : [S.genre === 'all' ? null : GENRES[S.genre], S.era === 'all' ? null : ERAS[S.era].label].filter(Boolean).join(' · ') || 'All songs';
+        const outcome = await window.TuneUpCard.shareOrSave({
+          kind: 'run',
+          mode: S.daily ? 'daily' : S.custom ? 'custom' : 'regular',
+          stages: S.stages,
+          ladder: ladder(),
+          day: S.daily ? S.daily.day : '',
+          streak: S.daily ? dailyStats().current : songStreak().current,
+          subtitle: sub,
+          verdict: $('#runVerdict') ? $('#runVerdict').textContent : '',
+          url: siteUrl()
+        });
+        if (outcome === 'downloaded') toast('Score card saved!');
+        else if (outcome === 'shared') toast('Score card shared!');
+      } catch (e) {
+        toast('Could not save score card.');
+      }
+    };
+  }
 
   audio.addEventListener('ended', stopAudio);
   audio.addEventListener('error', () => {
@@ -3081,6 +3141,7 @@
       ds.history.push({ a: ds.a, b: ds.b, pick: choice, won: res.won });
 
       if (res.won) {
+        playSfx('win');
         ds.score++;
         if (ds.score > ds.best) {
           ds.best = ds.score;
@@ -3096,6 +3157,7 @@
           : 'Correct! Released in ' + ds.b.year + '.';
         $('#duelStatus').className = 'status duel-status';
       } else {
+        playSfx('wrong');
         $('#duelStatus').textContent = ds.kind === 'streams'
           ? 'Missed — ' + mB.sub + '.'
           : 'Missed — released in ' + ds.b.year + '.';
@@ -3186,6 +3248,7 @@
     }
 
     launchDuelChallenge = (incoming) => startDuel(incoming && incoming.kind, incoming);
+    launchDuelMode = (deck) => startDuel(deck || ds.kind);
 
     $('#openDuel').onclick = () => startDuel(ds.kind);
     if ($('#duelTabs')) {
@@ -3230,6 +3293,26 @@
         score: ds.score, best: ds.best, history: ds.history, url: siteUrl(), kind: ds.kind, challengeUrl
       }), 'duel_copy', 'duel');
     };
+    if ($('#saveDuelCard')) {
+      $('#saveDuelCard').onclick = async () => {
+        if (!window.TuneUpCard) return;
+        try {
+          const outcome = await window.TuneUpCard.shareOrSave({
+            kind: 'duel',
+            deck: ds.kind,
+            score: ds.score,
+            best: ds.best,
+            verdict: $('#duelVerdict') ? $('#duelVerdict').textContent : '',
+            history: ds.history,
+            url: siteUrl()
+          });
+          if (outcome === 'downloaded') toast('Score card saved!');
+          else if (outcome === 'shared') toast('Score card shared!');
+        } catch (e) {
+          toast('Could not save score card.');
+        }
+      };
+    }
     $('#duelMenu').onclick = () => { closeAll(); UI.lobby(); $('#openDuel').focus(); };
   })();
 
@@ -3297,10 +3380,10 @@
     }
 
     function syncAudioBtns() {
-      const hitBtn = $('#agPlaySongBtn');
-      if (hitBtn) {
+      const art = $('#agResultArt');
+      if (art) {
         const playingHit = agAudioKind === 'hit' && agAudio && !agAudio.paused;
-        hitBtn.textContent = playingHit ? '\u23F9 Stop Hit' : '\u25B6 Play Hit';
+        art.dataset.playing = playingHit ? '1' : '0';
       }
     }
 
@@ -3346,7 +3429,6 @@
 
       const myEpoch = ++agAudioEpoch;
       agAudioKind = kind;
-      if (kind === 'hit' && !isAuto) $('#agPlaySongBtn').textContent = 'Loading…';
 
       try {
         let previewUrl = (ag.preloadedSlug === song.slug && ag.preloadedUrl) ? ag.preloadedUrl : '';
@@ -3570,6 +3652,7 @@
       if (artist.id === ag.target.id) {
         ag.done = true;
         ag.won = true;
+        playSfx('fanfare');
         recordArtistOutcome(true, ag.guesses.length);
         renderAgBoard();
         if (ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit', true);
@@ -3578,11 +3661,13 @@
       if (ag.guesses.length >= AD.MAX_TRIES) {
         ag.done = true;
         ag.won = false;
+        playSfx('wrong');
         recordArtistOutcome(false, ag.guesses.length);
         renderAgBoard();
         if (ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit', true);
         return;
       }
+      playSfx('near');
       renderAgBoard();
     }
 
@@ -3590,6 +3675,7 @@
       if (ag.done || !ag.target) return;
       ag.done = true;
       ag.won = false;
+      playSfx('wrong');
       closeAgDD();
       recordArtistOutcome(false, ag.guesses.length);
       renderAgBoard();
@@ -3656,6 +3742,7 @@
     }
 
     launchArtistChallenge = (incoming) => startArtistGame(incoming);
+    launchArtistMode = () => startArtistGame();
 
     $('#openArtistGame').onclick = () => startArtistGame();
     $('#artistGameBack').onclick = () => { closeAll(); UI.lobby(); };
@@ -3722,9 +3809,12 @@
       $('#agQ').focus();
     };
     $('#agGiveUp').onclick = () => giveUpArtist();
-    $('#agPlaySongBtn').onclick = () => {
-      if (ag.target && ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit');
-    };
+    if ($('#agResultArt')) {
+      $('#agResultArt').title = 'Tap to pause or resume hit';
+      $('#agResultArt').onclick = () => {
+        if (ag.done && ag.target && ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit');
+      };
+    }
     $('#agShareBtn').onclick = () => {
       if (!ag.target) return;
       const challengeUrl = AD.createChallenge(siteUrl(), {
@@ -3767,7 +3857,41 @@
   UI.render();
   UI.lobby();                 // selalu mulai dari layar pilih mode
 
+  function applyDeepLink() {
+    const hash = location.hash || '';
+    if (hash === '#daily') { startDaily(); return true; }
+    if (hash === '#duel' && launchDuelMode) { launchDuelMode(); return true; }
+    if (hash === '#artist' && launchArtistMode) { launchArtistMode(); return true; }
+
+    let params;
+    try { params = new URLSearchParams(location.search || ''); } catch (e) { return false; }
+    const genreAliases = { 'hip-hop': 'hiphop', electronic: 'edm', other: 'lain' };
+    const eraAliases = { '2000s': 'y00', '2010s': 'y10', '2020s': 'y20', classic: 'old', before2000: 'old' };
+    const rawG = (params.get('genre') || '').toLowerCase();
+    const rawE = (params.get('era') || '').toLowerCase();
+    const g = genreAliases[rawG] || rawG;
+    const e = eraAliases[rawE] || rawE;
+    let changed = false;
+    if (g && GENRES[g]) { S.genre = g; LS.set('tl:genre', g); changed = true; }
+    if (e && ERAS[e]) { S.era = e; LS.set('tl:era', e); changed = true; }
+    if (changed) {
+      switchRun();
+      UI.buildControls();
+      UI.refreshLobby();
+    }
+
+    const mode = (params.get('mode') || '').toLowerCase();
+    if (mode === 'daily') { startDaily(); return true; }
+    if (mode === 'duel' && launchDuelMode) {
+      const deck = (params.get('deck') || '').toLowerCase();
+      launchDuelMode(deck === 'year' || deck === 'streams' ? deck : undefined);
+      return true;
+    }
+    if (mode === 'artist' && launchArtistMode) { launchArtistMode(); return true; }
+    if (mode === 'classic' && $('#start') && !$('#start').disabled) { $('#start').click(); return true; }
+    return changed;
+  }
+
   setInterval(() => { if (!$('#lobby').hidden) refreshDaily(); }, 30000);
-  if (location.hash === '#daily') startDaily();
-  else showIncomingChallenge();
+  if (!showIncomingChallenge()) applyDeepLink();
 })();

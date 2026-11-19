@@ -173,3 +173,17 @@
     - **Large Centered Play Button + Side Readout (`.spot-play-wrap`)**: Clean `112px` (`84px` mobile) glowing circular `#play` button centered in the card with live monospace `#readout` (`0.1s`..`15s`, ticking live during playback) floating right beside it.
 - **Verification & Deploy**:
   - Updated `tests/game-ui.test.cjs`, bumped SW cache (`gts-v78-songspot-player` / `gts-cf-v58-songspot-player`), verified `127/127` automated tests and Playwright Desktop (`1180x780`) + Mobile (`390x844`) across `0.1s`, `8s` idle, and `8s` playing states, built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
+
+
+## Wave 35 — Auto-Play on Skip, Web Audio SFX, Wrapped Score Cards, Deep-Links & Artist Reveal Cleanup (2026-11-19)
+- **Artist Detective Reveal Cleanup (`index.html`, `layout.css`, `app.js`)**:
+  - Removed the `▶ Play Hit` button (`#agPlaySongBtn`) from `#agResultBanner` per user request, keeping only `Challenge your friend` and `Next artist` cleanly aligned (tapping the artist artwork `#agResultArt` or pressing `Space` still toggles pause/resume on the auto-playing Top Hit).
+- **Auto-Play on Skip + Subtle Web Audio SFX (`app.js`)**:
+  - Clicking `Skip` in `#game` now immediately auto-plays the newly unlocked clip window if audio is idle (while keeping seamless live extension when already playing).
+  - Added lightweight synthesized Web Audio SFX (`playSfx`: `win`, `near`, `wrong`, `fanfare`) across Song Arena, Music Duel, and Artist Detective, automatically respecting `S.muted` and `S.vol`.
+- **Wrapped-Style Score Card PNG (`score-card.js`, `index.html`, `layout.css`, `app.js`)**:
+  - Added `score-card.js` (`window.TuneUpCard`) generating spoiler-free `1080×1350` TuneUp score card PNGs for Classic, Daily, Custom Artist, and Music Duel runs via `Save score card` buttons (`#saveRunCard`, `#saveDuelCard`) with native mobile share sheet & desktop PNG download fallback.
+- **Shareable Deep-Link URLs (`app.js`)**:
+  - Added `applyDeepLink()` supporting `?mode=daily|duel|artist|classic`, `?deck=streams|year`, `?genre=...`, `?era=2000s|2010s|2020s|classic`, plus `#daily`, `#duel`, and `#artist` hashes.
+- **Verification & Deploy**:
+  - Added Wave 35 unit test (`128/128` passing), bumped SW cache (`gts-v79-sfx-card-deeplink` / `gts-cf-v59-sfx-card-deeplink`), verified Playwright screenshots & deep-links, built `dist/`, and deployed live to `https://tuneup.pages.dev/`.

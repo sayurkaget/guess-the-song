@@ -341,7 +341,6 @@
         </div>
       </div>
       <div class="spotle-result-actions">
-        <button class="btn ghostbtn" id="agPlaySongBtn" type="button">&#9654; Play Hit</button>
         <button class="btn ghostbtn" id="agShareBtn" type="button">Challenge your friend</button>
         <button class="btn solid" id="agNextBtn" type="button">Next artist</button>
       </div>
@@ -492,7 +491,10 @@
         <button class="btn solid" id="share" type="button">Challenge your friend</button>
         <button class="btn ghost" id="againRun">Play again</button>
       </div>
-      <button class="btn ghostbtn customlink" id="backToMenu" type="button">Back to menu</button>
+      <div class="run-foot-links">
+        <button class="btn ghostbtn customlink" id="saveRunCard" type="button">Save score card</button>
+        <button class="btn ghostbtn customlink" id="backToMenu" type="button">Back to menu</button>
+      </div>
     </div>
   </div>
 </div>
@@ -521,7 +523,10 @@
         <button class="btn solid" id="duelAgain" type="button">Play again</button>
         <button class="btn ghost" id="duelShare" type="button">Challenge your friend</button>
       </div>
-      <button class="btn ghostbtn customlink" id="duelMenu" type="button">Back to menu</button>
+      <div class="run-foot-links">
+        <button class="btn ghostbtn customlink" id="saveDuelCard" type="button">Save score card</button>
+        <button class="btn ghostbtn customlink" id="duelMenu" type="button">Back to menu</button>
+      </div>
     </div>
   </div>
 </div>
@@ -616,6 +621,7 @@
 <script src="duel-streams-v1.js"></script>
 <script src="duel.js"></script>
 <script src="artist-game.js"></script>
+<script src="score-card.js"></script>
 <script src="app.js"></script>
 <script src="site-guide.js"></script>
 <script>

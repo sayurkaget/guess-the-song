@@ -3,7 +3,7 @@
    ke server (no-cache / ETag) agar update langsung masuk dan file besar seperti
    songs.js tetap hemat kuota via 304 Not Modified saat belum berubah. */
 
-const CACHE = 'gts-v78-songspot-player';
+const CACHE = 'gts-v79-sfx-card-deeplink';
 const SHELL = [
   './',
   './index.html',
@@ -24,6 +24,7 @@ const SHELL = [
   './duel-streams-v1.js',
   './duel.js',
   './artist-game.js',
+  './score-card.js',
   './songs.js',
   './app.webmanifest',
   './icon-32.png',
