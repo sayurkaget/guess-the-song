@@ -237,36 +237,49 @@
   }
 
   let sfxCtx = null;
-  function playSfx(kind) {
-    if (S.muted || !(S.vol > 0)) return;
+  function unlockSfx() {
     const Ctx = (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)) || null;
-    if (!Ctx) return;
+    if (!Ctx) return null;
     try {
       if (!sfxCtx) sfxCtx = new Ctx();
       if (sfxCtx.state === 'suspended') sfxCtx.resume().catch(() => {});
-      const now = sfxCtx.currentTime;
-      const gainScale = Math.min(0.08, Math.max(0.015, 0.065 * S.vol));
-      const notes = kind === 'fanfare'
-        ? [[523.25, 0, 0.13, 'triangle'], [659.25, 0.075, 0.14, 'triangle'], [783.99, 0.15, 0.16, 'triangle'], [1046.5, 0.23, 0.28, 'sine']]
-        : kind === 'win'
-        ? [[523.25, 0, 0.11, 'sine'], [659.25, 0.065, 0.13, 'sine'], [783.99, 0.13, 0.20, 'sine']]
-        : kind === 'near'
-        ? [[440, 0, 0.11, 'sine'], [554.37, 0.07, 0.14, 'sine']]
-        : [[293.66, 0, 0.09, 'triangle'], [220, 0.065, 0.15, 'triangle']];
-      for (const [freq, delay, dur, type] of notes) {
-        const osc = sfxCtx.createOscillator();
-        const g = sfxCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, now + delay);
-        g.gain.setValueAtTime(0.0001, now + delay);
-        g.gain.linearRampToValueAtTime(gainScale, now + delay + 0.014);
-        g.gain.exponentialRampToValueAtTime(0.0001, now + delay + dur);
-        osc.connect(g);
-        g.connect(sfxCtx.destination);
-        osc.start(now + delay);
-        osc.stop(now + delay + dur + 0.02);
-      }
-    } catch (e) {}
+      return sfxCtx;
+    } catch (e) {
+      return null;
+    }
+  }
+  function playSfx(kind) {
+    if (S.muted || !(S.vol > 0)) return;
+    const ctx = unlockSfx();
+    if (!ctx) return;
+    const schedule = () => {
+      try {
+        const now = ctx.currentTime;
+        const gainScale = Math.min(0.20, Math.max(0.03, 0.16 * S.vol));
+        const notes = kind === 'fanfare'
+          ? [[523.25, 0, 0.14, 'triangle'], [659.25, 0.08, 0.15, 'triangle'], [783.99, 0.16, 0.18, 'triangle'], [1046.5, 0.24, 0.30, 'sine']]
+          : kind === 'win'
+          ? [[523.25, 0, 0.12, 'triangle'], [659.25, 0.07, 0.14, 'triangle'], [783.99, 0.14, 0.24, 'sine']]
+          : kind === 'near'
+          ? [[440, 0, 0.11, 'sine'], [554.37, 0.07, 0.14, 'sine']]
+          : [[293.66, 0, 0.09, 'triangle'], [220, 0.065, 0.15, 'triangle']];
+        for (const [freq, delay, dur, type] of notes) {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, now + delay);
+          g.gain.setValueAtTime(0.0001, now + delay);
+          g.gain.linearRampToValueAtTime(gainScale, now + delay + 0.014);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + delay + dur);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(now + delay);
+          osc.stop(now + delay + dur + 0.02);
+        }
+      } catch (e) {}
+    };
+    if (ctx.state === 'suspended') ctx.resume().then(schedule).catch(() => {});
+    else schedule();
   }
 
   /* ================= katalog & pencarian ================= */
@@ -545,9 +558,14 @@
 
     UI.playState('loading');
     UI.status('Loading audio…');
+    if (typeof unlockSfx === 'function') unlockSfx();
     try {
-      await seek(dari);
-      if (attempt !== playbackEpoch) return;
+      // Set currentTime & volume synchronously BEFORE audio.play() so we never
+      // lose the browser user-gesture token awaiting an async `seeked` event.
+      audio.volume = S.muted ? 0 : S.vol;
+      if (Math.abs(audio.currentTime - dari) >= 0.03) {
+        try { audio.currentTime = dari; } catch (e) {}
+      }
       await beginPlayback();
     } catch (e) {
       if (attempt !== playbackEpoch) return;
@@ -565,6 +583,7 @@
 
     const tick = () => {
       if (!playing) return;
+      if (audio.seeking) { raf = requestAnimationFrame(tick); return; }
       const batas = curBatas();
       const t = Math.max(0, audio.currentTime);
       S.heard = Math.max(S.heard, Math.min(t, batas));
@@ -576,8 +595,10 @@
       if (left <= 0) { stopAudio(); return; }
       // S.vol dibaca ulang tiap frame, bukan disimpan di awal: kalau disimpan,
       // geseran volume di tengah lagu akan ditimpa terus oleh nilai lama.
+      // Fade pakai max 25% durasi klip supaya klip 0.1s tetap terdengar penuh!
       const v = S.muted ? 0 : S.vol;
-      audio.volume = v * (left < 0.1 ? Math.max(0, left / 0.1) : 1);
+      const fade = Math.min(0.08, batas * 0.25);
+      audio.volume = v * (left < fade ? Math.max(0, left / fade) : 1);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);

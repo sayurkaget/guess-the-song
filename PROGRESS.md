@@ -280,3 +280,12 @@
     3. Paste **`Ctrl+A` → `Ctrl+C` track links directly** (even from a Private 110–500 song playlist!) → plays all tracks with direct Spotify MP3 previews & 640px/300px album covers.
 - **Verification & Deploy**:
   - Added batch track parser unit tests in `tests/spotify.test.cjs` (`132/132` passing), verified live E2E merging a 100-song Spotify playlist + 10 extra real Spotify track links (`110 songs`, `Song 1 of 110`, 0 errors), bumped SW cache (`gts-v88-spotify-multi-tracks` / `gts-cf-v68-spotify-multi-tracks`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
+
+
+## Wave 45 — Fix Play Button vs Skip Audio & Win Chime Playback Reliability (2026-11-20)
+- **Root Causes Fixed (`app.js`)**:
+  1. `playClip()` previously awaited an async `seek(dari)` event BEFORE calling `audio.play()`, which could break browser user-activation (`NotAllowedError` / silent reveal autoplay) when resetting `currentTime` to `0` after pressing Play. Now sets `audio.volume` and `audio.currentTime = dari` synchronously right before `beginPlayback()`, and guards `if (audio.seeking)` inside `tick()` so replaying a `0.1s` clip can never stop prematurely on frame 1.
+  2. The `0.1s` clip fade-out window (`left < 0.1`) previously attenuated 100% of the `0.1s` clip from millisecond 0; capped fade to `Math.min(0.08, batas * 0.25)` so `0.1s` plays cleanly at full volume.
+  3. Added `unlockSfx()` on `playClip()`, scheduled `playSfx()` notes after `ctx.resume()` when `suspended`, and raised win chime gain (`0.16 * S.vol`, max `0.20`) so victory chimes remain crisp alongside revealed song playback.
+- **Verification & Deploy**:
+  - Verified `132/132` automated unit tests and real Chromium Playwright playback across Play-only, Skip-only, replay `0.1s`, and Enter-key win flows, bumped SW cache (`gts-v89-audio-play-fix` / `gts-cf-v69-audio-play-fix`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
