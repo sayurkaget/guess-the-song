@@ -209,3 +209,12 @@
   - Integrated Spotify tracks into TuneUp's Custom run engine (`S.custom.kind === 'spotify'`): instant playback via direct Spotify MP3 previews (with automatic iTunes fallback if a track lacks a Spotify preview), local catalog artwork/year enrichment, uniform shuffle across the full playlist, preserved *Right artist, wrong song* hint for multi-artist playlists, Wrapped PNG score card support, and shareable `?spotify=<id>` deep-link challenges.
 - **Verification & Deploy**:
   - Added `tests/spotify.test.cjs` (`131/131` automated tests passing), verified full live E2E in Playwright Desktop & Mobile (`360×800`), bumped SW cache (`gts-v81-spotify-playlist` / `gts-cf-v61-spotify-playlist`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and verified live `/api/spotify` HTTP `200`.
+
+
+## Wave 38 — Full-Length Spotify Playlist Runs (Dynamic Track Count) (2026-11-19)
+- **Dynamic Playlist Length (`functions/api/spotify.js`, `app.js`, `score-card.js`, `index.html`)**:
+  - Removed the fixed 5-song cap for Spotify playlists & albums: `stageCount()` now matches the exact number of tracks loaded from the playlist/album (`1..100` songs, e.g., `Song 1 of 50 · Today's Top Hits`).
+  - Clamped `D()` safely when `S.stage >= 5`, upgraded `UI.steps()` to show a clean sliding 5-song window (`1–5`, `6–10`, …, `46–50`) plus a live playlist tally pill (`Playlist · 50 songs · Score X/Y`), updated `UI.runResult()` to render all `N` songs with ratio-based verdicts, compacted `shareText()` into 10-per-row emoji grids when `count > 10`, and added a dedicated `SPOTIFY PLAYLIST` grid layout in `score-card.js`.
+  - Updated the Lobby pill dynamically (`Full playlist` on the Spotify tab vs `5 stages` on Genre & Era / By Artist) and lowered the `/api/spotify` minimum from 5 to 1 playable track.
+- **Verification & Deploy**:
+  - Updated `tests/spotify.test.cjs` (`131/131` passing), verified live 50-song Spotify run E2E in Playwright, bumped SW cache (`gts-v82-spotify-full-length` / `gts-cf-v62-spotify-full-length`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.

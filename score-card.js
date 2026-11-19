@@ -72,7 +72,9 @@
 
     const daily = input.mode === 'daily';
     const custom = input.mode === 'custom';
-    const total = daily ? 1 : 5;
+    const isSpotify = !!input.isSpotify;
+    const rawTotal = Number(input.total);
+    const total = daily ? 1 : (Number.isInteger(rawTotal) && rawTotal >= 1 ? rawTotal : 5);
     const ladder = Array.isArray(input.ladder) && input.ladder.length ? input.ladder : [0.1, 0.5, 2, 8, 15];
     const rows = Array.from({ length: total }, (_, i) => {
       const st = (input.stages || [])[i];
@@ -82,8 +84,9 @@
       const at = gs.findIndex((g) => g && g.t === 'right');
       const sec = ladder[at];
       return {
-        label: daily ? 'Daily' : custom ? 'Song ' + (i + 1) : STAGE_LABELS[i],
+        label: daily ? 'Daily' : custom ? 'Song ' + (i + 1) : (STAGE_LABELS[i] || ('Song ' + (i + 1))),
         won,
+        done,
         result: !done ? '—' : won ? (Number.isFinite(sec) ? (sec % 1 === 0 ? sec + 's' : sec.toFixed(1) + 's') : 'Solved') : 'Missed',
         attempts: Array.from({ length: 5 }, (_, j) => {
           const t = gs[j] && gs[j].t;
@@ -93,9 +96,9 @@
     });
     const score = rows.filter((r) => r.won).length;
     return {
-      kind: daily ? 'daily' : 'run',
-      theme: custom ? 'purple' : 'emerald',
-      kicker: daily ? 'DAILY CHALLENGE' : custom ? 'ARTIST CHALLENGE' : 'CLASSIC RUN',
+      kind: daily ? 'daily' : total > 5 ? 'playlist' : 'run',
+      theme: isSpotify ? 'emerald' : custom ? 'purple' : 'emerald',
+      kicker: daily ? 'DAILY CHALLENGE' : isSpotify ? 'SPOTIFY PLAYLIST' : custom ? 'ARTIST CHALLENGE' : 'CLASSIC RUN',
       scoreMain: String(score),
       scoreSub: '/ ' + total,
       subtitle: daily
@@ -104,7 +107,7 @@
       verdict: String(input.verdict || (score === total ? 'Flawless run!' : 'Run complete')),
       rows,
       host,
-      filename: 'tuneup-' + (daily ? 'daily' : custom ? 'artist' : 'classic') + '-score.png'
+      filename: 'tuneup-' + (daily ? 'daily' : isSpotify ? 'spotify' : custom ? 'artist' : 'classic') + '-score.png'
     };
   }
 
@@ -212,6 +215,28 @@
         }
       });
       fitText(ctx, '5 tries · Spoiler-free daily summary', 132, 956, 26, '#9cb6a7', 600, 816, 'left', 'General Sans');
+    } else if (model.kind === 'playlist') {
+      fitText(ctx, 'PLAYLIST BREAKDOWN (' + model.rows.length + ' SONGS)', 130, 616, 22, '#9cb6a7', 800, 820, 'left', 'General Sans');
+      const shown = model.rows.slice(0, 40);
+      const cols = 10;
+      const size = 68;
+      const gap = 16;
+      shown.forEach((row, idx) => {
+        const r = Math.floor(idx / cols);
+        const c = idx % cols;
+        const x = 130 + c * (size + gap);
+        const y = 648 + r * (size + gap);
+        rr(ctx, x, y, size, size, 16);
+        ctx.fillStyle = !row.done ? 'rgba(255,255,255,0.06)' : row.won ? 'rgba(37,224,125,0.20)' : 'rgba(242,85,90,0.22)';
+        ctx.fill();
+        ctx.strokeStyle = !row.done ? 'rgba(255,255,255,0.14)' : row.won ? '#25e07d' : '#f2555a';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        fitText(ctx, !row.done ? '·' : row.won ? '✓' : '✕', x + size / 2, y + 46, 32, !row.done ? '#7b9486' : row.won ? '#58ffad' : '#ff8a8e', 800, size, 'center', 'General Sans');
+      });
+      if (model.rows.length > 40) {
+        fitText(ctx, '+' + (model.rows.length - 40) + ' more songs in full run', 130, 1028, 24, '#9cb6a7', 600, 820, 'left', 'General Sans');
+      }
     } else {
       model.rows.forEach((row, i) => {
         const y = 636 + i * 96;
@@ -225,7 +250,7 @@
           }
         });
         fitText(ctx, row.result, 952, y, 30, row.won ? pal.accL : '#7b9486', 700, 200, 'right', 'General Sans');
-        if (i < 4) {
+        if (i < model.rows.length - 1) {
           ctx.fillStyle = 'rgba(255,255,255,0.07)';
           ctx.fillRect(128, y + 32, 824, 1.5);
         }

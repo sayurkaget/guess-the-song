@@ -206,7 +206,7 @@
     : S.custom ? 'custom:' + S.custom.id
     : ('gl:' + S.genre + ':' + S.era);
 
-  const D       = () => DIFFS[ORDER[S.stage]];
+  const D       = () => DIFFS[ORDER[Math.min(S.stage, ORDER.length - 1)]];
   const ladder  = () => LADDER;
   const maxLen  = () => ladder()[TRIES - 1];
   const step    = () => Math.min(S.guesses.length, TRIES - 1);
@@ -227,7 +227,8 @@
     }
     return 1;
   };
-  const stageCount = () => S.daily ? 1 : S.runChallenge ? S.runChallenge.songs.length : STAGES;
+  const stageCount = () => S.daily ? 1 : S.runChallenge ? S.runChallenge.songs.length
+    : (S.custom && S.custom.kind === 'spotify') ? Math.max(1, S.custom.songs.length) : STAGES;
   const score   = () => S.stages.filter((x) => x && x.won).length;
   const gameMode = () => S.daily ? 'daily' : (S.challenge || S.runChallenge) ? 'challenge' : S.custom ? 'custom' : 'regular';
   function trackActivity(name, details = {}) {
@@ -1716,16 +1717,26 @@
     /* --- rangkaian tahap --- */
     steps(host, live) {
       host.innerHTML = '';
+      const count = stageCount();
+      const isSpotify = !!(S.custom && S.custom.kind === 'spotify');
       host.hidden = !!(S.challenge || S.daily);
       if ($('#dailyGameBadge')) {
-        $('#dailyGameBadge').hidden = !S.daily && !S.challenge;
+        const showSpBadge = isSpotify && count > 5;
+        $('#dailyGameBadge').hidden = !S.daily && !S.challenge && !showSpBadge;
         if (S.daily) $('#dailyGameBadge').textContent = 'Daily Challenge · 1 song';
         else if (S.challenge) $('#dailyGameBadge').textContent = 'Friend Challenge · 1 song';
+        else if (showSpBadge) {
+          const played = S.stages.filter((x) => x && x.done).length;
+          $('#dailyGameBadge').textContent = 'Playlist · ' + count + ' songs' + (played ? ' · Score ' + score() + '/' + played : '');
+        }
       }
       if (S.challenge || S.daily) return;
       const artistMode = S.runChallenge ? !!S.runChallenge.artistId : !!S.custom;
-      ORDER.slice(0, stageCount()).forEach((k, i) => {
-        if (i) { const a = el('li', 'arrow'); a.textContent = '›'; host.appendChild(a); }
+      const winStart = count > STAGES ? Math.floor(S.stage / STAGES) * STAGES : 0;
+      const winEnd = count > STAGES ? Math.min(count, winStart + STAGES) : count;
+      for (let i = winStart; i < winEnd; i++) {
+        const k = ORDER[i] || ORDER[ORDER.length - 1];
+        if (i > winStart) { const a = el('li', 'arrow'); a.textContent = '›'; host.appendChild(a); }
         const li = el('li');
         li.dataset.k = artistMode ? 'custom' : k;
         const rec = S.stages[i];
@@ -1737,7 +1748,7 @@
         const label = artistMode ? (i + 1) : DIFFS[k].label;
         li.innerHTML = label + (mark ? ' <span class="mark">' + mark + '</span>' : '');
         host.appendChild(li);
-      });
+      }
     },
 
     /* --- panggung --- */
@@ -1847,7 +1858,7 @@
         ? (artistMode ? 'Song <b>' + (S.stage + 1) + '</b> of ' + stageCount() : 'Stage <b>' + (S.stage + 1) + '</b> of ' + stageCount() + ' · <b>' + D().label + '</b>') +
           ' · Friend ' + window.TrackChallenge.describe(S.runChallenge.results[S.stage] || 0)
         : S.custom
-        ? 'Song <b>' + (S.stage + 1) + '</b> of ' + STAGES + ' · <b>' + esc(S.custom.label) + '</b>'
+        ? 'Song <b>' + (S.stage + 1) + '</b> of ' + stageCount() + ' · <b>' + esc(S.custom.label) + '</b>'
         : 'Stage <b>' + (S.stage + 1) + '</b> of ' + STAGES + ' · <b>' + D().label + '</b>';
       this.streak();
     },
@@ -2133,14 +2144,21 @@
       const wonRun = sc >= (S.daily ? 1 : Math.ceil(count * 0.6));
       const v = $('#runVerdict');
       v.className = 'verdict ' + (wonRun ? 'win' : 'lose');
+      const ratio = count ? sc / count : 0;
       v.textContent = S.daily
         ? (sc ? 'Daily solved!' : 'New song tomorrow.')
-        : (count !== STAGES && sc === count)
-        ? 'Perfect. Every stage.'
-        : ['Zero. Try again!', 'One down.', 'Not bad.',
-           'Nice run!', 'So close to perfect!', 'Perfect. Every stage.'][Math.min(5, sc)];
+        : sc === 0 ? 'Zero. Try again!'
+        : sc === count ? (artistMode ? 'Perfect. Every song!' : 'Perfect. Every stage.')
+        : count === STAGES
+        ? ['Zero. Try again!', 'One down.', 'Not bad.',
+           'Nice run!', 'So close to perfect!', 'Perfect. Every stage.'][Math.min(5, sc)]
+        : ratio >= 0.8 ? 'So close to perfect!'
+        : ratio >= 0.6 ? 'Nice run!'
+        : ratio >= 0.3 ? 'Not bad.'
+        : 'Tough playlist!';
       $('#runScore').textContent = sc;
-      $('#runScoreLabel').textContent = S.daily ? '/1 song' : '/' + count + (count === 1 ? ' stage' : ' stages');
+      $('#runScoreLabel').textContent = S.daily ? '/1 song'
+        : '/' + count + (artistMode ? (count === 1 ? ' song' : ' songs') : (count === 1 ? ' stage' : ' stages'));
 
       const modeKind = S.daily ? 'daily' : artistMode ? 'custom' : 'classic';
       const runSheet = $('#runModal .run-sheet');
@@ -2171,7 +2189,8 @@
       stopSummaryPreview();
       const stageArtsWin = [], stageArtsAll = [];
       const listEl = $('#runList');
-      listEl.innerHTML = ORDER.slice(0, count).map((k, i) => {
+      listEl.innerHTML = Array.from({ length: count }, (_, i) => {
+        const k = ORDER[i] || ORDER[ORDER.length - 1];
         const r = S.stages[i];
         const lvl = S.daily ? "Today's song" : artistMode ? ('Song ' + (i + 1)) : DIFFS[k].label;
         const diff = S.daily ? 'daily' : artistMode ? 'custom' : k;
@@ -2375,13 +2394,24 @@
     const count = stageCount();
     const artistMode = S.runChallenge ? !!S.runChallenge.artistId : !!S.custom;
 
-    const lines = ORDER.slice(0, count).map((k, i) => {
-      const name = artistMode ? ('Song ' + (i + 1)) : DIFFS[k].label;
-      const r = S.stages[i];
-      if (!r || !r.done) return '⬜ ' + name;
-      const at = r.guesses.findIndex((g) => g.t === 'right');
-      return (r.won ? '🟩 ' : '🟥 ') + name + (r.won ? ' ' + fmt(LADDER[at]) : '');
-    });
+    let lines;
+    if (count > 10) {
+      const cells = Array.from({ length: count }, (_, i) => {
+        const r = S.stages[i];
+        return (!r || !r.done) ? '⬜' : (r.won ? '🟩' : '🟥');
+      });
+      lines = [];
+      for (let i = 0; i < cells.length; i += 10) lines.push(cells.slice(i, i + 10).join(''));
+    } else {
+      lines = Array.from({ length: count }, (_, i) => {
+        const k = ORDER[i] || ORDER[ORDER.length - 1];
+        const name = artistMode ? ('Song ' + (i + 1)) : DIFFS[k].label;
+        const r = S.stages[i];
+        if (!r || !r.done) return '⬜ ' + name;
+        const at = r.guesses.findIndex((g) => g.t === 'right');
+        return (r.won ? '🟩 ' : '🟥 ') + name + (r.won ? ' ' + fmt(LADDER[at]) : '');
+      });
+    }
 
     const ids = [], results = [];
     for (let i = 0; i < count; i++) {
@@ -2790,6 +2820,8 @@
         const outcome = await window.TuneUpCard.shareOrSave({
           kind: 'run',
           mode: S.daily ? 'daily' : S.custom ? 'custom' : 'regular',
+          isSpotify: !!(S.custom && S.custom.kind === 'spotify'),
+          total: stageCount(),
           stages: S.stages,
           ladder: ladder(),
           day: S.daily ? S.daily.day : '',
@@ -3849,6 +3881,8 @@
     if ($('#classicFiltersPanel')) $('#classicFiltersPanel').hidden = tab !== 'filters';
     if ($('#classicArtistPanel')) $('#classicArtistPanel').hidden = tab !== 'artist';
     if ($('#classicSpotifyPanel')) $('#classicSpotifyPanel').hidden = tab !== 'spotify';
+    const modePill = document.querySelector('.classic-section .mode-pill');
+    if (modePill) modePill.textContent = tab === 'spotify' ? 'Full playlist' : '5 stages';
     if ($('#classicTabs')) {
       for (const b of $('#classicTabs').querySelectorAll('[data-classic-tab]')) {
         const on = b.dataset.classicTab === tab;
@@ -3942,7 +3976,7 @@
         signal: AbortSignal.timeout(14000)
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data || !data.ok || !Array.isArray(data.tracks) || data.tracks.length < 5) {
+      if (!res.ok || !data || !data.ok || !Array.isArray(data.tracks) || data.tracks.length < 1) {
         setStatus((data && data.error) || 'Could not load that Spotify link. Make sure it is a Public playlist or album.', true);
         return false;
       }
@@ -3994,7 +4028,7 @@
       switchRun();
       S.stages = []; S.stage = 0; S.runDone = false;
       saveRun();
-      setStatus('Public playlists & albums · up to 100 tracks', false);
+      setStatus('Plays every track in your public playlist or album (up to 100)', false);
       if ($('#spotifyUrl') && typeof $('#spotifyUrl').blur === 'function') $('#spotifyUrl').blur();
       UI.clearInput();
       UI.game();

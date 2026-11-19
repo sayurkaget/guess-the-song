@@ -89,8 +89,8 @@ export function extractEmbedPayload(html, type, id) {
     if (tracks.length >= 100) break;
   }
 
-  if (tracks.length < 5) {
-    return { error: 'Need at least 5 tracks in this Spotify ' + type + ' to play.', status: 422 };
+  if (tracks.length < 1) {
+    return { error: 'No playable tracks found in this Spotify ' + type + '.', status: 422 };
   }
 
   const cover = entity.visualIdentity?.image?.[0]?.url

@@ -77,8 +77,27 @@ test('extractEmbedPayload cleans NBSP artists, strips episodes, deduplicates, an
   const notFound = extractEmbedPayload('<script id="__NEXT_DATA__">{"props":{"pageProps":{"status":404}}}</script>', 'playlist', '37i9dQZF1DXcBWIGoYBM5M');
   assert.equal(notFound.status, 404);
 
-  const tooFew = extractEmbedPayload('<script id="__NEXT_DATA__">{"props":{"pageProps":{"state":{"data":{"entity":{"name":"Tiny","trackList":[{"title":"A","subtitle":"B"}]}}}}}}</script>', 'playlist', '37i9dQZF1DXcBWIGoYBM5M');
-  assert.equal(tooFew.status, 422);
+  const emptyList = extractEmbedPayload('<script id="__NEXT_DATA__">{"props":{"pageProps":{"state":{"data":{"entity":{"name":"Empty","trackList":[]}}}}}}</script>', 'playlist', '37i9dQZF1DXcBWIGoYBM5M');
+  assert.equal(emptyList.status, 422);
+
+  const singleSong = extractEmbedPayload('<script id="__NEXT_DATA__">{"props":{"pageProps":{"state":{"data":{"entity":{"name":"Tiny","trackList":[{"title":"A","subtitle":"B"}]}}}}}}</script>', 'playlist', '37i9dQZF1DXcBWIGoYBM5M');
+  assert.equal(singleSong.status, 200);
+  assert.equal(singleSong.data.tracks.length, 1);
+
+  const TuneUpCard = require('../score-card.js');
+  const spCard = TuneUpCard.buildCardData({
+    kind: 'run',
+    mode: 'custom',
+    isSpotify: true,
+    total: 50,
+    stages: Array.from({ length: 50 }, (_, i) => ({ done: true, won: i < 42, guesses: [{ t: i < 42 ? 'right' : 'skip' }] })),
+    subtitle: "Today's Top Hits",
+    url: 'https://tuneup.pages.dev/'
+  });
+  assert.equal(spCard.kind, 'playlist');
+  assert.equal(spCard.kicker, 'SPOTIFY PLAYLIST');
+  assert.equal(spCard.scoreMain, '42');
+  assert.equal(spCard.scoreSub, '/ 50');
 });
 
 test('Spotify tab UI is present in index.html and wired in app.js', () => {
