@@ -662,6 +662,7 @@
         : S.runChallenge ? S.runChallenge.songs[S.stage]
         : (song || pickSong(k));
       S.retrySong = cand;
+      if (S.custom && S.custom.kind === 'spotify') fetchSpotifyTrackArt(cand);   // lagu aktif duluan
       try {
         const meta = await resolve(cand);
         if (me !== S.epoch) return;             // pemuatan lain sudah menggantikan ini
@@ -684,7 +685,6 @@
         UI.playState('idle');
         UI.status(S.done ? '' : 'Press Play to hear ' + fmt(limit()) + '.');
         UI.render();
-        enrichSpotifyTrackArt(cand, meta, me);
         if (S.done) setTimeout(() => { if (me === S.epoch && S.done) UI.result(); }, 250);
         return;
       } catch (e) {
@@ -703,35 +703,46 @@
     $('#resultRetry').hidden = false;
   }
 
-  function enrichSpotifyTrackArt(song, meta, epoch) {
-    if (!meta || !meta.fromSpotify || meta.hasTrackArt || !meta.link || !/\/track\/[A-Za-z0-9]{22}/.test(meta.link)) return;
-    meta.hasTrackArt = true;
-    fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(meta.link))
+  // Cover asli tiap lagu playlist Spotify (bukan foto playlist), lewat oEmbed
+  // resmi Spotify (CORS terbuka). Thumbnail 300px dipakai di dropdown pilihan,
+  // versi 640px dipakai di layar reveal.
+  function fetchSpotifyTrackArt(song) {
+    if (!song || song.artTried || !song.spotifyUrl || !/\/track\/[A-Za-z0-9]{22}/.test(song.spotifyUrl)) {
+      return Promise.resolve();
+    }
+    song.artTried = true;
+    return fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(song.spotifyUrl))
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         const raw = d && typeof d.thumbnail_url === 'string' && /^https:\/\//.test(d.thumbnail_url) ? d.thumbnail_url : '';
         if (!raw) return;
         const hd = raw.replace('ab67616d00001e02', 'ab67616d0000b273');
-        const applyArt = (src) => {
-          meta.art = src;
-          if (song) song.art = src;
-          if (epoch === S.epoch && S.song === song && S.done) {
+        song.art = raw;
+        if (song.pre) song.pre.art = hd;
+        if (S.song === song && S.meta) {
+          S.meta.art = hd;
+          if (S.done && $('#resultModal') && !$('#resultModal').hidden) {
             const img = $('#cover');
-            if (img) img.src = src;
+            if (img) img.src = hd;
             const bg = $('#artBg');
-            if (bg) bg.style.backgroundImage = 'url("' + src + '")';
+            if (bg) { bg.style.backgroundImage = 'url("' + hd + '")'; bg.classList.add('on'); }
           }
-        };
-        if (hd !== raw && typeof Image === 'function') {
-          const probe = new Image();
-          probe.onload = () => applyArt(hd);
-          probe.onerror = () => applyArt(raw);
-          probe.src = hd;
-        } else {
-          applyArt(raw);
         }
       })
       .catch(() => {});
+  }
+
+  let spotifyArtJob = 0;
+  function prefetchSpotifyArt(songs) {
+    const job = ++spotifyArtJob;
+    const queue = songs.filter((s) => !s.artTried && s.spotifyUrl);
+    let i = 0;
+    const worker = async () => {
+      while (i < queue.length && job === spotifyArtJob) {
+        await fetchSpotifyTrackArt(queue[i++]);
+      }
+    };
+    for (let w = 0; w < 6; w++) worker();
   }
 
   /* ================= alur permainan ================= */
@@ -1760,8 +1771,11 @@
         else if (showSpBadge) {
           const played = S.stages.filter((x) => x && x.done).length;
           const kindLbl = S.custom.spotifyType === 'album' ? 'Album' : 'Playlist';
-          $('#dailyGameBadge').textContent = kindLbl + ' · ' + count + (count === 1 ? ' song' : ' songs') +
+          const txt = kindLbl + ' · ' + count + (count === 1 ? ' song' : ' songs') +
             (played ? ' · Score ' + score() + '/' + played : '');
+          const cov = S.custom.cover && /^https:\/\//.test(S.custom.cover) ? S.custom.cover : '';
+          $('#dailyGameBadge').innerHTML = (cov ? '<img class="sp-pill-cover" src="' + esc(cov) + '" alt="">' : '') +
+            '<span>' + esc(txt) + '</span>';
         }
       }
       if (S.challenge || S.daily) return;
@@ -3968,7 +3982,8 @@
     for (const item of list) {
       const b = el('button', 'spotify-chip');
       b.type = 'button';
-      b.innerHTML = esc(item.name) + (item.total ? ' <small>' + item.total + '</small>' : '');
+      b.innerHTML = (item.cover && /^https:\/\//.test(item.cover) ? '<img class="sp-chip-cover" src="' + esc(item.cover) + '" alt="" loading="lazy">' : '') +
+        esc(item.name) + (item.total ? ' <small>' + item.total + '</small>' : '');
       b.onclick = () => {
         const prefix = item.type === 'album' ? 'https://open.spotify.com/album/' : 'https://open.spotify.com/playlist/';
         if ($('#spotifyUrl')) {
@@ -4027,18 +4042,23 @@
         return false;
       }
 
+      const isAlbum = data.type === 'album';
       const songs = data.tracks.map((t, i) => {
         const local = matchLocalCatalogTrack(t.title, t.artist);
-        const localArt = local && local.art ? local.art.replace('300x300', '600x600') : '';
-        const art = localArt || data.cover || '';
+        const localThumb = local && local.art ? local.art : '';
+        const localHd = localThumb ? localThumb.replace('300x300', '600x600') : '';
+        // Album: semua lagu memang memakai cover album itu. Playlist: JANGAN
+        // pakai foto playlist untuk lagu -- tunggu cover asli dari oEmbed
+        // (dropdown sementara menampilkan placeholder ♪).
+        const listArt = localThumb || (isAlbum ? data.cover : '');
+        const revealArt = localHd || data.cover || '';
         const pre = t.preview ? {
           trackId: (local && local.trackId) || 0,
           preview: t.preview,
-          art,
-          hasTrackArt: !!(localArt || data.type === 'album'),
+          art: revealArt,
           title: t.title,
           artist: t.artist,
-          album: data.name,
+          album: isAlbum ? data.name : '',
           year: local && local.year ? String(local.year) : '',
           link: t.spotifyUrl || ('https://open.spotify.com/' + data.type + '/' + data.id),
           fromSpotify: true
@@ -4050,7 +4070,9 @@
           tier: 1,
           genre: 'spotify',
           year: (local && local.year) || 0,
-          art,
+          art: listArt,
+          spotifyUrl: t.spotifyUrl || '',
+          artTried: !!(localThumb || isAlbum),
           trackId: (local && local.trackId) || 0,
           pre,
           hay: norm(t.title + ' ' + t.artist)
@@ -4058,7 +4080,7 @@
       });
 
       const recent = LS.get('tl:spotify:recent', []).filter((x) => x && x.id !== data.id);
-      recent.unshift({ id: data.id, type: data.type, name: data.name, total: songs.length });
+      recent.unshift({ id: data.id, type: data.type, name: data.name, total: songs.length, cover: data.cover || '' });
       LS.set('tl:spotify:recent', recent.slice(0, 4));
       renderSpotifyPicks();
 
@@ -4081,6 +4103,7 @@
       UI.clearInput();
       UI.game();
       load();
+      prefetchSpotifyArt(songs);   // cover asli lagu lain menyusul di latar
       return true;
     } catch (e) {
       setStatus('Could not reach Spotify right now. Check your connection and try again.', true);

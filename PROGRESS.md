@@ -229,3 +229,13 @@
   - Upgraded matched local-catalog artwork from `300x300` to `600x600`, and added non-blocking background `enrichSpotifyTrackArt()` via Spotify's CORS-enabled oEmbed endpoint (`640×640` track cover with instant `640×640` playlist cover fallback).
 - **Verification & Deploy**:
   - Added 640px cover selection assertion in `tests/spotify.test.cjs` (`131/131` passing), verified desktop + mobile (`360×800`) Playwright screenshots & `naturalWidth === 640` on `#cover`, bumped SW cache (`gts-v83-spotify-rounds-hd` / `gts-cf-v63-spotify-rounds-hd`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
+
+
+## Wave 40 — Real Per-Song Album Art for Spotify Playlists (2026-11-19)
+- **Root cause**: playlist tracks not in the local catalog fell back to the playlist cover (`data.cover`), so the guess dropdown mixed real album art with the playlist photo.
+- **Fix (`app.js`, `layout.css`)**:
+  - Playlist songs never use the playlist cover in the dropdown; they show the local catalog art or a `♪` placeholder until the real cover arrives.
+  - Added `fetchSpotifyTrackArt()` + `prefetchSpotifyArt()` (6 parallel workers) that fetch each track's real album cover through Spotify's CORS-enabled oEmbed (`300px` for the dropdown, `640px` for reveal), loading the active song first.
+  - Albums still use the album cover (that is each track's real art). The playlist name no longer shows as the album name on the reveal screen.
+  - Moved the playlist cover into the round badge (`Playlist · N songs` with a circular thumbnail) and into the recent Spotify chips in the Lobby.
+- **Verification**: `131/131` tests pass; Playwright check found 0 of 45 dropdown items using the playlist cover and the reveal cover was the real 600px album art. SW cache bumped (`gts-v84-spotify-real-art` / `gts-cf-v64-spotify-real-art`).

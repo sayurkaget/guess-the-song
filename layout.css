@@ -203,8 +203,14 @@
 }
 .daily-game-pill{
   align-self:center;margin:0 0 1rem;
+  display:inline-flex;align-items:center;gap:.48rem;
   padding:.36rem .92rem;border-radius:999px;font-size:.76rem;font-weight:700;
   background:rgba(var(--acc-rgb),.14);border:1px solid rgba(var(--acc-rgb),.34);color:var(--acc-l);
+}
+.daily-game-pill:has(.sp-pill-cover){padding:.24rem .86rem .24rem .28rem}
+.sp-pill-cover{
+  width:24px;height:24px;border-radius:50%;object-fit:cover;flex:none;
+  border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);
 }
 .arena-grid{
   display:grid;grid-template-columns:280px minmax(0,1fr);gap:1rem;align-items:stretch;width:100%;
@@ -1204,6 +1210,11 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
   transition:background .15s,border-color .15s,color .15s;
 }
 .spotify-chip:hover{background:rgba(37,224,125,.12);border-color:rgba(37,224,125,.42);color:var(--ink)}
+.spotify-chip:has(.sp-chip-cover){padding:.22rem .72rem .22rem .24rem}
+.sp-chip-cover{
+  width:20px;height:20px;border-radius:50%;object-fit:cover;flex:none;
+  border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);
+}
 .spotify-chip small{color:var(--dimmer);font-weight:600}
 
 @media(max-width:680px){
