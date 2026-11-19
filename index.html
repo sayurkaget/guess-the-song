@@ -71,6 +71,7 @@
         <div class="seg classic-seg" id="classicTabs" role="tablist" aria-label="Classic setup">
           <button type="button" role="tab" data-classic-tab="filters" aria-selected="true" aria-pressed="true">Genre &amp; Era</button>
           <button type="button" role="tab" data-classic-tab="artist" aria-selected="false" aria-pressed="false">By Artist</button>
+          <button type="button" role="tab" data-classic-tab="spotify" aria-selected="false" aria-pressed="false">Spotify</button>
         </div>
       </div>
       <div id="classicFiltersPanel">
@@ -92,6 +93,18 @@
           Choose artist
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+      </div>
+      <div class="spotify-panel" id="classicSpotifyPanel" hidden>
+        <div class="spotify-input-row">
+          <div class="spotify-field">
+            <svg class="spotify-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7.5 9.6c3.2-.9 6.8-.6 9.6.8M8.3 12.7c2.6-.7 5.5-.4 7.8.7M9.2 15.6c2-.5 4.2-.3 6 .6" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"/></svg>
+            <input id="spotifyUrl" type="url" placeholder="Paste public Spotify playlist or album link…" autocomplete="off" spellcheck="false" enterkeyhint="go">
+            <button class="clear" id="spotifyClear" type="button" aria-label="Clear Spotify link" hidden>&times;</button>
+          </div>
+          <button class="btn solid spotify-go" id="loadSpotifyBtn" type="button">Play</button>
+        </div>
+        <p class="spotify-hint" id="spotifyStatus" role="status" aria-live="polite">Public playlists &amp; albums &middot; up to 100 tracks</p>
+        <div class="spotify-picks" id="spotifyPicks"></div>
       </div>
     </section>
 

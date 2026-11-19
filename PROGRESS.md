@@ -199,3 +199,13 @@
   - Blurred `#q` on guess/stage finish and `#agQ` on solve so mobile keyboards dismiss cleanly before reveal modals open.
 - **Verification & Deploy**:
   - Verified `vw === 360`, `htmlSw === 360`, `bodySw === 360`, `qFont === "16px"`, `agQFont === "16px"` across all 6 gameplay/modal stages in mobile Playwright (`360×800`), `128/128` tests passing, bumped SW cache (`gts-v80-mobile-viewport-fix` / `gts-cf-v60-mobile-viewport-fix`), built `dist/`, and deployed live to `https://tuneup.pages.dev/`.
+
+
+## Wave 37 — Custom Mode with Public Spotify Playlists & Albums (2026-11-19)
+- **Cloudflare Pages Function (`functions/api/spotify.js`)**:
+  - Added `/api/spotify?url=...` edge endpoint that accepts public Spotify playlist & album links (including `/intl-*`, `spotify:playlist:...`, `spotify:album:...`, bare 22-char IDs, and `spotify.link` / `spoti.fi` short links), fetches Spotify's official public embed JSON, cleans NBSP characters, strips episodes, deduplicates tracks, enforces `>= 5` playable tracks (up to 100 tracks), and returns track metadata + direct `p.scdn.co` 30s MP3 preview URLs (`Cache-Control: public, max-age=300`).
+- **Lobby Spotify Tab & Engine Integration (`index.html`, `layout.css`, `app.js`)**:
+  - Added a 3rd **`Spotify`** tab (`data-classic-tab="spotify"`) inside `.classic-section` with URL input (`#spotifyUrl`), `Play` button (`#loadSpotifyBtn`), starter chips (*Today's Top Hits*, *K-Pop ON!*, *RapCaviar*, *After Hours*) + local `tl:spotify:recent` history.
+  - Integrated Spotify tracks into TuneUp's Custom run engine (`S.custom.kind === 'spotify'`): instant playback via direct Spotify MP3 previews (with automatic iTunes fallback if a track lacks a Spotify preview), local catalog artwork/year enrichment, uniform shuffle across the full playlist, preserved *Right artist, wrong song* hint for multi-artist playlists, Wrapped PNG score card support, and shareable `?spotify=<id>` deep-link challenges.
+- **Verification & Deploy**:
+  - Added `tests/spotify.test.cjs` (`131/131` automated tests passing), verified full live E2E in Playwright Desktop & Mobile (`360×800`), bumped SW cache (`gts-v81-spotify-playlist` / `gts-cf-v61-spotify-playlist`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and verified live `/api/spotify` HTTP `200`.

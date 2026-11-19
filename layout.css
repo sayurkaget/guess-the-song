@@ -1159,9 +1159,39 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 .spotle-result-art:hover{transform:scale(1.04)}
 .spotle-result-art[data-playing="1"]{box-shadow:0 0 0 3px rgba(155,123,245,.55),0 0 22px rgba(155,123,245,.5)}
 
+/* ====== Spotify Playlist Custom Panel ====== */
+.spotify-panel{display:flex;flex-direction:column;gap:.65rem;padding-top:.1rem}
+.spotify-input-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.55rem;align-items:stretch}
+.spotify-field{position:relative;display:flex;align-items:center;min-width:0}
+.spotify-ico{
+  position:absolute;left:.85rem;width:18px;height:18px;color:#25e07d;pointer-events:none;flex:none;
+}
+#spotifyUrl{
+  width:100%;min-height:46px;padding:.68rem 2.4rem .68rem 2.55rem;border-radius:12px;
+  background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--ink);
+  font:inherit;font-size:.9rem;outline:none;transition:border-color .16s,background .16s;
+}
+#spotifyUrl::placeholder{color:var(--dimmer)}
+#spotifyUrl:focus{border-color:rgba(var(--acc-rgb),.58);background:rgba(255,255,255,.08)}
+.spotify-go{min-height:46px;padding:0 1.35rem;border-radius:12px;font-weight:800;white-space:nowrap}
+.spotify-hint{margin:0;font-size:.76rem;color:var(--dim);line-height:1.4}
+.spotify-hint.err{color:#ff8a8e}
+.spotify-picks{display:flex;flex-wrap:wrap;gap:.42rem}
+.spotify-chip{
+  display:inline-flex;align-items:center;gap:.38rem;
+  padding:.34rem .72rem;border-radius:999px;
+  background:rgba(255,255,255,.045);border:1px solid var(--line);color:var(--dim);
+  font:inherit;font-size:.75rem;font-weight:600;cursor:pointer;
+  transition:background .15s,border-color .15s,color .15s;
+}
+.spotify-chip:hover{background:rgba(37,224,125,.12);border-color:rgba(37,224,125,.42);color:var(--ink)}
+.spotify-chip small{color:var(--dimmer);font-weight:600}
+
 @media(max-width:680px){
   #lobby .arcade-row{grid-template-columns:minmax(0,1fr);gap:.75rem}
-  #artistGame #agQ,.spotle-search input{font-size:16px}
+  #artistGame #agQ,.spotle-search input,#spotifyUrl{font-size:16px}
+  .spotify-input-row{grid-template-columns:1fr}
+  .spotify-go{width:100%}
   .spotle-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}
   .spotle-result-banner{flex-direction:column;align-items:stretch}
   .spotle-result-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}

@@ -365,7 +365,7 @@
 
   async function resolve(song) {
     if (song.pre) {
-      if (!window.RecordingPolicy.isStudio(song.pre)) throw new Error('Studio recording unavailable');
+      if (!song.pre.fromSpotify && !window.RecordingPolicy.isStudio(song.pre)) throw new Error('Studio recording unavailable');
       return song.pre;
     }
     const ck = 'tl:trk5:' + song.slug;
@@ -606,7 +606,7 @@
     const recent = LS.get('tl:recent', []);
     const fresh = from.filter((s) => recent.indexOf(s.slug) < 0);
     const src = fresh.length > 3 ? fresh : from;
-    if (S.custom && src.length > 1) {
+    if (S.custom && S.custom.kind !== 'spotify' && src.length > 1) {
       const ranked = src.slice().sort((a, b) => (a.rank ?? a.tier ?? 0) - (b.rank ?? b.tier ?? 0));
       const core = ranked.length > 48 ? ranked.slice(0, 48) : ranked;
       const pool = (S.stage < 2 && core.length > 20) ? core.slice(0, Math.max(20, Math.ceil(core.length * 0.6))) : core;
@@ -711,7 +711,7 @@
       return;
     }
     const right = correctAnswer(pick);
-    const artistLocked = S.custom && (!S.runChallenge || S.runChallenge.artistId);
+    const artistLocked = S.custom && S.custom.kind !== 'spotify' && (!S.runChallenge || S.runChallenge.artistId);
     const near = !right && !artistLocked && sameGuessArtist(pick);
     S.guesses.push({ t: right ? 'right' : (near ? 'near' : 'wrong'), title: pick.title, artist: pick.artist, slug: pick.slug });
     if (right) return finish(true);
@@ -2398,7 +2398,9 @@
     const artistId = S.runChallenge ? S.runChallenge.artistId
       : (S.custom && /^[1-9]\d{0,15}$/.test(String(S.custom.id)) ? String(S.custom.id) : null);
     let url = siteUrl();
-    if (ids.length && window.TrackChallenge && typeof window.TrackChallenge.createRun === 'function') {
+    if (S.custom && S.custom.kind === 'spotify' && S.custom.spotifyId) {
+      url = url + '?spotify=' + encodeURIComponent((S.custom.spotifyType === 'album' ? 'album:' : '') + S.custom.spotifyId);
+    } else if (ids.length && window.TrackChallenge && typeof window.TrackChallenge.createRun === 'function') {
       url = window.TrackChallenge.createRun(url, ids, results, artistId);
     }
 
@@ -2414,9 +2416,14 @@
   function shareStage() {
     const at = S.guesses.findIndex((g) => g.t === 'right');
     const hasil = S.won ? 'I got it in ' + fmt(LADDER[at]) : 'I lost this one';
+    const link = (S.meta && S.meta.trackId && window.TrackChallenge)
+      ? window.TrackChallenge.create(siteUrl(), S.meta.trackId, S.won ? at + 1 : 0)
+      : (S.custom && S.custom.kind === 'spotify' && S.custom.spotifyId)
+      ? siteUrl() + '?spotify=' + encodeURIComponent((S.custom.spotifyType === 'album' ? 'album:' : '') + S.custom.spotifyId)
+      : (() => { throw new Error('No shareable track id'); })();
     return 'TuneUp · ' + (S.custom ? S.custom.label : D().label) + '\n' +
            squares(S.guesses) + '  ' + hasil + '\n' +
-           'Beat me: ' + window.TrackChallenge.create(siteUrl(), S.meta.trackId, S.won ? at + 1 : 0);
+           'Beat me: ' + link;
   }
 
   function pushRecent(sl) {
@@ -3838,12 +3845,13 @@
   })();
 
   function setClassicTab(mode) {
-    const artist = mode === 'artist';
-    if ($('#classicFiltersPanel')) $('#classicFiltersPanel').hidden = artist;
-    if ($('#classicArtistPanel')) $('#classicArtistPanel').hidden = !artist;
+    const tab = mode === 'artist' ? 'artist' : mode === 'spotify' ? 'spotify' : 'filters';
+    if ($('#classicFiltersPanel')) $('#classicFiltersPanel').hidden = tab !== 'filters';
+    if ($('#classicArtistPanel')) $('#classicArtistPanel').hidden = tab !== 'artist';
+    if ($('#classicSpotifyPanel')) $('#classicSpotifyPanel').hidden = tab !== 'spotify';
     if ($('#classicTabs')) {
       for (const b of $('#classicTabs').querySelectorAll('[data-classic-tab]')) {
-        const on = b.dataset.classicTab === (artist ? 'artist' : 'filters');
+        const on = b.dataset.classicTab === tab;
         b.setAttribute('aria-pressed', String(on));
         b.setAttribute('aria-selected', String(on));
       }
@@ -3855,6 +3863,171 @@
       if (b) setClassicTab(b.dataset.classicTab);
     });
   }
+
+  const SPOTIFY_STARTERS = [
+    { id: '37i9dQZF1DXcBWIGoYBM5M', type: 'playlist', name: "Today's Top Hits" },
+    { id: '37i9dQZF1DX9tPFwDMOaN1', type: 'playlist', name: 'K-Pop ON!' },
+    { id: '37i9dQZF1DX0XUsuxWHRQd', type: 'playlist', name: 'RapCaviar' },
+    { id: '4yP0hdKOZPNshxUOjY0cZj', type: 'album', name: 'After Hours' }
+  ];
+
+  function renderSpotifyPicks() {
+    const host = $('#spotifyPicks');
+    if (!host) return;
+    host.innerHTML = '';
+    const recent = LS.get('tl:spotify:recent', []).filter((x) => x && x.id && x.name);
+    const seen = new Set();
+    const list = [];
+    for (const item of [...recent, ...SPOTIFY_STARTERS]) {
+      const k = (item.type || 'playlist') + ':' + item.id;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      list.push(item);
+      if (list.length >= 6) break;
+    }
+    for (const item of list) {
+      const b = el('button', 'spotify-chip');
+      b.type = 'button';
+      b.innerHTML = esc(item.name) + (item.total ? ' <small>' + item.total + '</small>' : '');
+      b.onclick = () => {
+        const prefix = item.type === 'album' ? 'https://open.spotify.com/album/' : 'https://open.spotify.com/playlist/';
+        if ($('#spotifyUrl')) {
+          $('#spotifyUrl').value = prefix + item.id;
+          if ($('#spotifyClear')) $('#spotifyClear').hidden = false;
+        }
+        startSpotifyPlaylist(prefix + item.id);
+      };
+      host.appendChild(b);
+    }
+  }
+
+  function matchLocalCatalogTrack(title, artist) {
+    const nt = norm(title);
+    const primary = norm(String(artist || '').split(/[,&]/)[0]);
+    if (!nt || !primary) return null;
+    for (let i = 0; i < ALL.length; i++) {
+      const c = ALL[i];
+      if (norm(c.title) !== nt) continue;
+      const ca = norm(c.artist);
+      if (ca === primary || ca.includes(primary) || primary.includes(ca)) return c;
+    }
+    return null;
+  }
+
+  let spotifyBusy = false;
+  async function startSpotifyPlaylist(rawInput) {
+    const raw = String(rawInput || ($('#spotifyUrl') ? $('#spotifyUrl').value : '')).trim();
+    const st = $('#spotifyStatus');
+    const btn = $('#loadSpotifyBtn');
+    const setStatus = (msg, err) => {
+      if (!st) return;
+      st.textContent = msg;
+      st.classList.toggle('err', !!err);
+    };
+    if (!raw) {
+      setStatus('Paste a public Spotify playlist or album link first.', true);
+      if ($('#spotifyUrl')) $('#spotifyUrl').focus();
+      return false;
+    }
+    if (spotifyBusy) return false;
+    spotifyBusy = true;
+    if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+    setStatus('Loading Spotify tracks…', false);
+
+    try {
+      const apiParam = raw.startsWith('album:')
+        ? 'https://open.spotify.com/album/' + raw.slice(6)
+        : raw;
+      const res = await fetch('/api/spotify?url=' + encodeURIComponent(apiParam), {
+        signal: AbortSignal.timeout(14000)
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data || !data.ok || !Array.isArray(data.tracks) || data.tracks.length < 5) {
+        setStatus((data && data.error) || 'Could not load that Spotify link. Make sure it is a Public playlist or album.', true);
+        return false;
+      }
+
+      const songs = data.tracks.map((t, i) => {
+        const local = matchLocalCatalogTrack(t.title, t.artist);
+        const art = (local && local.art) || data.cover || '';
+        const pre = t.preview ? {
+          trackId: (local && local.trackId) || 0,
+          preview: t.preview,
+          art,
+          title: t.title,
+          artist: t.artist,
+          album: data.name,
+          year: local && local.year ? String(local.year) : '',
+          link: t.spotifyUrl || ('https://open.spotify.com/' + data.type + '/' + data.id),
+          fromSpotify: true
+        } : null;
+        return {
+          slug: 'sp:' + data.id + ':' + (t.id || i),
+          title: t.title,
+          artist: t.artist,
+          tier: 1,
+          genre: 'spotify',
+          year: (local && local.year) || 0,
+          art,
+          trackId: (local && local.trackId) || 0,
+          pre,
+          hay: norm(t.title + ' ' + t.artist)
+        };
+      });
+
+      const recent = LS.get('tl:spotify:recent', []).filter((x) => x && x.id !== data.id);
+      recent.unshift({ id: data.id, type: data.type, name: data.name, total: songs.length });
+      LS.set('tl:spotify:recent', recent.slice(0, 4));
+      renderSpotifyPicks();
+
+      S.daily = null; S.challenge = null; S.runChallenge = null;
+      S.custom = {
+        id: 'sp:' + data.id,
+        kind: 'spotify',
+        spotifyId: data.id,
+        spotifyType: data.type,
+        label: data.name,
+        owner: data.owner,
+        cover: data.cover,
+        songs
+      };
+      switchRun();
+      S.stages = []; S.stage = 0; S.runDone = false;
+      saveRun();
+      setStatus('Public playlists & albums · up to 100 tracks', false);
+      if ($('#spotifyUrl') && typeof $('#spotifyUrl').blur === 'function') $('#spotifyUrl').blur();
+      UI.clearInput();
+      UI.game();
+      load();
+      return true;
+    } catch (e) {
+      setStatus('Could not reach Spotify right now. Check your connection and try again.', true);
+      return false;
+    } finally {
+      spotifyBusy = false;
+      if (btn) { btn.disabled = false; btn.textContent = 'Play'; }
+    }
+  }
+
+  if ($('#spotifyUrl')) {
+    $('#spotifyUrl').addEventListener('input', () => {
+      if ($('#spotifyClear')) $('#spotifyClear').hidden = !$('#spotifyUrl').value;
+    });
+    $('#spotifyUrl').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); startSpotifyPlaylist(); }
+    });
+  }
+  if ($('#spotifyClear')) {
+    $('#spotifyClear').onclick = () => {
+      $('#spotifyUrl').value = '';
+      $('#spotifyClear').hidden = true;
+      $('#spotifyUrl').focus();
+    };
+  }
+  if ($('#loadSpotifyBtn')) {
+    $('#loadSpotifyBtn').onclick = () => startSpotifyPlaylist();
+  }
+  renderSpotifyPicks();
 
   UI.buildControls();
   UI.render();
@@ -3868,6 +4041,12 @@
 
     let params;
     try { params = new URLSearchParams(location.search || ''); } catch (e) { return false; }
+    const sp = (params.get('spotify') || '').trim();
+    if (sp) {
+      setClassicTab('spotify');
+      startSpotifyPlaylist(sp);
+      return true;
+    }
     const genreAliases = { 'hip-hop': 'hiphop', electronic: 'edm', other: 'lain' };
     const eraAliases = { '2000s': 'y00', '2010s': 'y10', '2020s': 'y20', classic: 'old', before2000: 'old' };
     const rawG = (params.get('genre') || '').toLowerCase();
