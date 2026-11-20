@@ -355,3 +355,11 @@
   - Opening or refreshing any clean mode URL directly boots straight into that mode via `applyDeepLink()` (preserving legacy `#daily`, `#duel`, `#artist`, `?mode=`, and `?spotify=` links).
 - **Verification & Deploy**:
   - Added routing tests in `tests/og-ui.test.cjs` (`136/136` unit tests passing), verified full Playwright E2E navigation (Lobby → Daily → Back → Classic with filter → Back → Music Duel Streams/Year → Back → Artist Detective → Back → direct refresh on `/duel?deck=year` and `/artist-detective`), bumped SW cache (`gts-v94-mode-routes` / `gts-cf-v74-mode-routes`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, verified live HTTP `200` on all clean routes, and pushed to `origin/main`.
+
+
+## Wave 51 — Music Duel Hover Play Setting Toggle (2026-11-20)
+- **Hover Play Switch (`index.html`, `layout.css`, `app.js`)**:
+  - Added `#duelHoverToggle` (`role="switch"`, persisted in `localStorage` under `tl:duel:hoverPlay`, default ON) next to `#duelTabs` in Music Duel on desktop/mouse devices (auto-hidden on touch/narrow mobile viewports via `@media(hover:none),(pointer:coarse)` and `<= 600px`).
+  - When toggled OFF, hovering cards no longer auto-plays previews and moving the mouse off a card no longer pauses previews started manually via `▶`.
+- **Verification & Deploy**:
+  - Added unit test assertions in `tests/og-ui.test.cjs` (`137/137` passing), visually verified desktop ON/OFF toggle states + Playwright hover behavior + persistence across reload, bumped SW cache (`gts-v95-duel-hover-toggle` / `gts-cf-v75-duel-hover-toggle`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.

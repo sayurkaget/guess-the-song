@@ -819,6 +819,32 @@
 
 /* ====== Music Duel Arena Polish (#duel) ====== */
 #duelModeLabel{display:none}
+#duel .duel-controls{
+  display:flex;align-items:center;justify-content:center;gap:.55rem;flex-wrap:wrap;
+  width:100%;margin:0 auto .95rem;
+}
+#duel .duel-controls .duel-tabs{margin:0}
+.duel-hover-toggle{
+  display:inline-flex;align-items:center;gap:.44rem;
+  min-height:34px;padding:.32rem .78rem;border-radius:999px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.11);
+  color:var(--dim);font:inherit;font-size:.75rem;font-weight:700;cursor:pointer;
+  transition:background .16s,border-color .16s,color .16s;
+}
+.duel-hover-toggle:hover{border-color:rgba(255,255,255,.22);color:var(--ink)}
+.duel-hover-toggle .dh-dot{
+  width:7px;height:7px;border-radius:50%;flex:none;
+  background:rgba(255,255,255,.28);transition:background .16s,box-shadow .16s;
+}
+.duel-hover-toggle[aria-checked="true"]{
+  background:rgba(245,177,61,.12);border-color:rgba(245,177,61,.42);color:#ffd06b;
+}
+.duel-hover-toggle[aria-checked="true"] .dh-dot{
+  background:#ffd06b;box-shadow:0 0 8px rgba(245,177,61,.85);
+}
+@media(hover:none),(pointer:coarse){
+  .duel-hover-toggle{display:none}
+}
 #duel .backbtn{
   min-height:40px;padding:.45rem .95rem .45rem .72rem;border-radius:999px;
   background:var(--surf);border:1px solid var(--line);
@@ -862,7 +888,9 @@
   .wrap:has(#duel:not([hidden])) .head{margin-bottom:.75rem}
   .wrap:has(#duel:not([hidden])) .logo{font-size:1.9rem}
   #duel .gamebar{margin-bottom:.65rem}
-  #duel .duel-tabs{width:100%;max-width:340px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:.65rem}
+  #duel .duel-controls{margin-bottom:.65rem}
+  #duel .duel-hover-toggle{display:none}
+  #duel .duel-tabs{width:100%;max-width:340px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
   #duel .duel-tabs button{min-height:36px;padding:.4rem .5rem;font-size:.77rem;white-space:nowrap}
   #duel .duel-prompt{margin-bottom:.65rem;font-size:.8rem}
   #duel .duel-card{padding:.85rem;gap:.55rem;justify-content:flex-start}

@@ -3145,6 +3145,17 @@
       b: { audio: null, preview: '', slug: '' }
     };
     let duelAudioEpoch = 0, activeSlot = null, lastMouseCard = null, manualPausedSlot = null;
+    const DUEL_HOVER_KEY = 'tl:duel:hoverPlay';
+    let hoverPlayEnabled = LS.get(DUEL_HOVER_KEY, true) !== false;
+    const syncHoverToggle = () => {
+      const btn = $('#duelHoverToggle');
+      if (!btn) return;
+      btn.setAttribute('aria-checked', String(hoverPlayEnabled));
+      btn.setAttribute('aria-pressed', String(hoverPlayEnabled));
+      btn.title = hoverPlayEnabled
+        ? 'Hover play is on — click to disable auto-play on hover'
+        : 'Hover play is off — click to auto-play when hovering a song card';
+    };
     let duelTimer = 0, duelEpoch = 0;
     const ds = { kind: 'streams', a: null, b: null, score: 0, best: 0, newBest: false, seen: new Set(), history: [], busy: false, over: false, challenge: null, queue: [], qIndex: 0 };
 
@@ -3356,7 +3367,7 @@
       syncDuelTarget();
       $('#duelStatus').textContent = '';
       $('#duelStatus').className = 'status duel-status';
-      if (lastMouseCard && !ds.over && !$('#duel').hidden && manualPausedSlot !== lastMouseCard) {
+      if (hoverPlayEnabled && lastMouseCard && !ds.over && !$('#duel').hidden && manualPausedSlot !== lastMouseCard) {
         playDuelSlot(lastMouseCard, true);
       }
     }
@@ -3574,6 +3585,18 @@
         if (b && !b.disabled && b.dataset.duel !== ds.kind) startDuel(b.dataset.duel);
       });
     }
+    if ($('#duelHoverToggle')) {
+      syncHoverToggle();
+      $('#duelHoverToggle').onclick = () => {
+        hoverPlayEnabled = !hoverPlayEnabled;
+        LS.set(DUEL_HOVER_KEY, hoverPlayEnabled);
+        syncHoverToggle();
+        if (!hoverPlayEnabled && activeSlot && lastMouseCard === activeSlot) {
+          stopDuelAudio();
+        }
+        toast(hoverPlayEnabled ? 'Hover play on' : 'Hover play off — click ▶ to listen');
+      };
+    }
     $('#duelBack').onclick = () => { closeAll(); UI.lobby(); };
     $('#duelPlayA').onclick = () => toggleDuelPreview('a');
     $('#duelPlayB').onclick = () => toggleDuelPreview('b');
@@ -3582,14 +3605,14 @@
       card.addEventListener('pointerenter', (e) => {
         if (e.pointerType !== 'mouse' || ds.over || $('#duel').hidden) return;
         lastMouseCard = slot;
-        if (manualPausedSlot === slot) return;
+        if (!hoverPlayEnabled || manualPausedSlot === slot) return;
         playDuelSlot(slot, true);
       });
       card.addEventListener('pointerleave', (e) => {
         if (e.pointerType !== 'mouse') return;
         if (lastMouseCard === slot) lastMouseCard = null;
         manualPausedSlot = null;
-        if (activeSlot === slot) {
+        if (hoverPlayEnabled && activeSlot === slot) {
           duelAudioEpoch++;
           activeSlot = null;
           pauseSlot(slot);

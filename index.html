@@ -260,9 +260,15 @@
       </div>
     </div>
 
-    <div class="seg duel-tabs" id="duelTabs" role="tablist" aria-label="Duel deck">
-      <button type="button" role="tab" data-duel="streams" aria-pressed="true">Spotify Streams</button>
-      <button type="button" role="tab" data-duel="year" aria-pressed="false">Release Year</button>
+    <div class="duel-controls">
+      <div class="seg duel-tabs" id="duelTabs" role="tablist" aria-label="Duel deck">
+        <button type="button" role="tab" data-duel="streams" aria-pressed="true">Spotify Streams</button>
+        <button type="button" role="tab" data-duel="year" aria-pressed="false">Release Year</button>
+      </div>
+      <button class="duel-hover-toggle" id="duelHoverToggle" type="button" role="switch" aria-checked="true" aria-pressed="true" title="Auto-play song preview on hover">
+        <span class="dh-dot" aria-hidden="true"></span>
+        <span>Hover play</span>
+      </button>
     </div>
 
     <p class="duel-prompt" id="duelPrompt">Does the challenger have <b>more</b> or <b>fewer</b> Spotify streams?</p>
