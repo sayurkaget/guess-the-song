@@ -385,3 +385,13 @@
   - Expanded `sitemap.xml` to include all clean mode URLs (`/`, `/daily`, `/classic`, `/artist`, `/spotify`, `/duel`, `/artist-detective`) and updated `WebApplication` JSON-LD description to include Spotify Playlist mode.
 - **Verification & Deploy**:
   - Added fuzzy search, Audio Hint, and SEO tests in `tests/og-ui.test.cjs` & `tests/artist-game.test.cjs` (`143/143` passing), verified Playwright desktop (`1280×800`) + mobile (`360×780`) visual & E2E flows (fuzzy search in Classic + Artist Detective, Audio Hint countdown → unlock → 4s play/stop), bumped SW cache (`gts-v97-fuzzy-hint-seo` / `gts-cf-v77-fuzzy-hint-seo`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 54 — Replace Artist Detective Audio Hint with Progressive Text Clue + Name Initial Hints (2026-11-20)
+- **2-Step Deductive Hints (`artist-game.js`, `index.html`, `layout.css`, `app.js`)**:
+  - Replaced audio snippet hint (`#agAudioHint`) with non-audio 2-step progressive hints (`#agHintBtn` + `#agHintBox` clue chips) per user preference:
+    - **Hint 1 (unlocks at guess 5)**: `AD.pickClueHint(guesses, target)` reveals 1 exact attribute the player hasn't turned green yet (priority: `Genre → Country → Debut → Type → Gender → Global Rank`).
+    - **Hint 2 (unlocks at guess 7)**: `AD.nameHint(target)` reveals the artist's initial letter & word/letter pattern (e.g. `Starts with "T" · 2 words`, `Starts with "R" · 7 letters`).
+  - Displayed revealed hints as compact glowing chips inside `#agHintBox` right under the controls row; recorded hint count cleanly in `#agVerdict` and `AD.shareText` (`· 1 hint` / `· 2 hints`).
+- **Verification & Deploy**:
+  - Updated unit tests (`143/143` passing), verified Playwright desktop (`1280×800`) + mobile (`360×780`, `0px` overflow) visual & E2E countdown (`Hint in 5` → `Get hint (1/2)` → `Hint 2 in 2` → `Name hint (2/2)` → `2/2 hints used`), bumped SW cache (`gts-v98-artist-clue-hints` / `gts-cf-v78-artist-clue-hints`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.

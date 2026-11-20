@@ -3319,9 +3319,6 @@
       if (!typing && doneBanner) {
         if (e.code === 'Space' && $('#agResultArt')) { e.preventDefault(); $('#agResultArt').click(); }
         else if (e.key === 'Enter' && $('#agNextBtn')) { e.preventDefault(); $('#agNextBtn').click(); }
-      } else if (!typing && !doneBanner && e.code === 'Space' && $('#agAudioHint') && !$('#agAudioHint').hidden && !$('#agAudioHint').disabled) {
-        e.preventDefault();
-        $('#agAudioHint').click();
       }
       return;
     }
@@ -3994,23 +3991,21 @@
     const roster = AD.buildRoster(ALL, window.DUEL_STREAMS_V1);
     const byId = new Map(roster.map((a) => [a.id, a]));
     const seenFree = new Set();
-    const AG_HINT_AFTER = AD.HINT_AFTER || 5;
-    const AG_HINT_SEC = 4;
-    let agAudio = null, agAudioKind = '', agAudioEpoch = 0, agHintTimer = 0;
+    const AG_HINT1_AFTER = AD.HINT1_AFTER || 5;
+    const AG_HINT2_AFTER = AD.HINT2_AFTER || 7;
+    let agAudio = null, agAudioKind = '', agAudioEpoch = 0;
 
     const ag = {
       mode: 'free',
       target: null,
       preloadedSlug: '',
       preloadedUrl: '',
-      hintSlug: '',
-      hintUrl: '',
       playingSlug: '',
       pausedAt: 0,
       guesses: [],
       done: false,
       won: false,
-      hintUsed: false,
+      hints: [],
       challenge: null,
       sel: -1,
       matches: []
@@ -4020,11 +4015,6 @@
       if (agAudio || typeof Audio !== 'function') return agAudio;
       agAudio = new Audio();
       agAudio.preload = 'auto';
-      agAudio.addEventListener('timeupdate', () => {
-        if (agAudioKind === 'hint' && agAudio && agAudio.currentTime >= AG_HINT_SEC) {
-          stopArtistAudio();
-        }
-      });
       agAudio.addEventListener('ended', () => {
         ag.pausedAt = 0;
         if (agAudio) {
@@ -4044,8 +4034,6 @@
     function preloadTargetHit(target) {
       ag.preloadedSlug = '';
       ag.preloadedUrl = '';
-      ag.hintSlug = '';
-      ag.hintUrl = '';
       ag.playingSlug = '';
       ag.pausedAt = 0;
       if (!target || !target.topSong) return;
@@ -4063,62 +4051,71 @@
       }).catch(() => {});
     }
 
-    function preloadHintClip(target) {
-      if (!target || !target.hintSong) return;
-      const song = target.hintSong;
-      if (ag.hintSlug === song.slug && ag.hintUrl) return;
-      if (ag.preloadedSlug === song.slug && ag.preloadedUrl) {
-        ag.hintSlug = song.slug;
-        ag.hintUrl = ag.preloadedUrl;
-        return;
-      }
-      const myEpoch = agAudioEpoch;
-      resolve(song).then((meta) => {
-        if (myEpoch !== agAudioEpoch || !ag.target || ag.target.id !== target.id || !meta || !meta.preview) return;
-        ag.hintSlug = song.slug;
-        ag.hintUrl = meta.preview;
-      }).catch(() => {});
-    }
-
     function syncAudioBtns() {
       const art = $('#agResultArt');
       if (art) {
         const playingHit = agAudioKind === 'hit' && agAudio && !agAudio.paused;
         art.dataset.playing = playingHit ? '1' : '0';
       }
-      const hintBtn = $('#agAudioHint');
-      const hintLbl = $('#agAudioHintLbl');
-      if (hintBtn) {
-        const hasSong = !!(ag.target && (ag.target.hintSong || ag.target.topSong));
-        hintBtn.hidden = ag.done || !hasSong;
-        const left = Math.max(0, AG_HINT_AFTER - ag.guesses.length);
-        const unlocked = left === 0;
-        hintBtn.disabled = !unlocked;
-        const isPlayingHint = agAudioKind === 'hint' && agAudio && !agAudio.paused;
-        const isLoadingHint = agAudioKind === 'hint' && !isPlayingHint;
-        hintBtn.dataset.s = isPlayingHint ? 'playing' : isLoadingHint ? 'loading' : 'idle';
-        hintBtn.classList.toggle('is-used', !!ag.hintUsed);
-        if (hintLbl) {
-          hintLbl.textContent = !unlocked
-            ? ('Hint in ' + left)
-            : isPlayingHint ? 'Stop hint'
-            : isLoadingHint ? 'Loading…'
-            : ag.hintUsed ? 'Replay hint' : 'Audio hint';
+    }
+
+    function syncAgHints() {
+      const btn = $('#agHintBtn');
+      const lbl = $('#agHintLbl');
+      const box = $('#agHintBox');
+      const count = ag.hints.length;
+      if (btn) {
+        btn.hidden = ag.done || !ag.target;
+        if (count >= 2) {
+          btn.disabled = true;
+          if (lbl) lbl.textContent = '2/2 hints used';
+          btn.setAttribute('aria-label', 'All 2 hints revealed');
+        } else {
+          const need = count === 0 ? AG_HINT1_AFTER : AG_HINT2_AFTER;
+          const left = Math.max(0, need - ag.guesses.length);
+          btn.disabled = left > 0;
+          if (lbl) {
+            lbl.textContent = left > 0
+              ? (count === 0 ? ('Hint in ' + left) : ('Hint 2 in ' + left))
+              : (count === 0 ? 'Get hint (1/2)' : 'Name hint (2/2)');
+          }
+          btn.setAttribute('aria-label', left > 0
+            ? ('Hint ' + (count + 1) + ' unlocks in ' + left + (left === 1 ? ' guess' : ' guesses'))
+            : (count === 0 ? 'Reveal 1 unmatched artist clue' : 'Reveal artist name initial and word count'));
         }
-        hintBtn.setAttribute('aria-label', !unlocked
-          ? ('Audio hint unlocks in ' + left + (left === 1 ? ' guess' : ' guesses'))
-          : isPlayingHint ? 'Stop audio hint' : 'Play 4-second mystery audio hint');
+      }
+      if (box) {
+        if (ag.done || !count) {
+          box.hidden = true;
+          box.innerHTML = '';
+        } else {
+          box.hidden = false;
+          box.innerHTML = ag.hints.map((h) =>
+            '<span class="spotle-hint-chip"><small>' + esc(h.label) + '</small><b>' + esc(h.value) + '</b></span>'
+          ).join('');
+        }
       }
     }
 
+    function revealAgHint() {
+      if (ag.done || !ag.target) return;
+      const count = ag.hints.length;
+      if (count >= 2) return;
+      const need = count === 0 ? AG_HINT1_AFTER : AG_HINT2_AFTER;
+      if (ag.guesses.length < need) return;
+      const hint = count === 0 ? AD.pickClueHint(ag.guesses, ag.target) : AD.nameHint(ag.target);
+      if (!hint) return;
+      ag.hints.push(hint);
+      if (typeof unlockSfx === 'function') unlockSfx();
+      playSfx('near');
+      syncAgHints();
+    }
+
     stopArtistAudio = () => {
-      clearTimeout(agHintTimer);
-      agHintTimer = 0;
-      const prevKind = agAudioKind;
       agAudioEpoch++;
       agAudioKind = '';
       if (agAudio) {
-        if (prevKind === 'hit' && Number.isFinite(agAudio.currentTime) && !agAudio.ended && agAudio.currentTime > 0.05) {
+        if (Number.isFinite(agAudio.currentTime) && !agAudio.ended && agAudio.currentTime > 0.05) {
           ag.pausedAt = agAudio.currentTime;
         }
         try { agAudio.pause(); } catch (e) {}
@@ -4158,41 +4155,22 @@
 
       const myEpoch = ++agAudioEpoch;
       agAudioKind = kind;
-      if (kind === 'hint') syncAudioBtns();
 
       try {
-        let previewUrl = (ag.hintSlug === song.slug && ag.hintUrl)
-          ? ag.hintUrl
-          : (ag.preloadedSlug === song.slug && ag.preloadedUrl) ? ag.preloadedUrl : '';
+        let previewUrl = (ag.preloadedSlug === song.slug && ag.preloadedUrl) ? ag.preloadedUrl : '';
         if (!previewUrl) {
-          let meta = null;
-          try { meta = await resolve(song); } catch (e) {}
-          if ((!meta || !meta.preview) && kind === 'hint' && ag.target && ag.target.topSong && ag.target.topSong.slug !== song.slug) {
-            previewUrl = (ag.preloadedSlug === ag.target.topSong.slug && ag.preloadedUrl) ? ag.preloadedUrl : '';
-            if (!previewUrl) {
-              try { meta = await resolve(ag.target.topSong); } catch (e) {}
-            }
+          const meta = await resolve(song);
+          if (myEpoch !== agAudioEpoch || !meta || !meta.preview || $('#artistGame').hidden) {
+            if (myEpoch === agAudioEpoch) stopArtistAudio();
+            return;
           }
-          if (!previewUrl) {
-            if (myEpoch !== agAudioEpoch || !meta || !meta.preview || $('#artistGame').hidden) {
-              if (myEpoch === agAudioEpoch) {
-                stopArtistAudio();
-                if (!isAuto) toast(kind === 'hint' ? 'Audio hint unavailable right now.' : 'Could not play audio preview.');
-              }
-              return;
-            }
-            previewUrl = meta.preview;
-          }
-        }
-        if (myEpoch !== agAudioEpoch || $('#artistGame').hidden) {
-          if (myEpoch === agAudioEpoch) stopArtistAudio();
-          return;
+          previewUrl = meta.preview;
         }
         const a = ensureAgAudio();
         if (!a) return;
         a.volume = S.muted ? 0 : S.vol;
         const sameTrack = ag.playingSlug === song.slug && a.src === previewUrl;
-        if (kind === 'hint' || !sameTrack || isAuto) {
+        if (!sameTrack || isAuto) {
           ag.playingSlug = song.slug;
           ag.pausedAt = 0;
           if (a.src !== previewUrl) a.src = previewUrl;
@@ -4208,18 +4186,11 @@
           stopArtistAudio();
           return;
         }
-        if (kind === 'hint') {
-          ag.hintUsed = true;
-          clearTimeout(agHintTimer);
-          agHintTimer = setTimeout(() => {
-            if (myEpoch === agAudioEpoch && agAudioKind === 'hint') stopArtistAudio();
-          }, (AG_HINT_SEC + 0.35) * 1000);
-        }
         syncAudioBtns();
       } catch (e) {
         if (myEpoch === agAudioEpoch) {
           stopArtistAudio();
-          if (!isAuto) toast(kind === 'hint' ? 'Audio hint unavailable right now.' : 'Could not play audio preview.');
+          if (!isAuto) toast('Could not play audio preview.');
         }
       }
     }
@@ -4277,6 +4248,7 @@
       $('#agQ').disabled = ag.done;
       $('#agGiveUp').hidden = ag.done;
       syncAudioBtns();
+      syncAgHints();
 
       const banner = $('#agResultBanner');
       if (banner && ag.target) {
@@ -4285,8 +4257,9 @@
           banner.dataset.won = ag.won ? '1' : '0';
           $('#agResultArt').src = ag.target.art || '';
           $('#agResultArt').alt = ag.target.name;
+          const hUsed = ag.hints.length;
           $('#agVerdict').textContent = ag.won
-            ? ('Solved in ' + ag.guesses.length + (ag.guesses.length === 1 ? ' try' : ' tries') + (ag.hintUsed ? ' · Audio hint' : '!'))
+            ? ('Solved in ' + ag.guesses.length + (ag.guesses.length === 1 ? ' try' : ' tries') + (hUsed ? (' · ' + hUsed + (hUsed === 1 ? ' hint' : ' hints')) : '!'))
             : 'Mystery Artist Revealed';
           $('#agAnswerName').textContent = ag.target.name;
           $('#agTopSongLabel').textContent = ag.target.topSong
@@ -4449,7 +4422,6 @@
         return;
       }
       playSfx('near');
-      if (ag.guesses.length >= AG_HINT_AFTER - 1) preloadHintClip(ag.target);
       renderAgBoard();
     }
 
@@ -4499,7 +4471,7 @@
         ag.guesses = [];
         ag.done = false;
         ag.won = false;
-        ag.hintUsed = false;
+        ag.hints = [];
         ag.challenge = incoming;
       } else {
         ag.challenge = null;
@@ -4511,7 +4483,7 @@
         ag.guesses = [];
         ag.done = false;
         ag.won = false;
-        ag.hintUsed = false;
+        ag.hints = [];
       }
       preloadTargetHit(ag.target);
 
@@ -4600,13 +4572,8 @@
       closeAgDD();
       $('#agQ').focus();
     };
-    if ($('#agAudioHint')) {
-      $('#agAudioHint').onclick = () => {
-        if (ag.done || !ag.target || ag.guesses.length < AG_HINT_AFTER) return;
-        const song = ag.target.hintSong || ag.target.topSong;
-        if (!song) return;
-        playArtistTrack(song, 'hint', false);
-      };
+    if ($('#agHintBtn')) {
+      $('#agHintBtn').onclick = () => revealAgHint();
     }
     $('#agGiveUp').onclick = () => giveUpArtist();
     if ($('#agResultArt')) {
@@ -4629,7 +4596,7 @@
         won: ag.won,
         url: siteUrl(),
         challengeUrl,
-        hintUsed: ag.hintUsed
+        hintsUsed: ag.hints.length
       }), 'artist_copy', 'artist');
     };
     $('#agNextBtn').onclick = () => startArtistGame();

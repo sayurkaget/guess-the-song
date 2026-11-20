@@ -484,12 +484,48 @@
     return 'Tied at ' + yourTries + (yourTries === 1 ? ' try!' : ' tries!');
   }
 
-  function shareText({ mode = 'daily', day = '', guesses = [], target = null, won = false, url = '', challengeUrl = '', hintUsed = false } = {}) {
+  function pickClueHint(guesses, target) {
+    if (!target) return null;
+    const solvedKeys = new Set();
+    for (const g of (guesses || [])) {
+      for (const t of compare(g, target)) {
+        if (t.status === 'exact') solvedKeys.add(t.key);
+      }
+    }
+    const order = [
+      ['genre', 'Genre', String(target.genre)],
+      ['country', 'Country', String(target.country)],
+      ['debut', 'Debut', String(target.debut)],
+      ['members', 'Type', target.type === 'Group' ? `Group (${target.members})` : String(target.type)],
+      ['gender', 'Gender', String(target.gender)],
+      ['rank', 'Global Rank', `#${target.rank}`]
+    ];
+    const picked = order.find(([k]) => !solvedKeys.has(k)) || order[order.length - 1];
+    return { kind: 'clue', key: picked[0], label: picked[1], value: picked[2] };
+  }
+
+  function nameHint(target) {
+    if (!target || !target.name) return null;
+    const trimmed = String(target.name).trim();
+    const words = trimmed.split(/\s+/).filter(Boolean);
+    if (!words.length) return null;
+    const first = words[0].charAt(0).toUpperCase();
+    let detail;
+    if (words.length === 1) {
+      detail = /^[A-Za-z]+$/.test(words[0]) ? `${words[0].length} letters` : '1 word';
+    } else {
+      detail = `${words.length} words`;
+    }
+    return { kind: 'name', key: 'name', label: 'Name', value: `Starts with "${first}" · ${detail}` };
+  }
+
+  function shareText({ mode = 'daily', day = '', guesses = [], target = null, won = false, url = '', challengeUrl = '', hintsUsed = 0 } = {}) {
     const rows = (guesses || []).map((g) => {
       const tiles = compare(g, target);
       return tiles.map((t) => (t.status === 'exact' ? '🟩' : t.status === 'close' ? '🟨' : '⬛')).join('');
     });
-    const suffix = hintUsed ? ' · Audio hint' : '';
+    const hCount = Math.max(0, Number(hintsUsed) || 0);
+    const suffix = hCount ? ` · ${hCount} ${hCount === 1 ? 'hint' : 'hints'}` : '';
     const header = mode === 'daily' && day
       ? `TuneUp · Daily Artist · ${day} · ${won ? guesses.length + '/10' : 'X/10'}${suffix}`
       : `TuneUp · Artist Detective · ${won ? guesses.length + '/10' : 'X/10'}${suffix}`;
@@ -499,9 +535,12 @@
 
   const api = {
     MAX_TRIES: 10,
-    HINT_AFTER: 5,
+    HINT1_AFTER: 5,
+    HINT2_AFTER: 7,
     buildRoster,
     compare,
+    pickClueHint,
+    nameHint,
     dailyArtist,
     createChallenge,
     parseChallenge,

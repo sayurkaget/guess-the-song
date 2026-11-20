@@ -123,11 +123,12 @@ test('Wave 53 fuzzy search handles typos & missing spaces accurately on full son
   assert.ok(elapsed < 1500, `fuzzy search suite should remain fast (took ${elapsed}ms)`);
 });
 
-test('Wave 53 Artist Detective Audio Hint and SEO sitemap/JSON-LD are wired cleanly', () => {
+test('Wave 53/54 Artist Detective Clue + Name Hints and SEO sitemap/JSON-LD are wired cleanly', () => {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  assert.match(html, /id="agAudioHint"/);
-  assert.match(html, /id="agAudioHintLbl"/);
-  assert.doesNotMatch(html, /id="agPlaySongBtn"/);
+  assert.match(html, /id="agHintBtn"/);
+  assert.match(html, /id="agHintLbl"/);
+  assert.match(html, /id="agHintBox"/);
+  assert.doesNotMatch(html, /id="agPlaySongBtn"|id="agAudioHint"/);
   const ldJson = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
   assert.ok(ldJson, 'JSON-LD script must exist');
   assert.match(ldJson[1], /Spotify Playlist/);
@@ -138,11 +139,14 @@ test('Wave 53 Artist Detective Audio Hint and SEO sitemap/JSON-LD are wired clea
   }
 
   const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
-  assert.match(app, /const AG_HINT_AFTER = AD\.HINT_AFTER \|\| 5;/);
-  assert.match(app, /function preloadHintClip\(target\)/);
-  assert.match(app, /agAudioKind === 'hint' && agAudio && agAudio\.currentTime >= AG_HINT_SEC/);
+  assert.match(app, /const AG_HINT1_AFTER = AD\.HINT1_AFTER \|\| 5;/);
+  assert.match(app, /const AG_HINT2_AFTER = AD\.HINT2_AFTER \|\| 7;/);
+  assert.match(app, /function revealAgHint\(\)/);
+  assert.match(app, /AD\.pickClueHint\(ag\.guesses, ag\.target\)/);
+  assert.match(app, /AD\.nameHint\(ag\.target\)/);
   assert.match(app, /function openAgDD\(query\)[\s\S]*?fuzzyMatchScore\(toks, qCompact, a\)/);
 
   const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
-  assert.match(css, /\.spotle-hint-btn\[data-s="playing"\]/);
+  assert.match(css, /\.spotle-hint-box\{/);
+  assert.match(css, /\.spotle-hint-chip\{/);
 });

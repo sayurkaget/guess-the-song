@@ -181,14 +181,42 @@ test('ArtistDetective createChallenge, parseChallenge, compareChallenge, and sha
     'TuneUp · Daily Artist · 2026-11-18 · 2/10\n🟨🟩🟩⬛🟩🟨\n🟩🟩🟩🟩🟩🟩\nhttps://tuneup.pages.dev/'
   );
 
-  assert.equal(ArtistDetective.HINT_AFTER, 5);
-  const sharedWithHint = ArtistDetective.shareText({
+  assert.equal(ArtistDetective.HINT1_AFTER, 5);
+  assert.equal(ArtistDetective.HINT2_AFTER, 7);
+
+  // pickClueHint skips attributes already solved exact in previous guesses
+  assert.deepEqual(ArtistDetective.pickClueHint([guess1], target), {
+    kind: 'clue', key: 'genre', label: 'Genre', value: 'R&B'
+  });
+  const sameGenreDiffCountry = {
+    id: 'usher', name: 'Usher', debut: 1994, type: 'Solo', members: 1,
+    gender: 'Male', genre: 'R&B', country: 'USA', continent: 'North America', rank: 50
+  };
+  assert.deepEqual(ArtistDetective.pickClueHint([sameGenreDiffCountry], target), {
+    kind: 'clue', key: 'country', label: 'Country', value: 'Canada'
+  });
+  assert.deepEqual(ArtistDetective.pickClueHint([guess1, sameGenreDiffCountry], target), {
+    kind: 'clue', key: 'debut', label: 'Debut', value: '2011'
+  });
+
+  // nameHint formats multi-word, single-word alphabetic, and punctuated names cleanly
+  assert.deepEqual(ArtistDetective.nameHint(target), {
+    kind: 'name', key: 'name', label: 'Name', value: 'Starts with "T" · 2 words'
+  });
+  assert.deepEqual(ArtistDetective.nameHint({ name: 'Rihanna' }), {
+    kind: 'name', key: 'name', label: 'Name', value: 'Starts with "R" · 7 letters'
+  });
+  assert.deepEqual(ArtistDetective.nameHint({ name: 'a-ha' }), {
+    kind: 'name', key: 'name', label: 'Name', value: 'Starts with "A" · 1 word'
+  });
+
+  const sharedWithHints = ArtistDetective.shareText({
     mode: 'free',
     guesses: [guess1, target],
     target,
     won: true,
-    hintUsed: true,
+    hintsUsed: 2,
     url: 'https://tuneup.pages.dev/'
   });
-  assert.match(sharedWithHint, /^TuneUp · Artist Detective · 2\/10 · Audio hint\n/);
+  assert.match(sharedWithHints, /^TuneUp · Artist Detective · 2\/10 · 2 hints\n/);
 });
