@@ -339,3 +339,19 @@
   7. Updated About, FAQ (`index.html`), and `app.webmanifest` descriptions to include Spotify Playlists.
 - **Verification & Deploy**:
   - Added Wave 49 regression assertions in `tests/og-ui.test.cjs` (`135/135` unit tests passing), visually verified 1-song & 3-song Score Card PNG + Artist Detective keyboard skip via Playwright, bumped SW cache (`gts-v93-audio-polish` / `gts-cf-v73-audio-polish`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 50 — Clean Per-Mode URL Routing & Browser Back Support (2026-11-20)
+- **Clean Address-Bar URLs per Mode (`app.js`)**:
+  - Entering any mode now updates the address bar cleanly (`pushState` from Lobby, `replaceState` within the same mode) and updates `document.title` dynamically:
+    - Lobby: `/`
+    - Daily Challenge: `/daily`
+    - Classic: `/classic` (or `/classic?genre=...&era=...`)
+    - Custom Artist: `/artist?id=...&name=...`
+    - Spotify Playlist/Album: `/spotify` (or `/spotify?id=...&songs=...`)
+    - Music Duel: `/duel` (Streams) / `/duel?deck=year` (Release Year)
+    - Artist Detective: `/artist-detective`
+  - Added `popstate` handler so browser/phone Back & Forward buttons smoothly switch between Lobby and modes without leaving the site, and `ROOT_PATH`-aware `siteUrl()` so all Friend Challenge `#challenge=`/`#run=`/`#duel=`/`#artist=` and `#daily` share links stay clean and backward-compatible.
+  - Opening or refreshing any clean mode URL directly boots straight into that mode via `applyDeepLink()` (preserving legacy `#daily`, `#duel`, `#artist`, `?mode=`, and `?spotify=` links).
+- **Verification & Deploy**:
+  - Added routing tests in `tests/og-ui.test.cjs` (`136/136` unit tests passing), verified full Playwright E2E navigation (Lobby → Daily → Back → Classic with filter → Back → Music Duel Streams/Year → Back → Artist Detective → Back → direct refresh on `/duel?deck=year` and `/artist-detective`), bumped SW cache (`gts-v94-mode-routes` / `gts-cf-v74-mode-routes`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, verified live HTTP `200` on all clean routes, and pushed to `origin/main`.

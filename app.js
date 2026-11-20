@@ -1232,9 +1232,13 @@
   }
 
   // Mulai satu sesi kustom dari artis terpilih.
-  async function startCustom(artistId, artistName) {
+  async function startCustom(artistId, artistName, fromDeepLink = false) {
     const req = ++customStartReq;
     const hint = $('#customHint');
+    if (fromDeepLink && $('#customModal')) {
+      closeAll();
+      $('#customModal').hidden = false;
+    }
     setCustomBusy(true);
     hint.className = 'custom-hint'; hint.textContent = 'Loading ' + artistName + '…';
     let songs;
@@ -1248,7 +1252,7 @@
         hint.className = 'custom-hint warn'; hint.textContent = 'Could not load that artist. Try another.'; return;
       }
     }
-    if (req !== customStartReq || ($('#customModal') && $('#customModal').hidden)) {
+    if (req !== customStartReq || (!fromDeepLink && $('#customModal') && $('#customModal').hidden)) {
       setCustomBusy(false);
       return;
     }
@@ -1404,7 +1408,6 @@
     Object.assign(S, saved || { stage: 0, stages: [], runDone: false });
     S.song = null; S.meta = null;
     loadRun();
-    history.replaceState(null, '', location.pathname + location.search + '#daily');
     UI.clearInput(); UI.game();
     if (S.runDone) { saveDaily(); completeDaily(); UI.render(); UI.status('Daily complete. Come back tomorrow for a new song.'); UI.runResult(); return; }
     await load();
@@ -1955,12 +1958,13 @@
       }
     },
 
-    lobby() {
+    lobby(opts = {}) {
+      const skipRoute = !!(opts && opts.skipRoute);
+      const replaceRoute = !!(opts && opts.replaceRoute);
       stopAudio();
       if (stopDuel) stopDuel();
       if (stopArtistGame) stopArtistGame();
       $('#challengeIntro').hidden = true;
-      if (S.challenge || S.runChallenge || S.daily) history.replaceState(null, '', location.pathname + location.search);
       if (S.custom || S.challenge || S.runChallenge || S.daily) { S.custom = null; S.challenge = null; S.runChallenge = null; S.daily = null; switchRun(); }   // keluar dari mode kustom, pulihkan sesi katalog
       S.epoch++;                       // batalkan pemuatan yang masih berjalan
       document.body.removeAttribute('data-diff');   // lobi tak terikat satu kesulitan
@@ -1970,9 +1974,11 @@
       $('#lobby').hidden = false;
       this.buildControls();
       this.refreshLobby();
+      if (!skipRoute) syncRoute('', { title: DEFAULT_TITLE, replace: replaceRoute });
     },
 
     game() {
+      const wasInGame = !$('#game').hidden;
       $('#lobby').hidden = true;
       $('#challengeIntro').hidden = true;
       $('#game').hidden = false;
@@ -1986,6 +1992,31 @@
           S.era === 'all' ? null : ERAS[S.era].label
         ].filter(Boolean).join(' · ');
       $('#gameMode').hidden = !$('#gameMode').textContent;
+      if (S.challenge || S.runChallenge) {
+        if (typeof document !== 'undefined') document.title = 'Friend Challenge — TuneUp';
+      } else if (S.daily) {
+        syncRoute('daily', { title: 'Daily Challenge — TuneUp', replace: wasInGame });
+      } else if (S.custom && S.custom.kind === 'spotify') {
+        const count = stageCount();
+        const q = S.custom.spotifyId
+          ? encodeQuery([
+              ['id', (S.custom.spotifyType === 'album' ? 'album:' : '') + S.custom.spotifyId],
+              ['songs', count < S.custom.songs.length ? count : '']
+            ])
+          : '';
+        syncRoute('spotify', { query: q, title: (S.custom.label || 'Spotify') + ' — TuneUp', replace: wasInGame });
+      } else if (S.custom) {
+        const validId = S.custom.id && (/^[1-9]\d{0,15}$/.test(String(S.custom.id)) || String(S.custom.id).startsWith('local:'));
+        const q = validId ? encodeQuery([['id', S.custom.id], ['name', S.custom.label || '']]) : '';
+        syncRoute('artist', { query: q, title: (S.custom.label || 'Custom Artist') + ' — TuneUp', replace: wasInGame });
+      } else {
+        const q = encodeQuery([
+          ['genre', S.genre !== 'all' ? S.genre : ''],
+          ['era', S.era !== 'all' ? S.era : '']
+        ]);
+        const modeTitle = $('#gameMode').textContent || 'Classic';
+        syncRoute('classic', { query: q, title: modeTitle + ' — TuneUp', replace: wasInGame });
+      }
       this.steps($('#steps'), true);
       $('#stageNow').innerHTML = S.daily ? 'One song · <b>5 tries</b>' : S.challenge
         ? 'Friend challenge · Your friend ' + window.TrackChallenge.describe(S.challenge.result)
@@ -2582,7 +2613,59 @@
 
   // Alamat situs mengikuti domain tempat game dibuka (github.io, pages.dev,
   // domain sendiri -- apa pun), jadi tautan tantangan tak pernah usang.
-  function siteUrl() { return location.origin + location.pathname; }
+  const ROUTE_SLUGS = new Set(['daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective']);
+  const DEFAULT_TITLE = (typeof document !== 'undefined' && document.title) || 'TuneUp — Music Games & Song Duel';
+  const locObj = () => (typeof location !== 'undefined' && location) || null;
+  const ROOT_PATH = (() => {
+    const loc = locObj();
+    const raw = String((loc && loc.pathname) || '/');
+    if (!raw || raw === '/') return '/';
+    const parts = raw.split('/').filter(Boolean);
+    if (parts.length && ROUTE_SLUGS.has(parts[parts.length - 1].toLowerCase())) {
+      parts.pop();
+      return parts.length ? '/' + parts.join('/') + '/' : '/';
+    }
+    if (raw.endsWith('/')) return raw;
+    if (/\.[a-z0-9]{2,5}$/i.test(parts[parts.length - 1] || '')) return raw;
+    return raw + '/';
+  })();
+  const CAN_PUSH_PATH = !/\.html?$/i.test(ROOT_PATH) && /^https?:\/\//i.test(String((locObj() && locObj().origin) || ''));
+  let routingFromPop = false;
+
+  function currentRouteSlug() {
+    const loc = locObj();
+    const raw = String((loc && loc.pathname) || '/');
+    const parts = raw.split('/').filter(Boolean);
+    const last = (parts[parts.length - 1] || '').toLowerCase();
+    return ROUTE_SLUGS.has(last) ? last : '';
+  }
+
+  function syncRoute(slug, { query = '', hash = '', title = DEFAULT_TITLE, replace = false } = {}) {
+    if (typeof document !== 'undefined') document.title = title || DEFAULT_TITLE;
+    if (typeof history === 'undefined' || !history || typeof history.replaceState !== 'function') return;
+    const loc = locObj();
+    const nextPath = CAN_PUSH_PATH ? (ROOT_PATH + (slug || '')) : ((loc && loc.pathname) || '/');
+    const nextSearch = query ? (query.startsWith('?') ? query : '?' + query) : '';
+    const nextHash = hash ? (hash.startsWith('#') ? hash : '#' + hash) : '';
+    const target = nextPath + nextSearch + nextHash;
+    const current = ((loc && loc.pathname) || '/') + ((loc && loc.search) || '') + ((loc && loc.hash) || '');
+    if (target === current) return;
+    try {
+      if (!replace && !routingFromPop && typeof history.pushState === 'function') {
+        history.pushState({ tuneupRoute: slug || 'lobby' }, '', target);
+      } else {
+        history.replaceState({ tuneupRoute: slug || 'lobby' }, '', target);
+      }
+    } catch (e) {}
+  }
+
+  function encodeQuery(pairs) {
+    return pairs.filter((p) => p[1] !== '' && p[1] != null)
+      .map((p) => encodeURIComponent(p[0]) + '=' + encodeURIComponent(String(p[1])))
+      .join('&');
+  }
+
+  function siteUrl() { return ((locObj() && locObj().origin) || '') + ROOT_PATH; }
 
   // tantangan satu lagu -- sengaja tidak menyebut judulnya
   function shareStage() {
@@ -3461,11 +3544,21 @@
       ds.queue = queue;
       ds.qIndex = qIndex;
 
+      const wasInDuel = !$('#duel').hidden;
       $('#lobby').hidden = true;
       $('#challengeIntro').hidden = true;
       $('#game').hidden = true;
       document.body.dataset.diff = 'duel';
       $('#duel').hidden = false;
+      if (ds.challenge) {
+        if (typeof document !== 'undefined') document.title = 'Friend Duel — TuneUp';
+      } else {
+        syncRoute('duel', {
+          query: ds.kind === 'year' ? 'deck=year' : '',
+          title: 'Music Duel · ' + (ds.kind === 'year' ? 'Release Year' : 'Spotify Streams') + ' — TuneUp',
+          replace: wasInDuel
+        });
+      }
       renderDuelPair();
       trackActivity(incoming ? 'duel_challenge_start' : 'duel_start', { mode: 'duel' });
       return true;
@@ -3967,12 +4060,18 @@
       }
       preloadTargetHit(ag.target);
 
+      const wasInArtist = !$('#artistGame').hidden;
       $('#lobby').hidden = true;
       $('#challengeIntro').hidden = true;
       $('#game').hidden = true;
       if ($('#duel')) $('#duel').hidden = true;
       document.body.dataset.diff = 'artist';
       $('#artistGame').hidden = false;
+      if (ag.challenge) {
+        if (typeof document !== 'undefined') document.title = 'Artist Challenge — TuneUp';
+      } else {
+        syncRoute('artist-detective', { title: 'Artist Detective — TuneUp', replace: wasInArtist });
+      }
       renderAgBoard();
       trackActivity(incoming ? 'artist_challenge_start' : 'artist_free_start', { mode: 'artist' });
       if (!ag.done) setTimeout(() => $('#agQ').focus(), 40);
@@ -4504,17 +4603,28 @@
 
   UI.buildControls();
   UI.render();
-  UI.lobby();                 // selalu mulai dari layar pilih mode
+  UI.lobby({ skipRoute: true }); // selalu mulai dari layar pilih mode tanpa menghapus URL deep-link
 
   function applyDeepLink() {
     const hash = location.hash || '';
-    if (hash === '#daily') { startDaily(); return true; }
-    if (hash === '#duel' && launchDuelMode) { launchDuelMode(); return true; }
-    if (hash === '#artist' && launchArtistMode) { launchArtistMode(); return true; }
+    const slug = currentRouteSlug();
+    if (hash === '#daily' || slug === 'daily') { startDaily(); return true; }
 
     let params;
-    try { params = new URLSearchParams(location.search || ''); } catch (e) { return false; }
-    const sp = (params.get('spotify') || '').trim();
+    try { params = new URLSearchParams(location.search || ''); } catch (e) { params = { get: () => null }; }
+
+    if (hash === '#duel' || slug === 'duel') {
+      if (launchDuelMode) {
+        const deck = (params.get('deck') || '').toLowerCase();
+        launchDuelMode(deck === 'year' || deck === 'streams' ? deck : undefined);
+        return true;
+      }
+    }
+    if (hash === '#artist' || slug === 'artist-detective' || slug === 'detective') {
+      if (launchArtistMode) { launchArtistMode(); return true; }
+    }
+
+    const sp = (params.get('spotify') || (slug === 'spotify' ? (params.get('id') || '') : '')).trim();
     if (sp) {
       const spSongs = parseInt(params.get('songs') || '', 10);
       if (Number.isFinite(spSongs) && spSongs >= 1) setSpotifyRoundsChoice(spSongs);
@@ -4522,6 +4632,20 @@
       startSpotifyPlaylist(sp, Number.isFinite(spSongs) && spSongs >= 1 ? spSongs : undefined);
       return true;
     }
+    if (slug === 'spotify') {
+      setClassicTab('spotify');
+      if ($('#spotifyUrl') && typeof $('#spotifyUrl').focus === 'function') $('#spotifyUrl').focus();
+      return false;
+    }
+    if (slug === 'artist') {
+      const aid = (params.get('id') || '').trim();
+      const aname = (params.get('name') || '').trim();
+      if (aid && aname) { startCustom(aid, aname, true); return true; }
+      setClassicTab('artist');
+      openCustom();
+      return false;
+    }
+
     const genreAliases = { 'hip-hop': 'hiphop', electronic: 'edm', other: 'lain' };
     const eraAliases = { '2000s': 'y00', '2010s': 'y10', '2020s': 'y20', classic: 'old', before2000: 'old' };
     const rawG = (params.get('genre') || '').toLowerCase();
@@ -4545,8 +4669,32 @@
       return true;
     }
     if (mode === 'artist' && launchArtistMode) { launchArtistMode(); return true; }
-    if (mode === 'classic' && $('#start') && !$('#start').disabled) { $('#start').click(); return true; }
+    if ((mode === 'classic' || slug === 'classic') && $('#start') && !$('#start').disabled) {
+      loadRun();
+      if (S.runDone) { UI.runResult(); return true; }
+      UI.game();
+      load();
+      return true;
+    }
     return changed;
+  }
+
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('popstate', () => {
+      routingFromPop = true;
+      try {
+        closeAll();
+        if (showIncomingChallenge()) return;
+        const slug = currentRouteSlug();
+        if (!slug && !location.hash && !(location.search && /mode=|spotify=/i.test(location.search))) {
+          UI.lobby({ replaceRoute: true });
+          return;
+        }
+        if (!applyDeepLink()) UI.lobby({ replaceRoute: true });
+      } finally {
+        routingFromPop = false;
+      }
+    });
   }
 
   setInterval(() => { if (!$('#lobby').hidden) refreshDaily(); }, 30000);
