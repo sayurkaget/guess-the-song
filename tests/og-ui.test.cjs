@@ -84,7 +84,7 @@ test('Wave 51 Music Duel Hover Play switch is wired in HTML, CSS, and persisted 
 test('Wave 53 fuzzy search handles typos & missing spaces accurately on full songs.js catalog', () => {
   const vm = require('node:vm');
   const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
-  const normMatch = app.match(/const norm = [\s\S]*?;\n/);
+  const normMatch = app.match(/const norm = \(s\) => \{[\s\S]*?\n  \};\n/);
   const fuzzyMatch = app.match(/const ED_R0 = new Uint8Array\(64\);[\s\S]*?function searchIndex\(q\) \{[\s\S]*?\n  \}/);
   assert.ok(normMatch && fuzzyMatch, 'norm & fuzzy searchIndex helpers must exist in app.js');
 

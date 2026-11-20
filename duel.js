@@ -18,7 +18,7 @@
         const pair = items[i];
         if (!Array.isArray(pair) || !pair[0] || !(pair[1] > 0)) continue;
         const song = byTid.get(String(pair[0]));
-        if (song) out.push({ ...song, streams: Number(pair[1]), streamRank: out.length });
+        if (song) out.push({ ...song, slug: song.slug, hay: song.hay, streams: Number(pair[1]), streamRank: out.length });
       }
       return out.sort((a, b) => b.streams - a.streams).map((s, idx) => ({ ...s, streamRank: idx }));
     }

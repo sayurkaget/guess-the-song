@@ -395,3 +395,17 @@
   - Displayed revealed hints as compact glowing chips inside `#agHintBox` right under the controls row; recorded hint count cleanly in `#agVerdict` and `AD.shareText` (`· 1 hint` / `· 2 hints`).
 - **Verification & Deploy**:
   - Updated unit tests (`143/143` passing), verified Playwright desktop (`1280×800`) + mobile (`360×780`, `0px` overflow) visual & E2E countdown (`Hint in 5` → `Get hint (1/2)` → `Hint 2 in 2` → `Name hint (2/2)` → `2/2 hints used`), bumped SW cache (`gts-v98-artist-clue-hints` / `gts-cf-v78-artist-clue-hints`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 55 — Artist Detective Score Card PNG, Boot Speed Optimization & Local Badges (2026-11-20)
+- **Artist Detective Score Card PNG (`score-card.js`, `index.html`, `app.js`)**:
+  - Added `kind: 'artist'` spoiler-free purple `1080×1350` PNG score card in `score-card.js` displaying the 6-column deduction grid (`DEBUT`, `TYPE`, `GENDER`, `GENRE`, `COUNTRY`, `RANK`), tries (`N / 10` or `X / 10`), hints count, and best streak without leaking the mystery artist name.
+  - Added `#saveArtistCard` (`Save score card`) button inside `#agResultBanner`.
+- **Startup Boot Speed Optimization (`recordings.js`, `app.js`, `duel.js`)**:
+  - Hoisted `RecordingPolicy` regexes to module scope and added string fast-path skipping empty `album`/`artist` checks.
+  - Added fast ASCII short-circuit in `norm()`, lazy cached `hay`/`slug` getters via `SongEntry` (eliminating 63k+ synchronous startup normalizations), cached Daily search pool per day, and lazy on-demand initialization of Music Duel pools (`getDuelPool`) and Artist Detective roster (`ensureRoster`).
+- **Account-Free Badges / Milestones (`badges.js`, `index.html`, `layout.css`, `app.js`, `sw.js`, `tools/build-cloudflare.cjs`)**:
+  - Added standalone `badges.js` (`window.TuneUpBadges`, persisted under `tl:badges` and automatically included in `TUNEUP1.` backup/restore) with 8 unlockable milestones (`0.1s Sniper`, `Perfect Sweep`, `Hot Streak`, `Daily Regular`, `Week Warrior`, `Duel Ace`, `Sharp Detective`, `All-Rounder`) + automatic backfill from existing local stats.
+  - Added `Badges` tab (`data-tab="badges"`, `#badgeGrid`) inside `#statsModal` with responsive 3×2 mobile tab bar (`<= 520px`).
+- **Verification & Deploy**:
+  - Added `tests/badges.test.cjs` (`146/146` unit tests passing), verified Playwright desktop (`1280×800`) + mobile (`360×780`, `0px` overflow) rendering for Artist Detective PNG score card and `#statsModal` Badges tab, bumped SW cache (`gts-v99-card-boot-badges` / `gts-cf-v79-card-boot-badges`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.

@@ -53,6 +53,36 @@
       .replace(/^https?:\/\//, '')
       .replace(/\/$/, '');
 
+    if (kind === 'artist') {
+      const won = !!input.won;
+      const maxTries = Math.max(1, Number(input.maxTries) || 10);
+      const rawRows = Array.isArray(input.rows) ? input.rows : [];
+      const rows = rawRows.slice(0, maxTries).map((r) =>
+        Array.from({ length: 6 }, (_, i) => {
+          const s = Array.isArray(r) ? r[i] : '';
+          return (s === 'exact' || s === 'close') ? s : 'miss';
+        })
+      );
+      const tries = Number.isFinite(Number(input.tries)) ? Math.max(0, Number(input.tries)) : rows.length;
+      const hintsUsed = Math.max(0, Number(input.hintsUsed) || 0);
+      const best = Math.max(0, Number(input.best) || 0);
+      const verdict = String(input.verdict || (won ? ('Solved in ' + tries + (tries === 1 ? ' try!' : ' tries!')) : 'Mystery unsolved'));
+      const subParts = [best > 0 ? ('Best streak ' + best) : 'Top 250 global roster'];
+      if (hintsUsed > 0 && !/\bhints?\b/i.test(verdict)) subParts.push(hintsUsed + (hintsUsed === 1 ? ' hint' : ' hints'));
+      return {
+        kind: 'artist',
+        theme: 'purple',
+        kicker: 'ARTIST DETECTIVE',
+        scoreMain: won ? String(tries) : 'X',
+        scoreSub: '/ ' + maxTries,
+        subtitle: subParts.join(' · '),
+        verdict,
+        rows,
+        host,
+        filename: 'tuneup-artist-detective-score.png'
+      };
+    }
+
     if (kind === 'duel') {
       const deck = input.deck === 'year' ? 'Release Year' : 'Spotify Streams';
       const history = Array.isArray(input.history) ? input.history : [];
@@ -178,7 +208,47 @@
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    if (model.kind === 'duel') {
+    if (model.kind === 'artist') {
+      const cols = ['DEBUT', 'TYPE', 'GENDER', 'GENRE', 'COUNTRY', 'RANK'];
+      const tileW = 114;
+      const gapX = 16;
+      const gridW = cols.length * tileW + (cols.length - 1) * gapX;
+      const startX = Math.round(84 + (912 - gridW) / 2);
+      cols.forEach((lbl, c) => {
+        fitText(ctx, lbl, startX + c * (tileW + gapX) + tileW / 2, 598, 18, '#9cb6a7', 800, tileW, 'center', 'General Sans');
+      });
+      const rows = model.rows || [];
+      if (!rows.length) {
+        fitText(ctx, 'No guesses made.', 540, 825, 36, '#9cb6a7', 600, 820, 'center', 'General Sans');
+      } else {
+        const n = rows.length;
+        const tileH = n <= 5 ? 56 : n <= 7 ? 44 : 34;
+        const gapY = n <= 5 ? 14 : n <= 7 ? 12 : 9;
+        const totalH = n * tileH + (n - 1) * gapY;
+        const startY = Math.round(622 + (432 - totalH) / 2);
+        const rad = tileH >= 48 ? 14 : 10;
+        rows.forEach((row, r) => {
+          const y = startY + r * (tileH + gapY);
+          row.forEach((st, c) => {
+            const x = startX + c * (tileW + gapX);
+            rr(ctx, x, y, tileW, tileH, rad);
+            if (st === 'exact') {
+              ctx.fillStyle = '#25e07d';
+              ctx.fill();
+            } else if (st === 'close') {
+              ctx.fillStyle = '#f5b13d';
+              ctx.fill();
+            } else {
+              ctx.fillStyle = 'rgba(255,255,255,0.12)';
+              ctx.fill();
+              ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+            }
+          });
+        });
+      }
+    } else if (model.kind === 'duel') {
       fitText(ctx, 'ROUND HISTORY', 130, 622, 24, '#9cb6a7', 800, 820, 'left', 'General Sans');
       const items = model.history.slice(0, 28);
       if (!items.length) {

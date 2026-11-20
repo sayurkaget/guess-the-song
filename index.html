@@ -382,6 +382,7 @@
         </div>
       </div>
       <div class="spotle-result-actions">
+        <button class="btn ghostbtn" id="saveArtistCard" type="button">Save score card</button>
         <button class="btn ghostbtn" id="agShareBtn" type="button">Challenge your friend</button>
         <button class="btn solid" id="agNextBtn" type="button">Next artist</button>
       </div>
@@ -617,11 +618,13 @@
       <button type="button" role="tab" data-tab="daily" aria-selected="false" aria-pressed="false">Daily</button>
       <button type="button" role="tab" data-tab="duel" aria-selected="false" aria-pressed="false">Duel</button>
       <button type="button" role="tab" data-tab="artist" aria-selected="false" aria-pressed="false">Artist</button>
+      <button type="button" role="tab" data-tab="badges" aria-selected="false" aria-pressed="false">Badges</button>
     </div>
     <p class="dim" id="statScope"></p>
     <div class="statgrid" id="statgrid"></div>
     <h3 id="distHeading">Score spread</h3>
     <div class="dist" id="dist"></div>
+    <div class="badge-grid" id="badgeGrid" hidden></div>
     <button class="btn ghost tiny" id="reset">Reset stats</button>
   </div>
 </div>
@@ -713,6 +716,7 @@
 <script src="artist-game.js"></script>
 <script src="score-card.js"></script>
 <script src="backup.js"></script>
+<script src="badges.js"></script>
 <script src="app.js"></script>
 <script src="site-guide.js"></script>
 <script>

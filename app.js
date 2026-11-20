@@ -43,17 +43,21 @@
   const el = (t, c) => { const n = document.createElement(t); if (c) n.className = c; return n; };
 
   // buang tanda baca/diakritik supaya "Cariño" == "Carino", "Don't" == "Dont", dst.
-  const norm = (s) => (s || '')
-    .toLowerCase()
-    .normalize('NFD').replace(/\p{M}/gu, '')
-    .replace(/\(.*?\)|\[.*?\]/g, ' ')
+  // Jalur cepat ASCII menghindarkan .normalize('NFD') mahal pada 95%+ judul berbahasa Inggris.
+  const norm = (s) => {
+    if (!s) return '';
+    let out = String(s).toLowerCase();
+    const nonAscii = /[^\x00-\x7f]/.test(out);
+    if (nonAscii) out = out.normalize('NFD').replace(/\p{M}/gu, '');
+    if (out.indexOf('(') >= 0 || out.indexOf('[') >= 0) out = out.replace(/\(.*?\)|\[.*?\]/g, ' ');
     // apostrof DIHAPUS, bukan jadi spasi -- "Don't" harus jadi "dont",
     // karena itu yang diketik pemain. Kalau jadi "don t" pencarian meleset.
-    .replace(/['’ʼ`´]/g, '')
-    .replace(/\$/g, 's')          // judul bergaya: "Dat $tick" -> "dat stick"
-    .replace(/\b(feat|ft|with|and|the|dari|from)\b/g, ' ')
-    .replace(/[^\p{L}\p{N} ]/gu, ' ')
-    .replace(/\s+/g, ' ').trim();
+    if (/['’ʼ`´]/.test(out)) out = out.replace(/['’ʼ`´]/g, '');
+    if (out.indexOf('$') >= 0) out = out.replace(/\$/g, 's'); // judul bergaya: "Dat $tick" -> "dat stick"
+    out = out.replace(/\b(feat|ft|with|and|the|dari|from)\b/g, ' ');
+    out = nonAscii ? out.replace(/[^\p{L}\p{N} ]/gu, ' ') : out.replace(/[^a-z0-9 ]/g, ' ');
+    return out.replace(/\s+/g, ' ').trim();
+  };
 
   const slug = (s) => norm(s[0] + ' ' + s[1]).replace(/ /g, '-');
 
@@ -293,12 +297,41 @@
 
   /* ================= katalog & pencarian ================= */
 
-  const ALL = (window.SONGS || []).filter((s) =>
-    s[3] === 'gl' && window.RecordingPolicy.isStudio({ title: s[0] })).map((s, i) => ({
-    i, title: s[0], artist: s[1], tier: s[2], region: s[3],
-    genre: s[4] || 'lain', year: s[5] || 0, art: s[6] || '', trackId: s[7] || null,
-    slug: slug(s), hay: norm(s[0] + ' ' + s[1])
-  }));
+  // Lazy getter untuk .hay & .slug menunda 63k+ panggilan norm() saat boot awal halaman.
+  class SongEntry {
+    constructor(s, i) {
+      this.i = i;
+      this.title = s[0];
+      this.artist = s[1];
+      this.tier = s[2];
+      this.region = s[3];
+      this.genre = s[4] || 'lain';
+      this.year = s[5] || 0;
+      this.art = s[6] || '';
+      this.trackId = s[7] || null;
+      this._hay = null;
+      this._slug = null;
+    }
+    get hay() {
+      return this._hay !== null ? this._hay : (this._hay = norm(this.title + ' ' + this.artist));
+    }
+    set hay(v) { this._hay = v; }
+    get slug() {
+      return this._slug !== null ? this._slug : (this._slug = this.hay.replace(/ /g, '-'));
+    }
+    set slug(v) { this._slug = v; }
+  }
+
+  const ALL = (() => {
+    const raw = window.SONGS || [];
+    const out = [];
+    const isStudio = window.RecordingPolicy.isStudio;
+    for (let idx = 0; idx < raw.length; idx++) {
+      const s = raw[idx];
+      if (s[3] === 'gl' && isStudio(s[0])) out.push(new SongEntry(s, out.length));
+    }
+    return out;
+  })();
 
 
   // Cari entri lagu dari slug. Di mode kustom, lagu artis didahulukan -- lagu
@@ -420,11 +453,23 @@
     return total;
   }
 
+  let dailySearchDay = '', dailySearchList = null;
   function searchIndex(q) {
     const nq = norm(q);
     if (!nq) return [];
     const toks = nq.split(' ');
-    const list = S.custom ? S.custom.songs : S.daily ? [...new Map([...ALL, ...S.daily.songs].map((s) => [s.slug, s])).values()] : ALL;
+    let list;
+    if (S.custom) {
+      list = S.custom.songs;
+    } else if (S.daily) {
+      if (dailySearchDay !== S.daily.day || !dailySearchList) {
+        dailySearchDay = S.daily.day;
+        dailySearchList = [...new Map([...ALL, ...S.daily.songs].map((s) => [s.slug, s])).values()];
+      }
+      list = dailySearchList;
+    } else {
+      list = ALL;
+    }
     const out = [];
     const exactSlugs = new Set();
     let hasTopExact = false;
@@ -961,6 +1006,7 @@
     lastStreak = updateSongStreak(won);
     if (S.daily) trackActivity('daily_complete', { won, attempts: S.guesses.length });
     if (S.runDone) { if (S.daily) completeDaily(); else recordStats(); }
+    checkRunBadges(won);
     UI.render(); UI.streak(); UI.clearInput();
     if (UI.q && typeof UI.q.blur === 'function') UI.q.blur();
     UI.status('');
@@ -1316,7 +1362,7 @@
     return ALL.filter((s) => norm(s.artist) === key)
       .slice()
       .sort((a, b) => a.tier - b.tier)
-      .map((s, idx) => ({ ...s, rank: idx }));
+      .map((s, idx) => ({ ...s, slug: s.slug, hay: s.hay, rank: idx }));
   }
   function localArtistMatches(q) {
     const nq = norm(q);
@@ -1755,6 +1801,60 @@
     const best = Math.max(prev.best, current);
     LS.set(key, { current, best });
     return { current, best, isNewBest: won && current > prev.best && current >= 2 };
+  }
+
+  const BADGE_SVG = {
+    bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4.5 13h6l-1 9L19.5 11h-6l-.5-9Z" fill="currentColor"/></svg>',
+    crown: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18l-1.5-10-4.5 4-3-6-3 6-4.5-4L3 18Z" fill="currentColor"/></svg>',
+    flame: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 2.5c.6 3.5-2.6 5.2-2.6 8.2 0 1.4 1 2.4 2.2 2.4 1.5 0 2.6-1.4 2.6-3.4 2.5 1.9 3.8 4.6 3.8 7.3A6.5 6.5 0 0 1 5.5 17c0-4 2.6-7.6 7-14.5Z" fill="currentColor"/></svg>',
+    cal: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3v4M16 3v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    trophy: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Zm-3 1h3v3a3 3 0 0 1-3-3Zm13 0h3a3 3 0 0 1-3 3V5Zm-5 9v4m-4 2h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    spark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2Z" fill="currentColor"/></svg>',
+    lens: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    grid: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8" fill="currentColor"/></svg>'
+  };
+
+  function announceBadges(added) {
+    if (!added || !added.length) return;
+    const label = added.length === 1
+      ? ('Badge unlocked: ' + added[0].name)
+      : ('Badges unlocked: ' + added.map((b) => b.name).join(', '));
+    toast(label);
+  }
+
+  function unlockBadges(ids, notify = true) {
+    const B = window.TuneUpBadges;
+    if (!B) return [];
+    const added = B.unlock(localStorage, ids);
+    if (notify && added.length) announceBadges(added);
+    return added;
+  }
+
+  function syncBadges(notify = false) {
+    const B = window.TuneUpBadges;
+    if (!B) return [];
+    const added = B.syncFromStats(localStorage, {
+      classic: allClassicStats(),
+      songStreakBest: songStreak('classic').best,
+      daily: dailyStats(),
+      duel: duelStats(),
+      artist: artistStats()
+    });
+    if (notify && added.length) announceBadges(added);
+    return added;
+  }
+
+  function checkRunBadges(won) {
+    const B = window.TuneUpBadges;
+    if (!B) return;
+    const earned = [];
+    if (won && !S.challenge && !S.runChallenge && S.guesses.length === 1) earned.push('sniper');
+    if (S.runDone && !S.daily && !S.challenge && !S.runChallenge && stageCount() === STAGES && score() === STAGES) {
+      earned.push('sweep');
+    }
+    const added = earned.length ? B.unlock(localStorage, earned) : [];
+    const synced = syncBadges(false);
+    announceBadges(added.concat(synced));
   }
 
   let stopDuel = null, stopDuelAudio = null, syncDuelVolume = null, duelEnded = () => false, launchDuelChallenge = null, launchDuelMode = null;
@@ -2567,7 +2667,7 @@
     },
 
     stats(tab = statsTab) {
-      statsTab = (tab === 'overall' || tab === 'daily' || tab === 'duel' || tab === 'artist') ? tab : 'filter';
+      statsTab = (tab === 'overall' || tab === 'daily' || tab === 'duel' || tab === 'artist' || tab === 'badges') ? tab : 'filter';
       const tabs = $('#statsTabs');
       if (tabs && typeof tabs.querySelectorAll === 'function') {
         tabs.querySelectorAll('[data-tab]').forEach((b) => {
@@ -2578,7 +2678,29 @@
       }
       const dh = $('#distHeading');
       const rt = $('#reset');
-      if (statsTab === 'daily') {
+      const sg = $('#statgrid');
+      const ds = $('#dist');
+      const bg = $('#badgeGrid');
+      const isBadges = statsTab === 'badges';
+      if (sg) sg.hidden = isBadges;
+      if (dh) dh.hidden = isBadges;
+      if (ds) ds.hidden = isBadges;
+      if (bg) bg.hidden = !isBadges;
+
+      if (isBadges) {
+        syncBadges(false);
+        const sum = window.TuneUpBadges ? window.TuneUpBadges.summary(localStorage) : { unlocked: 0, total: 0, items: [] };
+        $('#statScope').textContent = sum.unlocked + ' of ' + sum.total + ' unlocked · saved on this device';
+        if (bg) {
+          bg.innerHTML = sum.items.map((item) =>
+            '<div class="badge-card' + (item.earned ? ' is-earned' : '') + '" data-theme="' + esc(item.theme) + '">' +
+              '<span class="badge-ico">' + (BADGE_SVG[item.icon] || BADGE_SVG.spark) + '</span>' +
+              '<div class="badge-copy"><b>' + esc(item.name) + '</b><small>' + esc(item.desc) + '</small></div>' +
+            '</div>'
+          ).join('');
+        }
+        if (rt) rt.hidden = true;
+      } else if (statsTab === 'daily') {
         const d = dailyStats();
         $('#statScope').textContent = 'Daily Challenge · all saved days';
         $('#statgrid').innerHTML =
@@ -3461,9 +3583,15 @@
   (() => {
     const Duel = window.ReleaseDuel;
     if (!Duel || !$('#duel') || !$('#openDuel')) return;
-    const duelPools = {
-      streams: Duel.buildPool(ALL, window.DUEL_STREAMS_V1, 'streams'),
-      year: Duel.buildPool(ALL, null, 'year')
+    const duelPools = { streams: null, year: null };
+    const getDuelPool = (kind) => {
+      const k = kind === 'streams' ? 'streams' : 'year';
+      if (!duelPools[k]) {
+        duelPools[k] = k === 'streams'
+          ? Duel.buildPool(ALL, window.DUEL_STREAMS_V1, 'streams')
+          : Duel.buildPool(ALL, null, 'year');
+      }
+      return duelPools[k];
     };
     const readBest = (kind) => Math.max(0, Number(LS.get(DUEL_BEST_KEYS[kind] || DUEL_BEST_KEYS.year, 0)) || 0);
     const duelPos = new Map();
@@ -3639,7 +3767,7 @@
       if ($('#duelTabs')) {
         $('#duelTabs').querySelectorAll('[data-duel]').forEach((b) => {
           b.setAttribute('aria-pressed', String(b.dataset.duel === ds.kind));
-          if (b.dataset.duel === 'streams') b.disabled = duelPools.streams.length < 2;
+          if (b.dataset.duel === 'streams') b.disabled = getDuelPool('streams').length < 2;
         });
       }
       $('#duelTagA').textContent = isStreams ? 'Known streams' : 'Released';
@@ -3768,6 +3896,7 @@
         else bgr.classList.remove('on');
       }
       open($('#duelModal'));
+      syncBadges(true);
       if (beatFriend || (friendTarget === null && ds.newBest && ds.score > 0)) confetti('#duelConfetti', 'win');
     }
 
@@ -3813,7 +3942,7 @@
         $('#duelStatus').className = 'status duel-status err';
       }
 
-      const pool = duelPools[ds.kind] || duelPools.year;
+      const pool = getDuelPool(ds.kind);
       const myEpoch = ++duelEpoch;
       clearTimeout(duelTimer);
       duelTimer = setTimeout(() => {
@@ -3846,8 +3975,8 @@
       stopDuel();
       duelPos.clear();
       const target = incoming ? incoming.kind : ((kind === 'streams' || kind === 'year') ? kind : ds.kind);
-      const resolvedKind = (target === 'streams' && duelPools.streams.length >= 2) ? 'streams' : 'year';
-      const pool = duelPools[resolvedKind];
+      const resolvedKind = (target === 'streams' && getDuelPool('streams').length >= 2) ? 'streams' : 'year';
+      const pool = getDuelPool(resolvedKind);
       if (!pool || pool.length < 2) { toast('Not enough songs for Music Duel.'); return false; }
 
       let first = null, second = null, queue = [], qIndex = 0;
@@ -3988,8 +4117,14 @@
   (() => {
     const AD = window.ArtistDetective;
     if (!AD || !$('#artistGame') || !$('#openArtistGame')) return;
-    const roster = AD.buildRoster(ALL, window.DUEL_STREAMS_V1);
-    const byId = new Map(roster.map((a) => [a.id, a]));
+    let roster = null, byId = null;
+    function ensureRoster() {
+      if (!roster) {
+        roster = AD.buildRoster(ALL, window.DUEL_STREAMS_V1);
+        byId = new Map(roster.map((a) => [a.id, a]));
+      }
+      return roster;
+    }
     const seenFree = new Set();
     const AG_HINT1_AFTER = AD.HINT1_AFTER || 5;
     const AG_HINT2_AFTER = AD.HINT2_AFTER || 7;
@@ -4209,6 +4344,8 @@
         best,
         dist
       });
+      if (won && tries >= 1 && tries <= 3) unlockBadges(['detective'], true);
+      syncBadges(true);
     }
 
     function renderAgBoard() {
@@ -4323,7 +4460,8 @@
       const qNorm = norm(query);
       const dd = $('#agDD');
       if (!qNorm || ag.done) { closeAgDD(); return; }
-      const exact = roster
+      const list = ensureRoster();
+      const exact = list
         .filter((a) => a.hay.includes(qNorm))
         .sort((a, b) => {
           const aPre = a.hay.startsWith(qNorm) ? 0 : ((' ' + a.hay).includes(' ' + qNorm) ? 1 : 2);
@@ -4336,8 +4474,8 @@
         const toks = qNorm.split(' ');
         const qCompact = qNorm.replace(/ /g, '');
         const fuzzy = [];
-        for (let i = 0; i < roster.length; i++) {
-          const a = roster[i];
+        for (let i = 0; i < list.length; i++) {
+          const a = list[i];
           if (seenIds.has(a.id)) continue;
           const fScore = fuzzyMatchScore(toks, qCompact, a);
           if (fScore >= 0) fuzzy.push({ a, fScore });
@@ -4439,18 +4577,20 @@
     }
 
     function pickFreeTarget() {
-      let pool = roster.filter((a) => !seenFree.has(a.id));
+      const list = ensureRoster();
+      let pool = list.filter((a) => !seenFree.has(a.id));
       if (!pool.length) {
         seenFree.clear();
-        pool = roster;
+        pool = list;
       }
-      const pick = pool[(Math.random() * pool.length) | 0] || roster[0];
+      const pick = pool[(Math.random() * pool.length) | 0] || list[0];
       if (pick) seenFree.add(pick.id);
       return pick;
     }
 
     function startArtistGame(incoming = null) {
-      if (!roster.length) {
+      const list = ensureRoster();
+      if (!list.length) {
         toast('Artist roster unavailable.');
         return false;
       }
@@ -4580,6 +4720,29 @@
       $('#agResultArt').title = 'Tap to pause or resume hit';
       $('#agResultArt').onclick = () => {
         if (ag.done && ag.target && ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit');
+      };
+    }
+    if ($('#saveArtistCard')) {
+      $('#saveArtistCard').onclick = async () => {
+        if (!window.TuneUpCard || !ag.target) return;
+        try {
+          const rows = ag.guesses.map((g) => AD.compare(g, ag.target).map((t) => t.status));
+          const outcome = await window.TuneUpCard.shareOrSave({
+            kind: 'artist',
+            won: ag.won,
+            tries: ag.guesses.length,
+            maxTries: AD.MAX_TRIES,
+            hintsUsed: ag.hints.length,
+            best: artistStats().best,
+            rows,
+            verdict: $('#agVerdict') ? $('#agVerdict').textContent : '',
+            url: siteUrl()
+          });
+          if (outcome === 'downloaded') toast('Score card saved!');
+          else if (outcome === 'shared') toast('Score card shared!');
+        } catch (e) {
+          toast('Could not save score card.');
+        }
       };
     }
     $('#agShareBtn').onclick = () => {
