@@ -166,6 +166,15 @@
     del(k)       { try { localStorage.removeItem(k); } catch (e) {} }
   };
 
+  // Pengaturan pemain (tersimpan di browser). Semua default-nya aktif.
+  const SET_KEYS = { autoplay: 'tl:set:autoplay', sfx: 'tl:set:sfx', hover: 'tl:duel:hoverPlay' };
+  const settings = {
+    autoplay: LS.get(SET_KEYS.autoplay, true) !== false,
+    sfx: LS.get(SET_KEYS.sfx, true) !== false,
+    hover: LS.get(SET_KEYS.hover, true) !== false
+  };
+  let syncDuelHover = null;
+
   /* ================= state ================= */
 
   const S = {
@@ -249,7 +258,7 @@
     }
   }
   function playSfx(kind) {
-    if (S.muted || !(S.vol > 0)) return;
+    if (!settings.sfx || S.muted || !(S.vol > 0)) return;
     const ctx = unlockSfx();
     if (!ctx) return;
     const schedule = () => {
@@ -2439,7 +2448,7 @@
     // penanganan klik tombol Tebak, jadi masih dalam jendela "user activation"
     // dan tidak diblokir kebijakan autoplay browser.
     autoplay() {
-      if (!S.meta || playing) return;
+      if (!settings.autoplay || !S.meta || playing) return;
       playClip();
     },
 
@@ -2860,6 +2869,210 @@
   $('#openCustom').onclick = openCustom;
   $('#openStats').onclick = () => { closeAll(); UI.stats(); };
 
+  /* ================= settings & backup ================= */
+  let restoreArmedCode = '';
+  let resetArmedTimer = 0;
+  let resetArmed = false;
+
+  function renderSettings() {
+    const sync = (sel, on) => {
+      const b = $(sel);
+      if (b) b.setAttribute('aria-checked', String(!!on));
+    };
+    sync('#setAutoplay', settings.autoplay);
+    sync('#setSfx', settings.sfx);
+    sync('#setHover', settings.hover);
+  }
+
+  function disarmSettingsActions() {
+    restoreArmedCode = '';
+    const rb = $('#backupRestore');
+    if (rb) { rb.textContent = 'Restore from code'; rb.classList.remove('is-armed'); }
+    resetArmed = false;
+    clearTimeout(resetArmedTimer);
+    const db = $('#resetAllData');
+    if (db) { db.textContent = 'Reset all data on this device'; db.classList.remove('is-armed'); }
+  }
+
+  function setBackupMsg(txt, kind = '') {
+    const elMsg = $('#backupMsg');
+    if (!elMsg) return;
+    elMsg.textContent = txt || '';
+    elMsg.hidden = !txt;
+    elMsg.className = 'set-msg' + (kind ? ' ' + kind : '');
+  }
+
+  function refreshBackupPreview() {
+    const ta = $('#backupCode');
+    const BK = window.TuneUpBackup;
+    if (!ta || !BK) return;
+    try {
+      const entries = BK.collect(localStorage);
+      ta.value = Object.keys(entries).length ? BK.encode(entries) : '';
+    } catch (e) {
+      ta.value = '';
+    }
+  }
+
+  function reloadPersistedState() {
+    settings.autoplay = LS.get(SET_KEYS.autoplay, true) !== false;
+    settings.sfx = LS.get(SET_KEYS.sfx, true) !== false;
+    settings.hover = LS.get(SET_KEYS.hover, true) !== false;
+    S.genre = LS.get('tl:genre', 'all');
+    if (!GENRES[S.genre]) S.genre = 'all';
+    S.era = LS.get('tl:era', 'all');
+    if (!ERAS[S.era]) S.era = 'all';
+    const v = Number(LS.get('tl:vol', 0.8));
+    S.vol = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.8;
+    S.muted = !!LS.get('tl:muted', false);
+    audio.volume = S.muted ? 0 : S.vol;
+    if ($('#volume')) $('#volume').value = Math.round(S.vol * 100);
+    if ($('#mute')) $('#mute').classList.toggle('muted', S.muted);
+    if (syncDuelVolume) syncDuelVolume();
+    if (syncArtistVolume) syncArtistVolume();
+    syncSummaryVolume();
+    if (syncDuelHover) syncDuelHover();
+    if (typeof reloadSpotifyRounds === 'function') reloadSpotifyRounds();
+    for (const k in RUNS) delete RUNS[k];
+    S.stages = []; S.stage = 0; S.runDone = false;
+    renderSettings();
+    UI.buildControls();
+    UI.refreshLobby();
+  }
+
+  function openSettings() {
+    if (!$('#settingsModal')) return;
+    closeAll();
+    disarmSettingsActions();
+    renderSettings();
+    refreshBackupPreview();
+    setBackupMsg('');
+    open($('#settingsModal'));
+  }
+
+  if ($('#openSettings')) {
+    $('#openSettings').onclick = openSettings;
+  }
+  if ($('#setAutoplay')) {
+    $('#setAutoplay').onclick = () => {
+      settings.autoplay = !settings.autoplay;
+      LS.set(SET_KEYS.autoplay, settings.autoplay);
+      renderSettings();
+      refreshBackupPreview();
+      toast(settings.autoplay ? 'Auto-play on reveal enabled' : 'Auto-play on reveal off');
+    };
+  }
+  if ($('#setSfx')) {
+    $('#setSfx').onclick = () => {
+      settings.sfx = !settings.sfx;
+      LS.set(SET_KEYS.sfx, settings.sfx);
+      renderSettings();
+      refreshBackupPreview();
+      if (settings.sfx) playSfx('near');
+      toast(settings.sfx ? 'Sound effects on' : 'Sound effects off');
+    };
+  }
+  if ($('#setHover')) {
+    $('#setHover').onclick = () => {
+      settings.hover = !settings.hover;
+      LS.set(SET_KEYS.hover, settings.hover);
+      renderSettings();
+      if (syncDuelHover) syncDuelHover();
+      refreshBackupPreview();
+      toast(settings.hover ? 'Hover play on' : 'Hover play off');
+    };
+  }
+  if ($('#backupCode')) {
+    $('#backupCode').addEventListener('input', () => {
+      if (restoreArmedCode) disarmSettingsActions();
+    });
+  }
+  if ($('#backupCopy')) {
+    $('#backupCopy').onclick = async () => {
+      const BK = window.TuneUpBackup;
+      if (!BK) return;
+      disarmSettingsActions();
+      let entries;
+      try { entries = BK.collect(localStorage); } catch (e) { entries = {}; }
+      const keys = Object.keys(entries);
+      if (!keys.length) {
+        setBackupMsg('No saved progress yet — play a round or change a setting first.', 'err');
+        return;
+      }
+      const code = BK.encode(entries);
+      if ($('#backupCode')) $('#backupCode').value = code;
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(code);
+        copied = true;
+      } catch (e) {
+        copied = copyTextSync(code);
+      }
+      if (copied) {
+        setBackupMsg('Backup code copied (' + keys.length + (keys.length === 1 ? ' item' : ' items') + '). Paste it on another device to restore.', 'ok');
+        toast('Backup code copied!');
+      } else {
+        setBackupMsg('Code generated above — select and copy it manually.', 'ok');
+      }
+    };
+  }
+  if ($('#backupRestore')) {
+    $('#backupRestore').onclick = () => {
+      const BK = window.TuneUpBackup;
+      const ta = $('#backupCode');
+      const btn = $('#backupRestore');
+      if (!BK || !ta || !btn) return;
+      const raw = String(ta.value || '').trim();
+      const parsed = BK.decode(raw);
+      if (!parsed.ok) {
+        disarmSettingsActions();
+        setBackupMsg(parsed.error, 'err');
+        return;
+      }
+      if (restoreArmedCode !== raw) {
+        disarmSettingsActions();
+        restoreArmedCode = raw;
+        btn.textContent = 'Confirm restore';
+        btn.classList.add('is-armed');
+        setBackupMsg('Valid backup (' + parsed.count + (parsed.count === 1 ? ' item' : ' items') + '). Click "Confirm restore" to replace progress on this device.', 'ok');
+        return;
+      }
+      try {
+        const written = BK.restore(localStorage, parsed.entries);
+        disarmSettingsActions();
+        reloadPersistedState();
+        refreshBackupPreview();
+        setBackupMsg('Restored ' + written + (written === 1 ? ' item' : ' items') + '! Your stats, streaks, and settings are loaded.', 'ok');
+        toast('Progress restored!');
+      } catch (e) {
+        disarmSettingsActions();
+        setBackupMsg('Could not save restored data in this browser.', 'err');
+      }
+    };
+  }
+  if ($('#resetAllData')) {
+    $('#resetAllData').onclick = () => {
+      const BK = window.TuneUpBackup;
+      const btn = $('#resetAllData');
+      if (!BK || !btn) return;
+      if (!resetArmed) {
+        disarmSettingsActions();
+        resetArmed = true;
+        btn.textContent = 'Click again to erase all stats, streaks & settings';
+        btn.classList.add('is-armed');
+        resetArmedTimer = setTimeout(() => { disarmSettingsActions(); }, 6000);
+        return;
+      }
+      try { BK.clear(localStorage); } catch (e) {}
+      disarmSettingsActions();
+      reloadPersistedState();
+      if ($('#backupCode')) $('#backupCode').value = '';
+      setBackupMsg('All TuneUp data on this device has been erased.', 'ok');
+      toast('All data reset');
+    };
+  }
+  renderSettings();
+
   $('#openFeedback').onclick = () => {
     stopAudio();
     if (stopDuelAudio) stopDuelAudio();
@@ -3145,8 +3358,7 @@
       b: { audio: null, preview: '', slug: '' }
     };
     let duelAudioEpoch = 0, activeSlot = null, lastMouseCard = null, manualPausedSlot = null;
-    const DUEL_HOVER_KEY = 'tl:duel:hoverPlay';
-    let hoverPlayEnabled = LS.get(DUEL_HOVER_KEY, true) !== false;
+    let hoverPlayEnabled = settings.hover;
     const syncHoverToggle = () => {
       const btn = $('#duelHoverToggle');
       if (!btn) return;
@@ -3155,6 +3367,11 @@
       btn.title = hoverPlayEnabled
         ? 'Hover play is on — click to disable auto-play on hover'
         : 'Hover play is off — click to auto-play when hovering a song card';
+    };
+    syncDuelHover = () => {
+      hoverPlayEnabled = settings.hover;
+      syncHoverToggle();
+      if (!hoverPlayEnabled && activeSlot && lastMouseCard === activeSlot) stopDuelAudio();
     };
     let duelTimer = 0, duelEpoch = 0;
     const ds = { kind: 'streams', a: null, b: null, score: 0, best: 0, newBest: false, seen: new Set(), history: [], busy: false, over: false, challenge: null, queue: [], qIndex: 0 };
@@ -3588,13 +3805,11 @@
     if ($('#duelHoverToggle')) {
       syncHoverToggle();
       $('#duelHoverToggle').onclick = () => {
-        hoverPlayEnabled = !hoverPlayEnabled;
-        LS.set(DUEL_HOVER_KEY, hoverPlayEnabled);
-        syncHoverToggle();
-        if (!hoverPlayEnabled && activeSlot && lastMouseCard === activeSlot) {
-          stopDuelAudio();
-        }
-        toast(hoverPlayEnabled ? 'Hover play on' : 'Hover play off — click ▶ to listen');
+        settings.hover = !settings.hover;
+        LS.set(SET_KEYS.hover, settings.hover);
+        syncDuelHover();
+        if (typeof renderSettings === 'function') renderSettings();
+        toast(settings.hover ? 'Hover play on' : 'Hover play off — click ▶ to listen');
       };
     }
     $('#duelBack').onclick = () => { closeAll(); UI.lobby(); };
@@ -3758,6 +3973,7 @@
 
     async function playArtistTrack(song, kind, isAuto = false) {
       if (!song || typeof Audio !== 'function') return;
+      if (isAuto && !settings.autoplay) return;
       if (!isAuto && typeof unlockSfx === 'function') unlockSfx();
       if (!isAuto && agAudioKind === kind && agAudio && !agAudio.paused) {
         stopArtistAudio();
@@ -4230,6 +4446,16 @@
       const modePill = document.querySelector('.classic-section .mode-pill');
       if (modePill) modePill.textContent = spotifyRoundsPillLabel();
     }
+  }
+
+  function reloadSpotifyRounds() {
+    const saved = LS.get(SPOTIFY_ROUNDS_KEY, 'all');
+    if (saved === 'all') spotifyRoundsChoice = 'all';
+    else {
+      const n = parseInt(saved, 10);
+      spotifyRoundsChoice = Number.isFinite(n) && n >= 1 ? Math.min(500, n) : 'all';
+    }
+    syncSpotifyRoundsUI();
   }
 
   function setSpotifyRoundsChoice(val) {

@@ -76,7 +76,7 @@ test('Wave 51 Music Duel Hover Play switch is wired in HTML, CSS, and persisted 
   assert.match(css, /@media\(hover:none\),\(pointer:coarse\)\{\s*\.duel-hover-toggle\{display:none\}/);
 
   const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
-  assert.match(app, /const DUEL_HOVER_KEY = 'tl:duel:hoverPlay';/);
+  assert.match(app, /hover:\s*'tl:duel:hoverPlay'/);
   assert.match(app, /if \(!hoverPlayEnabled \|\| manualPausedSlot === slot\) return;/);
   assert.match(app, /if \(hoverPlayEnabled && activeSlot === slot\)/);
 });

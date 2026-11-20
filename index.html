@@ -386,7 +386,10 @@
   </section>
 
   <footer class="foot">
-    <button class="menu-stats" id="openStats" type="button" aria-haspopup="dialog" aria-controls="statsModal">Stats</button>
+    <div class="foot-menu-links">
+      <button class="menu-stats" id="openStats" type="button" aria-haspopup="dialog" aria-controls="statsModal">Stats</button>
+      <button class="menu-stats" id="openSettings" type="button" aria-haspopup="dialog" aria-controls="settingsModal">Settings</button>
+    </div>
     <div class="vol">
       <button class="iconbtn" id="mute" aria-label="Mute">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path class="wave1" d="M16.5 8.8a4.5 4.5 0 0 1 0 6.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="wave2" d="M19 6.3a8 8 0 0 1 0 11.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="slash" d="m4 4 16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -436,7 +439,7 @@
       <details><summary>What can I replay?</summary><p>Classic, Custom Artist, Spotify Playlists, Music Duel, and Artist Detective can be played as often as you like. The Daily song is available once per day, with five attempts.</p></details>
       <details><summary>When is the next Daily?</summary><p>At 7:00 AM in your device's local time. Consecutive Daily wins build your streak; a missed day or a loss resets it.</p></details>
       <details><summary>Can I challenge a friend?</summary><p>Yes. After any song, 5-stage run, Music Duel, or Artist Detective round, tap Challenge your friend to copy a spoiler-free link with the exact same tracks or mystery artist.</p></details>
-      <details><summary>Where is my progress saved?</summary><p>Your Daily progress and stats are saved in this browser. They do not automatically transfer to another browser or device.</p></details>
+      <details><summary>Where is my progress saved?</summary><p>Your Daily progress, streaks, stats, and settings are saved in this browser. Open Settings &rarr; Backup &amp; transfer to copy a backup code and restore your progress on another browser or device.</p></details>
     </section>
   </div>
 
@@ -616,6 +619,38 @@
   </div>
 </div>
 
+<!-- ====== settings & backup ====== -->
+<div class="modal" id="settingsModal" hidden>
+  <div class="sheet settings-sheet" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <button class="x" data-close aria-label="Close" type="button">&times;</button>
+    <h2 id="setTitle">Settings</h2>
+    <ul class="set-list">
+      <li class="set-row">
+        <div class="set-copy"><b id="setAutoplayLbl">Auto-play on reveal</b><small>Play the full song when a round ends</small></div>
+        <button class="set-switch" id="setAutoplay" type="button" role="switch" aria-checked="true" aria-labelledby="setAutoplayLbl"><span class="set-knob"></span></button>
+      </li>
+      <li class="set-row">
+        <div class="set-copy"><b id="setSfxLbl">Sound effects</b><small>Chimes for right, close, and wrong answers</small></div>
+        <button class="set-switch" id="setSfx" type="button" role="switch" aria-checked="true" aria-labelledby="setSfxLbl"><span class="set-knob"></span></button>
+      </li>
+      <li class="set-row">
+        <div class="set-copy"><b id="setHoverLbl">Hover play</b><small>Music Duel &middot; play a card when your mouse is over it</small></div>
+        <button class="set-switch" id="setHover" type="button" role="switch" aria-checked="true" aria-labelledby="setHoverLbl"><span class="set-knob"></span></button>
+      </li>
+    </ul>
+
+    <h3 class="set-h">Backup &amp; transfer</h3>
+    <p class="dim set-note">No account needed. Copy your code, then paste it on another browser or device to bring over your stats, streaks, and Daily history.</p>
+    <textarea id="backupCode" class="set-code" rows="3" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Backup code" placeholder="Your backup code appears here — or paste a code to restore"></textarea>
+    <div class="set-actions">
+      <button class="btn ghostbtn" id="backupCopy" type="button">Copy backup code</button>
+      <button class="btn ghostbtn" id="backupRestore" type="button">Restore from code</button>
+    </div>
+    <p class="set-msg" id="backupMsg" role="status" aria-live="polite" hidden></p>
+    <button class="set-danger" id="resetAllData" type="button">Reset all data on this device</button>
+  </div>
+</div>
+
 <div class="modal" id="feedbackModal" hidden>
   <div class="sheet feedback-sheet" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
     <button class="x" data-close aria-label="Close" type="button">&times;</button>
@@ -670,6 +705,7 @@
 <script src="duel.js"></script>
 <script src="artist-game.js"></script>
 <script src="score-card.js"></script>
+<script src="backup.js"></script>
 <script src="app.js"></script>
 <script src="site-guide.js"></script>
 <script>

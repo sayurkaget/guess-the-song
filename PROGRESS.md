@@ -363,3 +363,14 @@
   - When toggled OFF, hovering cards no longer auto-plays previews and moving the mouse off a card no longer pauses previews started manually via `▶`.
 - **Verification & Deploy**:
   - Added unit test assertions in `tests/og-ui.test.cjs` (`137/137` passing), visually verified desktop ON/OFF toggle states + Playwright hover behavior + persistence across reload, bumped SW cache (`gts-v95-duel-hover-toggle` / `gts-cf-v75-duel-hover-toggle`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 52 — Settings Modal & Account-Free Progress Backup/Restore (2026-11-20)
+- **Settings Modal (`index.html`, `layout.css`, `app.js`)**:
+  - Added `Settings` button (`#openSettings`) in the Lobby footer next to `Stats` (`.foot-menu-links`) opening `#settingsModal`.
+  - Added persistent toggle switches (`role="switch"`) for **Auto-play on reveal** (`tl:set:autoplay`, governs both Classic/Daily/Custom reveal & Artist Detective hit auto-play), **Sound effects** (`tl:set:sfx`, governs `playSfx()`), and **Hover play** (`tl:duel:hoverPlay`, synced bidirectionally with `#duelHoverToggle` in Music Duel), plus two-step **Reset all data on this device**.
+- **Account-Free Progress Transfer (`backup.js`, `app.js`, `index.html`, `sw.js`, `tools/build-cloudflare.cjs`)**:
+  - Added standalone `backup.js` (`window.TuneUpBackup`) encoding all user `tl:*` progress, stats, streaks, Daily history, and settings (excluding `tl:trk*` preview cache) into a checksummed `TUNEUP1.<base64url>.<hash>` code.
+  - Added `Copy backup code` and 2-step `Restore from code` (`Confirm restore`) inside `#settingsModal` with full validation, live state reload (`reloadPersistedState()`), and updated FAQ copy.
+- **Verification & Deploy**:
+  - Added `tests/backup.test.cjs` (`141/141` unit tests passing), verified Settings modal & backup/restore/reset end-to-end on desktop (`1280×800`) and mobile (`360×780`, `0px` overflow) via Playwright + visual screenshot inspection, bumped SW cache (`gts-v96-settings-backup` / `gts-cf-v76-settings-backup`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
