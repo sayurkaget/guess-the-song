@@ -1431,6 +1431,17 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 .set-switch[aria-checked="true"]{background:rgba(37,224,125,.85);border-color:#52ffaa}
 .set-switch[aria-checked="true"] .set-knob{transform:translateX(18px);background:#04200f}
 .set-switch:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+.set-lang-seg{
+  flex:none;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:3px;
+}
+.set-lang-seg button{
+  min-width:44px;min-height:28px;padding:.24rem .62rem;border-radius:999px;
+  font-size:.76rem;font-weight:800;color:var(--dim);letter-spacing:.03em;
+}
+.set-lang-seg button:hover{color:var(--ink)}
+.set-lang-seg button[aria-pressed="true"]{
+  background:rgba(37,224,125,.2);color:#8ef7bd;
+}
 .set-h{margin:1.25rem 0 .3rem;font-family:'Cabinet Grotesk',var(--fs);font-size:1.05rem;font-weight:800;color:var(--ink)}
 .set-note{margin:0 0 .65rem;font-size:.8rem;line-height:1.5}
 .set-code{

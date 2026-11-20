@@ -125,10 +125,12 @@
       };
     });
     const score = rows.filter((r) => r.won).length;
+    const plSrc = String(input.playlistSource || '').toLowerCase();
+    const plKicker = plSrc === 'apple' ? 'APPLE MUSIC' : plSrc === 'youtube' ? 'YOUTUBE PLAYLIST' : 'SPOTIFY PLAYLIST';
     return {
       kind: daily ? 'daily' : total > 5 ? 'playlist' : 'run',
       theme: isSpotify ? 'emerald' : custom ? 'purple' : 'emerald',
-      kicker: daily ? 'DAILY CHALLENGE' : isSpotify ? 'SPOTIFY PLAYLIST' : custom ? 'ARTIST CHALLENGE' : 'CLASSIC RUN',
+      kicker: daily ? 'DAILY CHALLENGE' : isSpotify ? plKicker : custom ? 'ARTIST CHALLENGE' : 'CLASSIC RUN',
       scoreMain: String(score),
       scoreSub: '/ ' + total,
       subtitle: daily

@@ -3,7 +3,7 @@
    ke server (no-cache / ETag) agar update langsung masuk dan file besar seperti
    songs.js tetap hemat kuota via 304 Not Modified saat belum berubah. */
 
-const CACHE = 'gts-v99-card-boot-badges';
+const CACHE = 'gts-v100-playlists-i18n';
 const SHELL = [
   './',
   './index.html',
@@ -27,6 +27,7 @@ const SHELL = [
   './score-card.js',
   './backup.js',
   './badges.js',
+  './i18n.js',
   './songs.js',
   './app.webmanifest',
   './og-image.png',

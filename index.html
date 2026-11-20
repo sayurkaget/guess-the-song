@@ -76,7 +76,7 @@
         <div class="seg classic-seg" id="classicTabs" role="tablist" aria-label="Classic setup">
           <button type="button" role="tab" data-classic-tab="filters" aria-selected="true" aria-pressed="true">Genre &amp; Era</button>
           <button type="button" role="tab" data-classic-tab="artist" aria-selected="false" aria-pressed="false">By Artist</button>
-          <button type="button" role="tab" data-classic-tab="spotify" aria-selected="false" aria-pressed="false">Spotify</button>
+          <button type="button" role="tab" data-classic-tab="spotify" aria-selected="false" aria-pressed="false">Playlists</button>
         </div>
       </div>
       <div id="classicFiltersPanel">
@@ -103,8 +103,8 @@
         <div class="spotify-input-row">
           <div class="spotify-field">
             <svg class="spotify-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7.5 9.6c3.2-.9 6.8-.6 9.6.8M8.3 12.7c2.6-.7 5.5-.4 7.8.7M9.2 15.6c2-.5 4.2-.3 6 .6" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"/></svg>
-            <input id="spotifyUrl" type="text" placeholder="Paste Spotify link&hellip;" autocomplete="off" spellcheck="false" enterkeyhint="go">
-            <button class="clear" id="spotifyClear" type="button" aria-label="Clear Spotify link" hidden>&times;</button>
+            <input id="spotifyUrl" type="text" placeholder="Paste Spotify, Apple, or YouTube link&hellip;" autocomplete="off" spellcheck="false" enterkeyhint="go">
+            <button class="clear" id="spotifyClear" type="button" aria-label="Clear playlist link" hidden>&times;</button>
           </div>
           <button class="btn solid spotify-go" id="loadSpotifyBtn" type="button">Play</button>
         </div>
@@ -119,7 +119,7 @@
           </div>
           <input id="spotifyRoundsCustom" class="spotify-rounds-custom" type="number" min="1" max="500" inputmode="numeric" placeholder="Custom" aria-label="Custom number of songs">
         </div>
-        <p class="spotify-hint" id="spotifyStatus" role="status" aria-live="polite">100+ songs? Paste 2 playlist links, or Ctrl+A &rarr; Ctrl+C tracks from Spotify</p>
+        <p class="spotify-hint" id="spotifyStatus" role="status" aria-live="polite">Paste Spotify, Apple Music, or YouTube playlist links (or Ctrl+A Spotify tracks)</p>
       </div>
     </section>
 
@@ -636,21 +636,28 @@
     <h2 id="setTitle">Settings</h2>
     <ul class="set-list">
       <li class="set-row">
-        <div class="set-copy"><b id="setAutoplayLbl">Auto-play on reveal</b><small>Play the full song when a round ends</small></div>
+        <div class="set-copy"><b id="setLangLbl">Language</b><small id="setLangDesc">Display language for menus &amp; labels</small></div>
+        <div class="seg set-lang-seg" id="setLangSeg" role="radiogroup" aria-labelledby="setLangLbl">
+          <button type="button" role="radio" data-lang="en" aria-checked="true" aria-pressed="true">EN</button>
+          <button type="button" role="radio" data-lang="id" aria-checked="false" aria-pressed="false">ID</button>
+        </div>
+      </li>
+      <li class="set-row">
+        <div class="set-copy"><b id="setAutoplayLbl">Auto-play on reveal</b><small id="setAutoplayDesc">Play the full song when a round ends</small></div>
         <button class="set-switch" id="setAutoplay" type="button" role="switch" aria-checked="true" aria-labelledby="setAutoplayLbl"><span class="set-knob"></span></button>
       </li>
       <li class="set-row">
-        <div class="set-copy"><b id="setSfxLbl">Sound effects</b><small>Chimes for right, close, and wrong answers</small></div>
+        <div class="set-copy"><b id="setSfxLbl">Sound effects</b><small id="setSfxDesc">Chimes for right, close, and wrong answers</small></div>
         <button class="set-switch" id="setSfx" type="button" role="switch" aria-checked="true" aria-labelledby="setSfxLbl"><span class="set-knob"></span></button>
       </li>
       <li class="set-row">
-        <div class="set-copy"><b id="setHoverLbl">Hover play</b><small>Music Duel &middot; play a card when your mouse is over it</small></div>
+        <div class="set-copy"><b id="setHoverLbl">Hover play</b><small id="setHoverDesc">Music Duel &middot; play a card when your mouse is over it</small></div>
         <button class="set-switch" id="setHover" type="button" role="switch" aria-checked="true" aria-labelledby="setHoverLbl"><span class="set-knob"></span></button>
       </li>
     </ul>
 
-    <h3 class="set-h">Backup &amp; transfer</h3>
-    <p class="dim set-note">No account needed. Copy your code, then paste it on another browser or device to bring over your stats, streaks, and Daily history.</p>
+    <h3 class="set-h" id="setBackupTitle">Backup &amp; transfer</h3>
+    <p class="dim set-note" id="setBackupNote">No account needed. Copy your code, then paste it on another browser or device to bring over your stats, streaks, and Daily history.</p>
     <textarea id="backupCode" class="set-code" rows="3" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Backup code" placeholder="Your backup code appears here — or paste a code to restore"></textarea>
     <div class="set-actions">
       <button class="btn ghostbtn" id="backupCopy" type="button">Copy backup code</button>
@@ -717,6 +724,7 @@
 <script src="score-card.js"></script>
 <script src="backup.js"></script>
 <script src="badges.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 <script src="site-guide.js"></script>
 <script>

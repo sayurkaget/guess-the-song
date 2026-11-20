@@ -409,3 +409,14 @@
   - Added `Badges` tab (`data-tab="badges"`, `#badgeGrid`) inside `#statsModal` with responsive 3×2 mobile tab bar (`<= 520px`).
 - **Verification & Deploy**:
   - Added `tests/badges.test.cjs` (`146/146` unit tests passing), verified Playwright desktop (`1280×800`) + mobile (`360×780`, `0px` overflow) rendering for Artist Detective PNG score card and `#statsModal` Badges tab, bumped SW cache (`gts-v99-card-boot-badges` / `gts-cf-v79-card-boot-badges`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 56 — Apple Music & YouTube Playlist Import + EN/ID Language Switch (2026-11-20)
+- **Apple Music & YouTube / YouTube Music Playlist Import (`functions/api/playlist.js`, `index.html`, `app.js`, `score-card.js`)**:
+  - Added keyless Cloudflare Pages endpoint `/api/playlist?url=...` supporting public Apple Music playlists (`serialized-server-data` with exact `storeAdamID` `trackId` + 600px/300px album covers), Apple Music albums (iTunes Lookup API with direct 30s studio previews), and YouTube / YouTube Music playlists (`ytInitialData` supporting both 2026 `lockupViewModel` and legacy `playlistVideoRenderer`, with smart video-tag stripping & `Artist - Title` parsing).
+  - Upgraded the Classic `Playlists` tab (`#spotifyUrl`, `parseSpotifyMultiInput`, `startSpotifyPlaylist`) to accept Spotify, Apple Music, and YouTube links (or mixed links) in the same single input box, with source-aware Score Card kickers (`SPOTIFY PLAYLIST`, `APPLE MUSIC`, `YOUTUBE PLAYLIST`).
+- **EN / ID Language Switch (`i18n.js`, `index.html`, `layout.css`, `app.js`, `sw.js`, `tools/build-cloudflare.cjs`)**:
+  - Added standalone `i18n.js` (`window.TuneUpI18n`, persisted in `tl:set:lang` and automatically included in `TUNEUP1.` backup/restore) with full EN/ID parity across Lobby, Game Arena, Music Duel, Artist Detective, Settings, Stats & Badges, Modals, and Site Guide.
+  - Added `EN | ID` pill selector (`#setLangSeg`) inside `#settingsModal` with live zero-reload language switching and bidirectional sync on Backup restore & Reset.
+- **Verification & Deploy**:
+  - Added `tests/playlist-i18n.test.cjs` (`150/150` unit tests passing), verified Playwright desktop (`1280×800`) + mobile (`360×780`, `0px` overflow) E2E for `EN ↔ ID` live switching across Lobby, Settings, Badges, and Artist Detective plus live Apple Music & YouTube link import, bumped SW cache (`gts-v100-playlists-i18n` / `gts-cf-v80-playlists-i18n`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
