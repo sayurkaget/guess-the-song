@@ -313,3 +313,15 @@
   - Changed `.modal` to `overflow: clip` so focusing inputs inside modals with `.artbg { transform: scale(6.25) }` can never horizontally scroll the backdrop and shift the modal card off-center.
 - **Verification & Deploy**:
   - Added `tests/leaderboard.test.cjs` (`137/137` passing), verified desktop & `360px` mobile zero overflow and bounding-box stability via Playwright, created `leaderboard_scores` schema on remote D1 `namethetrack-feedback`, bumped SW cache (`gts-v91-og-leaderboard` / `gts-cf-v71-og-leaderboard`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 48 — Remove No-Login Leaderboard & Comprehensive Mobile UI Polish (2026-11-20)
+- **Removed No-Login Global Leaderboard (`functions/api/leaderboard.js`, `index.html`, `layout.css`, `app.js`, remote D1)**:
+  - Removed `/api/leaderboard`, `#openLeaderboard`, `#leaderboardModal`, `#dailyLbBox`, `#duelLbBox`, and dropped `leaderboard_scores` table on remote D1 `namethetrack-feedback`, while preserving `og-image.png`, the 1-song `.run-playbtn` fix, and `.modal { overflow: clip }`.
+- **Full Mobile Layout & Tap-Target Polish (`layout.css`, `site-guide.css`, `index.html`)**:
+  - Fixed `"Challenge your friend"` button text overflow on `#duelModal` (reversed mobile grid track ratio to `1fr / 1.48fr` + `white-space: normal`) and `#agResultBanner` (stacked full-width `column-reverse` with `Next artist` on top), and changed `.run-kicker` to `display: inline-block` with right clearance so ellipsis renders cleanly without colliding with `×`.
+  - Grouped `#runModal` / `#duelModal` secondary footer actions (`Save score card` + `Back to menu`) into a 2-column grid on mobile so all 5 cards + all 4 buttons fit cleanly on `360×780` without clipping.
+  - Made Lobby Classic tabs (`.classic-seg`) full-width 3-column with `36px` min-height, reorganized Spotify round picker into a balanced 2-row grid (`Songs` + `Custom`, then full-width 5-column `5 | 10 | 20 | 50 | All`), and shortened mobile placeholders (`#spotifyUrl`, `#agQ`) to avoid mid-word clipping.
+  - Tightened mobile vertical rhythm in `#game`, `#duel`, and `#artistGame` (`1.9rem` header logo, compact 5-stage pills & 5-slot heights, single-line ellipsized `#stageTitle`, consistent `40px` `#duel .backbtn` & `36px` `#duelTabs`, aligned volume footer, 2×2 mobile Era grid in `site-guide.css`, and full-width mobile buttons / `16px` inputs in `#statsModal`, `#customModal`, `#feedbackModal`, `#leaveRunModal`).
+- **Verification & Deploy**:
+  - Replaced `tests/leaderboard.test.cjs` with `tests/og-ui.test.cjs` (`134/134` unit tests passing), verified all 21 mobile viewport states (`360×780` & `320×640`) with 0 horizontal overflow, 0 clipped elements, and 0 `pageerror` via Playwright, bumped SW cache (`gts-v92-mobile-polish` / `gts-cf-v72-mobile-polish`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.

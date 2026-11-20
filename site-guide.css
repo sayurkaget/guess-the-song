@@ -52,9 +52,12 @@
 .guide-footer svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .site-guide :is(button,summary):focus-visible{outline:2px solid var(--acc);outline-offset:4px;border-radius:4px}
 @media(max-width:600px){
-  .site-guide{margin-top:2rem}
+  .site-guide{width:calc(100% - 2rem);margin-top:1.75rem}
   .guide-info{grid-template-columns:minmax(0,1fr);gap:2rem;padding:2rem 0}
   .music-browser{padding:2rem 0}
   .site-guide h2{font-size:1.375rem}
+  .music-tags button{padding:.52rem .85rem;font-size:.875rem}
+  .era-tags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .era-tags button{width:100%;text-align:center}
 }
 @media(prefers-reduced-motion:reduce){.music-tags button{transition:none}}

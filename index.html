@@ -103,7 +103,7 @@
         <div class="spotify-input-row">
           <div class="spotify-field">
             <svg class="spotify-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7.5 9.6c3.2-.9 6.8-.6 9.6.8M8.3 12.7c2.6-.7 5.5-.4 7.8.7M9.2 15.6c2-.5 4.2-.3 6 .6" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"/></svg>
-            <input id="spotifyUrl" type="text" placeholder="Paste Spotify playlist, album, or Ctrl+A track links…" autocomplete="off" spellcheck="false" enterkeyhint="go">
+            <input id="spotifyUrl" type="text" placeholder="Paste Spotify link&hellip;" autocomplete="off" spellcheck="false" enterkeyhint="go">
             <button class="clear" id="spotifyClear" type="button" aria-label="Clear Spotify link" hidden>&times;</button>
           </div>
           <button class="btn solid spotify-go" id="loadSpotifyBtn" type="button">Play</button>
@@ -341,7 +341,7 @@
     <div class="spotle-top-card">
       <div class="search spotle-search">
         <svg class="search-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        <input id="agQ" type="text" placeholder="Type any artist to reveal clues…" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="agDD" aria-autocomplete="list">
+        <input id="agQ" type="text" placeholder="Search any artist&hellip;" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="agDD" aria-autocomplete="list">
         <button class="clear" id="agClear" type="button" aria-label="Clear" hidden>&times;</button>
         <div class="dd spotle-dd" id="agDD" role="listbox" hidden></div>
       </div>
@@ -380,10 +380,7 @@
   </section>
 
   <footer class="foot">
-    <div class="foot-menu-links">
-      <button class="menu-stats" id="openStats" type="button" aria-haspopup="dialog" aria-controls="statsModal">Stats</button>
-      <button class="menu-stats" id="openLeaderboard" type="button" aria-haspopup="dialog" aria-controls="leaderboardModal">Leaderboard</button>
-    </div>
+    <button class="menu-stats" id="openStats" type="button" aria-haspopup="dialog" aria-controls="statsModal">Stats</button>
     <div class="vol">
       <button class="iconbtn" id="mute" aria-label="Mute">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path class="wave1" d="M16.5 8.8a4.5 4.5 0 0 1 0 6.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="wave2" d="M19 6.3a8 8 0 0 1 0 11.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path class="slash" d="m4 4 16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -517,14 +514,6 @@
       </div>
     </div>
     <ol class="runlist run-shelf" id="runList"></ol>
-    <div class="lb-inline" id="dailyLbBox" hidden>
-      <div class="lb-inline-row">
-        <span class="lb-inline-tag" aria-hidden="true">&#127942;</span>
-        <input id="dailyLbName" class="lb-inline-input" type="text" maxlength="16" autocomplete="nickname" spellcheck="false" placeholder="Your nickname for Daily leaderboard&hellip;">
-        <button class="btn ghostbtn lb-inline-btn" id="dailyLbSubmit" type="button">Submit score</button>
-      </div>
-      <p class="lb-inline-msg" id="dailyLbMsg" role="status" aria-live="polite" hidden></p>
-    </div>
     <div class="run-foot">
       <div class="r-actions">
         <button class="btn solid" id="share" type="button">Challenge your friend</button>
@@ -557,14 +546,6 @@
       </div>
     </div>
     <ol class="runlist duel-runlist run-shelf" id="duelRunList"></ol>
-    <div class="lb-inline is-duel" id="duelLbBox" hidden>
-      <div class="lb-inline-row">
-        <span class="lb-inline-tag" aria-hidden="true">&#127942;</span>
-        <input id="duelLbName" class="lb-inline-input" type="text" maxlength="16" autocomplete="nickname" spellcheck="false" placeholder="Your nickname for Duel leaderboard&hellip;">
-        <button class="btn ghostbtn lb-inline-btn" id="duelLbSubmit" type="button">Submit score</button>
-      </div>
-      <p class="lb-inline-msg" id="duelLbMsg" role="status" aria-live="polite" hidden></p>
-    </div>
     <div class="run-foot">
       <div class="r-actions">
         <button class="btn solid" id="duelAgain" type="button">Play again</button>
@@ -626,22 +607,6 @@
     <h3 id="distHeading">Score spread</h3>
     <div class="dist" id="dist"></div>
     <button class="btn ghost tiny" id="reset">Reset stats</button>
-  </div>
-</div>
-
-<!-- ====== global leaderboard ====== -->
-<div class="modal" id="leaderboardModal" hidden>
-  <div class="sheet lb-sheet" role="dialog" aria-modal="true" aria-labelledby="lbTitle">
-    <button class="x" data-close aria-label="Close" type="button">&times;</button>
-    <h2 id="lbTitle">Leaderboard</h2>
-    <div class="seg stats-tabs" id="lbTabs" role="tablist" aria-label="Leaderboard mode">
-      <button type="button" role="tab" data-board="daily" aria-selected="true" aria-pressed="true">Today&rsquo;s Daily</button>
-      <button type="button" role="tab" data-board="duel_streams" aria-selected="false" aria-pressed="false">Duel &middot; Streams</button>
-      <button type="button" role="tab" data-board="duel_year" aria-selected="false" aria-pressed="false">Duel &middot; Year</button>
-    </div>
-    <p class="lb-sub" id="lbSub">Loading top scores&hellip;</p>
-    <ol class="lb-list" id="lbList" aria-live="polite"></ol>
-    <div class="lb-you-foot" id="lbYou" hidden></div>
   </div>
 </div>
 
