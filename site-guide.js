@@ -12,8 +12,9 @@
   const showMenu = () => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.querySelector('.wrap').scrollIntoView({behavior:reduced ? 'auto' : 'smooth',block:'start'});
+    const spotifyCta = document.querySelector('#classicSpotifyPanel:not([hidden]) #spotifyUrl');
     const customCta = document.querySelector('#classicArtistPanel:not([hidden]) #openCustom');
-    const start = customCta || document.querySelector('#start');
+    const start = spotifyCta || customCta || document.querySelector('#start');
     (start.disabled ? document.querySelector('#openDaily') : start).focus({preventScroll:true});
   };
   guide.addEventListener('click', event => {

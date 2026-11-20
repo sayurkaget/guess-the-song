@@ -636,10 +636,11 @@
     loadRun();      // tebakan tahap ini, milik sesi yang baru dipilih
   }
 
-  function pickSong(offset) {
+  function pickSong(offset, excludeSlugs = null) {
     // jangan ulang lagu yang sudah keluar di tahap sebelumnya dalam sesi ini
     const used = S.stages.filter(Boolean);
     const avail = S.pool.filter((s) =>
+      (!excludeSlugs || !excludeSlugs.has(s.slug)) &&
       used.every((u) => s.slug !== u.slug && !sameRecording(s, u)));
     const from = avail.length ? avail : S.pool;
 
@@ -695,11 +696,12 @@
     UI.status('Loading song…');
     UI.render();
 
+    const failedSlugs = new Set();
     for (let k = 0; k < 5; k++) {
       const cand = S.daily ? S.daily.songs[S.stage]
         : S.challenge ? S.challenge.song
         : S.runChallenge ? S.runChallenge.songs[S.stage]
-        : (song || pickSong(k));
+        : (song || pickSong(k, failedSlugs));
       S.retrySong = cand;
       if (S.custom && S.custom.kind === 'spotify') fetchSpotifyTrackArt(cand);   // lagu aktif duluan
       try {
@@ -728,6 +730,7 @@
         return;
       } catch (e) {
         if (me !== S.epoch) return;
+        if (cand && cand.slug) failedSlugs.add(cand.slug);
         if (S.challenge || S.daily || cur || retrySong) break; // Preserve an existing round on retry.
         song = null;                            // kandidat gagal → coba berikutnya
       }
@@ -842,8 +845,8 @@
     stopAudio();
     // Gagal tidak menghentikan sesi -- tahap berikutnya tetap jalan.
     if (S.stage === stageCount() - 1) S.runDone = true;
-    playSfx(won ? ((S.daily || (S.runDone && score() + 1 >= stageCount())) ? 'fanfare' : 'win') : 'wrong');
     saveRun();
+    playSfx(won ? ((S.daily || (S.runDone && score() >= stageCount())) ? 'fanfare' : 'win') : 'wrong');
     lastStreak = updateSongStreak(won);
     if (S.daily) trackActivity('daily_complete', { won, attempts: S.guesses.length });
     if (S.runDone) { if (S.daily) completeDaily(); else recordStats(); }
@@ -1736,9 +1739,22 @@
         });
       }
       syncSummaryVolume();
-      if (summaryAudio.src !== preview) summaryAudio.src = preview;
+      const switchedSrc = summaryAudio.src !== preview;
+      if (switchedSrc) summaryAudio.src = preview;
       const resumeAt = summaryPos.get(key) || 0;
-      try { summaryAudio.currentTime = resumeAt; } catch (e) {}
+      const applyResume = () => {
+        if (ticket !== summaryEpoch || !(resumeAt > 0.05)) return;
+        try {
+          const cap = Number.isFinite(summaryAudio.duration) ? Math.max(0, summaryAudio.duration - 0.3) : resumeAt;
+          summaryAudio.currentTime = Math.min(resumeAt, cap);
+        } catch (e) {}
+      };
+      if (resumeAt > 0.05) {
+        if (!switchedSrc || summaryAudio.readyState >= 1) applyResume();
+        else summaryAudio.addEventListener('loadedmetadata', applyResume, { once: true });
+      } else {
+        try { summaryAudio.currentTime = 0; } catch (e) {}
+      }
       await summaryAudio.play();
       if (ticket !== summaryEpoch) {
         try { summaryAudio.pause(); } catch (e) {}
@@ -2748,7 +2764,13 @@
   $('#backToMenu').onclick = () => {
     closeAll();
     UI.lobby();
-    $('#start').focus();
+    const focusEl =
+      (typeof document.querySelector === 'function' && (
+        document.querySelector('#classicSpotifyPanel:not([hidden]) #spotifyUrl') ||
+        document.querySelector('#classicArtistPanel:not([hidden]) #openCustom')
+      )) ||
+      ($('#start') && !$('#start').disabled ? $('#start') : $('#openDaily'));
+    if (focusEl && typeof focusEl.focus === 'function') focusEl.focus();
   };
 
   // ---- custom game (main satu artis) ----
@@ -3114,26 +3136,10 @@
       return sp;
     }
 
-    function seekOnceReady(a, targetTime) {
-      return new Promise((done) => {
-        if (!(targetTime > 0.05)) return done();
-        const apply = () => {
-          try {
-            const cap = Number.isFinite(a.duration) ? Math.max(0, a.duration - 0.3) : targetTime;
-            a.currentTime = Math.min(targetTime, cap);
-          } catch (e) {}
-          done();
-        };
-        if (a.readyState >= 1) return apply();
-        const onMeta = () => { a.removeEventListener('loadedmetadata', onMeta); apply(); };
-        a.addEventListener('loadedmetadata', onMeta);
-        setTimeout(() => { a.removeEventListener('loadedmetadata', onMeta); done(); }, 1500);
-      });
-    }
-
-    async function playDuelSlot(slot) {
+    async function playDuelSlot(slot, isHover = false) {
       const song = slot === 'a' ? ds.a : ds.b;
       if (!song || $('#duel').hidden || ds.over) return;
+      if (!isHover && typeof unlockSfx === 'function') unlockSfx();
       stopAudio();
       const other = slot === 'a' ? 'b' : 'a';
       if (activeSlot === other) pauseSlot(other);
@@ -3157,8 +3163,17 @@
           sp.preview = previewUrl;
           sp.audio.src = previewUrl;
           const saved = duelPos.get(song.slug) || 0;
-          await seekOnceReady(sp.audio, saved);
-          if (myEpoch !== duelAudioEpoch || activeSlot !== slot || $('#duel').hidden) return;
+          if (saved > 0.05) {
+            const applySaved = () => {
+              if (myEpoch !== duelAudioEpoch || activeSlot !== slot || $('#duel').hidden) return;
+              try {
+                const cap = Number.isFinite(sp.audio.duration) ? Math.max(0, sp.audio.duration - 0.3) : saved;
+                sp.audio.currentTime = Math.min(saved, cap);
+              } catch (e) {}
+            };
+            if (sp.audio.readyState >= 1) applySaved();
+            else sp.audio.addEventListener('loadedmetadata', applySaved, { once: true });
+          }
         }
         await sp.audio.play();
         if (myEpoch !== duelAudioEpoch || activeSlot !== slot || $('#duel').hidden) {
@@ -3171,13 +3186,16 @@
         if (myEpoch !== duelAudioEpoch || activeSlot !== slot) return;
         activeSlot = null;
         setPlayBtn(slot, 'idle');
-        if (err && err.name !== 'NotAllowedError') {
+        if (err && err.name === 'NotAllowedError') {
+          if (!isHover) $('#duelStatus').textContent = 'Browser paused audio — tap ▶ again to listen.';
+        } else {
           $('#duelStatus').textContent = 'Preview unavailable right now — you can still guess!';
         }
       }
     }
 
     function toggleDuelPreview(slot) {
+      if (typeof unlockSfx === 'function') unlockSfx();
       if (activeSlot === slot) {
         manualPausedSlot = slot;
         duelAudioEpoch++;
@@ -3186,7 +3204,7 @@
         return;
       }
       manualPausedSlot = null;
-      playDuelSlot(slot);
+      playDuelSlot(slot, false);
     }
 
     function syncDuelChrome(a) {
@@ -3256,7 +3274,7 @@
       $('#duelStatus').textContent = '';
       $('#duelStatus').className = 'status duel-status';
       if (lastMouseCard && !ds.over && !$('#duel').hidden && manualPausedSlot !== lastMouseCard) {
-        playDuelSlot(lastMouseCard);
+        playDuelSlot(lastMouseCard, true);
       }
     }
 
@@ -3330,6 +3348,7 @@
 
     function guessDuel(direction) {
       if (ds.busy || ds.over || !ds.a || !ds.b) return;
+      if (typeof unlockSfx === 'function') unlockSfx();
       ds.busy = true;
       $('#duelLater').disabled = true;
       $('#duelEarlier').disabled = true;
@@ -3471,7 +3490,7 @@
         if (e.pointerType !== 'mouse' || ds.over || $('#duel').hidden) return;
         lastMouseCard = slot;
         if (manualPausedSlot === slot) return;
-        playDuelSlot(slot);
+        playDuelSlot(slot, true);
       });
       card.addEventListener('pointerleave', (e) => {
         if (e.pointerType !== 'mouse') return;
@@ -3623,6 +3642,7 @@
 
     async function playArtistTrack(song, kind, isAuto = false) {
       if (!song || typeof Audio !== 'function') return;
+      if (!isAuto && typeof unlockSfx === 'function') unlockSfx();
       if (!isAuto && agAudioKind === kind && agAudio && !agAudio.paused) {
         stopArtistAudio();
         return;
@@ -3836,7 +3856,15 @@
     function moveAgSel(dir) {
       const items = $('#agDD').querySelectorAll('.dd-item');
       if (!items.length) return;
-      ag.sel = (ag.sel + dir + items.length) % items.length;
+      const len = items.length;
+      for (let step = 1; step <= len; step++) {
+        const idx = ((ag.sel < 0 ? (dir > 0 ? -1 : 0) : ag.sel) + dir * step + len) % len;
+        if (!items[idx].disabled) {
+          ag.sel = idx;
+          break;
+        }
+        if (step === len) return;
+      }
       items.forEach((elItem, idx) => elItem.classList.toggle('sel', idx === ag.sel));
       if (items[ag.sel] && typeof items[ag.sel].scrollIntoView === 'function') {
         items[ag.sel].scrollIntoView({ block: 'nearest' });
@@ -3845,6 +3873,7 @@
 
     function submitArtistGuess(artist) {
       if (!artist || ag.done || !ag.target) return;
+      if (typeof unlockSfx === 'function') unlockSfx();
       if (ag.guesses.some((g) => g.id === artist.id)) {
         toast('Already guessed ' + artist.name);
         return;
@@ -3867,6 +3896,7 @@
       if (ag.guesses.length >= AD.MAX_TRIES) {
         ag.done = true;
         ag.won = false;
+        if ($('#agQ') && typeof $('#agQ').blur === 'function') $('#agQ').blur();
         playSfx('wrong');
         recordArtistOutcome(false, ag.guesses.length);
         renderAgBoard();
@@ -3879,8 +3909,10 @@
 
     function giveUpArtist() {
       if (ag.done || !ag.target) return;
+      if (typeof unlockSfx === 'function') unlockSfx();
       ag.done = true;
       ag.won = false;
+      if ($('#agQ') && typeof $('#agQ').blur === 'function') $('#agQ').blur();
       playSfx('wrong');
       closeAgDD();
       recordArtistOutcome(false, ag.guesses.length);

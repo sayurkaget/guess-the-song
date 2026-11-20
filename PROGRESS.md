@@ -325,3 +325,17 @@
   - Tightened mobile vertical rhythm in `#game`, `#duel`, and `#artistGame` (`1.9rem` header logo, compact 5-stage pills & 5-slot heights, single-line ellipsized `#stageTitle`, consistent `40px` `#duel .backbtn` & `36px` `#duelTabs`, aligned volume footer, 2×2 mobile Era grid in `site-guide.css`, and full-width mobile buttons / `16px` inputs in `#statsModal`, `#customModal`, `#feedbackModal`, `#leaveRunModal`).
 - **Verification & Deploy**:
   - Replaced `tests/leaderboard.test.cjs` with `tests/og-ui.test.cjs` (`134/134` unit tests passing), verified all 21 mobile viewport states (`360×780` & `320×640`) with 0 horizontal overflow, 0 clipped elements, and 0 `pageerror` via Playwright, bumped SW cache (`gts-v92-mobile-polish` / `gts-cf-v72-mobile-polish`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 49 — Music Duel Audio Gesture Fix, Retry Dedupe, Artist Detective & Score Card Polish (2026-11-20)
+- **Audio & Gameplay Reliability (`app.js`)**:
+  1. Removed async `await seekOnceReady()` before `sp.audio.play()` in `playDuelSlot(slot, isHover)` so mobile user-gesture activation stays intact (applying saved resume time via one-shot `loadedmetadata` without blocking playback), surfaced clear prompt when manual click hits `NotAllowedError`, and wired `unlockSfx()` into Music Duel & Artist Detective actions.
+  2. Added `failedSlugs` tracking in `load()` / `pickSong()` so failed preview tracks in Spotify/Custom playlists are excluded on subsequent retries instead of being picked repeatedly.
+  3. Updated `moveAgSel()` in Artist Detective to skip already-tried (`disabled`) artists on ArrowUp/ArrowDown, and blurred `#agQ` on `giveUpArtist()` and 10th-try loss so mobile keyboards dismiss cleanly when the answer banner appears.
+  4. Fixed `toggleSummaryPreview()` resume seek to wait for `loadedmetadata` when switching tracks, and moved `saveRun()` before `playSfx()` in `finish()` so final-stage fanfare calculation is exact.
+- **Score Card, Focus & Copy Polish (`score-card.js`, `site-guide.js`, `app.js`, `index.html`, `app.webmanifest`)**:
+  5. Vertically centered 1–4 row runs inside the `score-card.js` glass panel so short Spotify/early-finish runs look balanced instead of leaving empty bottom space.
+  6. Updated `#backToMenu` and `site-guide.js` `showMenu()` to focus `#spotifyUrl` when the Spotify tab is active.
+  7. Updated About, FAQ (`index.html`), and `app.webmanifest` descriptions to include Spotify Playlists.
+- **Verification & Deploy**:
+  - Added Wave 49 regression assertions in `tests/og-ui.test.cjs` (`135/135` unit tests passing), visually verified 1-song & 3-song Score Card PNG + Artist Detective keyboard skip via Playwright, bumped SW cache (`gts-v93-audio-polish` / `gts-cf-v73-audio-polish`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.

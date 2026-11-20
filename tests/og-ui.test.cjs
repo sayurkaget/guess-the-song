@@ -33,3 +33,22 @@ test('1-song summary shelf keeps .run-playbtn inline, modal uses overflow:clip, 
   assert.match(css, /\.spotle-result-actions\{width:100%;display:flex;flex-direction:column-reverse;/);
   assert.match(css, /\.sheet\.run-sheet \.run-foot-links\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);/);
 });
+
+test('Wave 49 audio, retry, artist detective, score card, and Spotify focus fixes stay intact', () => {
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  assert.doesNotMatch(app, /function seekOnceReady\(/);
+  assert.match(app, /const failedSlugs = new Set\(\);/);
+  assert.match(app, /saveRun\(\);\s*playSfx\(won \? \(\(S\.daily \|\| \(S\.runDone && score\(\) >= stageCount\(\)\)\) \? 'fanfare' : 'win'\) : 'wrong'\);/);
+  assert.match(app, /function moveAgSel\(dir\)[\s\S]*?!items\[idx\]\.disabled/);
+  assert.match(app, /function giveUpArtist\(\)[\s\S]*?#agQ'\)\.blur\(\)/);
+  assert.match(app, /summaryAudio\.addEventListener\('loadedmetadata', applyResume, \{ once: true \}\)/);
+
+  const guide = fs.readFileSync(path.join(ROOT, 'site-guide.js'), 'utf8');
+  assert.match(guide, /#classicSpotifyPanel:not\(\[hidden\]\) #spotifyUrl/);
+
+  const card = fs.readFileSync(path.join(ROOT, 'score-card.js'), 'utf8');
+  assert.match(card, /const startY = Math\.round\(825 - \(\(n - 1\) \* step\) \/ 2\);/);
+
+  const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'app.webmanifest'), 'utf8'));
+  assert.match(manifest.description, /Spotify Playlist/i);
+});

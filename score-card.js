@@ -238,8 +238,11 @@
         fitText(ctx, '+' + (model.rows.length - 40) + ' more songs in full run', 130, 1028, 24, '#9cb6a7', 600, 820, 'left', 'General Sans');
       }
     } else {
+      const n = model.rows.length;
+      const step = n <= 3 ? 112 : 96;
+      const startY = Math.round(825 - ((n - 1) * step) / 2);
       model.rows.forEach((row, i) => {
-        const y = 636 + i * 96;
+        const y = startY + i * step;
         fitText(ctx, row.label, 128, y, 32, '#f2fbf6', 700, 260, 'left', 'General Sans');
         row.attempts.forEach((type, j) => {
           rr(ctx, 434 + j * 54, y - 30, 40, 40, 11);
@@ -250,9 +253,9 @@
           }
         });
         fitText(ctx, row.result, 952, y, 30, row.won ? pal.accL : '#7b9486', 700, 200, 'right', 'General Sans');
-        if (i < model.rows.length - 1) {
+        if (i < n - 1) {
           ctx.fillStyle = 'rgba(255,255,255,0.07)';
-          ctx.fillRect(128, y + 32, 824, 1.5);
+          ctx.fillRect(128, y + Math.round(step * 0.35), 824, 1.5);
         }
       });
     }
