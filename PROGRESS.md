@@ -374,3 +374,14 @@
   - Added `Copy backup code` and 2-step `Restore from code` (`Confirm restore`) inside `#settingsModal` with full validation, live state reload (`reloadPersistedState()`), and updated FAQ copy.
 - **Verification & Deploy**:
   - Added `tests/backup.test.cjs` (`141/141` unit tests passing), verified Settings modal & backup/restore/reset end-to-end on desktop (`1280×800`) and mobile (`360×780`, `0px` overflow) via Playwright + visual screenshot inspection, bumped SW cache (`gts-v96-settings-backup` / `gts-cf-v76-settings-backup`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 53 — Typo-Tolerant Fuzzy Search, Artist Detective Audio Hint & SEO Sitemap Routes (2026-11-20)
+- **Typo-Tolerant Fuzzy Search (`app.js`)**:
+  - Added bounded zero-allocation Damerau-Levenshtein `editDist()` + `fuzzyMatchScore()` fallback (1–2 letter typos, transpositions, prefix typos, and missing spaces like `"the weekend"`, `"bohemain rhapsody"`, `"taylr swift"`, `"taylorswift"`, `"billie elish"`) across `searchIndex()` (Classic, Daily, Custom Artist, Spotify), Artist Detective `openAgDD()`, and offline `localArtistMatches()`, keeping exact matches ranked first with zero overhead on common exact queries.
+- **Artist Detective Audio Hint (`index.html`, `layout.css`, `artist-game.js`, `app.js`)**:
+  - Added `#agAudioHint` pill next to `#agGiveUp` that starts locked (`Hint in 5` → `Hint in 1`), preloads `target.hintSong` at guess 4 for instant mobile playback, and unlocks at guess 5 (`AD.HINT_AFTER = 5`) to play a 4-second mystery snippet of the artist's #2 hit (`hintSong`, with automatic `topSong` fallback) without spoiling title or artwork, replayable via click or `Space` and noted cleanly on verdict & `AD.shareText` (`· Audio hint`).
+- **SEO Routes & JSON-LD (`sitemap.xml`, `index.html`, `sw.js`, `tools/build-cloudflare.cjs`)**:
+  - Expanded `sitemap.xml` to include all clean mode URLs (`/`, `/daily`, `/classic`, `/artist`, `/spotify`, `/duel`, `/artist-detective`) and updated `WebApplication` JSON-LD description to include Spotify Playlist mode.
+- **Verification & Deploy**:
+  - Added fuzzy search, Audio Hint, and SEO tests in `tests/og-ui.test.cjs` & `tests/artist-game.test.cjs` (`143/143` passing), verified Playwright desktop (`1280×800`) + mobile (`360×780`) visual & E2E flows (fuzzy search in Classic + Artist Detective, Audio Hint countdown → unlock → 4s play/stop), bumped SW cache (`gts-v97-fuzzy-hint-seo` / `gts-cf-v77-fuzzy-hint-seo`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.

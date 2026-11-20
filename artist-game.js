@@ -484,20 +484,22 @@
     return 'Tied at ' + yourTries + (yourTries === 1 ? ' try!' : ' tries!');
   }
 
-  function shareText({ mode = 'daily', day = '', guesses = [], target = null, won = false, url = '', challengeUrl = '' } = {}) {
+  function shareText({ mode = 'daily', day = '', guesses = [], target = null, won = false, url = '', challengeUrl = '', hintUsed = false } = {}) {
     const rows = (guesses || []).map((g) => {
       const tiles = compare(g, target);
       return tiles.map((t) => (t.status === 'exact' ? '🟩' : t.status === 'close' ? '🟨' : '⬛')).join('');
     });
+    const suffix = hintUsed ? ' · Audio hint' : '';
     const header = mode === 'daily' && day
-      ? `TuneUp · Daily Artist · ${day} · ${won ? guesses.length + '/10' : 'X/10'}`
-      : `TuneUp · Artist Detective · ${won ? guesses.length + '/10' : 'X/10'}`;
+      ? `TuneUp · Daily Artist · ${day} · ${won ? guesses.length + '/10' : 'X/10'}${suffix}`
+      : `TuneUp · Artist Detective · ${won ? guesses.length + '/10' : 'X/10'}${suffix}`;
     const targetUrl = String(challengeUrl || '').trim() || String(url || '').split('#')[0];
     return [header, ...rows, targetUrl].filter(Boolean).join('\n');
   }
 
   const api = {
     MAX_TRIES: 10,
+    HINT_AFTER: 5,
     buildRoster,
     compare,
     dailyArtist,

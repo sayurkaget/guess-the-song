@@ -80,3 +80,69 @@ test('Wave 51 Music Duel Hover Play switch is wired in HTML, CSS, and persisted 
   assert.match(app, /if \(!hoverPlayEnabled \|\| manualPausedSlot === slot\) return;/);
   assert.match(app, /if \(hoverPlayEnabled && activeSlot === slot\)/);
 });
+
+test('Wave 53 fuzzy search handles typos & missing spaces accurately on full songs.js catalog', () => {
+  const vm = require('node:vm');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const normMatch = app.match(/const norm = [\s\S]*?;\n/);
+  const fuzzyMatch = app.match(/const ED_R0 = new Uint8Array\(64\);[\s\S]*?function searchIndex\(q\) \{[\s\S]*?\n  \}/);
+  assert.ok(normMatch && fuzzyMatch, 'norm & fuzzy searchIndex helpers must exist in app.js');
+
+  const songCtx = { window: {} };
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'songs.js'), 'utf8'), vm.createContext(songCtx));
+  const ctx = vm.createContext({
+    Uint8Array,
+    Math,
+    Set,
+    Map,
+    S: { custom: null, daily: null },
+    ALL: []
+  });
+  vm.runInContext(normMatch[0] + '\n' + fuzzyMatch[0] + '\nthis.norm = norm; this.searchIndex = searchIndex;', ctx);
+  ctx.ALL = songCtx.window.SONGS.map((s, i) => ({
+    i, title: s[0], artist: s[1], tier: s[2], slug: String(i), hay: ctx.norm(s[0] + ' ' + s[1])
+  }));
+
+  const t0 = Date.now();
+  const cases = [
+    ['bohemain rhapsody', (r) => r.title.toLowerCase().includes('bohemian rhapsody') && r.artist === 'Queen'],
+    ['the weekend', (r) => r.artist === 'The Weeknd'],
+    ['taylr swift', (r) => r.artist === 'Taylor Swift'],
+    ['taylorswift', (r) => r.artist === 'Taylor Swift'],
+    ['billie elish', (r) => r.artist === 'Billie Eilish'],
+    ['ariana granda', (r) => r.artist === 'Ariana Grande'],
+    ['kendrik lmar', (r) => r.artist === 'Kendrick Lamar']
+  ];
+  for (const [query, pred] of cases) {
+    const hits = ctx.searchIndex(query);
+    assert.ok(hits.length > 0, `expected fuzzy hits for "${query}"`);
+    assert.ok(hits.slice(0, 15).some(pred), `expected top results for "${query}" to include intended match`);
+  }
+  assert.equal(ctx.searchIndex('xyzqqqvvv').length, 0, 'gibberish should return no matches');
+  const elapsed = Date.now() - t0;
+  assert.ok(elapsed < 1500, `fuzzy search suite should remain fast (took ${elapsed}ms)`);
+});
+
+test('Wave 53 Artist Detective Audio Hint and SEO sitemap/JSON-LD are wired cleanly', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  assert.match(html, /id="agAudioHint"/);
+  assert.match(html, /id="agAudioHintLbl"/);
+  assert.doesNotMatch(html, /id="agPlaySongBtn"/);
+  const ldJson = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+  assert.ok(ldJson, 'JSON-LD script must exist');
+  assert.match(ldJson[1], /Spotify Playlist/);
+
+  const sitemap = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
+  for (const route of ['/', '/daily', '/classic', '/artist', '/spotify', '/duel', '/artist-detective']) {
+    assert.ok(sitemap.includes(`https://tuneup.pages.dev${route}</loc>`), `sitemap.xml missing ${route}`);
+  }
+
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  assert.match(app, /const AG_HINT_AFTER = AD\.HINT_AFTER \|\| 5;/);
+  assert.match(app, /function preloadHintClip\(target\)/);
+  assert.match(app, /agAudioKind === 'hint' && agAudio && agAudio\.currentTime >= AG_HINT_SEC/);
+  assert.match(app, /function openAgDD\(query\)[\s\S]*?fuzzyMatchScore\(toks, qCompact, a\)/);
+
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  assert.match(css, /\.spotle-hint-btn\[data-s="playing"\]/);
+});

@@ -180,4 +180,15 @@ test('ArtistDetective createChallenge, parseChallenge, compareChallenge, and sha
     shared,
     'TuneUp · Daily Artist · 2026-11-18 · 2/10\n🟨🟩🟩⬛🟩🟨\n🟩🟩🟩🟩🟩🟩\nhttps://tuneup.pages.dev/'
   );
+
+  assert.equal(ArtistDetective.HINT_AFTER, 5);
+  const sharedWithHint = ArtistDetective.shareText({
+    mode: 'free',
+    guesses: [guess1, target],
+    target,
+    won: true,
+    hintUsed: true,
+    url: 'https://tuneup.pages.dev/'
+  });
+  assert.match(sharedWithHint, /^TuneUp · Artist Detective · 2\/10 · Audio hint\n/);
 });

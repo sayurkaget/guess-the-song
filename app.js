@@ -340,19 +340,121 @@
     S.tierWidened = spread > 0 && base.length > 0;
   }
 
+  const ED_R0 = new Uint8Array(64);
+  const ED_R1 = new Uint8Array(64);
+  const ED_R2 = new Uint8Array(64);
+  function editDist(a, b, maxD) {
+    const la = a.length, lb = b.length;
+    if (la === lb && a === b) return 0;
+    if (Math.abs(la - lb) > maxD) return maxD + 1;
+    if (la === 0) return lb;
+    if (lb === 0) return la;
+    if (lb >= 64) return maxD + 1;
+    let pprev = ED_R0, prev = ED_R1, curr = ED_R2;
+    for (let j = 0; j <= lb; j++) prev[j] = j;
+    for (let i = 1; i <= la; i++) {
+      curr[0] = i;
+      const ca = a.charCodeAt(i - 1);
+      let rowMin = i;
+      for (let j = 1; j <= lb; j++) {
+        const cb = b.charCodeAt(j - 1);
+        const cost = ca === cb ? 0 : 1;
+        let v = prev[j] + 1;
+        const ins = curr[j - 1] + 1;
+        if (ins < v) v = ins;
+        const sub = prev[j - 1] + cost;
+        if (sub < v) v = sub;
+        if (i > 1 && j > 1 && ca === b.charCodeAt(j - 2) && a.charCodeAt(i - 2) === cb) {
+          const tr = pprev[j - 2] + 1;
+          if (tr < v) v = tr;
+        }
+        curr[j] = v;
+        if (v < rowMin) rowMin = v;
+      }
+      if (rowMin > maxD) return maxD + 1;
+      const tmp = pprev; pprev = prev; prev = curr; curr = tmp;
+    }
+    return prev[lb];
+  }
+
+  function fuzzyMatchScore(toks, qCompact, item) {
+    if (!item.words) {
+      item.words = item.hay ? item.hay.split(' ') : [];
+      item.compact = item.hay ? item.hay.replace(/ /g, '') : '';
+    }
+    const words = item.words;
+    if (!words.length) return -1;
+    if (toks.length === 1 && qCompact.length >= 6 && item.compact.indexOf(qCompact) >= 0) {
+      return 0.5;
+    }
+    let total = 0;
+    const maxTotal = Math.min(3, Math.max(1, Math.ceil(qCompact.length / 4)));
+    for (let ti = 0; ti < toks.length; ti++) {
+      const t = toks[ti];
+      const tl = t.length;
+      const maxD = tl >= 6 ? 2 : tl >= 3 ? 1 : 0;
+      let best = 99;
+      for (let wi = 0; wi < words.length; wi++) {
+        const w = words[wi];
+        if (w.startsWith(t)) { best = 0; break; }
+        if (tl >= 3 && w.indexOf(t) >= 0) {
+          if (0.25 < best) best = 0.25;
+          continue;
+        }
+        if (maxD === 0) continue;
+        if (tl === 3 && w.charCodeAt(0) !== t.charCodeAt(0)) continue;
+        const wl = w.length;
+        const diff = wl - tl;
+        if (diff >= -maxD && diff <= maxD) {
+          const d = editDist(t, w, maxD);
+          if (d <= maxD && d < best) best = d;
+        } else if (wl > tl + maxD && tl >= 4) {
+          const d = editDist(t, w.slice(0, tl), 1);
+          if (d <= 1 && (d + 0.25) < best) best = d + 0.25;
+        }
+      }
+      if (best > maxD) return -1;
+      total += best;
+      if (total > maxTotal) return -1;
+    }
+    return total;
+  }
+
   function searchIndex(q) {
     const nq = norm(q);
     if (!nq) return [];
     const toks = nq.split(' ');
+    const list = S.custom ? S.custom.songs : S.daily ? [...new Map([...ALL, ...S.daily.songs].map((s) => [s.slug, s])).values()] : ALL;
     const out = [];
-    for (const s of (S.custom ? S.custom.songs : S.daily ? [...new Map([...ALL, ...S.daily.songs].map((s) => [s.slug, s])).values()] : ALL)) {
+    const exactSlugs = new Set();
+    let hasTopExact = false;
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i];
       if (!toks.every((t) => s.hay.indexOf(t) >= 0)) continue;
       const nt = norm(s.title);
+      const lowPop = s.tier >= 4;
       let sc = 3;
-      if (nt.indexOf(nq) === 0) sc = 0;
-      else if (nt.indexOf(nq) > 0) sc = 1;
+      if (nt === nq) sc = 0;
+      else if (nt.indexOf(nq) === 0) sc = lowPop ? 2.2 : 0.5;
+      else if (nt.indexOf(nq) > 0) sc = lowPop ? 2.4 : 1;
       else if (norm(s.artist).indexOf(nq) === 0) sc = 2;
+      if (s.tier <= 2) hasTopExact = true;
+      exactSlugs.add(s.slug);
       out.push({ s, sc });
+    }
+    // Fallback toleransi typo (jarak 1-2 huruf / tanpa spasi) saat hasil eksak sedikit/kosong
+    // atau belum menemukan lagu populer (mis. "the weekend" -> The Weeknd).
+    if ((out.length < 12 || (!hasTopExact && nq.length >= 4)) && nq.length >= 3) {
+      const qCompact = nq.replace(/ /g, '');
+      for (let i = 0; i < list.length; i++) {
+        const s = list[i];
+        if (exactSlugs.has(s.slug)) continue;
+        const fScore = fuzzyMatchScore(toks, qCompact, s);
+        if (fScore >= 0) {
+          const sc = (fScore <= 1 && s.tier <= 2) ? 1.5 : (4 + fScore);
+          out.push({ s, sc });
+        }
+      }
     }
     // Setelah kecocokan, urutkan menurut POPULARITAS (tier rendah = makin
     // terkenal), bukan panjang judul. Batas 200 cukup untuk menampung seluruh
@@ -1221,13 +1323,25 @@
     if (!nq) return [];
     const counts = new Map();
     for (const s of ALL) counts.set(s.artist, (counts.get(s.artist) || 0) + 1);
+    const toks = nq.split(' ');
+    const qCompact = nq.replace(/ /g, '');
     const list = [];
+    const exactNames = new Set();
     for (const [name, count] of counts) {
       if (count < STAGES) continue;
       const na = norm(name);
       if (na.indexOf(nq) < 0) continue;
       const sc = na === nq ? 0 : na.indexOf(nq) === 0 ? 1 : 2;
+      exactNames.add(name);
       list.push({ id: 'local:' + name, name, genre: count + ' tracks', sc });
+    }
+    if (list.length < 4 && nq.length >= 3) {
+      for (const [name, count] of counts) {
+        if (count < STAGES || exactNames.has(name)) continue;
+        const na = norm(name);
+        const fScore = fuzzyMatchScore(toks, qCompact, { hay: na });
+        if (fScore >= 0) list.push({ id: 'local:' + name, name, genre: count + ' tracks', sc: 3 + fScore });
+      }
     }
     list.sort((a, b) => a.sc - b.sc || a.name.length - b.name.length);
     return list.slice(0, 6);
@@ -3205,6 +3319,9 @@
       if (!typing && doneBanner) {
         if (e.code === 'Space' && $('#agResultArt')) { e.preventDefault(); $('#agResultArt').click(); }
         else if (e.key === 'Enter' && $('#agNextBtn')) { e.preventDefault(); $('#agNextBtn').click(); }
+      } else if (!typing && !doneBanner && e.code === 'Space' && $('#agAudioHint') && !$('#agAudioHint').hidden && !$('#agAudioHint').disabled) {
+        e.preventDefault();
+        $('#agAudioHint').click();
       }
       return;
     }
@@ -3877,18 +3994,23 @@
     const roster = AD.buildRoster(ALL, window.DUEL_STREAMS_V1);
     const byId = new Map(roster.map((a) => [a.id, a]));
     const seenFree = new Set();
-    let agAudio = null, agAudioKind = '', agAudioEpoch = 0;
+    const AG_HINT_AFTER = AD.HINT_AFTER || 5;
+    const AG_HINT_SEC = 4;
+    let agAudio = null, agAudioKind = '', agAudioEpoch = 0, agHintTimer = 0;
 
     const ag = {
       mode: 'free',
       target: null,
       preloadedSlug: '',
       preloadedUrl: '',
+      hintSlug: '',
+      hintUrl: '',
       playingSlug: '',
       pausedAt: 0,
       guesses: [],
       done: false,
       won: false,
+      hintUsed: false,
       challenge: null,
       sel: -1,
       matches: []
@@ -3898,6 +4020,11 @@
       if (agAudio || typeof Audio !== 'function') return agAudio;
       agAudio = new Audio();
       agAudio.preload = 'auto';
+      agAudio.addEventListener('timeupdate', () => {
+        if (agAudioKind === 'hint' && agAudio && agAudio.currentTime >= AG_HINT_SEC) {
+          stopArtistAudio();
+        }
+      });
       agAudio.addEventListener('ended', () => {
         ag.pausedAt = 0;
         if (agAudio) {
@@ -3917,6 +4044,8 @@
     function preloadTargetHit(target) {
       ag.preloadedSlug = '';
       ag.preloadedUrl = '';
+      ag.hintSlug = '';
+      ag.hintUrl = '';
       ag.playingSlug = '';
       ag.pausedAt = 0;
       if (!target || !target.topSong) return;
@@ -3934,19 +4063,62 @@
       }).catch(() => {});
     }
 
+    function preloadHintClip(target) {
+      if (!target || !target.hintSong) return;
+      const song = target.hintSong;
+      if (ag.hintSlug === song.slug && ag.hintUrl) return;
+      if (ag.preloadedSlug === song.slug && ag.preloadedUrl) {
+        ag.hintSlug = song.slug;
+        ag.hintUrl = ag.preloadedUrl;
+        return;
+      }
+      const myEpoch = agAudioEpoch;
+      resolve(song).then((meta) => {
+        if (myEpoch !== agAudioEpoch || !ag.target || ag.target.id !== target.id || !meta || !meta.preview) return;
+        ag.hintSlug = song.slug;
+        ag.hintUrl = meta.preview;
+      }).catch(() => {});
+    }
+
     function syncAudioBtns() {
       const art = $('#agResultArt');
       if (art) {
         const playingHit = agAudioKind === 'hit' && agAudio && !agAudio.paused;
         art.dataset.playing = playingHit ? '1' : '0';
       }
+      const hintBtn = $('#agAudioHint');
+      const hintLbl = $('#agAudioHintLbl');
+      if (hintBtn) {
+        const hasSong = !!(ag.target && (ag.target.hintSong || ag.target.topSong));
+        hintBtn.hidden = ag.done || !hasSong;
+        const left = Math.max(0, AG_HINT_AFTER - ag.guesses.length);
+        const unlocked = left === 0;
+        hintBtn.disabled = !unlocked;
+        const isPlayingHint = agAudioKind === 'hint' && agAudio && !agAudio.paused;
+        const isLoadingHint = agAudioKind === 'hint' && !isPlayingHint;
+        hintBtn.dataset.s = isPlayingHint ? 'playing' : isLoadingHint ? 'loading' : 'idle';
+        hintBtn.classList.toggle('is-used', !!ag.hintUsed);
+        if (hintLbl) {
+          hintLbl.textContent = !unlocked
+            ? ('Hint in ' + left)
+            : isPlayingHint ? 'Stop hint'
+            : isLoadingHint ? 'Loading…'
+            : ag.hintUsed ? 'Replay hint' : 'Audio hint';
+        }
+        hintBtn.setAttribute('aria-label', !unlocked
+          ? ('Audio hint unlocks in ' + left + (left === 1 ? ' guess' : ' guesses'))
+          : isPlayingHint ? 'Stop audio hint' : 'Play 4-second mystery audio hint');
+      }
     }
 
     stopArtistAudio = () => {
+      clearTimeout(agHintTimer);
+      agHintTimer = 0;
+      const prevKind = agAudioKind;
       agAudioEpoch++;
       agAudioKind = '';
       if (agAudio) {
-        if (Number.isFinite(agAudio.currentTime) && !agAudio.ended && agAudio.currentTime > 0.05) {
+        if (prevKind === 'hit' && Number.isFinite(agAudio.currentTime) && !agAudio.ended && agAudio.currentTime > 0.05) {
           ag.pausedAt = agAudio.currentTime;
         }
         try { agAudio.pause(); } catch (e) {}
@@ -3986,22 +4158,41 @@
 
       const myEpoch = ++agAudioEpoch;
       agAudioKind = kind;
+      if (kind === 'hint') syncAudioBtns();
 
       try {
-        let previewUrl = (ag.preloadedSlug === song.slug && ag.preloadedUrl) ? ag.preloadedUrl : '';
+        let previewUrl = (ag.hintSlug === song.slug && ag.hintUrl)
+          ? ag.hintUrl
+          : (ag.preloadedSlug === song.slug && ag.preloadedUrl) ? ag.preloadedUrl : '';
         if (!previewUrl) {
-          const meta = await resolve(song);
-          if (myEpoch !== agAudioEpoch || !meta || !meta.preview || $('#artistGame').hidden) {
-            if (myEpoch === agAudioEpoch) stopArtistAudio();
-            return;
+          let meta = null;
+          try { meta = await resolve(song); } catch (e) {}
+          if ((!meta || !meta.preview) && kind === 'hint' && ag.target && ag.target.topSong && ag.target.topSong.slug !== song.slug) {
+            previewUrl = (ag.preloadedSlug === ag.target.topSong.slug && ag.preloadedUrl) ? ag.preloadedUrl : '';
+            if (!previewUrl) {
+              try { meta = await resolve(ag.target.topSong); } catch (e) {}
+            }
           }
-          previewUrl = meta.preview;
+          if (!previewUrl) {
+            if (myEpoch !== agAudioEpoch || !meta || !meta.preview || $('#artistGame').hidden) {
+              if (myEpoch === agAudioEpoch) {
+                stopArtistAudio();
+                if (!isAuto) toast(kind === 'hint' ? 'Audio hint unavailable right now.' : 'Could not play audio preview.');
+              }
+              return;
+            }
+            previewUrl = meta.preview;
+          }
+        }
+        if (myEpoch !== agAudioEpoch || $('#artistGame').hidden) {
+          if (myEpoch === agAudioEpoch) stopArtistAudio();
+          return;
         }
         const a = ensureAgAudio();
         if (!a) return;
         a.volume = S.muted ? 0 : S.vol;
         const sameTrack = ag.playingSlug === song.slug && a.src === previewUrl;
-        if (!sameTrack || isAuto) {
+        if (kind === 'hint' || !sameTrack || isAuto) {
           ag.playingSlug = song.slug;
           ag.pausedAt = 0;
           if (a.src !== previewUrl) a.src = previewUrl;
@@ -4017,11 +4208,18 @@
           stopArtistAudio();
           return;
         }
+        if (kind === 'hint') {
+          ag.hintUsed = true;
+          clearTimeout(agHintTimer);
+          agHintTimer = setTimeout(() => {
+            if (myEpoch === agAudioEpoch && agAudioKind === 'hint') stopArtistAudio();
+          }, (AG_HINT_SEC + 0.35) * 1000);
+        }
         syncAudioBtns();
       } catch (e) {
         if (myEpoch === agAudioEpoch) {
           stopArtistAudio();
-          if (!isAuto) toast('Could not play audio preview.');
+          if (!isAuto) toast(kind === 'hint' ? 'Audio hint unavailable right now.' : 'Could not play audio preview.');
         }
       }
     }
@@ -4088,7 +4286,7 @@
           $('#agResultArt').src = ag.target.art || '';
           $('#agResultArt').alt = ag.target.name;
           $('#agVerdict').textContent = ag.won
-            ? ('Solved in ' + ag.guesses.length + (ag.guesses.length === 1 ? ' try!' : ' tries!'))
+            ? ('Solved in ' + ag.guesses.length + (ag.guesses.length === 1 ? ' try' : ' tries') + (ag.hintUsed ? ' · Audio hint' : '!'))
             : 'Mystery Artist Revealed';
           $('#agAnswerName').textContent = ag.target.name;
           $('#agTopSongLabel').textContent = ag.target.topSong
@@ -4152,14 +4350,29 @@
       const qNorm = norm(query);
       const dd = $('#agDD');
       if (!qNorm || ag.done) { closeAgDD(); return; }
-      const matches = roster
+      const exact = roster
         .filter((a) => a.hay.includes(qNorm))
         .sort((a, b) => {
           const aPre = a.hay.startsWith(qNorm) ? 0 : ((' ' + a.hay).includes(' ' + qNorm) ? 1 : 2);
           const bPre = b.hay.startsWith(qNorm) ? 0 : ((' ' + b.hay).includes(' ' + qNorm) ? 1 : 2);
           return (aPre - bPre) || (a.rank - b.rank);
-        })
-        .slice(0, 10);
+        });
+      let matches = exact;
+      if (exact.length < 6 && qNorm.length >= 3) {
+        const seenIds = new Set(exact.map((a) => a.id));
+        const toks = qNorm.split(' ');
+        const qCompact = qNorm.replace(/ /g, '');
+        const fuzzy = [];
+        for (let i = 0; i < roster.length; i++) {
+          const a = roster[i];
+          if (seenIds.has(a.id)) continue;
+          const fScore = fuzzyMatchScore(toks, qCompact, a);
+          if (fScore >= 0) fuzzy.push({ a, fScore });
+        }
+        fuzzy.sort((x, y) => (x.fScore - y.fScore) || (x.a.rank - y.a.rank));
+        matches = exact.concat(fuzzy.map((x) => x.a));
+      }
+      matches = matches.slice(0, 10);
       ag.matches = matches;
       ag.sel = -1;
       dd.innerHTML = '';
@@ -4236,6 +4449,7 @@
         return;
       }
       playSfx('near');
+      if (ag.guesses.length >= AG_HINT_AFTER - 1) preloadHintClip(ag.target);
       renderAgBoard();
     }
 
@@ -4285,6 +4499,7 @@
         ag.guesses = [];
         ag.done = false;
         ag.won = false;
+        ag.hintUsed = false;
         ag.challenge = incoming;
       } else {
         ag.challenge = null;
@@ -4296,6 +4511,7 @@
         ag.guesses = [];
         ag.done = false;
         ag.won = false;
+        ag.hintUsed = false;
       }
       preloadTargetHit(ag.target);
 
@@ -4384,6 +4600,14 @@
       closeAgDD();
       $('#agQ').focus();
     };
+    if ($('#agAudioHint')) {
+      $('#agAudioHint').onclick = () => {
+        if (ag.done || !ag.target || ag.guesses.length < AG_HINT_AFTER) return;
+        const song = ag.target.hintSong || ag.target.topSong;
+        if (!song) return;
+        playArtistTrack(song, 'hint', false);
+      };
+    }
     $('#agGiveUp').onclick = () => giveUpArtist();
     if ($('#agResultArt')) {
       $('#agResultArt').title = 'Tap to pause or resume hit';
@@ -4404,7 +4628,8 @@
         target: ag.target,
         won: ag.won,
         url: siteUrl(),
-        challengeUrl
+        challengeUrl,
+        hintUsed: ag.hintUsed
       }), 'artist_copy', 'artist');
     };
     $('#agNextBtn').onclick = () => startArtistGame();

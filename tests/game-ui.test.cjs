@@ -552,7 +552,7 @@ test('Artist Detective lobby card, arena DOM, and #artist= challenge intro work 
   assert.match(html, /id="artistGame"[\s\S]*id="agQ"[\s\S]*id="agGiveUp"[\s\S]*id="agResultBanner"[\s\S]*id="agBoard"/);
   assert.match(html, /data-tab="artist"/);
   assert.match(html, /About the game[\s\S]*Artist Detective/);
-  assert.doesNotMatch(html, /id="agTabs"|id="agAudioHint"/);
+  assert.doesNotMatch(html, /id="agTabs"/);
   assert.match(html, /src="artist-game\.js"/);
   assert.match(sw, /'\.\/artist-game\.js'/);
   assert.match(sw, /cache:\s*'no-cache'/);
