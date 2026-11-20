@@ -32,29 +32,102 @@
       playlistHint: 'Paste Spotify, Apple Music, or YouTube playlist links (or Ctrl+A Spotify tracks)',
       duelPill: 'Higher or lower',
       duelSub: 'Spotify streams & release year',
+      duelSubBest: 'Spotify streams & release year · Best {n}',
       playDuel: 'Play duel',
       artistPill: '10 tries',
       artistSub: 'Deduce the mystery artist from 6 clues',
+      artistSubBest: '6 clues · Best streak {n}',
+      artistSubWon: '6 clues · Solved {n}',
       playArtist: 'Play artist',
       statsBtn: 'Stats',
       settingsBtn: 'Settings',
       feedbackBtn: 'Feedback',
-      // Game / Duel / Artist Detective
+      // Genres & Eras
+      allGenres: 'All genres',
+      otherGenre: 'Other',
+      allEras: 'All eras',
+      before2000: 'Before 2000',
+      noSongsFilter: 'No songs match these filters.',
+      oneSongMatch: '1 song matches.',
+      nSongsMatch: '{n} songs match.',
+      nSongsPool: '{n} songs',
+      // Game Arena
       changeMode: 'Change mode',
       searchSongsPh: 'Search songs…',
+      maxLbl: 'Max ',
       skip: 'Skip',
+      skipPlus: 'Skip +{len}',
+      giveUp: 'Give up',
       viewSummary: 'See result',
+      tryAgain: 'Try again',
+      oneSong5Tries: 'One song · <b>5 tries</b>',
+      stageOf: 'Stage <b>{s}</b> of {t} · <b>{lvl}</b>',
+      songOf: 'Song <b>{s}</b> of {t} · <b>{lbl}</b>',
+      pressPlayToHear: 'Press Play to hear {len}.',
+      rightArtistUnlock: 'Right artist, wrong song. {len} unlocked.',
+      wrongUnlock: 'Not it. {len} unlocked now.',
+      skippedUnlock: 'Skipped. {len} unlocked.',
+      alreadyTried: 'Already tried that song.',
+      pickFromList: 'Pick a song from the list first',
+      notInCatalogue: 'Not in the catalogue.',
+      triedBadge: 'Tried',
+      skippedLbl: 'Skipped',
+      rightArtistLbl: 'Right artist',
+      loadingClip: 'Loading clip…',
+      clipUnavailable: 'Clip unavailable — tap Try again',
+      attemptListen: 'Attempt {n} · Listen to {len} clip',
+      verdictGotIt: 'Got it!',
+      verdictMissed: 'Out of tries',
+      // Music Duel
       duelStreamsTab: 'Spotify Streams',
       duelYearTab: 'Release Year',
       hoverPlay: 'Hover play',
+      duelKnownStreams: 'Known streams',
+      duelReleased: 'Released',
+      duelChallenger: 'Challenger',
+      duelPromptStreams: 'Does the challenger have <b>more</b> or <b>fewer</b> Spotify streams?',
+      duelPromptYear: 'Guess if the challenger came out <b>earlier</b> or <b>later</b>.',
+      duelHigher: '▲ Higher',
+      duelLower: '▼ Lower',
+      duelLater: '▲ Later',
+      duelEarlier: '▼ Earlier',
+      duelMoreThan: 'More than {v}',
+      duelFewerThan: 'Fewer than {v}',
+      duelAfter: 'After {v}',
+      duelBefore: 'Before {v}',
+      duelScore: 'Score {n}',
+      duelBest: 'Best {n}',
+      duelTarget: 'Target {n}',
+      duelBeat: 'Beat {n}!',
+      duelCorrectStreams: 'Correct! {v}.',
+      duelCorrectYear: 'Correct! Released in {y}.',
+      duelMissedStreams: 'Missed — {v}.',
+      duelMissedYear: 'Missed — released in {y}.',
+      // Artist Detective
       searchArtistPh: 'Search any artist…',
       legendExact: 'Exact',
       legendClose: 'Close',
-      giveUp: 'Give up',
       saveScoreCard: 'Save score card',
       challengeFriend: 'Challenge your friend',
       nextArtist: 'Next artist',
       agEmpty: 'Guess any artist above to reveal Debut Year, Solo/Group Type, Gender, Genre, Country & Global Rank (#1–#250).',
+      agNoMatch: 'No matching artist in top 250 roster.',
+      agGuessPill: 'Guess {n} / {max}',
+      agSolvedPill: 'Solved {n} / {max}',
+      agMissedPill: 'Missed · {max} / {max}',
+      agGuessNum: 'Guess #{n}',
+      agBestPill: 'Best {n}',
+      agSolvedTry: 'Solved in 1 try!',
+      agSolvedTries: 'Solved in {n} tries!',
+      agSolvedTryHint: 'Solved in {n} {unit} · {h} {hUnit}',
+      agRevealed: 'Mystery Artist Revealed',
+      agTopHit: 'Top Hit: {title} ({country} · {genre})',
+      clue_debut: 'Debut',
+      clue_members: 'Type',
+      clue_gender: 'Gender',
+      clue_genre: 'Genre',
+      clue_country: 'Country',
+      clue_rank: 'Global Rank',
       hintIn: 'Hint in {n}',
       hint2In: 'Hint 2 in {n}',
       getHint1: 'Get hint (1/2)',
@@ -92,6 +165,22 @@
       guessesToSolve: 'Guesses to solve',
       resetStats: 'Reset stats',
       badgesScope: '{u} of {t} unlocked · saved on this device',
+      statRuns: 'runs',
+      statAvg: 'average',
+      statBest: 'best',
+      statPerfect: 'perfect',
+      statPlayed: 'played',
+      statWins: 'wins',
+      statStreak: 'streak',
+      statSolved: 'solved',
+      statStreamsBest: 'streams best',
+      statYearBest: 'year best',
+      statBestStreak: 'best streak',
+      statDuels: 'duels',
+      statScopeDaily: 'Daily Challenge · all saved days',
+      statScopeDuel: 'Music Duel · Spotify Streams & Release Year',
+      statScopeArtist: 'Artist Detective · Top 250 roster',
+      statScopeAllClassic: 'All Classic filters',
       // Custom Modal
       customTitle: 'Pick an artist',
       customHint: 'Pick an artist — we pick 5 of their songs.',
@@ -113,6 +202,19 @@
       leaveExit: 'Leave to menu',
       feedbackTitle: 'Send feedback',
       feedbackIntro: 'Found a bug, missing a song, or have an idea? Let us know.',
+      fbIssueLbl: 'Issue',
+      fbCategoryLbl: 'Category',
+      fbCatBug: 'Report a bug',
+      fbCatSong: 'Suggest a song',
+      fbCatOther: 'Other feedback',
+      fbMsgLbl: 'Message',
+      fbMsgPh: 'What happened, or what would you like to see?',
+      fbEmailLbl: 'Email',
+      fbEmailOpt: "(optional, if you'd like a reply)",
+      fbDetailsLbl: 'Game details',
+      fbDetailsOpt: '(optional)',
+      fbDetailsPh: 'Mode, song, or device details',
+      fbNote: 'Your message and any details you include go privately to the site owner.',
       sendFeedback: 'Send feedback',
       acceptChallenge: 'Accept challenge',
       playRegular: 'Play regular game',
@@ -126,11 +228,18 @@
       aboutP1: 'TuneUp brings quick music games together right in your browser. Put your ear to the test with 0.1s–15s audio clips in Daily, Classic, Artist, and Playlist modes (Spotify, Apple Music, YouTube), compare hit songs in Music Duel, or deduce 250 global artists from 6 clues in Artist Detective.',
       aboutP2: 'Play for free, anytime you want.',
       faqTitle: 'Good to know',
+      faqQ1: 'Do I need an account?',
+      faqA1: 'No sign-up is needed. Open the game on your phone or computer and pick a mode, or paste any public Spotify, Apple Music, or YouTube playlist link to play your own tracks.',
+      faqQ2: 'What can I replay?',
+      faqA2: 'Classic, Custom Artist, Playlists, Music Duel, and Artist Detective can be played as often as you like. The Daily song is available once per day, with five attempts.',
+      faqQ3: 'When is the next Daily?',
+      faqA3: "At 7:00 AM in your device's local time. Consecutive Daily wins build your streak; a missed day or a loss resets it.",
+      faqQ4: 'Can I challenge a friend?',
+      faqA4: 'Yes. After any song, 5-stage run, Music Duel, or Artist Detective round, tap Challenge your friend to copy a spoiler-free link with the exact same tracks or mystery artist.',
+      faqQ5: 'Where is my progress saved?',
+      faqA5: 'Your Daily progress, streaks, stats, badges, and settings are saved in this browser. Open Settings → Backup & transfer to copy a backup code and restore your progress on another browser or device.',
       backToTop: 'Back to top',
-      // Dynamic strings
-      allGenres: 'All genres',
-      allEras: 'All eras',
-      before2000: 'Before 2000',
+      // Playlist / Dynamic strings
       allSongs: 'All songs',
       nSongs: '{n} songs',
       nSong: '{n} song',
@@ -139,8 +248,6 @@
       playlistBadLink: 'Paste a valid Spotify, Apple Music, or YouTube playlist link.',
       playlistNoTracks: 'No playable tracks found. Make sure the playlist is Public.',
       playlistUnreachable: 'Could not reach the playlist provider right now. Try again.',
-      duelPromptStreams: 'Does the challenger have <b>more</b> or <b>fewer</b> Spotify streams?',
-      duelPromptYear: 'Was the challenger released <b>later</b> or <b>earlier</b>?',
       // Badges
       badge_sniper_name: '0.1s Sniper',
       badge_sniper_desc: 'Guess a song right on the first 0.1s clip',
@@ -185,29 +292,102 @@
       playlistHint: 'Tempel link playlist Spotify, Apple Music, atau YouTube (atau Ctrl+A lagu Spotify)',
       duelPill: 'Tinggi / rendah',
       duelSub: 'Spotify streams & tahun rilis',
+      duelSubBest: 'Spotify streams & tahun rilis · Terbaik {n}',
       playDuel: 'Main duel',
       artistPill: '10 tebakan',
       artistSub: 'Tebak artis misterius dari 6 petunjuk',
+      artistSubBest: '6 petunjuk · Streak terbaik {n}',
+      artistSubWon: '6 petunjuk · Tertebak {n}',
       playArtist: 'Main artis',
       statsBtn: 'Statistik',
       settingsBtn: 'Pengaturan',
       feedbackBtn: 'Masukan',
-      // Game / Duel / Artist Detective
+      // Genres & Eras
+      allGenres: 'Semua genre',
+      otherGenre: 'Lainnya',
+      allEras: 'Semua era',
+      before2000: 'Sebelum 2000',
+      noSongsFilter: 'Tidak ada lagu yang cocok dengan filter ini.',
+      oneSongMatch: '1 lagu cocok.',
+      nSongsMatch: '{n} lagu cocok.',
+      nSongsPool: '{n} lagu',
+      // Game Arena
       changeMode: 'Ganti mode',
       searchSongsPh: 'Cari judul lagu…',
+      maxLbl: 'Maks ',
       skip: 'Lewati',
+      skipPlus: 'Lewati +{len}',
+      giveUp: 'Menyerah',
       viewSummary: 'Lihat hasil',
+      tryAgain: 'Coba lagi',
+      oneSong5Tries: 'Satu lagu · <b>5 percobaan</b>',
+      stageOf: 'Tahap <b>{s}</b> dari {t} · <b>{lvl}</b>',
+      songOf: 'Lagu <b>{s}</b> dari {t} · <b>{lbl}</b>',
+      pressPlayToHear: 'Tekan Putar untuk dengar {len}.',
+      rightArtistUnlock: 'Artis benar, lagu salah. Klip {len} terbuka.',
+      wrongUnlock: 'Belum tepat. Klip {len} terbuka.',
+      skippedUnlock: 'Dilewati. Klip {len} terbuka.',
+      alreadyTried: 'Lagu ini sudah dicoba.',
+      pickFromList: 'Pilih lagu dari daftar dulu',
+      notInCatalogue: 'Tidak ada di katalog.',
+      triedBadge: 'Dicoba',
+      skippedLbl: 'Dilewati',
+      rightArtistLbl: 'Artis benar',
+      loadingClip: 'Memuat klip…',
+      clipUnavailable: 'Klip tidak tersedia — ketuk Coba lagi',
+      attemptListen: 'Percobaan {n} · Dengar klip {len}',
+      verdictGotIt: 'Tepat!',
+      verdictMissed: 'Kesempatan habis',
+      // Music Duel
       duelStreamsTab: 'Spotify Streams',
       duelYearTab: 'Tahun Rilis',
       hoverPlay: 'Hover play',
+      duelKnownStreams: 'Streams diketahui',
+      duelReleased: 'Tahun rilis',
+      duelChallenger: 'Penantang',
+      duelPromptStreams: 'Apakah penantang punya <b>lebih banyak</b> atau <b>lebih sedikit</b> Spotify streams?',
+      duelPromptYear: 'Tebak apakah penantang dirilis <b>lebih baru</b> atau <b>lebih lama</b>.',
+      duelHigher: '▲ Lebih Tinggi',
+      duelLower: '▼ Lebih Rendah',
+      duelLater: '▲ Lebih Baru',
+      duelEarlier: '▼ Lebih Lama',
+      duelMoreThan: 'Lebih dari {v}',
+      duelFewerThan: 'Kurang dari {v}',
+      duelAfter: 'Setelah {v}',
+      duelBefore: 'Sebelum {v}',
+      duelScore: 'Skor {n}',
+      duelBest: 'Terbaik {n}',
+      duelTarget: 'Target {n}',
+      duelBeat: 'Lewati {n}!',
+      duelCorrectStreams: 'Benar! {v}.',
+      duelCorrectYear: 'Benar! Rilis tahun {y}.',
+      duelMissedStreams: 'Salah — {v}.',
+      duelMissedYear: 'Salah — rilis tahun {y}.',
+      // Artist Detective
       searchArtistPh: 'Cari nama artis…',
       legendExact: 'Tepat',
       legendClose: 'Dekat',
-      giveUp: 'Menyerah',
       saveScoreCard: 'Simpan kartu skor',
       challengeFriend: 'Tantang teman',
       nextArtist: 'Artis berikutnya',
       agEmpty: 'Tebak artis apa saja di atas untuk membuka petunjuk Tahun Debut, Tipe, Gender, Genre, Negara & Peringkat Global (#1–#250).',
+      agNoMatch: 'Tidak ada artis yang cocok di daftar Top 250.',
+      agGuessPill: 'Tebakan {n} / {max}',
+      agSolvedPill: 'Tertebak {n} / {max}',
+      agMissedPill: 'Gagal · {max} / {max}',
+      agGuessNum: 'Tebakan #{n}',
+      agBestPill: 'Terbaik {n}',
+      agSolvedTry: 'Tertebak dalam 1 percobaan!',
+      agSolvedTries: 'Tertebak dalam {n} percobaan!',
+      agSolvedTryHint: 'Tertebak dalam {n} percobaan · {h} petunjuk',
+      agRevealed: 'Artis Misterius Terungkap',
+      agTopHit: 'Lagu Hits: {title} ({country} · {genre})',
+      clue_debut: 'Debut',
+      clue_members: 'Tipe',
+      clue_gender: 'Gender',
+      clue_genre: 'Genre',
+      clue_country: 'Negara',
+      clue_rank: 'Peringkat',
       hintIn: 'Petunjuk dlm {n}',
       hint2In: 'Petunjuk 2 dlm {n}',
       getHint1: 'Buka petunjuk (1/2)',
@@ -245,6 +425,22 @@
       guessesToSolve: 'Tebakan untuk menebak',
       resetStats: 'Reset statistik',
       badgesScope: '{u} dari {t} terbuka · tersimpan di perangkat ini',
+      statRuns: 'sesi',
+      statAvg: 'rata-rata',
+      statBest: 'terbaik',
+      statPerfect: 'sempurna',
+      statPlayed: 'main',
+      statWins: 'menang',
+      statStreak: 'streak',
+      statSolved: 'tertebak',
+      statStreamsBest: 'terbaik streams',
+      statYearBest: 'terbaik tahun',
+      statBestStreak: 'streak terbaik',
+      statDuels: 'duel',
+      statScopeDaily: 'Tantangan Harian · semua hari tersimpan',
+      statScopeDuel: 'Music Duel · Spotify Streams & Tahun Rilis',
+      statScopeArtist: 'Artist Detective · daftar Top 250',
+      statScopeAllClassic: 'Semua filter Classic',
       // Custom Modal
       customTitle: 'Pilih artis',
       customHint: 'Pilih artis — kami pilihkan 5 lagunya.',
@@ -266,6 +462,19 @@
       leaveExit: 'Keluar ke menu',
       feedbackTitle: 'Kirim masukan',
       feedbackIntro: 'Menemukan bug, lagu kurang, atau punya ide? Kasih tahu kami.',
+      fbIssueLbl: 'Masalah',
+      fbCategoryLbl: 'Kategori',
+      fbCatBug: 'Laporkan bug',
+      fbCatSong: 'Usulkan lagu',
+      fbCatOther: 'Masukan lainnya',
+      fbMsgLbl: 'Pesan',
+      fbMsgPh: 'Apa yang terjadi, atau apa yang ingin kamu lihat?',
+      fbEmailLbl: 'Email',
+      fbEmailOpt: '(opsional, jika ingin dibalas)',
+      fbDetailsLbl: 'Detail game',
+      fbDetailsOpt: '(opsional)',
+      fbDetailsPh: 'Mode, lagu, atau detail perangkat',
+      fbNote: 'Pesan dan detail yang kamu kirim langsung masuk secara privat ke pemilik situs.',
       sendFeedback: 'Kirim masukan',
       acceptChallenge: 'Terima tantangan',
       playRegular: 'Main mode biasa',
@@ -279,11 +488,18 @@
       aboutP1: 'TuneUp menghadirkan game musik cepat langsung di browser. Uji telingamu dengan klip 0,1–15 detik di mode Harian, Classic, Artis, & Playlist (Spotify, Apple Music, YouTube), adu lagu hits di Music Duel, atau tebak 250 artis global dari 6 petunjuk di Artist Detective.',
       aboutP2: 'Gratis dimainkan kapan saja.',
       faqTitle: 'Perlu diketahui',
+      faqQ1: 'Apakah perlu bikin akun?',
+      faqA1: 'Tidak perlu daftar. Buka game di HP atau laptop lalu pilih mode, atau tempel link playlist publik Spotify, Apple Music, maupun YouTube untuk main pakai lagumu sendiri.',
+      faqQ2: 'Mode apa saja yang bisa dimainkan berulang kali?',
+      faqA2: 'Classic, Per Artis, Playlist, Music Duel, dan Artist Detective bisa dimainkan sepuasnya. Tantangan Harian tersedia satu lagu per hari dengan lima kesempatan.',
+      faqQ3: 'Kapan Tantangan Harian berikutnya dibuka?',
+      faqA3: 'Setiap pukul 07.00 waktu perangkatmu. Menang berturut-turut menambah streak; terlewat sehari atau kalah akan mereset streak.',
+      faqQ4: 'Bisa menantang teman?',
+      faqA4: 'Bisa. Setelah menyelesaikan lagu, sesi 5 tahap, Music Duel, atau Artist Detective, klik Tantang teman untuk menyalin link bebas spoiler dengan lagu atau artis yang persis sama.',
+      faqQ5: 'Di mana progres saya disimpan?',
+      faqA5: 'Progres Harian, streak, statistik, lencana, dan pengaturan tersimpan di browser ini. Buka Pengaturan → Cadangkan & pindah data untuk menyalin kode backup dan memulihkannya di browser atau perangkat lain.',
       backToTop: 'Kembali ke atas',
-      // Dynamic strings
-      allGenres: 'Semua genre',
-      allEras: 'Semua era',
-      before2000: 'Sebelum 2000',
+      // Playlist / Dynamic strings
       allSongs: 'Semua lagu',
       nSongs: '{n} lagu',
       nSong: '{n} lagu',
@@ -292,8 +508,6 @@
       playlistBadLink: 'Tempel link playlist Spotify, Apple Music, atau YouTube yang valid.',
       playlistNoTracks: 'Tidak ada lagu yang bisa diputar. Pastikan playlist bersifat Publik.',
       playlistUnreachable: 'Gagal menghubungi penyedia playlist saat ini. Coba lagi.',
-      duelPromptStreams: 'Apakah penantang punya <b>lebih banyak</b> atau <b>lebih sedikit</b> Spotify streams?',
-      duelPromptYear: 'Apakah penantang dirilis <b>lebih baru</b> atau <b>lebih lama</b>?',
       // Badges
       badge_sniper_name: 'Sniper 0,1 dtk',
       badge_sniper_desc: 'Tebak lagu tepat pada klip pertama 0,1 detik',
@@ -363,7 +577,6 @@
     if (!el) return;
     const svg = el.querySelector && el.querySelector('svg');
     if (!svg) { el.textContent = t(key); return; }
-    // Keep SVG node(s) intact and update the text node
     let textNode = null;
     for (let i = 0; i < el.childNodes.length; i++) {
       const n = el.childNodes[i];
@@ -409,9 +622,13 @@
     setBtnLabelKeepSvg($('#duelBack'), 'changeMode');
     setBtnLabelKeepSvg($('#artistGameBack'), 'changeMode');
     if ($('#q')) $('#q').placeholder = t('searchSongsPh');
+    setText($('.clip-pill small'), 'maxLbl');
+    setText($('#retrySong'), 'tryAgain');
+    setText($('#resultRetry'), 'tryAgain');
     setText($('#duelTabs [data-duel="streams"]'), 'duelStreamsTab');
     setText($('#duelTabs [data-duel="year"]'), 'duelYearTab');
     setText($('#duelHoverToggle span:last-child'), 'hoverPlay');
+    setText($('#duelTagB'), 'duelChallenger');
     if ($('#agQ')) $('#agQ').placeholder = t('searchArtistPh');
     setText($('#agGiveUp'), 'giveUp');
     setText($('#saveArtistCard'), 'saveScoreCard');
@@ -458,7 +675,7 @@
     setBtnLabelKeepSvg($('#shareStage'), 'challengeFriend');
     setText($('#listen'), 'listenFull');
     setText($('#reportSong'), 'reportSong');
-    setText($('#again'), 'playAgain');
+    setText($('#againRun'), 'playAgain');
     setText($('#share'), 'challengeFriend');
     setText($('#saveRunCard'), 'saveScoreCard');
     setText($('#backToMenu'), 'backToMenu');
@@ -472,21 +689,46 @@
     setText($('#leaveConfirmExit'), 'leaveExit');
     setText($('#feedbackTitle'), 'feedbackTitle');
     setText($('#feedbackIntro'), 'feedbackIntro');
+    setText($('#feedbackReasonField label'), 'fbIssueLbl');
+    setText($('#feedbackCategoryField label'), 'fbCategoryLbl');
+    const fbCat = $('#feedbackCategory');
+    if (fbCat && fbCat.options && fbCat.options.length >= 3) {
+      fbCat.options[0].textContent = t('fbCatBug');
+      fbCat.options[1].textContent = t('fbCatSong');
+      fbCat.options[2].textContent = t('fbCatOther');
+    }
+    setText($('#feedbackMessageLabel'), 'fbMsgLbl');
+    if ($('#feedbackMessage')) $('#feedbackMessage').placeholder = t('fbMsgPh');
+    const emLbl = $('label[for="feedbackEmail"]');
+    if (emLbl) emLbl.innerHTML = t('fbEmailLbl') + ' <span>' + t('fbEmailOpt') + '</span>';
+    const dtLbl = $('label[for="feedbackDetails"]');
+    if (dtLbl) dtLbl.innerHTML = t('fbDetailsLbl') + ' <span>' + t('fbDetailsOpt') + '</span>';
+    if ($('#feedbackDetails')) $('#feedbackDetails').placeholder = t('fbDetailsPh');
+    setText($('.feedback-note'), 'fbNote');
     setText($('#sendFeedback'), 'sendFeedback');
     setText($('#leaveChallenge'), 'playRegular');
 
-    // Site guide
+    // Site guide + FAQ
     setText($('#musicBrowserTitle'), 'guideTitle');
     setText($('.browser-intro'), 'guideIntro');
     const mgHeads = doc.querySelectorAll('.music-group h3');
     if (mgHeads[0]) mgHeads[0].textContent = t('guideGenres');
     if (mgHeads[1]) mgHeads[1].textContent = t('guideEras');
+    setText($('[data-guide-genre="lain"]'), 'otherGenre');
+    setText($('[data-guide-era="old"]'), 'before2000');
     setText($('.browser-note'), 'guideNote');
     setText($('#aboutTitle'), 'aboutTitle');
     const aboutPs = doc.querySelectorAll('.guide-about p');
     if (aboutPs[0]) aboutPs[0].textContent = t('aboutP1');
     if (aboutPs[1]) aboutPs[1].textContent = t('aboutP2');
     setText($('#faqTitle'), 'faqTitle');
+    const faqs = doc.querySelectorAll('.guide-faq details');
+    for (let i = 0; i < faqs.length && i < 5; i++) {
+      const sum = faqs[i].querySelector('summary');
+      const p = faqs[i].querySelector('p');
+      if (sum) sum.textContent = t('faqQ' + (i + 1));
+      if (p) p.textContent = t('faqA' + (i + 1));
+    }
     setBtnLabelKeepSvg($('[data-guide-top]'), 'backToTop');
   }
 

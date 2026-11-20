@@ -192,6 +192,12 @@ test('TuneUpI18n maintains EN/ID dictionary parity, persists tl:set:lang through
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   assert.match(html, /id="setLangSeg"/);
   assert.match(html, /src="i18n\.js"/);
+  assert.match(html, /id="playlistField"[^>]*data-src="neutral"/);
+  assert.match(html, /class="ico-pl-apple"/);
+  assert.match(html, /class="ico-pl-youtube"/);
+  const appCode = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  assert.match(appCode, /params\.get\('playlist'\)/);
+  assert.match(appCode, /field\.dataset\.src = /);
   const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
   assert.match(sw, /'\.\/i18n\.js'/);
   const build = fs.readFileSync(path.join(ROOT, 'tools/build-cloudflare.cjs'), 'utf8');

@@ -420,3 +420,13 @@
   - Added `EN | ID` pill selector (`#setLangSeg`) inside `#settingsModal` with live zero-reload language switching and bidirectional sync on Backup restore & Reset.
 - **Verification & Deploy**:
   - Added `tests/playlist-i18n.test.cjs` (`150/150` unit tests passing), verified Playwright desktop (`1280×800`) + mobile (`360×780`, `0px` overflow) E2E for `EN ↔ ID` live switching across Lobby, Settings, Badges, and Artist Detective plus live Apple Music & YouTube link import, bumped SW cache (`gts-v100-playlists-i18n` / `gts-cf-v80-playlists-i18n`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 57 — Full Gameplay/FAQ Bahasa Indonesia Translation & Dynamic Playlist Platform Icons + `?playlist=` Deep-Links (2026-11-20)
+- **Complete `EN / ID` Coverage (`i18n.js`, `app.js`)**:
+  - Extended `i18n.js` (100% EN/ID key parity) and `app.js` dynamic renderers so Bahasa Indonesia (`ID`) now translates Genre & Era dropdowns (`Semua genre`, `Lainnya`, `Semua era`, `Sebelum 2000`), Classic/Daily/Playlist arena labels & try slots (`Tahap X dari 5`, `Percobaan X · Dengar klip`, `Lewati +...`, `Artis benar`, `Dilewati`, `Tekan Putar untuk dengar...`), Music Duel prompts/buttons/tags (`Lebih Tinggi`/`Lebih Rendah`, `Lebih Baru`/`Lebih Lama`, `Penantang`, `Skor`/`Terbaik`), Artist Detective pills & 6 clue headers (`Tebakan X / 10`, `Tipe`, `Negara`, `Peringkat`), all 6 Stats modal tabs, all 5 FAQ questions & answers, and the Feedback form.
+- **Dynamic Playlist Platform Icons & `?playlist=` Deep-Links (`index.html`, `layout.css`, `app.js`)**:
+  - Added `#playlistField[data-src="neutral|spotify|apple|youtube"]` with 4 crisp inline SVGs and matching border/surface accents (neutral dim, Spotify emerald, Apple Music rose-pink, YouTube crimson) updating live as links are pasted or cleared.
+  - Added `/spotify?playlist=<url>&songs=<n>` routing and `applyDeepLink()` support so Apple Music & YouTube playlists can be bookmarked, reloaded, or shared directly via URL.
+- **Verification & Deploy**:
+  - Updated `tests/playlist-i18n.test.cjs` (`150/150` passing), verified Playwright desktop (`1280×800`) + mobile (`360×780`) visual & E2E checks (Apple Music rose & YouTube red field transitions, `?playlist=` direct URL boot, full ID mode across Classic, Duel, Artist Detective, Stats, FAQ), bumped SW cache (`gts-v101-i18n-full-playlist-ux` / `gts-cf-v81-i18n-full-playlist-ux`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.

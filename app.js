@@ -174,6 +174,8 @@
   const SET_KEYS = { autoplay: 'tl:set:autoplay', sfx: 'tl:set:sfx', hover: 'tl:duel:hoverPlay', lang: 'tl:set:lang' };
   const I18N = window.TuneUpI18n || null;
   const tr = (key, vars) => (I18N ? I18N.t(key, vars) : key);
+  const genreLabel = (k) => (I18N && k === 'all' ? tr('allGenres') : I18N && k === 'lain' ? tr('otherGenre') : (GENRES[k] || k));
+  const eraLabel = (k) => (I18N && k === 'all' ? tr('allEras') : I18N && k === 'old' ? tr('before2000') : ((ERAS[k] && ERAS[k].label) || k));
   const settings = {
     autoplay: LS.get(SET_KEYS.autoplay, true) !== false,
     sfx: LS.get(SET_KEYS.sfx, true) !== false,
@@ -181,6 +183,7 @@
     lang: I18N ? I18N.load(localStorage) : 'en'
   };
   let syncDuelHover = null;
+  let syncDuelLang = null;
   let syncArtistLang = null;
 
   /* ================= state ================= */
@@ -884,7 +887,7 @@
         }
         saveRun();
         UI.playState('idle');
-        UI.status(S.done ? '' : 'Press Play to hear ' + fmt(limit()) + '.');
+        UI.status(S.done ? '' : (typeof I18N !== 'undefined' && I18N ? tr('pressPlayToHear', { len: fmt(limit()) }) : ('Press Play to hear ' + fmt(limit()) + '.')));
         UI.render();
         if (S.done) setTimeout(() => { if (me === S.epoch && S.done) UI.result(); }, 250);
         return;
@@ -967,7 +970,7 @@
   function submitGuess(pick) {
     if (S.done || !S.song || S.loading || S.audioFailed) return;
     if (S.guesses.some((g) => sameStageGuess(g, pick))) {
-      UI.status('Already tried that song.');
+      UI.status(I18N ? tr('alreadyTried') : 'Already tried that song.');
       UI.clearInput();
       return;
     }
@@ -980,8 +983,9 @@
     stopAudio();
     playSfx(near ? 'near' : 'wrong');
     saveRun(); UI.render();
-    UI.status(near ? 'Right artist, wrong song. ' + fmt(limit()) + ' unlocked.'
-                   : 'Not it. ' + fmt(limit()) + ' unlocked now.');
+    UI.status(near
+      ? (I18N ? tr('rightArtistUnlock', { len: fmt(limit()) }) : ('Right artist, wrong song. ' + fmt(limit()) + ' unlocked.'))
+      : (I18N ? tr('wrongUnlock', { len: fmt(limit()) }) : ('Not it. ' + fmt(limit()) + ' unlocked now.')));
     UI.clearInput();
     if (UI.q && typeof UI.q.blur === 'function') UI.q.blur();
   }
@@ -991,7 +995,7 @@
     S.guesses.push({ t: 'skip' });
     if (S.guesses.length >= TRIES) return finish(false);
     saveRun(); UI.render();
-    UI.status('Skipped. ' + fmt(limit()) + ' unlocked now.');
+    UI.status(I18N ? tr('skippedUnlock', { len: fmt(limit()) }) : ('Skipped. ' + fmt(limit()) + ' unlocked now.'));
     UI.clearInput();
     // Kalau klip masih berputar, curBatas() langsung memanjangkannya mulus;
     // kalau sudah berhenti, otomatis putar sambungan klip baru tanpa klik ulang.
@@ -2039,12 +2043,12 @@
 
     /* --- kontrol lobi --- */
     buildControls() {
-      const fill = (sel, opts, cur, save) => {
+      const fill = (sel, opts, cur, save, labelOf) => {
         sel.innerHTML = '';
         for (const k in opts) {
           const o = document.createElement('option');
           o.value = k;
-          o.textContent = opts[k].label || opts[k];
+          o.textContent = labelOf ? labelOf(k) : (opts[k].label || opts[k]);
           o.selected = k === cur;
           sel.appendChild(o);
         }
@@ -2055,8 +2059,8 @@
           UI.buildControls(); UI.refreshLobby();
         };
       };
-      fill($('#genre'),  GENRES,  S.genre,  'tl:genre');
-      fill($('#era'),    ERAS,    S.era,    'tl:era');
+      fill($('#genre'),  GENRES,  S.genre,  'tl:genre', genreLabel);
+      fill($('#era'),    ERAS,    S.era,    'tl:era', eraLabel);
     },
 
     /* --- rangkaian tahap --- */
@@ -2170,18 +2174,17 @@
       const duelSub = $('#duelLobbySub');
       if (duelSub) {
         const bestDuel = duelStats().best;
-        const baseSub = I18N ? tr('duelSub') : 'Spotify streams & release year';
         duelSub.textContent = bestDuel > 0
-          ? baseSub + ' · Best ' + bestDuel
-          : baseSub;
+          ? (I18N ? tr('duelSubBest', { n: bestDuel }) : ('Spotify streams & release year · Best ' + bestDuel))
+          : (I18N ? tr('duelSub') : 'Spotify streams & release year');
       }
       const artistSub = $('#artistLobbySub');
       if (artistSub) {
         const st = artistStats();
         artistSub.textContent = st.best > 0
-          ? '6 clues · Best streak ' + st.best
+          ? (I18N ? tr('artistSubBest', { n: st.best }) : ('6 clues · Best streak ' + st.best))
           : st.won > 0
-          ? '6 clues · Solved ' + st.won
+          ? (I18N ? tr('artistSubWon', { n: st.won }) : ('6 clues · Solved ' + st.won))
           : (I18N ? tr('artistSub') : 'Deduce the mystery artist from 6 clues');
       }
     },
@@ -2231,8 +2234,13 @@
               ['id', (S.custom.spotifyType === 'album' ? 'album:' : '') + S.custom.spotifyId],
               ['songs', count < S.custom.songs.length ? count : '']
             ])
+          : S.custom.sourceUrl
+          ? encodeQuery([
+              ['playlist', S.custom.sourceUrl],
+              ['songs', count < S.custom.songs.length ? count : '']
+            ])
           : '';
-        syncRoute('spotify', { query: q, title: (S.custom.label || 'Spotify') + ' — TuneUp', replace: wasInGame });
+        syncRoute('spotify', { query: q, title: (S.custom.label || 'Playlist') + ' — TuneUp', replace: wasInGame });
       } else if (S.custom) {
         const validId = S.custom.id && (/^[1-9]\d{0,15}$/.test(String(S.custom.id)) || String(S.custom.id).startsWith('local:'));
         const q = validId ? encodeQuery([['id', S.custom.id], ['name', S.custom.label || '']]) : '';
@@ -2246,14 +2254,14 @@
         syncRoute('classic', { query: q, title: modeTitle + ' — TuneUp', replace: wasInGame });
       }
       this.steps($('#steps'), true);
-      $('#stageNow').innerHTML = S.daily ? 'One song · <b>5 tries</b>' : S.challenge
+      $('#stageNow').innerHTML = S.daily ? (I18N ? tr('oneSong5Tries') : 'One song · <b>5 tries</b>') : S.challenge
         ? 'Friend challenge · Your friend ' + window.TrackChallenge.describe(S.challenge.result)
         : S.runChallenge
         ? (artistMode ? 'Song <b>' + (S.stage + 1) + '</b> of ' + stageCount() : 'Stage <b>' + (S.stage + 1) + '</b> of ' + stageCount() + ' · <b>' + D().label + '</b>') +
           ' · Friend ' + window.TrackChallenge.describe(S.runChallenge.results[S.stage] || 0)
         : S.custom
-        ? 'Song <b>' + (S.stage + 1) + '</b> of ' + stageCount() + ' · <b>' + esc(S.custom.label) + '</b>'
-        : 'Stage <b>' + (S.stage + 1) + '</b> of ' + STAGES + ' · <b>' + D().label + '</b>';
+        ? (I18N ? tr('songOf', { s: S.stage + 1, t: stageCount(), lbl: esc(S.custom.label) }) : ('Song <b>' + (S.stage + 1) + '</b> of ' + stageCount() + ' · <b>' + esc(S.custom.label) + '</b>'))
+        : (I18N ? tr('stageOf', { s: S.stage + 1, t: STAGES, lvl: D().label }) : ('Stage <b>' + (S.stage + 1) + '</b> of ' + STAGES + ' · <b>' + D().label + '</b>'));
       this.streak();
     },
     streak() {
@@ -2270,9 +2278,9 @@
       const p = $('#poolInfo');
       const total = filtered().length;
       let msg = '', warn = false;
-      if (!total) { msg = 'No songs match these filters.'; warn = true; }
-      else if (total < STAGES * 3) { msg = total + (total === 1 ? ' song matches.' : ' songs match.'); warn = true; }
-      else if (S.genre !== 'all' || S.era !== 'all') { msg = total.toLocaleString('en-US') + ' songs'; }
+      if (!total) { msg = I18N ? tr('noSongsFilter') : 'No songs match these filters.'; warn = true; }
+      else if (total < STAGES * 3) { msg = total === 1 ? (I18N ? tr('oneSongMatch') : '1 song matches.') : (I18N ? tr('nSongsMatch', { n: total }) : (total + ' songs match.')); warn = true; }
+      else if (S.genre !== 'all' || S.era !== 'all') { msg = I18N ? tr('nSongsPool', { n: total.toLocaleString('en-US') }) : (total.toLocaleString('en-US') + ' songs'); }
       p.textContent = msg;
       p.hidden = !msg;
       p.classList.toggle('warn', warn);
@@ -2316,13 +2324,17 @@
       const L = ladder();
       const last = S.guesses.length >= TRIES - 1;
       const delta = last ? 0 : L[S.guesses.length + 1] - L[S.guesses.length];
-      this.skipLabel.textContent = S.done ? 'See result' : (last ? 'Give up' : 'Skip +' + fmt(delta));
+      this.skipLabel.textContent = S.done
+        ? (I18N ? tr('viewSummary') : 'See result')
+        : (last ? (I18N ? tr('giveUp') : 'Give up') : (I18N ? tr('skipPlus', { len: fmt(delta) }) : ('Skip +' + fmt(delta))));
       this.skipBtn.dataset.s = S.done ? 'done' : 'play';
       this.skipBtn.disabled = !S.song || S.loading || S.audioFailed;
       this.q.disabled = S.done || !S.song || S.loading || S.audioFailed;
       this.play.disabled = !S.meta || S.loading || S.audioFailed || playPending;
       $('#coverPlay').disabled = this.play.disabled;
 
+      const skipWord = I18N ? tr('skippedLbl') : 'Skipped';
+      const rightArtWord = I18N ? tr('rightArtistLbl') : 'Right artist';
       const gHost = $('#guesses');
       if (gHost) {
         if (!S.guesses.length) {
@@ -2333,9 +2345,9 @@
           gHost.innerHTML = S.guesses.map((g, i) => {
             const ico = g.t === 'right' ? '✓' : g.t === 'near' ? '≈' : g.t === 'skip' ? '»' : '✕';
             const txt = g.t === 'skip'
-              ? 'Skipped'
+              ? skipWord
               : '<b>' + esc(g.title || '') + '</b> <span>· ' + esc(g.artist || '') + '</span>';
-            const hint = g.t === 'near' ? '<span class="g-hint">Right artist</span>' : '';
+            const hint = g.t === 'near' ? '<span class="g-hint">' + esc(rightArtWord) + '</span>' : '';
             const len = fmt(LADDER[Math.min(i, TRIES - 1)]);
             return '<li class="' + g.t + '"><span class="g-ico" aria-hidden="true">' + ico + '</span>' +
               '<span class="g-txt">' + txt + '</span>' +
@@ -2353,19 +2365,19 @@
           if (g) {
             const ico = g.t === 'right' ? '✓' : g.t === 'near' ? '≈' : g.t === 'skip' ? '»' : '✕';
             const txt = g.t === 'skip'
-              ? '<span class="slot-skip">Skipped</span>'
+              ? '<span class="slot-skip">' + esc(skipWord) + '</span>'
               : '<b>' + esc(g.title || '') + '</b> <small>· ' + esc(g.artist || '') + '</small>';
-            const hint = g.t === 'near' ? '<span class="slot-pill warn">Right artist</span>' : '';
+            const hint = g.t === 'near' ? '<span class="slot-pill warn">' + esc(rightArtWord) + '</span>' : '';
             return '<li class="slot ' + g.t + '"><span class="slot-n" aria-hidden="true">' + ico + '</span>' +
               '<span class="slot-txt">' + txt + '</span>' + hint +
               '<span class="slot-len">' + len + '</span></li>';
           }
           if (!S.done && i === S.guesses.length) {
-            const hintMsg = S.audioFailed ? 'Clip unavailable — tap Try again'
-              : !S.song || S.loading ? 'Loading clip…'
-              : 'Attempt ' + (i + 1) + ' · Listen to ' + len + ' clip';
+            const hintMsg = S.audioFailed ? (I18N ? tr('clipUnavailable') : 'Clip unavailable — tap Try again')
+              : !S.song || S.loading ? (I18N ? tr('loadingClip') : 'Loading clip…')
+              : (I18N ? tr('attemptListen', { n: i + 1, len }) : ('Attempt ' + (i + 1) + ' · Listen to ' + len + ' clip'));
             return '<li class="slot active"><span class="slot-n">' + (i + 1) + '</span>' +
-              '<span class="slot-txt slot-active-lbl">' + hintMsg + '</span>' +
+              '<span class="slot-txt slot-active-lbl">' + esc(hintMsg) + '</span>' +
               '<span class="slot-len on">' + len + '</span></li>';
           }
           return '<li class="slot locked"><span class="slot-n">' + (i + 1) + '</span>' +
@@ -2381,7 +2393,7 @@
       this.dd.innerHTML = '';
       if (!list.length) {
         const e = el('div', 'dd-empty');
-        e.textContent = 'Not in the catalogue.';
+        e.textContent = I18N ? tr('notInCatalogue') : 'Not in the catalogue.';
         this.dd.appendChild(e);
       }
       list.forEach((s, i) => {
@@ -2711,11 +2723,11 @@
         if (rt) rt.hidden = true;
       } else if (statsTab === 'daily') {
         const d = dailyStats();
-        $('#statScope').textContent = 'Daily Challenge · all saved days';
+        $('#statScope').textContent = I18N ? tr('statScopeDaily') : 'Daily Challenge · all saved days';
         $('#statgrid').innerHTML =
-          cell(d.played, 'played') + cell(d.won, 'wins') +
-          cell(d.current, 'streak') + cell(d.best, 'best');
-        if (dh) dh.textContent = 'Attempt spread';
+          cell(d.played, I18N ? tr('statPlayed') : 'played') + cell(d.won, I18N ? tr('statWins') : 'wins') +
+          cell(d.current, I18N ? tr('statStreak') : 'streak') + cell(d.best, I18N ? tr('statBest') : 'best');
+        if (dh) dh.textContent = I18N ? tr('attemptSpread') : 'Attempt spread';
         const labels = ['0.1s', '0.5s', '2s', '8s', '15s', 'Miss'];
         const top = Math.max.apply(null, d.dist.concat([1]));
         $('#dist').innerHTML = d.dist.map((c, i) =>
@@ -2725,16 +2737,16 @@
         if (rt) rt.hidden = true;
       } else if (statsTab === 'duel') {
         const d = duelStats();
-        $('#statScope').textContent = 'Music Duel · Spotify Streams & Release Year';
+        $('#statScope').textContent = I18N ? tr('statScopeDuel') : 'Music Duel · Spotify Streams & Release Year';
         $('#statgrid').innerHTML =
-          cell(d.streamsBest, 'streams best') + cell(d.yearBest, 'year best') +
-          cell(d.best, 'best streak') + cell(d.runs, 'duels');
-        if (dh) dh.textContent = 'Deck comparison';
+          cell(d.streamsBest, I18N ? tr('statStreamsBest') : 'streams best') + cell(d.yearBest, I18N ? tr('statYearBest') : 'year best') +
+          cell(d.best, I18N ? tr('statBestStreak') : 'best streak') + cell(d.runs, I18N ? tr('statDuels') : 'duels');
+        if (dh) dh.textContent = I18N ? tr('deckComparison') : 'Deck comparison';
         const peak = Math.max(d.streamsBest, d.yearBest);
         const top = Math.max(peak, 1);
         const rows = [
           { label: 'Streams', val: d.streamsBest },
-          { label: 'Year', val: d.yearBest }
+          { label: settings.lang === 'id' ? 'Tahun' : 'Year', val: d.yearBest }
         ];
         $('#dist').innerHTML = rows.map((r) =>
           '<div class="row"><span class="n wide duel">' + r.label + '</span>' +
@@ -2743,11 +2755,11 @@
         if (rt) rt.hidden = true;
       } else if (statsTab === 'artist') {
         const d = artistStats();
-        $('#statScope').textContent = 'Artist Detective · Top 250 roster';
+        $('#statScope').textContent = I18N ? tr('statScopeArtist') : 'Artist Detective · Top 250 roster';
         $('#statgrid').innerHTML =
-          cell(d.played, 'played') + cell(d.won, 'solved') +
-          cell(d.current, 'streak') + cell(d.best, 'best');
-        if (dh) dh.textContent = 'Guesses to solve';
+          cell(d.played, I18N ? tr('statPlayed') : 'played') + cell(d.won, I18N ? tr('statSolved') : 'solved') +
+          cell(d.current, I18N ? tr('statStreak') : 'streak') + cell(d.best, I18N ? tr('statBest') : 'best');
+        if (dh) dh.textContent = I18N ? tr('guessesToSolve') : 'Guesses to solve';
         const buckets = [
           { label: '1–2', val: d.dist[0] + d.dist[1] },
           { label: '3–4', val: d.dist[2] + d.dist[3] },
@@ -2767,15 +2779,16 @@
         const overall = statsTab === 'overall';
         const st = overall ? allClassicStats() : Object.assign(blankStats(), LS.get(statKey(), {}));
         const bestStreak = overall ? songStreak('classic').best : 0;
+        const allLbl = I18N ? tr('statScopeAllClassic') : 'All Classic filters';
         $('#statScope').textContent = overall
-          ? [(st.filtersUsed ? 'All Classic filters · ' + st.filtersUsed + (st.filtersUsed === 1 ? ' preset' : ' presets') : 'All Classic filters'),
-             bestStreak ? 'Best song streak ' + bestStreak : ''].filter(Boolean).join(' · ')
-          : [GENRES[S.genre], ERAS[S.era].label].join(' · ');
+          ? [(st.filtersUsed ? allLbl + ' · ' + st.filtersUsed + (st.filtersUsed === 1 ? ' preset' : ' presets') : allLbl),
+             bestStreak ? (settings.lang === 'id' ? 'Streak lagu terbaik ' : 'Best song streak ') + bestStreak : ''].filter(Boolean).join(' · ')
+          : [genreLabel(S.genre), eraLabel(S.era)].join(' · ');
         const avg = st.runs ? (st.total / st.runs).toFixed(1) : '0';
         $('#statgrid').innerHTML =
-          cell(st.runs, 'runs') + cell(avg, 'average') +
-          cell(st.best, 'best') + cell(st.perfect || 0, 'perfect');
-        if (dh) dh.textContent = 'Score spread';
+          cell(st.runs, I18N ? tr('statRuns') : 'runs') + cell(avg, I18N ? tr('statAvg') : 'average') +
+          cell(st.best, I18N ? tr('statBest') : 'best') + cell(st.perfect || 0, I18N ? tr('statPerfect') : 'perfect');
+        if (dh) dh.textContent = I18N ? tr('scoreSpread') : 'Score spread';
         const top = Math.max.apply(null, st.dist.concat([1]));
         $('#dist').innerHTML = st.dist.map((c, i) =>
           '<div class="row"><span class="n">' + i + '</span>' +
@@ -3140,9 +3153,12 @@
   function applyLanguage() {
     if (!I18N) return;
     I18N.apply(document);
+    UI.buildControls();
     if (typeof syncSpotifyRoundsUI === 'function') syncSpotifyRoundsUI();
     if (typeof updateSpotifyInputHint === 'function') updateSpotifyInputHint();
+    if (typeof syncDuelLang === 'function') syncDuelLang();
     if (typeof syncArtistLang === 'function') syncArtistLang();
+    if ($('#game') && !$('#game').hidden) UI.render();
     UI.refreshLobby();
     const dailyBtn = $('#openDaily');
     if (dailyBtn) {
@@ -3820,14 +3836,18 @@
           if (b.dataset.duel === 'streams') b.disabled = getDuelPool('streams').length < 2;
         });
       }
-      $('#duelTagA').textContent = isStreams ? 'Known streams' : 'Released';
+      $('#duelTagA').textContent = isStreams ? (I18N ? tr('duelKnownStreams') : 'Known streams') : (I18N ? tr('duelReleased') : 'Released');
       $('#duelPrompt').innerHTML = isStreams
-        ? 'Does the challenger have <b>more</b> or <b>fewer</b> Spotify streams?'
-        : 'Guess if the challenger came out <b>earlier</b> or <b>later</b>.';
-      $('#duelLaterLbl').textContent = isStreams ? '\u25B2 Higher' : '\u25B2 Later';
-      $('#duelEarlierLbl').textContent = isStreams ? '\u25BC Lower' : '\u25BC Earlier';
-      $('#duelLaterSub').textContent = (isStreams ? 'More than ' : 'After ') + mA.main;
-      $('#duelEarlierSub').textContent = (isStreams ? 'Fewer than ' : 'Before ') + mA.main;
+        ? (I18N ? tr('duelPromptStreams') : 'Does the challenger have <b>more</b> or <b>fewer</b> Spotify streams?')
+        : (I18N ? tr('duelPromptYear') : 'Guess if the challenger came out <b>earlier</b> or <b>later</b>.');
+      $('#duelLaterLbl').textContent = isStreams ? (I18N ? tr('duelHigher') : '\u25B2 Higher') : (I18N ? tr('duelLater') : '\u25B2 Later');
+      $('#duelEarlierLbl').textContent = isStreams ? (I18N ? tr('duelLower') : '\u25BC Lower') : (I18N ? tr('duelEarlier') : '\u25BC Earlier');
+      $('#duelLaterSub').textContent = isStreams
+        ? (I18N ? tr('duelMoreThan', { v: mA.main }) : ('More than ' + mA.main))
+        : (I18N ? tr('duelAfter', { v: mA.main }) : ('After ' + mA.main));
+      $('#duelEarlierSub').textContent = isStreams
+        ? (I18N ? tr('duelFewerThan', { v: mA.main }) : ('Fewer than ' + mA.main))
+        : (I18N ? tr('duelBefore', { v: mA.main }) : ('Before ' + mA.main));
     }
 
     function syncDuelTarget() {
@@ -3842,8 +3862,19 @@
       const passed = ds.score > target;
       el.hidden = false;
       if (el.dataset) el.dataset.passed = passed ? '1' : '0';
-      el.textContent = passed ? ('Beat ' + target + '!') : ('Target ' + target);
+      el.textContent = passed
+        ? (I18N ? tr('duelBeat', { n: target }) : ('Beat ' + target + '!'))
+        : (I18N ? tr('duelTarget', { n: target }) : ('Target ' + target));
     }
+
+    syncDuelLang = () => {
+      if ($('#duel') && !$('#duel').hidden && ds.a) {
+        syncDuelChrome(ds.a);
+        $('#duelScore').textContent = I18N ? tr('duelScore', { n: ds.score }) : ('Score ' + ds.score);
+        $('#duelBest').textContent = I18N ? tr('duelBest', { n: ds.best }) : ('Best ' + ds.best);
+        syncDuelTarget();
+      }
+    };
 
     function renderDuelPair() {
       const { a, b } = ds;
@@ -3870,9 +3901,9 @@
 
       $('#duelLater').disabled = false;
       $('#duelEarlier').disabled = false;
-      $('#duelScore').textContent = 'Score ' + ds.score;
+      $('#duelScore').textContent = I18N ? tr('duelScore', { n: ds.score }) : ('Score ' + ds.score);
       $('#duelBest').hidden = ds.best <= 0;
-      $('#duelBest').textContent = 'Best ' + ds.best;
+      $('#duelBest').textContent = I18N ? tr('duelBest', { n: ds.best }) : ('Best ' + ds.best);
       syncDuelTarget();
       $('#duelStatus').textContent = '';
       $('#duelStatus').className = 'status duel-status';
@@ -3976,19 +4007,19 @@
           ds.newBest = true;
           LS.set(DUEL_BEST_KEYS[ds.kind] || DUEL_BEST_KEYS.year, ds.best);
         }
-        $('#duelScore').textContent = 'Score ' + ds.score;
+        $('#duelScore').textContent = I18N ? tr('duelScore', { n: ds.score }) : ('Score ' + ds.score);
         $('#duelBest').hidden = false;
-        $('#duelBest').textContent = 'Best ' + ds.best;
+        $('#duelBest').textContent = I18N ? tr('duelBest', { n: ds.best }) : ('Best ' + ds.best);
         syncDuelTarget();
         $('#duelStatus').textContent = ds.kind === 'streams'
-          ? 'Correct! ' + mB.sub + '.'
-          : 'Correct! Released in ' + ds.b.year + '.';
+          ? (I18N ? tr('duelCorrectStreams', { v: mB.sub }) : ('Correct! ' + mB.sub + '.'))
+          : (I18N ? tr('duelCorrectYear', { y: ds.b.year }) : ('Correct! Released in ' + ds.b.year + '.'));
         $('#duelStatus').className = 'status duel-status';
       } else {
         playSfx('wrong');
         $('#duelStatus').textContent = ds.kind === 'streams'
-          ? 'Missed — ' + mB.sub + '.'
-          : 'Missed — released in ' + ds.b.year + '.';
+          ? (I18N ? tr('duelMissedStreams', { v: mB.sub }) : ('Missed — ' + mB.sub + '.'))
+          : (I18N ? tr('duelMissedYear', { y: ds.b.year }) : ('Missed — released in ' + ds.b.year + '.'));
         $('#duelStatus').className = 'status duel-status err';
       }
 
@@ -4403,7 +4434,7 @@
       const bestPill = $('#agBestPill');
       if (bestPill) {
         bestPill.hidden = st.best <= 0;
-        bestPill.textContent = 'Best ' + st.best;
+        bestPill.textContent = I18N ? tr('agBestPill', { n: st.best }) : ('Best ' + st.best);
       }
       const targetPill = $('#agTargetPill');
       if (targetPill) {
@@ -4428,8 +4459,10 @@
       const triesPill = $('#agTriesPill');
       if (triesPill) {
         triesPill.textContent = ag.done
-          ? (ag.won ? ('Solved ' + ag.guesses.length + ' / ' + AD.MAX_TRIES) : ('Missed · ' + AD.MAX_TRIES + ' / ' + AD.MAX_TRIES))
-          : ('Guess ' + Math.min(AD.MAX_TRIES, ag.guesses.length + 1) + ' / ' + AD.MAX_TRIES);
+          ? (ag.won
+            ? (I18N ? tr('agSolvedPill', { n: ag.guesses.length, max: AD.MAX_TRIES }) : ('Solved ' + ag.guesses.length + ' / ' + AD.MAX_TRIES))
+            : (I18N ? tr('agMissedPill', { max: AD.MAX_TRIES }) : ('Missed · ' + AD.MAX_TRIES + ' / ' + AD.MAX_TRIES)))
+          : (I18N ? tr('agGuessPill', { n: Math.min(AD.MAX_TRIES, ag.guesses.length + 1), max: AD.MAX_TRIES }) : ('Guess ' + Math.min(AD.MAX_TRIES, ag.guesses.length + 1) + ' / ' + AD.MAX_TRIES));
       }
 
       $('#agQ').disabled = ag.done;
@@ -4445,12 +4478,18 @@
           $('#agResultArt').src = ag.target.art || '';
           $('#agResultArt').alt = ag.target.name;
           const hUsed = ag.hints.length;
-          $('#agVerdict').textContent = ag.won
-            ? ('Solved in ' + ag.guesses.length + (ag.guesses.length === 1 ? ' try' : ' tries') + (hUsed ? (' · ' + hUsed + (hUsed === 1 ? ' hint' : ' hints')) : '!'))
-            : 'Mystery Artist Revealed';
+          if (ag.won) {
+            $('#agVerdict').textContent = I18N
+              ? (hUsed
+                ? tr('agSolvedTryHint', { n: ag.guesses.length, unit: ag.guesses.length === 1 ? 'try' : 'tries', h: hUsed, hUnit: hUsed === 1 ? 'hint' : 'hints' })
+                : (ag.guesses.length === 1 ? tr('agSolvedTry') : tr('agSolvedTries', { n: ag.guesses.length })))
+              : ('Solved in ' + ag.guesses.length + (ag.guesses.length === 1 ? ' try' : ' tries') + (hUsed ? (' · ' + hUsed + (hUsed === 1 ? ' hint' : ' hints')) : '!'));
+          } else {
+            $('#agVerdict').textContent = I18N ? tr('agRevealed') : 'Mystery Artist Revealed';
+          }
           $('#agAnswerName').textContent = ag.target.name;
           $('#agTopSongLabel').textContent = ag.target.topSong
-            ? ('Top Hit: ' + ag.target.topSong.title + ' (' + ag.target.country + ' · ' + ag.target.genre + ')')
+            ? (I18N ? tr('agTopHit', { title: ag.target.topSong.title, country: ag.target.country, genre: ag.target.genre }) : ('Top Hit: ' + ag.target.topSong.title + ' (' + ag.target.country + ' · ' + ag.target.genre + ')'))
             : (ag.target.country + ' · ' + ag.target.genre);
           const noteEl = $('#agChallengeNote');
           if (noteEl) {
@@ -4462,7 +4501,7 @@
               noteEl.textContent = '';
             }
           }
-          $('#agNextBtn').textContent = 'Next artist';
+          $('#agNextBtn').textContent = I18N ? tr('nextArtist') : 'Next artist';
         }
       }
 
@@ -4482,12 +4521,12 @@
               '<img class="spotle-guess-avatar" src="' + esc(g.art || '') + '" alt="">' +
               '<span class="spotle-guess-name">' + esc(g.name) + '</span>' +
             '</div>' +
-            '<span class="spotle-guess-num">Guess #' + num + '</span>' +
+            '<span class="spotle-guess-num">' + esc(I18N ? tr('agGuessNum', { n: num }) : ('Guess #' + num)) + '</span>' +
           '</div>' +
           '<div class="spotle-tiles">' +
             tiles.map((t) =>
               '<div class="sp-tile ' + t.status + '">' +
-                '<small>' + esc(t.label) + '</small>' +
+                '<small>' + esc(I18N ? tr('clue_' + t.key) : t.label) + '</small>' +
                 '<b>' + esc(t.value) + '</b>' +
               '</div>'
             ).join('') +
@@ -4539,7 +4578,7 @@
       dd.innerHTML = '';
       if (!matches.length) {
         const empty = el('div', 'dd-empty');
-        empty.textContent = 'No matching artist in top 250 roster.';
+        empty.textContent = I18N ? tr('agNoMatch') : 'No matching artist in top 250 roster.';
         dd.appendChild(empty);
       } else {
         matches.forEach((a, idx) => {
@@ -5022,14 +5061,21 @@
   function updateSpotifyInputHint() {
     const inp = $('#spotifyUrl');
     const st = $('#spotifyStatus');
+    const field = $('#playlistField');
     if (!inp || !st || spotifyBusy) return;
     const raw = inp.value || '';
     if (!raw.trim()) {
+      if (field) field.dataset.src = 'neutral';
       st.textContent = playlistDefaultHint();
       st.classList.remove('err');
       return;
     }
     const parsed = parseSpotifyMultiInput(raw);
+    const hasSp = parsed.collections.length + parsed.shortUrls.length + parsed.trackIds.length > 0;
+    const firstExt = parsed.externalUrls[0] || null;
+    if (field) {
+      field.dataset.src = firstExt && !hasSp ? firstExt.source : hasSp ? 'spotify' : 'neutral';
+    }
     const cCount = parsed.collections.length + parsed.shortUrls.length + parsed.externalUrls.length;
     const tCount = parsed.trackIds.length;
     st.classList.remove('err');
@@ -5044,6 +5090,10 @@
       st.textContent = settings.lang === 'id'
         ? ('Playlist ' + src + ' terdeteksi — siap dimainkan')
         : (src + ' playlist detected — ready to play');
+    } else if (hasSp && cCount === 1) {
+      st.textContent = settings.lang === 'id'
+        ? 'Playlist Spotify terdeteksi — siap dimainkan'
+        : 'Spotify playlist detected — ready to play';
     } else if (tCount > 0) {
       st.textContent = tCount + ' Spotify ' + (tCount === 1 ? 'track' : 'tracks') + ' detected — ready to play';
     } else {
@@ -5224,6 +5274,7 @@
         id: 'sp:' + customId,
         kind: 'spotify',
         source,
+        sourceUrl: (totalCols === 1 && extUrls.length === 1 && !missingTrackIds.length) ? extUrls[0].url : '',
         spotifyId: (primaryMeta && source === 'spotify' && totalCols === 1 && !missingTrackIds.length) ? primaryMeta.id : '',
         spotifyType: isSingleAlbum ? 'album' : 'playlist',
         label,
@@ -5324,11 +5375,16 @@
       if (launchArtistMode) { launchArtistMode(); return true; }
     }
 
-    const sp = (params.get('spotify') || (slug === 'spotify' ? (params.get('id') || '') : '')).trim();
+    const sp = (params.get('playlist') || params.get('spotify') || (slug === 'spotify' ? (params.get('id') || '') : '')).trim();
     if (sp) {
       const spSongs = parseInt(params.get('songs') || '', 10);
       if (Number.isFinite(spSongs) && spSongs >= 1) setSpotifyRoundsChoice(spSongs);
       setClassicTab('spotify');
+      if ($('#spotifyUrl') && /^https?:\/\//i.test(sp)) {
+        $('#spotifyUrl').value = sp;
+        if ($('#spotifyClear')) $('#spotifyClear').hidden = false;
+        updateSpotifyInputHint();
+      }
       startSpotifyPlaylist(sp, Number.isFinite(spSongs) && spSongs >= 1 ? spSongs : undefined);
       return true;
     }

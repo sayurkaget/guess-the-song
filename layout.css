@@ -1350,8 +1350,21 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 .spotify-input-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.55rem;align-items:stretch}
 .spotify-field{position:relative;display:flex;align-items:center;min-width:0}
 .spotify-ico{
-  position:absolute;left:.85rem;width:18px;height:18px;color:#25e07d;pointer-events:none;flex:none;
+  position:absolute;left:.85rem;width:18px;height:18px;color:var(--dim);pointer-events:none;flex:none;
+  display:grid;place-items:center;transition:color .18s;
 }
+.spotify-ico svg{width:18px;height:18px;display:none}
+.spotify-field[data-src="neutral"] .ico-pl-neutral,
+.spotify-field:not([data-src]) .ico-pl-neutral{display:block}
+.spotify-field[data-src="spotify"] .ico-pl-spotify{display:block}
+.spotify-field[data-src="spotify"] .spotify-ico{color:#25e07d}
+.spotify-field[data-src="spotify"] #spotifyUrl{border-color:rgba(37,224,125,.48);background:rgba(37,224,125,.06)}
+.spotify-field[data-src="apple"] .ico-pl-apple{display:block}
+.spotify-field[data-src="apple"] .spotify-ico{color:#fa586a}
+.spotify-field[data-src="apple"] #spotifyUrl{border-color:rgba(250,88,106,.52);background:rgba(250,88,106,.07)}
+.spotify-field[data-src="youtube"] .ico-pl-youtube{display:block}
+.spotify-field[data-src="youtube"] .spotify-ico{color:#ff5449}
+.spotify-field[data-src="youtube"] #spotifyUrl{border-color:rgba(255,84,73,.52);background:rgba(255,84,73,.07)}
 #spotifyUrl{
   width:100%;min-height:46px;padding:.68rem 2.4rem .68rem 2.55rem;border-radius:12px;
   background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--ink);
