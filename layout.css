@@ -1569,11 +1569,8 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
   .modal{padding-bottom:max(.75rem,env(safe-area-inset-bottom))}
 }
 @media(max-width:520px){
-  /* Song Game Arena: symmetrical Play card, crisp 5-stage pills, elevated dropdown */
+  /* Song Game Arena: compact Play card (keeping readout beside Play button), crisp 5-stage pills, elevated dropdown */
   .vinyl-card{padding:.88rem .85rem .8rem;gap:.65rem}
-  .vinyl-card .player{flex-direction:column;align-items:center;gap:.38rem;padding:.15rem 0}
-  .vinyl-card .spot-play-wrap{flex-direction:column;gap:.42rem}
-  .vinyl-card .readout,.vinyl-card .spot-readout{position:static;left:auto;top:auto;transform:none;margin:0;font-size:.82rem;line-height:1}
   #game .steps.live{gap:.22rem;margin-bottom:.62rem}
   #game .steps.live li{padding:.36rem .16rem;font-size:.62rem;letter-spacing:-.01em}
   #game .dd{

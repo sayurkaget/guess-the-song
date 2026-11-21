@@ -241,7 +241,7 @@ test('Wave 66 mobile UI polish and remaining ID localization leaks are wired cle
   assert.match(css, /\.sp-tile small\{font-size:\.57rem;letter-spacing:\.035em;white-space:nowrap\}/);
   assert.match(css, /\.spotle-result-actions #agNextBtn\{grid-column:1 \/ -1;order:-1\}/);
   assert.match(css, /#customModal \.custom-quick-head\{flex-wrap:nowrap;/);
-  assert.match(css, /\.vinyl-card \.player\{flex-direction:column;align-items:center;/);
+  assert.doesNotMatch(css, /\.vinyl-card \.spot-play-wrap\{flex-direction:column/);
   assert.match(app, /if \(topCard\) topCard\.hidden = ag\.done;/);
   assert.match(app, /tr\('backupRestore'\)/);
   assert.match(app, /tr\('playAgain'\)/);
