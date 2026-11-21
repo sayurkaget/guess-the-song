@@ -98,14 +98,14 @@ test('actual songs.js and duel-streams-v1.js produce rich valid pools with zero 
     slug: String(i), title: r[0], artist: r[1], tier: r[2], year: r[5], art: r[6], trackId: r[7]
   }));
 
-  const yearPool = Duel.buildPool(all, null, 'year');
-  assert.ok(yearPool.length >= 2500, 'expected >= 2500 iconic songs for Year deck, got ' + yearPool.length);
+  const yearPool = Duel.buildPool(all, ctx.window.DUEL_STREAMS_V1, 'year');
+  assert.ok(yearPool.length >= 6000, 'expected >= 6000 iconic & streamed songs for Year deck, got ' + yearPool.length);
 
   const streamsPool = Duel.buildPool(all, ctx.window.DUEL_STREAMS_V1, 'streams');
-  assert.ok(streamsPool.length >= 1350, 'expected >= 1350 tracks for Spotify Streams deck, got ' + streamsPool.length);
+  assert.ok(streamsPool.length >= 5000, 'expected >= 5000 tracks for Spotify Streams deck, got ' + streamsPool.length);
   assert.equal(streamsPool.length, ctx.window.DUEL_STREAMS_V1.items.length, 'all trackIds in duel-streams-v1.js must exist in songs.js');
   for (const s of streamsPool) {
-    assert.ok(s.art && s.trackId && s.streams > 500_000_000, 'bad streams entry ' + s.title);
+    assert.ok(s.art && s.trackId && s.streams >= 100_000_000, 'bad streams entry ' + s.title);
   }
 });
 

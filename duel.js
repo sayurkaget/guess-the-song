@@ -26,7 +26,14 @@
     const valid = list.filter((s) =>
       s && Number.isFinite(s.year) && s.year >= 1920 && s.year <= 2030 && s.art && s.trackId
     );
-    const iconic = valid.filter((s) => (s.tier || 5) <= 3);
+    const streamTids = new Set();
+    if (streamsData && Array.isArray(streamsData.items)) {
+      for (let i = 0; i < streamsData.items.length; i++) {
+        const pair = streamsData.items[i];
+        if (Array.isArray(pair) && pair[0]) streamTids.add(String(pair[0]));
+      }
+    }
+    const iconic = valid.filter((s) => (s.tier || 5) <= 3 || streamTids.has(String(s.trackId)));
     return iconic.length >= 12 ? iconic : valid;
   }
 
@@ -41,7 +48,7 @@
     const rng = typeof kindOrRng === 'function' ? kindOrRng : maybeRng;
     if (!pool.length) return null;
     if (kind === 'streams') {
-      const head = pool.slice(0, Math.min(pool.length, 320));
+      const head = pool.slice(0, Math.min(pool.length, 450));
       return pickRandom(head.length ? head : pool, rng);
     }
     const years = new Set(pool.map((s) => s.year));
@@ -73,12 +80,22 @@
     if (!fresh.length) return null;
 
     let tierBase = fresh;
-    if (kind === 'streams' && score < 4) {
-      const topHits = fresh.filter((s) => (s.streamRank ?? 9999) < 350);
-      if (topHits.length) tierBase = topHits;
-    } else if (kind !== 'streams' && score < 4) {
-      const tiered = fresh.filter((s) => (s.tier || 5) <= 2);
-      if (tiered.length) tierBase = tiered;
+    if (kind === 'streams') {
+      if (score < 4) {
+        const topHits = fresh.filter((s) => (s.streamRank ?? 9999) < 450);
+        if (topHits.length) tierBase = topHits;
+      } else if (score < 9) {
+        const midHits = fresh.filter((s) => (s.streamRank ?? 9999) < 1800);
+        if (midHits.length) tierBase = midHits;
+      }
+    } else {
+      if (score < 4) {
+        const tiered = fresh.filter((s) => (s.tier || 5) <= 2);
+        if (tiered.length) tierBase = tiered;
+      } else if (score < 9) {
+        const tiered = fresh.filter((s) => (s.tier || 5) <= 3);
+        if (tiered.length) tierBase = tiered;
+      }
     }
 
     const anchorArtist = norm(anchor.artist);

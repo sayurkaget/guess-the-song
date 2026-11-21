@@ -7,7 +7,7 @@ const ArtistDetective = require('../artist-game.js');
 
 const root = path.join(__dirname, '..');
 
-test('ArtistDetective buildRoster resolves all 250 iconic artists against songs.js and duel-streams-v1.js', () => {
+test('ArtistDetective buildRoster resolves all 450 iconic artists against songs.js and duel-streams-v1.js', () => {
   const ctx = { window: {} };
   vm.runInContext(fs.readFileSync(path.join(root, 'songs.js'), 'utf8'), vm.createContext(ctx));
   vm.runInContext(fs.readFileSync(path.join(root, 'duel-streams-v1.js'), 'utf8'), ctx);
@@ -16,7 +16,8 @@ test('ArtistDetective buildRoster resolves all 250 iconic artists against songs.
   }));
 
   const roster = ArtistDetective.buildRoster(all, ctx.window.DUEL_STREAMS_V1);
-  assert.equal(roster.length, 250, 'expected all 250 artists in RAW_ROSTER to resolve in songs.js');
+  assert.equal(roster.length, 450, 'expected all 450 artists in RAW_ROSTER to resolve in songs.js');
+  assert.equal(ArtistDetective.ROSTER_SIZE, 450);
 
   const ids = new Set();
   const ranks = new Set();
@@ -24,7 +25,7 @@ test('ArtistDetective buildRoster resolves all 250 iconic artists against songs.
   for (const a of roster) {
     assert.ok(a.id && !ids.has(a.id), 'duplicate or empty artist id: ' + a.id);
     ids.add(a.id);
-    assert.ok(a.rank >= 1 && a.rank <= 250 && !ranks.has(a.rank), 'invalid or duplicate rank: ' + a.rank);
+    assert.ok(a.rank >= 1 && a.rank <= 450 && !ranks.has(a.rank), 'invalid or duplicate rank: ' + a.rank);
     ranks.add(a.rank);
     assert.ok(a.art && a.art.startsWith('http'), 'missing cover art for ' + a.name);
     assert.ok(a.topSong && a.topSong.trackId > 0, 'missing topSong trackId for ' + a.name);

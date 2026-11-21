@@ -479,7 +479,7 @@
     }
     const out = [];
     const exactSlugs = new Set();
-    let hasTopExact = false;
+    let topExactCount = 0;
     for (let i = 0; i < list.length; i++) {
       const s = list[i];
       if (!toks.every((t) => s.hay.indexOf(t) >= 0)) continue;
@@ -490,13 +490,13 @@
       else if (nt.indexOf(nq) === 0) sc = lowPop ? 2.2 : 0.5;
       else if (nt.indexOf(nq) > 0) sc = lowPop ? 2.4 : 1;
       else if (norm(s.artist).indexOf(nq) === 0) sc = 2;
-      if (s.tier <= 2) hasTopExact = true;
+      if (s.tier <= 2) topExactCount++;
       exactSlugs.add(s.slug);
       out.push({ s, sc });
     }
     // Fallback toleransi typo (jarak 1-2 huruf / tanpa spasi) saat hasil eksak sedikit/kosong
-    // atau belum menemukan lagu populer (mis. "the weekend" -> The Weeknd).
-    if ((out.length < 12 || (!hasTopExact && nq.length >= 4)) && nq.length >= 3) {
+    // atau belum cukup banyak lagu populer eksak (mis. "the weekend" -> The Weeknd).
+    if ((out.length < 12 || (topExactCount < 3 && nq.length >= 4)) && nq.length >= 3) {
       const qCompact = nq.replace(/ /g, '');
       for (let i = 0; i < list.length; i++) {
         const s = list[i];
@@ -2755,7 +2755,7 @@
         if (rt) rt.hidden = true;
       } else if (statsTab === 'artist') {
         const d = artistStats();
-        $('#statScope').textContent = I18N ? tr('statScopeArtist') : 'Artist Detective · Top 250 roster';
+        $('#statScope').textContent = I18N ? tr('statScopeArtist') : 'Artist Detective · Top 450 roster';
         $('#statgrid').innerHTML =
           cell(d.played, I18N ? tr('statPlayed') : 'played') + cell(d.won, I18N ? tr('statSolved') : 'solved') +
           cell(d.current, I18N ? tr('statStreak') : 'streak') + cell(d.best, I18N ? tr('statBest') : 'best');
@@ -3655,7 +3655,7 @@
       if (!duelPools[k]) {
         duelPools[k] = k === 'streams'
           ? Duel.buildPool(ALL, window.DUEL_STREAMS_V1, 'streams')
-          : Duel.buildPool(ALL, null, 'year');
+          : Duel.buildPool(ALL, window.DUEL_STREAMS_V1, 'year');
       }
       return duelPools[k];
     };
@@ -4508,7 +4508,7 @@
       const board = $('#agBoard');
       if (!board) return;
       if (!ag.guesses.length) {
-        board.innerHTML = '<div class="spotle-empty">' + esc(I18N ? tr('agEmpty') : 'Guess any artist above to reveal Debut Year, Solo/Group Type, Gender, Genre, Country & Global Rank (#1–#250).') + '</div>';
+        board.innerHTML = '<div class="spotle-empty">' + esc(I18N ? tr('agEmpty') : 'Guess any artist above to reveal Debut Year, Solo/Group Type, Gender, Genre, Country & Global Rank (#1–#450).') + '</div>';
         return;
       }
       board.innerHTML = ag.guesses.slice().reverse().map((g, revIdx) => {
@@ -4578,7 +4578,7 @@
       dd.innerHTML = '';
       if (!matches.length) {
         const empty = el('div', 'dd-empty');
-        empty.textContent = I18N ? tr('agNoMatch') : 'No matching artist in top 250 roster.';
+        empty.textContent = I18N ? tr('agNoMatch') : 'No matching artist in top 450 roster.';
         dd.appendChild(empty);
       } else {
         matches.forEach((a, idx) => {
