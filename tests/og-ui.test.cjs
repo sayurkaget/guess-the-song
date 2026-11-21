@@ -173,3 +173,19 @@ test('Wave 63 search dropdowns and modals reset scrollTop to 0 whenever opened o
   assert.match(app, /\$\('#agQ'\)\.addEventListener\('focus', reopenAgDD\)/);
   assert.match(app, /\$\('#agQ'\)\.addEventListener\('click', reopenAgDD\)/);
 });
+
+test('Wave 64 compacts songs.js, caches search buckets, widens sparse Stage 5 fallback, and localizes gameplay', () => {
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+  const songsStat = fs.statSync(path.join(ROOT, 'songs.js'));
+  assert.ok(songsStat.size < 5 * 1024 * 1024, 'expected compacted songs.js under 5 MB raw, got ' + songsStat.size);
+  assert.match(app, /get nt\(\)/);
+  assert.match(app, /get na\(\)/);
+  assert.match(app, /const buckets = new Array\(35\)/);
+  assert.match(app, /requestIdleCallback/);
+  assert.match(app, /const srcStreamed = streamedTids\.size/);
+  assert.match(app, /tr\('triedBadge'\)/);
+  assert.match(app, /tr\('guessedIn'/);
+  assert.match(app, /tr\('toastCardSaved'\)/);
+  assert.match(sw, /url\.pathname\.startsWith\('\/fonts\/'\)/);
+});

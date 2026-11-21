@@ -8,18 +8,20 @@
 
 ## Game Modes
 
-- **Daily Challenge** — One shared mystery song every day with 5 attempts (`0.1s → 0.5s → 2s → 8s → 15s`). Resets daily at **7:00 AM** in your device's local timezone and tracks your daily win streak.
-- **Classic (5 Stages)** — Five escalating rounds (*Easy → Medium → Hard → Expert → Impossible*) drawn from a studio-only catalog of 31,700+ tracks, filterable by **Genre** (*Pop, Rock, Hip-hop, R&B / Soul, Electronic, Indie, Other*) and **Era** (*Before 2000, 2000s, 2010s, 2020s*).
-- **Custom Artist** — Switch to the **By Artist** tab inside Classic to search any artist and play a 5-song run of their studio tracks (with recent/popular quick chips, *Surprise me*, and offline local catalog fallback).
-- **Music Duel** — Endless *Higher or Lower* battles across two decks: **Spotify Streams** (1,410 curated hits) and **Release Year**, featuring hover-to-play audio previews with seamless resume.
-- **Artist Detective** — Deduce a mystery artist from a roster of **250 iconic global artists** (`#1–#250`) in up to 10 tries using 6 color-coded clues (*Debut Year, Solo/Duo/Group Type, Gender, Genre, Country/Continent, and Global Rank*). Automatically plays the artist's top hit on solve or reveal.
+- **Daily Challenge** — One shared mystery song every day drawn from a 365-song curated pool with 5 attempts (`0.1s → 0.5s → 2s → 8s → 15s`). Resets daily at **7:00 AM** in your device's local timezone and tracks your daily win streak.
+- **Classic (5 Stages)** — Five escalating rounds (*Easy → Medium → Hard → Expert → Impossible*) drawn from a studio-only catalog of **33,500+ tracks**, calibrated by real Spotify stream tiers and filterable by **Genre** (*Pop, Rock, Hip-hop, R&B / Soul, Electronic, Indie, Other*) and **Era** (*Before 2000, 2000s, 2010s, 2020s*).
+- **Custom Artist** — Switch to the **By Artist** tab inside Classic to search any artist and play a 5-song run of their studio tracks (with recent/popular quick chips, *Surprise me*, and local catalog fallback).
+- **Playlists** — Paste any public **Spotify**, **Apple Music**, or **YouTube** playlist/album link (or multiple links / Ctrl+A Spotify tracks) to play your own custom tracks.
+- **Music Duel** — Endless *Higher or Lower* battles across two decks: **Spotify Streams** (**6,089** curated hits) and **Release Year** (**6,095** tracks), featuring toggleable hover-to-play audio previews with seamless resume.
+- **Artist Detective** — Deduce a mystery artist from a roster of **530 iconic global artists** (`#1–#530`) in up to 10 tries using 6 color-coded clues (*Debut Year, Solo/Duo/Group Type, Gender, Genre, Country/Continent, and Global Rank*) plus 2 unlockable hints. Automatically plays the artist's top hit on solve or reveal.
 
 ---
 
 ## Features
 
-- **Spoiler-Free Friend Challenges** — Tap **Challenge your friend** after a song, 5-stage run, Music Duel, or Artist Detective round to copy a link that replays the exact same tracks or mystery artist (`#challenge=`, `#run=`, `#duel=`, and hash-encoded `#artist=`) without revealing the answers in the URL.
-- **Stats Dashboard** — View your progress across **This filter**, **All Classic**, **Daily**, **Duel**, and **Artist** tabs. All progress and statistics are stored privately in your browser (`localStorage`).
+- **Spoiler-Free Friend Challenges & Score Cards** — Tap **Challenge your friend** to copy a spoiler-free replay link (`#challenge=`, `#run=`, `#duel=`, `#artist=`) or **Save score card** to export a shareable PNG summary (`score-card.js`).
+- **Bilingual UI (EN / ID)** — Switch cleanly between **English** and **Bahasa Indonesia** in Settings (`i18n.js`).
+- **Stats, Badges & Backup Transfer** — Track progress across **This filter**, **All Classic**, **Daily**, **Duel**, **Artist**, and **Badges** tabs (`badges.js`), and transfer progress across devices with an account-free backup code (`backup.js`).
 - **Studio-Only Recording Policy** — Automatically filters out live recordings, karaoke tracks, radio sessions, unofficial covers, and non-studio mixes (`recordings.js`).
 - **Installable PWA (Online-Only)** — Can be added to your mobile or desktop home screen while staying online-only (`no-cache` ETag validation via `sw.js`) so updates apply immediately without stale offline caches.
 
@@ -49,13 +51,14 @@
 | `index.html` | Main application markup, SEO metadata, and modals |
 | `styles.css`, `layout.css`, `site-guide.css` | Visual styling, dark-glass UI, responsive desktop & mobile layouts |
 | `app.js` | Core gameplay, audio engine, search, stats, challenges, and mode controllers |
-| `songs.js` | Curated Western studio track catalog (`31,700+` songs with verified iTunes IDs) |
+| `songs.js` | Compacted Western studio track catalog (`33,500` songs with verified iTunes IDs) |
 | `recordings.js` | Studio-only filtering rules for iTunes search & catalog resolution |
-| `daily.js`, `daily-pool-v1.js` | Deterministic local-timezone Daily Challenge engine & fixed song pool |
+| `daily.js`, `daily-pool-v1.js` | Deterministic local-timezone Daily Challenge engine & 365-song curated pool |
 | `challenge.js` | Encoding, decoding, and scoring for single-track (`#challenge=`) & 5-stage (`#run=`) links |
-| `duel.js`, `duel-streams-v1.js` | Music Duel pairing engine & curated Spotify streams dataset |
-| `artist-game.js` | Artist Detective 250-artist roster, 6-clue comparison, and opaque hash challenge links |
-| `feedback.js`, `functions/api/feedback.js` | Private feedback & song-report modal backed by Cloudflare Pages Functions + D1 (`FEEDBACK_DB`) |
+| `duel.js`, `duel-streams-v1.js` | Music Duel pairing engine & curated Spotify streams dataset (`6,089` hits) |
+| `artist-game.js` | Artist Detective 530-artist roster, 6-clue comparison, hints, and opaque hash challenge links |
+| `score-card.js`, `backup.js`, `badges.js`, `i18n.js` | Shareable PNG score cards, backup/transfer codes, unlockable badges, and EN/ID localization |
+| `feedback.js`, `functions/api/` | Cloudflare Pages Functions for private D1 feedback & Spotify/Apple/YouTube playlist proxies |
 | `analytics.js` | Privacy-respecting GA4 activity events (no search terms, guesses, emails, or PII) |
 | `sw.js`, `app.webmanifest` | Online-only Service Worker (`no-cache` ETag) & PWA manifest |
 | `tools/` | Cloudflare bundle builder (`build-cloudflare.cjs`) and catalog maintenance scripts |

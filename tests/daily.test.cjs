@@ -170,3 +170,33 @@ test('classic result shareText includes score summary and site link', () => {
   assert.match(text, /TuneUp · All songs · 0\/5/);
   assert.ok(text.endsWith('https://game.example/'));
 });
+
+test('Wave 64 daily pool expands to 365 songs from 2026-11-23 while preserving frozen v1 history', () => {
+  const { context } = setup();
+  const D = context.window.DailyGame;
+  const pool = context.window.DAILY_POOL_V1;
+  assert.equal(pool.length, 365);
+  const v1 = pool.filter((r) => r[8] !== 'v2');
+  assert.equal(v1.length, 120);
+  // Pre-cutoff dates stay 100% locked to the original 120-song v1 pool regardless of order
+  assert.equal(
+    JSON.stringify(D.plan(pool, '2026-11-22')),
+    JSON.stringify(D.plan(v1, '2026-11-22'))
+  );
+  assert.equal(
+    JSON.stringify(D.plan(pool.slice().reverse(), '2026-11-22')),
+    JSON.stringify(D.plan(v1, '2026-11-22'))
+  );
+  // Post-cutoff dates draw order-independently from the full 365-song pool
+  const a = D.plan(pool, '2026-11-23');
+  const b = D.plan(pool.slice().reverse(), '2026-11-23');
+  assert.equal(JSON.stringify(a), JSON.stringify(b));
+  assert.equal(a.length, 1);
+  // Sampling 60 future days includes expanded v2 hits
+  let v2Hits = 0;
+  for (let i = 0; i < 60; i++) {
+    const dt = new Date(Date.UTC(2026, 10, 23 + i)).toISOString().slice(0, 10);
+    if (D.plan(pool, dt)[0][8] === 'v2') v2Hits++;
+  }
+  assert.ok(v2Hits >= 20, 'expected expanded v2 pool to contribute hits across 60 future days, got ' + v2Hits);
+});

@@ -304,7 +304,7 @@
 
   /* ================= katalog & pencarian ================= */
 
-  // Lazy getter untuk .hay & .slug menunda 63k+ panggilan norm() saat boot awal halaman.
+  // Lazy getter untuk .nt, .na, .hay & .slug menunda panggilan norm() saat boot awal halaman.
   class SongEntry {
     constructor(s, i) {
       this.i = i;
@@ -316,11 +316,21 @@
       this.year = s[5] || 0;
       this.art = s[6] || '';
       this.trackId = s[7] || null;
+      this._nt = null;
+      this._na = null;
       this._hay = null;
       this._slug = null;
     }
+    get nt() {
+      return this._nt !== null ? this._nt : (this._nt = norm(this.title));
+    }
+    get na() {
+      return this._na !== null ? this._na : (this._na = norm(this.artist));
+    }
     get hay() {
-      return this._hay !== null ? this._hay : (this._hay = norm(this.title + ' ' + this.artist));
+      if (this._hay !== null) return this._hay;
+      const nt = this.nt, na = this.na;
+      return (this._hay = nt && na ? nt + ' ' + na : (nt || na));
     }
     set hay(v) { this._hay = v; }
     get slug() {
@@ -339,6 +349,20 @@
     }
     return out;
   })();
+
+  // Hangatkan cache .nt/.na/.hay secara bertahap di waktu senggang browser supaya
+  // ketikan pertama di kolom pencarian tetap instan (<10ms) tanpa bikin lag boot awal.
+  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function' && ALL.length > 500) {
+    let warmIdx = 0;
+    const warmChunk = (deadline) => {
+      const end = Math.min(ALL.length, warmIdx + 1500);
+      while (warmIdx < end && (!deadline || deadline.timeRemaining() > 3)) {
+        ALL[warmIdx++].hay;
+      }
+      if (warmIdx < ALL.length) window.requestIdleCallback(warmChunk, { timeout: 2500 });
+    };
+    window.requestIdleCallback(warmChunk, { timeout: 1500 });
+  }
 
 
   // Cari entri lagu dari slug. Di mode kustom, lagu artis didahulukan -- lagu
@@ -473,6 +497,8 @@
     const nq = norm(q);
     if (!nq) return [];
     const toks = nq.split(' ');
+    const singleTok = toks.length === 1;
+    const tok0 = toks[0];
     let list;
     if (S.custom) {
       list = S.custom.songs;
@@ -485,43 +511,75 @@
     } else {
       list = ALL;
     }
-    const out = [];
-    const exactSlugs = new Set();
+    // 7 bucket skor eksak (0, 0.5, 1, 2, 2.2, 2.4, 3) x 5 tier = 35 bucket.
+    // Menghindari sort 30.000+ lagu saat mengetik 1 huruf sambil menjaga urutan identik.
+    const buckets = new Array(35);
+    const SC_BY_BUCKET = [0, 0.5, 1, 2, 2.2, 2.4, 3];
+    let exactCount = 0;
     let topExactCount = 0;
     let hasArtistExact = false;
     for (let i = 0; i < list.length; i++) {
       const s = list[i];
-      if (!toks.every((t) => s.hay.indexOf(t) >= 0)) continue;
-      const nt = norm(s.title);
-      const na = norm(s.artist);
+      const hay = s.hay;
+      if (singleTok) {
+        if (hay.indexOf(tok0) < 0) continue;
+      } else {
+        let allHit = true;
+        for (let k = 0; k < toks.length; k++) {
+          if (hay.indexOf(toks[k]) < 0) { allHit = false; break; }
+        }
+        if (!allHit) continue;
+      }
+      const nt = s.nt !== undefined ? s.nt : (s._nt !== undefined ? s._nt : (s._nt = norm(s.title)));
+      const na = s.na !== undefined ? s.na : (s._na !== undefined ? s._na : (s._na = norm(s.artist)));
       const lowPop = s.tier >= 4;
-      let sc = 3;
-      if (nt === nq) sc = 0;
-      else if (nt.indexOf(nq) === 0) sc = lowPop ? 2.2 : 0.5;
-      else if (nt.indexOf(nq) > 0) sc = lowPop ? 2.4 : 1;
-      else if (na.indexOf(nq) === 0) sc = 2;
+      let bi = 6; // sc = 3
+      if (nt === nq) bi = 0;
+      else if (nt.indexOf(nq) === 0) bi = lowPop ? 4 : 1;
+      else if (nt.indexOf(nq) > 0) bi = lowPop ? 5 : 2;
+      else if (na.indexOf(nq) === 0) bi = 3;
       if (na.indexOf(nq) >= 0) hasArtistExact = true;
       if (s.tier <= 2) topExactCount++;
-      exactSlugs.add(s.slug);
-      out.push({ s, sc });
+      const ti = s.tier >= 1 && s.tier <= 5 ? (s.tier - 1) : 4;
+      const bIdx = bi * 5 + ti;
+      (buckets[bIdx] || (buckets[bIdx] = [])).push(s);
+      exactCount++;
+    }
+    const needFuzzy = (exactCount < 12 || (topExactCount < 3 && nq.length >= 4) || (!hasArtistExact && singleTok && nq.length >= 5)) && nq.length >= 3;
+    if (!needFuzzy) {
+      const res = [];
+      for (let bIdx = 0; bIdx < 35 && res.length < 200; bIdx++) {
+        const b = buckets[bIdx];
+        if (!b) continue;
+        if (b.length > 1) b.sort((a, c) => a.title.length - c.title.length);
+        for (let j = 0; j < b.length && res.length < 200; j++) res.push(b[j]);
+      }
+      return res;
     }
     // Fallback toleransi typo (jarak 1-2 huruf / tanpa spasi) saat hasil eksak sedikit/kosong
     // atau tidak ada nama artis yang cocok persis (mis. "the weekend" -> The Weeknd).
-    if ((out.length < 12 || (topExactCount < 3 && nq.length >= 4) || (!hasArtistExact && toks.length === 1 && nq.length >= 5)) && nq.length >= 3) {
-      const qCompact = nq.replace(/ /g, '');
-      for (let i = 0; i < list.length; i++) {
-        const s = list[i];
-        if (exactSlugs.has(s.slug)) continue;
-        const fScore = fuzzyMatchScore(toks, qCompact, s);
-        if (fScore >= 0) {
-          const sc = (fScore <= 1 && s.tier <= 2) ? 1.5 : (4 + fScore);
-          out.push({ s, sc });
-        }
+    const out = [];
+    const exactSlugs = new Set();
+    for (let bIdx = 0; bIdx < 35; bIdx++) {
+      const b = buckets[bIdx];
+      if (!b) continue;
+      const sc = SC_BY_BUCKET[(bIdx / 5) | 0];
+      for (let j = 0; j < b.length; j++) {
+        const s = b[j];
+        exactSlugs.add(s.slug);
+        out.push({ s, sc });
       }
     }
-    // Setelah kecocokan, urutkan menurut POPULARITAS (tier rendah = makin
-    // terkenal), bukan panjang judul. Batas 200 cukup untuk menampung seluruh
-    // diskografi artis terbanyak (168 lagu) sambil tetap membatasi kata umum.
+    const qCompact = nq.replace(/ /g, '');
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i];
+      if (exactSlugs.has(s.slug)) continue;
+      const fScore = fuzzyMatchScore(toks, qCompact, s);
+      if (fScore >= 0) {
+        const sc = (fScore <= 1 && s.tier <= 2) ? 1.5 : (4 + fScore);
+        out.push({ s, sc });
+      }
+    }
     out.sort((a, b) => a.sc - b.sc || a.s.tier - b.s.tier ||
                        a.s.title.length - b.s.title.length);
     return out.slice(0, 200).map((x) => x.s);
@@ -862,12 +920,19 @@
             : [];
           if (streamed.length >= 5) {
             byTier = streamed;
-          } else if (byTier.length > 40) {
-            if (!classicTopArtists) {
-              classicTopArtists = new Set(ALL.filter((s) => s.tier <= 2).map((s) => s.artist));
+          } else {
+            const srcStreamed = streamedTids.size
+              ? src.filter((s) => s.trackId && streamedTids.has(String(s.trackId)))
+              : [];
+            if (srcStreamed.length >= 5) {
+              byTier = srcStreamed;
+            } else if (byTier.length > 40) {
+              if (!classicTopArtists) {
+                classicTopArtists = new Set(ALL.filter((s) => s.tier <= 2).map((s) => s.artist));
+              }
+              const fair = byTier.filter((s) => classicTopArtists.has(s.artist) && !/^\s*(?:intro|outro|interlude)\b/i.test(s.title));
+              if (fair.length >= 16) byTier = fair;
             }
-            const fair = byTier.filter((s) => classicTopArtists.has(s.artist) && !/^\s*(?:intro|outro|interlude)\b/i.test(s.title));
-            if (fair.length >= 16) byTier = fair;
           }
         }
         if (byTier.length) return byTier[Math.floor(Math.random() * byTier.length)];
@@ -1501,19 +1566,24 @@
     if (!visible) { host.hidden = true; return; }
     const { recent, avail, size, popular } = popularState();
     const chipGroup = (lbl, items, actionHtml) => items.length
-      ? '<div class="custom-quick-group"><div class="custom-quick-head"><span class="custom-quick-lbl">' + lbl + '</span>' +
+      ? '<div class="custom-quick-group"><div class="custom-quick-head"><span class="custom-quick-lbl">' + esc(lbl) + '</span>' +
         (actionHtml || '') +
         '</div><div class="custom-chips">' +
         items.map((a) => '<button type="button" class="artist-chip" data-id="' + esc(String(a.id)) +
         '" data-name="' + esc(a.name) + '">' + esc(a.name) + '</button>').join('') + '</div></div>'
       : '';
-    const clearBtn = '<button type="button" class="custom-quick-clear" id="clearRecentArtists">Clear</button>';
+    const clearLbl = I18N ? tr('clearBtn') : 'Clear';
+    const refreshLbl = I18N ? tr('refreshBtn') : '↻ Refresh';
+    const surpriseLbl = I18N ? tr('surpriseMe') : '✦ Surprise me';
+    const recentLbl = I18N ? tr('recentArtists') : 'Recent artists';
+    const popularLbl = I18N ? tr('popularArtists') : 'Popular artists';
+    const clearBtn = '<button type="button" class="custom-quick-clear" id="clearRecentArtists">' + esc(clearLbl) + '</button>';
     const refreshBtn = avail.length > size
-      ? '<button type="button" class="custom-quick-clear" id="refreshPopularArtists">&#8635; Refresh</button>'
+      ? '<button type="button" class="custom-quick-clear" id="refreshPopularArtists">' + esc(refreshLbl) + '</button>'
       : '';
-    const surpriseBtn = '<button type="button" class="custom-quick-clear" id="surprisePopularArtist">&#10022; Surprise me</button>';
+    const surpriseBtn = '<button type="button" class="custom-quick-clear" id="surprisePopularArtist">' + esc(surpriseLbl) + '</button>';
     const popularActions = '<div class="custom-quick-actions">' + surpriseBtn + refreshBtn + '</div>';
-    host.innerHTML = chipGroup('Recent artists', recent, clearBtn) + chipGroup('Popular artists', popular, popularActions);
+    host.innerHTML = chipGroup(recentLbl, recent, clearBtn) + chipGroup(popularLbl, popular, popularActions);
     host.hidden = !host.innerHTML;
   }
   function openCustom() {
@@ -1524,7 +1594,7 @@
     if ($('#artistClear')) $('#artistClear').hidden = true;
     const box = $('#artistResults'); box.scrollTop = 0; box.hidden = true; box.innerHTML = '';
     renderQuickArtists(true);
-    const h = $('#customHint'); h.className = 'custom-hint'; h.textContent = CUSTOM_HINT;
+    const h = $('#customHint'); h.className = 'custom-hint'; h.textContent = I18N ? tr('customHint') : CUSTOM_HINT;
     open($('#customModal'));
     setTimeout(() => $('#artistQ').focus(), 40);
   }
@@ -1619,6 +1689,7 @@
     const day = window.DailyGame.day();
     const songs = window.DailyGame.plan(window.DAILY_POOL_V1, day).map((s) => ({
       title: s[0], artist: s[1], tier: s[2], region: s[3], genre: s[4], year: s[5], art: s[6],
+      trackId: s[7] || null,
       slug: slug(s), hay: norm(s[0] + ' ' + s[1])
     }));
     S.daily = { day, songs };
@@ -2012,7 +2083,7 @@
           if (summaryKey) stopSummaryPreview();
         });
         summaryAudio.addEventListener('error', () => {
-          if (summaryKey) { stopSummaryPreview(); toast('Preview unavailable for this track.'); }
+          if (summaryKey) { stopSummaryPreview(); toast(I18N ? tr('toastPreviewUnavailable') : 'Preview unavailable for this track.'); }
         });
       }
       syncSummaryVolume();
@@ -2041,7 +2112,7 @@
     } catch (e) {
       if (ticket === summaryEpoch) {
         stopSummaryPreview();
-        toast('Could not play preview.');
+        toast(I18N ? tr('toastPreviewError') : 'Could not play preview.');
       }
     }
   }
@@ -2439,6 +2510,8 @@
         e.textContent = I18N ? tr('notInCatalogue') : 'Not in the catalogue.';
         this.dd.appendChild(e);
       }
+      const frag = typeof document.createDocumentFragment === 'function' ? document.createDocumentFragment() : this.dd;
+      const triedLbl = I18N ? tr('triedBadge') : 'Tried';
       list.forEach((s, i) => {
         const tried = S.guesses.some((g) => sameStageGuess(g, s));
         const b = el('button', 'dd-item' + (tried ? ' tried' : ''));
@@ -2454,7 +2527,7 @@
                  : '<span class="dd-art ph"' + spAttr + ' aria-hidden="true"></span>') +
           '<span class="dd-txt">' + esc(s.title) +
           '<small>' + esc(s.artist) + '</small></span>' +
-          (tried ? '<span class="dd-badge">Tried</span>' : '');
+          (tried ? '<span class="dd-badge">' + esc(triedLbl) + '</span>' : '');
         if (!s.art && !s.artTried && s.spotifyUrl && i < 12) fetchSpotifyTrackArt(s);
         if (!tried) {
           // Di HP jangan pernah memilih saat touchstart: jari baru menempel dan
@@ -2485,8 +2558,9 @@
             UI.choose(i);
           };
         }
-        this.dd.appendChild(b);
+        frag.appendChild(b);
       });
+      if (frag !== this.dd) this.dd.appendChild(frag);
       this.dd.hidden = false;
       this.dd.scrollTop = 0;
       this.q.setAttribute('aria-expanded', 'true');
@@ -2534,9 +2608,11 @@
       $('#resultModal .reveal').className = 'reveal ' + (S.won ? 'win' : 'lose');
 
       // Label kecil di atas judul: menang -> pujian, kalah -> "it was"
+      const verdictKeys = ['verdict1', 'verdict2', 'verdict3', 'verdict4', 'verdict5'];
+      const verdictFallback = ['first listen', 'nailed it', 'got there', 'safe', 'last try'];
       $('#verdict').textContent = S.won
-        ? ['first listen', 'nailed it', 'got there', 'safe', 'last try'][n - 1]
-        : 'it was';
+        ? (I18N ? tr(verdictKeys[n - 1] || 'verdict5') : verdictFallback[n - 1])
+        : (I18N ? tr('verdictItWas') : 'it was');
 
       // Panjang potongan saat tebakan benar -- ini yang bikin "0.1s" terasa keren,
       // jauh lebih bermakna daripada "tebakan ke-3".
@@ -2544,10 +2620,11 @@
       if (S.won) {
         const at = S.guesses.findIndex((g) => g.t === 'right');
         badge.className = 'badge';
-        badge.textContent = 'Guessed in ' + fmt(LADDER[at]) + '!';
+        const lenStr = fmt(LADDER[at]);
+        badge.textContent = I18N ? tr('guessedIn', { len: lenStr }) : ('Guessed in ' + lenStr + '!');
       } else {
         badge.className = 'badge lose';
-        badge.textContent = 'Lost!';
+        badge.textContent = I18N ? tr('lostBadge') : 'Lost!';
       }
 
       const sn = $('#streakNote');
@@ -2555,8 +2632,15 @@
         const st = songStreak();
         if (S.won && streakKey() && st.current >= 1) {
           sn.hidden = false;
-          sn.textContent = '\uD83D\uDD25 ' + st.current + (S.custom ? ' custom streak' : ' song streak') +
-            (lastStreak && lastStreak.isNewBest ? ' · New best!' : st.best > st.current ? ' · Best ' + st.best : '');
+          const baseStreak = I18N
+            ? tr(S.custom ? 'customStreak' : 'songStreak', { n: st.current })
+            : (st.current + (S.custom ? ' custom streak' : ' song streak'));
+          const tail = lastStreak && lastStreak.isNewBest
+            ? (I18N ? tr('newBestTag') : ' · New best!')
+            : st.best > st.current
+            ? (I18N ? tr('bestTag', { n: st.best }) : (' · Best ' + st.best))
+            : '';
+          sn.textContent = '\uD83D\uDD25 ' + baseStreak + tail;
         } else {
           sn.hidden = true;
           sn.textContent = '';
@@ -3314,7 +3398,7 @@
       LS.set(SET_KEYS.autoplay, settings.autoplay);
       renderSettings();
       refreshBackupPreview();
-      toast(settings.autoplay ? 'Auto-play on reveal enabled' : 'Auto-play on reveal off');
+      toast(I18N ? tr(settings.autoplay ? 'toastAutoplayOn' : 'toastAutoplayOff') : (settings.autoplay ? 'Auto-play on reveal enabled' : 'Auto-play on reveal off'));
     };
   }
   if ($('#setSfx')) {
@@ -3324,7 +3408,7 @@
       renderSettings();
       refreshBackupPreview();
       if (settings.sfx) playSfx('near');
-      toast(settings.sfx ? 'Sound effects on' : 'Sound effects off');
+      toast(I18N ? tr(settings.sfx ? 'toastSfxOn' : 'toastSfxOff') : (settings.sfx ? 'Sound effects on' : 'Sound effects off'));
     };
   }
   if ($('#setHover')) {
@@ -3334,7 +3418,7 @@
       renderSettings();
       if (syncDuelHover) syncDuelHover();
       refreshBackupPreview();
-      toast(settings.hover ? 'Hover play on' : 'Hover play off');
+      toast(I18N ? tr(settings.hover ? 'toastHoverOn' : 'toastHoverOff') : (settings.hover ? 'Hover play on' : 'Hover play off'));
     };
   }
   if ($('#backupCode')) {
@@ -3365,9 +3449,9 @@
       }
       if (copied) {
         setBackupMsg('Backup code copied (' + keys.length + (keys.length === 1 ? ' item' : ' items') + '). Paste it on another device to restore.', 'ok');
-        toast('Backup code copied!');
+        toast(I18N ? tr('toastBackupCopied') : 'Backup code copied!');
       } else {
-        setBackupMsg('Code generated above — select and copy it manually.', 'ok');
+        setBackupMsg(I18N ? tr('toastBackupManual') : 'Code generated above — select and copy it manually.', 'ok');
       }
     };
   }
@@ -3398,7 +3482,7 @@
         reloadPersistedState();
         refreshBackupPreview();
         setBackupMsg('Restored ' + written + (written === 1 ? ' item' : ' items') + '! Your stats, streaks, and settings are loaded.', 'ok');
-        toast('Progress restored!');
+        toast(I18N ? tr('toastRestored') : 'Progress restored!');
       } catch (e) {
         disarmSettingsActions();
         setBackupMsg('Could not save restored data in this browser.', 'err');
@@ -3413,7 +3497,7 @@
       if (!resetArmed) {
         disarmSettingsActions();
         resetArmed = true;
-        btn.textContent = 'Click again to erase all stats, streaks & settings';
+        btn.textContent = I18N ? tr('resetAllConfirm') : 'Click again to erase all stats, streaks & settings';
         btn.classList.add('is-armed');
         resetArmedTimer = setTimeout(() => { disarmSettingsActions(); }, 6000);
         return;
@@ -3423,7 +3507,7 @@
       reloadPersistedState();
       if ($('#backupCode')) $('#backupCode').value = '';
       setBackupMsg('All TuneUp data on this device has been erased.', 'ok');
-      toast('All data reset');
+      toast(I18N ? tr('toastAllReset') : 'All data reset');
     };
   }
   renderSettings();
@@ -3522,7 +3606,7 @@
   }
   $('#shareStage').onclick = () => {
     try { salin(shareStage(), 'challenge_copy'); }
-    catch (e) { toast('This recording cannot be shared right now. Try another song.'); }
+    catch (e) { toast(I18N ? tr('toastCantShare') : 'This recording cannot be shared right now. Try another song.'); }
   };
   UI.skipBtn.onclick = () => { if (S.done) UI.result(); else skip(); };
 
@@ -3540,7 +3624,7 @@
       e.preventDefault();
       if (!UI.dd.hidden && UI.sel >= 0) UI.choose(UI.sel);
       else if (!UI.dd.hidden && UI.list.length === 1 && !S.guesses.some((g) => sameStageGuess(g, UI.list[0]))) UI.choose(0);
-      else toast('Pick a song from the list first');
+      else toast(I18N ? tr('pickFromList') : 'Pick a song from the list first');
     }
   });
   const reopenDD = () => {
@@ -3637,7 +3721,7 @@
   $('#reset').onclick = () => {
     LS.del(statKey());
     UI.stats();
-    toast('Stats reset');
+    toast(I18N ? tr('toastStatsReset') : 'Stats reset');
   };
 
   function copyTextSync(txt) {
@@ -3660,7 +3744,7 @@
     } catch (e) {
       copied = copyTextSync(txt);
     }
-    toast(copied ? 'Copied — paste it to a friend' : 'Copy failed');
+    toast(copied ? (I18N ? tr('toastCopiedFriend') : 'Copied — paste it to a friend') : (I18N ? tr('toastCopyFailed') : 'Copy failed'));
     if (copied && eventName) trackActivity(eventName, { mode });
     return copied;
   }
@@ -3686,10 +3770,10 @@
           verdict: $('#runVerdict') ? $('#runVerdict').textContent : '',
           url: siteUrl()
         });
-        if (outcome === 'downloaded') toast('Score card saved!');
-        else if (outcome === 'shared') toast('Score card shared!');
+        if (outcome === 'downloaded') toast(I18N ? tr('toastCardSaved') : 'Score card saved!');
+        else if (outcome === 'shared') toast(I18N ? tr('toastCardShared') : 'Score card shared!');
       } catch (e) {
-        toast('Could not save score card.');
+        toast(I18N ? tr('toastCardFailed') : 'Could not save score card.');
       }
     };
   }
@@ -4130,7 +4214,7 @@
       const target = incoming ? incoming.kind : ((kind === 'streams' || kind === 'year') ? kind : ds.kind);
       const resolvedKind = (target === 'streams' && getDuelPool('streams').length >= 2) ? 'streams' : 'year';
       const pool = getDuelPool(resolvedKind);
-      if (!pool || pool.length < 2) { toast('Not enough songs for Music Duel.'); return false; }
+      if (!pool || pool.length < 2) { toast(I18N ? tr('toastDuelNotEnough') : 'Not enough songs for Music Duel.'); return false; }
 
       let first = null, second = null, queue = [], qIndex = 0;
       const seen = new Set();
@@ -4150,7 +4234,7 @@
         first = Duel.pickFirst(pool, resolvedKind);
         if (first) seen.add(first.slug);
         second = Duel.pickNext(pool, first, seen, 0, resolvedKind);
-        if (!first || !second) { toast('Could not start Music Duel.'); return false; }
+        if (!first || !second) { toast(I18N ? tr('toastDuelFailed') : 'Could not start Music Duel.'); return false; }
         seen.add(second.slug);
       }
 
@@ -4205,7 +4289,7 @@
         LS.set(SET_KEYS.hover, settings.hover);
         syncDuelHover();
         if (typeof renderSettings === 'function') renderSettings();
-        toast(settings.hover ? 'Hover play on' : 'Hover play off — click ▶ to listen');
+        toast(I18N ? tr(settings.hover ? 'toastHoverOn' : 'toastHoverOffHint') : (settings.hover ? 'Hover play on' : 'Hover play off — click ▶ to listen'));
       };
     }
     $('#duelBack').onclick = () => { closeAll(); UI.lobby(); };
@@ -4257,10 +4341,10 @@
             history: ds.history,
             url: siteUrl()
           });
-          if (outcome === 'downloaded') toast('Score card saved!');
-          else if (outcome === 'shared') toast('Score card shared!');
+          if (outcome === 'downloaded') toast(I18N ? tr('toastCardSaved') : 'Score card saved!');
+          else if (outcome === 'shared') toast(I18N ? tr('toastCardShared') : 'Score card shared!');
         } catch (e) {
-          toast('Could not save score card.');
+          toast(I18N ? tr('toastCardFailed') : 'Could not save score card.');
         }
       };
     }
@@ -4313,7 +4397,7 @@
       agAudio.addEventListener('error', () => {
         if (agAudioKind) {
           stopArtistAudio();
-          toast('Audio preview unavailable right now.');
+          toast(I18N ? tr('toastAudioUnavailable') : 'Audio preview unavailable right now.');
         }
       });
       return agAudio;
@@ -4478,7 +4562,7 @@
       } catch (e) {
         if (myEpoch === agAudioEpoch) {
           stopArtistAudio();
-          if (!isAuto) toast('Could not play audio preview.');
+          if (!isAuto) toast(I18N ? tr('toastAudioFailed') : 'Could not play audio preview.');
         }
       }
     }
@@ -4694,7 +4778,7 @@
       if (!artist || ag.done || !ag.target) return;
       if (typeof unlockSfx === 'function') unlockSfx();
       if (ag.guesses.some((g) => g.id === artist.id)) {
-        toast('Already guessed ' + artist.name);
+        toast(I18N ? tr('toastAlreadyGuessed', { name: artist.name }) : ('Already guessed ' + artist.name));
         return;
       }
       ag.guesses.push(artist);
@@ -4754,7 +4838,7 @@
     function startArtistGame(incoming = null) {
       const list = ensureRoster();
       if (!list.length) {
-        toast('Artist roster unavailable.');
+        toast(I18N ? tr('toastRosterUnavailable') : 'Artist roster unavailable.');
         return false;
       }
       closeAll();
@@ -4843,7 +4927,7 @@
         } else {
           const firstUntried = ag.matches.find((m) => !ag.guesses.some((g) => g.id === m.id));
           if (!$('#agDD').hidden && firstUntried) submitArtistGuess(firstUntried);
-          else toast('Pick an artist from the dropdown list');
+          else toast(I18N ? tr('toastPickArtist') : 'Pick an artist from the dropdown list');
         }
       }
     });
@@ -4912,10 +4996,10 @@
             verdict: $('#agVerdict') ? $('#agVerdict').textContent : '',
             url: siteUrl()
           });
-          if (outcome === 'downloaded') toast('Score card saved!');
-          else if (outcome === 'shared') toast('Score card shared!');
+          if (outcome === 'downloaded') toast(I18N ? tr('toastCardSaved') : 'Score card saved!');
+          else if (outcome === 'shared') toast(I18N ? tr('toastCardShared') : 'Score card shared!');
         } catch (e) {
-          toast('Could not save score card.');
+          toast(I18N ? tr('toastCardFailed') : 'Could not save score card.');
         }
       };
     }
@@ -5161,11 +5245,11 @@
     const tCount = parsed.trackIds.length;
     st.classList.remove('err');
     if (cCount > 1 && tCount) {
-      st.textContent = cCount + ' playlists + ' + tCount + ' tracks detected — will merge all';
+      st.textContent = I18N ? tr('plMultiMix', { c: cCount, t: tCount }) : (cCount + ' playlists + ' + tCount + ' tracks detected — will merge all');
     } else if (cCount > 1) {
-      st.textContent = cCount + ' playlists detected — will merge all tracks';
+      st.textContent = I18N ? tr('plMulti', { c: cCount }) : (cCount + ' playlists detected — will merge all tracks');
     } else if (cCount === 1 && tCount) {
-      st.textContent = 'Playlist + ' + tCount + ' track links detected — will auto-merge without duplicates';
+      st.textContent = I18N ? tr('plOnePlusTracks', { t: tCount }) : ('Playlist + ' + tCount + ' track links detected — will auto-merge without duplicates');
     } else if (parsed.externalUrls.length === 1) {
       const src = parsed.externalUrls[0].source === 'apple' ? 'Apple Music' : 'YouTube';
       st.textContent = settings.lang === 'id'
@@ -5176,7 +5260,9 @@
         ? 'Playlist Spotify terdeteksi — siap dimainkan'
         : 'Spotify playlist detected — ready to play';
     } else if (tCount > 0) {
-      st.textContent = tCount + ' Spotify ' + (tCount === 1 ? 'track' : 'tracks') + ' detected — ready to play';
+      st.textContent = I18N
+        ? tr('plTracksReady', { t: tCount, unit: tCount === 1 ? 'track' : 'tracks' })
+        : (tCount + ' Spotify ' + (tCount === 1 ? 'track' : 'tracks') + ' detected — ready to play');
     } else {
       st.textContent = playlistDefaultHint();
     }
@@ -5199,7 +5285,7 @@
     }
     if (spotifyBusy) return false;
     spotifyBusy = true;
-    if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+    if (btn) { btn.disabled = true; btn.textContent = I18N ? tr('loadingBtn') : 'Loading…'; }
     setStatus(I18N ? tr('loadingPlaylist') : 'Loading playlist tracks…', false);
 
     try {

@@ -20,10 +20,13 @@
     for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
     return h >>> 0;
   }
+  const V2_START = '2026-11-23';
   function plan(pool, date) {
+    const active = date < V2_START ? pool.filter((r) => r[8] !== 'v2') : pool;
+    const source = active.length >= 5 ? active : pool;
     const chosen = [], artists = new Set();
     for (let tier = 1; tier <= 5; tier++) {
-      const candidates = pool.filter((r) => r[2] === tier).slice().sort((a, b) => {
+      const candidates = source.filter((r) => r[2] === tier).slice().sort((a, b) => {
         const ka = a[0] + '|' + a[1], kb = b[0] + '|' + b[1];
         return hash('daily-v1|' + date + '|' + ka) - hash('daily-v1|' + date + '|' + kb) || (ka < kb ? -1 : ka > kb ? 1 : 0);
       });
