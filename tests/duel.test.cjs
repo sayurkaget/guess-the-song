@@ -99,10 +99,10 @@ test('actual songs.js and duel-streams-v1.js produce rich valid pools with zero 
   }));
 
   const yearPool = Duel.buildPool(all, ctx.window.DUEL_STREAMS_V1, 'year');
-  assert.ok(yearPool.length >= 5400, 'expected >= 5400 iconic & streamed songs for Year deck, got ' + yearPool.length);
+  assert.ok(yearPool.length >= 6000, 'expected >= 6000 iconic & streamed songs for Year deck, got ' + yearPool.length);
 
   const streamsPool = Duel.buildPool(all, ctx.window.DUEL_STREAMS_V1, 'streams');
-  assert.ok(streamsPool.length >= 5000, 'expected >= 5000 tracks for Spotify Streams deck, got ' + streamsPool.length);
+  assert.ok(streamsPool.length >= 6000, 'expected >= 6000 tracks for Spotify Streams deck, got ' + streamsPool.length);
   assert.equal(streamsPool.length, ctx.window.DUEL_STREAMS_V1.items.length, 'all trackIds in duel-streams-v1.js must exist in songs.js');
   for (const s of streamsPool) {
     assert.ok(s.art && s.trackId && s.streams >= 100_000_000, 'bad streams entry ' + s.title);

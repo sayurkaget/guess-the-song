@@ -67,7 +67,7 @@
       const hintsUsed = Math.max(0, Number(input.hintsUsed) || 0);
       const best = Math.max(0, Number(input.best) || 0);
       const verdict = String(input.verdict || (won ? ('Solved in ' + tries + (tries === 1 ? ' try!' : ' tries!')) : 'Mystery unsolved'));
-      const subParts = [best > 0 ? ('Best streak ' + best) : 'Top 450 global roster'];
+      const subParts = [best > 0 ? ('Best streak ' + best) : 'Top 530 global roster'];
       if (hintsUsed > 0 && !/\bhints?\b/i.test(verdict)) subParts.push(hintsUsed + (hintsUsed === 1 ? ' hint' : ' hints'));
       return {
         kind: 'artist',

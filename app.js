@@ -353,7 +353,7 @@
   // tetap bisa dimainkan lewat filter "Other" (lain), Custom Artist, Playlist, Music Duel, & Artist Detective.
   const CLASSIC_ALL_SKIP_ARTISTS = new Set([
     'Bad Bunny', 'Karol G', 'Feid', 'Peso Pluma', 'Fuerza Regida', 'Anuel AA', 'Myke Towers',
-    'Rauw Alejandro', 'J Balvin', 'Ozuna', 'Maluma', 'Farruko',
+    'Rauw Alejandro', 'J Balvin', 'Ozuna', 'Maluma', 'Farruko', 'Don Omar', 'Bizarrap',
     'Arijit Singh', 'Shreya Ghoshal', 'Pritam', 'A.R. Rahman'
   ]);
 
@@ -2797,7 +2797,7 @@
         if (rt) rt.hidden = true;
       } else if (statsTab === 'artist') {
         const d = artistStats();
-        $('#statScope').textContent = I18N ? tr('statScopeArtist') : 'Artist Detective · Top 450 roster';
+        $('#statScope').textContent = I18N ? tr('statScopeArtist') : 'Artist Detective · Top 530 roster';
         $('#statgrid').innerHTML =
           cell(d.played, I18N ? tr('statPlayed') : 'played') + cell(d.won, I18N ? tr('statSolved') : 'solved') +
           cell(d.current, I18N ? tr('statStreak') : 'streak') + cell(d.best, I18N ? tr('statBest') : 'best');
@@ -4550,7 +4550,7 @@
       const board = $('#agBoard');
       if (!board) return;
       if (!ag.guesses.length) {
-        board.innerHTML = '<div class="spotle-empty">' + esc(I18N ? tr('agEmpty') : 'Guess any artist above to reveal Debut Year, Solo/Group Type, Gender, Genre, Country & Global Rank (#1–#450).') + '</div>';
+        board.innerHTML = '<div class="spotle-empty">' + esc(I18N ? tr('agEmpty') : 'Guess any artist above to reveal Debut Year, Solo/Group Type, Gender, Genre, Country & Global Rank (#1–#530).') + '</div>';
         return;
       }
       board.innerHTML = ag.guesses.slice().reverse().map((g, revIdx) => {
@@ -4620,7 +4620,7 @@
       dd.innerHTML = '';
       if (!matches.length) {
         const empty = el('div', 'dd-empty');
-        empty.textContent = I18N ? tr('agNoMatch') : 'No matching artist in top 450 roster.';
+        empty.textContent = I18N ? tr('agNoMatch') : 'No matching artist in top 530 roster.';
         dd.appendChild(empty);
       } else {
         matches.forEach((a, idx) => {

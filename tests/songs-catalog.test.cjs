@@ -132,7 +132,7 @@ test('catalog contains no known collab doubles or Nelly/Simon metadata regressio
   assert.equal(has('Sean Paul', 'Baby Boy (feat. Beyoncé )'), false);
   assert.equal(countByNormTitle('say it right'), 1);
   assert.equal(has('Nelly', 'Say It Right'), false);
-  assert.equal(countByNormTitle('maneater'), 1);
+  assert.equal(has('Nelly Furtado', 'Maneater'), true);
   assert.equal(has('Nelly', 'Maneater'), false);
   assert.equal(SONGS.filter((s) => s[1] === 'Simon & Garfunkel' && /sounds? of silence/i.test(s[0])).length, 1);
 

@@ -576,7 +576,7 @@ test('Artist Detective lobby card, arena DOM, and #artist= challenge intro work 
 
   harness.t.UI.stats('artist');
   assert.equal(harness.tabNodes[4].getAttribute('aria-pressed'), 'true');
-  assert.match(harness.nodes.get('#statScope').textContent, /Artist Detective · Top 450 roster/);
+  assert.match(harness.nodes.get('#statScope').textContent, /Artist Detective · Top 530 roster/);
   assert.match(harness.nodes.get('#statgrid').innerHTML, /<b>8<\/b><small>played<\/small>/);
   assert.match(harness.nodes.get('#statgrid').innerHTML, /<b>6<\/b><small>solved<\/small>/);
   assert.match(harness.nodes.get('#statgrid').innerHTML, /<b>2<\/b><small>streak<\/small>/);
