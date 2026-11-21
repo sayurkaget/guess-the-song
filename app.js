@@ -389,15 +389,16 @@
       ERAS[S.era].hit(s.year));
   }
 
-  function buildPool() {
-    if (S.daily) { S.pool = S.daily.songs.slice(); S.tierWidened = false; return; }
+  function computePoolForStage(stageIdx) {
+    if (S.daily) return { pool: (S.daily.songs || []).slice(), tierWidened: false };
     // Mode kustom: kumpulannya adalah seluruh lagu artis yang diambil, tanpa tier.
-    if (S.custom) { S.pool = S.custom.songs.slice(); S.tierWidened = false; return; }
+    if (S.custom) return { pool: (S.custom.songs || []).slice(), tierWidened: false };
     // Wilayah, genre, dan era adalah pilihan sadar pemain -- tidak pernah
     // dilonggarkan. Hanya rentang tier tahap ini yang dilebarkan kalau
     // lagu yang cocok terlalu sedikit.
     const base = filtered();
-    const tiers = D().tiers;
+    const diff = DIFFS[ORDER[Math.min(stageIdx, ORDER.length - 1)]];
+    const tiers = diff.tiers;
     const lo0 = Math.min.apply(null, tiers), hi0 = Math.max.apply(null, tiers);
     let pool = [], spread = 0;
     while (spread <= 4) {
@@ -408,8 +409,13 @@
     if (!pool.length) pool = base.slice();
 
     pool.sort((a, b) => a.slug < b.slug ? -1 : 1); // urutan stabil, tak tergantung urutan file
-    S.pool = pool;
-    S.tierWidened = spread > 0 && base.length > 0;
+    return { pool, tierWidened: spread > 0 && base.length > 0 };
+  }
+
+  function buildPool() {
+    const res = computePoolForStage(S.stage);
+    S.pool = res.pool;
+    S.tierWidened = res.tierWidened;
   }
 
   const ED_R0 = new Uint8Array(64);
@@ -860,6 +866,7 @@
   let runFilter = filterKey();
 
   function switchRun() {
+    if (typeof clearNextPreload === 'function') clearNextPreload();
     RUNS[runFilter] = { stages: S.stages, stage: S.stage, runDone: S.runDone };
     runFilter = filterKey();
     const r = RUNS[runFilter] || { stages: [], stage: 0, runDone: false };
@@ -880,13 +887,13 @@
     }
     return classicStreamedTids;
   }
-  function pickSong(offset, excludeSlugs = null) {
+  function pickSongFrom(poolSrc, stageIdx, offset, excludeSlugs = null) {
     // jangan ulang lagu yang sudah keluar di tahap sebelumnya dalam sesi ini
     const used = S.stages.filter(Boolean);
-    const avail = S.pool.filter((s) =>
+    const avail = poolSrc.filter((s) =>
       (!excludeSlugs || !excludeSlugs.has(s.slug)) &&
       used.every((u) => s.slug !== u.slug && !sameRecording(s, u)));
-    const from = avail.length ? avail : S.pool;
+    const from = avail.length ? avail : poolSrc;
 
     const recent = LS.get('tl:recent', []);
     const fresh = from.filter((s) => recent.indexOf(s.slug) < 0);
@@ -894,7 +901,7 @@
     if (S.custom && S.custom.kind !== 'spotify' && src.length > 1) {
       const ranked = src.slice().sort((a, b) => (a.rank ?? a.tier ?? 0) - (b.rank ?? b.tier ?? 0));
       const core = ranked.length > 48 ? ranked.slice(0, 48) : ranked;
-      const pool = (S.stage < 2 && core.length > 20) ? core.slice(0, Math.max(20, Math.ceil(core.length * 0.6))) : core;
+      const pool = (stageIdx < 2 && core.length > 20) ? core.slice(0, Math.max(20, Math.ceil(core.length * 0.6))) : core;
       let total = 0;
       const weights = pool.map((_, i) => (total += (pool.length - i + 4), pool.length - i + 4));
       let roll = Math.random() * total;
@@ -940,6 +947,9 @@
     }
     return src[Math.floor(Math.random() * src.length)];
   }
+  function pickSong(offset, excludeSlugs = null) {
+    return pickSongFrom(S.pool, S.stage, offset, excludeSlugs);
+  }
 
   async function load(retrySong = null) {
     const me = ++S.epoch;
@@ -967,6 +977,37 @@
     UI.render();
 
     const failedSlugs = new Set();
+    const preloaded = (!retrySong && !cur && !S.daily && !S.challenge && typeof takePreloadedStage === 'function')
+      ? await takePreloadedStage(S.stage, me)
+      : null;
+    if (me !== S.epoch) return;
+    if (preloaded && preloaded.song && preloaded.meta && preloaded.meta.preview) {
+      S.retrySong = preloaded.song;
+      if (S.custom && S.custom.kind === 'spotify') fetchSpotifyTrackArt(preloaded.song);
+      try {
+        S.song = preloaded.song; S.meta = preloaded.meta;
+        UI.status('Loading audio…');
+        await loadAudioMetadata(preloaded.meta.preview);
+        if (me !== S.epoch) return;
+        S.loading = false;
+        S.startAt = 0;
+        S.heard = 0;
+        if (S.stage === 0 && !cur) {
+          trackActivity('game_start');
+          if (S.custom && !S.challenge) trackActivity('custom_start');
+        }
+        saveRun();
+        UI.playState('idle');
+        UI.status(S.done ? '' : (typeof I18N !== 'undefined' && I18N ? tr('pressPlayToHear', { len: fmt(limit()) }) : ('Press Play to hear ' + fmt(limit()) + '.')));
+        UI.render();
+        if (S.done) setTimeout(() => { if (me === S.epoch && S.done) UI.result(); }, 250);
+        return;
+      } catch (e) {
+        if (me !== S.epoch) return;
+        if (preloaded.song && preloaded.song.slug) failedSlugs.add(preloaded.song.slug);
+        S.song = null; S.meta = null;
+      }
+    }
     for (let k = 0; k < 5; k++) {
       const cand = S.daily ? S.daily.songs[S.stage]
         : S.challenge ? S.challenge.song
@@ -1111,6 +1152,96 @@
     }
   }
 
+  let nextPreload = null;
+  let preloadAudio = null;
+  let preloadSeq = 0;
+
+  function clearNextPreload() {
+    preloadSeq++;
+    nextPreload = null;
+    if (preloadAudio) {
+      try { preloadAudio.pause(); preloadAudio.removeAttribute('src'); preloadAudio.load(); } catch (e) {}
+    }
+  }
+
+  function warmPreviewAudio(url) {
+    if (!url || typeof Audio !== 'function') return;
+    try {
+      if (!preloadAudio) {
+        preloadAudio = new Audio();
+        preloadAudio.preload = 'auto';
+        preloadAudio.muted = true;
+        preloadAudio.volume = 0;
+      }
+      preloadAudio.src = url;
+      preloadAudio.load();
+    } catch (e) {}
+  }
+
+  function preloadNextStage() {
+    if (S.runDone || S.daily || S.challenge) return;
+    const nextIdx = S.stage + 1;
+    if (nextIdx >= stageCount() || S.stages[nextIdx]) return;
+    const key = filterKey();
+    if (nextPreload && nextPreload.key === key && nextPreload.stage === nextIdx) return;
+
+    const mySeq = ++preloadSeq;
+    const entry = { key, stage: nextIdx, song: null, meta: null, promise: null };
+    nextPreload = entry;
+
+    entry.promise = (async () => {
+      try {
+        const nextPool = S.runChallenge
+          ? [S.runChallenge.songs[nextIdx]].filter(Boolean)
+          : computePoolForStage(nextIdx).pool;
+        if (!nextPool.length) return null;
+        const failed = new Set();
+        for (let k = 0; k < 3; k++) {
+          if (mySeq !== preloadSeq || filterKey() !== key) return null;
+          const cand = S.runChallenge
+            ? S.runChallenge.songs[nextIdx]
+            : pickSongFrom(nextPool, nextIdx, k, failed);
+          if (!cand) return null;
+          if (S.custom && S.custom.kind === 'spotify') fetchSpotifyTrackArt(cand);
+          try {
+            const meta = await resolve(cand);
+            if (mySeq !== preloadSeq || filterKey() !== key) return null;
+            if (!meta || !meta.preview) {
+              if (cand.slug) failed.add(cand.slug);
+              if (S.runChallenge) return null;
+              continue;
+            }
+            entry.song = cand;
+            entry.meta = meta;
+            warmPreviewAudio(meta.preview);
+            return { song: cand, meta };
+          } catch (e) {
+            if (cand && cand.slug) failed.add(cand.slug);
+            if (S.runChallenge) return null;
+          }
+        }
+        return null;
+      } catch (e) {
+        return null;
+      }
+    })();
+  }
+
+  async function takePreloadedStage(stageIdx, expectedEpoch) {
+    const entry = nextPreload;
+    if (!entry || entry.key !== filterKey() || entry.stage !== stageIdx) return null;
+    nextPreload = null;
+    if (entry.song && entry.meta) return { song: entry.song, meta: entry.meta };
+    if (!entry.promise) return null;
+    try {
+      const res = await entry.promise;
+      if (expectedEpoch !== S.epoch || !res || !res.song || !res.meta) return null;
+      return res;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function finish(won) {
     S.done = true; S.won = won;
     stopAudio();
@@ -1130,6 +1261,7 @@
     // makin aman dari kebijakan autoplay browser -- sekaligus terasa lebih responsif.
     // Kalah pun tetap diputar: justru saat itulah kamu ingin dengar lagunya.
     UI.autoplay();
+    preloadNextStage();
     const finishedEpoch = S.epoch;
     setTimeout(() => { if (S.epoch === finishedEpoch && S.done) UI.result(); }, 420);
   }
@@ -1150,6 +1282,7 @@
   }
 
   function newRun() {
+    clearNextPreload();
     closeAll();
     if (S.daily || S.runChallenge) { UI.lobby(); return; }
     if (S.custom && S.custom.fullRounds) S.custom.rounds = S.custom.fullRounds;
@@ -2306,6 +2439,7 @@
     lobby(opts = {}) {
       const skipRoute = !!(opts && opts.skipRoute);
       const replaceRoute = !!(opts && opts.replaceRoute);
+      if (typeof clearNextPreload === 'function') clearNextPreload();
       stopAudio();
       if (stopDuel) stopDuel();
       if (stopArtistGame) stopArtistGame();
@@ -3294,6 +3428,7 @@
     UI.buildControls();
     if (typeof syncSpotifyRoundsUI === 'function') syncSpotifyRoundsUI();
     if (typeof updateSpotifyInputHint === 'function') updateSpotifyInputHint();
+    if (typeof renderRecentPlaylists === 'function') renderRecentPlaylists();
     if (typeof syncDuelLang === 'function') syncDuelLang();
     if (typeof syncArtistLang === 'function') syncArtistLang();
     if ($('#game') && !$('#game').hidden) UI.render();
@@ -3358,6 +3493,7 @@
     syncSummaryVolume();
     if (syncDuelHover) syncDuelHover();
     if (typeof reloadSpotifyRounds === 'function') reloadSpotifyRounds();
+    if (typeof renderRecentPlaylists === 'function') renderRecentPlaylists();
     for (const k in RUNS) delete RUNS[k];
     S.stages = []; S.stage = 0; S.runDone = false;
     renderSettings();
@@ -5451,6 +5587,21 @@
         fullRounds: rounds,
         songs
       };
+      const recentUrl = (totalCols === 1 && extUrls.length === 1 && !missingTrackIds.length)
+        ? extUrls[0].url
+        : (primaryMeta && source === 'spotify' && totalCols === 1 && !missingTrackIds.length)
+        ? ('https://open.spotify.com/' + primaryMeta.type + '/' + primaryMeta.id)
+        : (raw.length <= 2000 ? raw : '');
+      if (recentUrl) {
+        pushRecentPlaylist({
+          id: customId,
+          url: recentUrl,
+          label,
+          source,
+          count: songs.length,
+          cover: /^https:\/\//.test(cover) ? cover : ''
+        });
+      }
       switchRun();
       S.stages = []; S.stage = 0; S.runDone = false;
       saveRun();
@@ -5469,6 +5620,82 @@
       spotifyBusy = false;
       if (btn) { btn.disabled = false; btn.textContent = I18N ? tr('playlistPlay') : 'Play'; }
     }
+  }
+
+  const RECENT_PL_KEY = 'tl:recentPlaylists';
+  const RECENT_PL_MAX = 5;
+  function loadRecentPlaylists() {
+    const raw = LS.get(RECENT_PL_KEY, []);
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((x) => x && typeof x.url === 'string' && x.url.trim() && typeof x.label === 'string' && x.label.trim()).slice(0, RECENT_PL_MAX);
+  }
+  function pushRecentPlaylist(entry) {
+    if (!entry || !entry.url || !entry.label) return;
+    const key = String(entry.id || entry.url).toLowerCase();
+    const list = loadRecentPlaylists().filter((x) => String(x.id || x.url).toLowerCase() !== key && x.url !== entry.url);
+    list.unshift({
+      id: String(entry.id || '').slice(0, 80),
+      url: String(entry.url).trim(),
+      label: String(entry.label).trim().slice(0, 80),
+      source: (entry.source === 'apple' || entry.source === 'youtube') ? entry.source : 'spotify',
+      count: Math.max(1, Number(entry.count) || 1),
+      cover: typeof entry.cover === 'string' && /^https:\/\//.test(entry.cover) ? entry.cover : '',
+      at: Date.now()
+    });
+    LS.set(RECENT_PL_KEY, list.slice(0, RECENT_PL_MAX));
+    renderRecentPlaylists();
+  }
+  function clearRecentPlaylists() {
+    LS.del(RECENT_PL_KEY);
+    renderRecentPlaylists();
+  }
+  function renderRecentPlaylists() {
+    const host = $('#recentPlaylists');
+    if (!host) return;
+    const list = loadRecentPlaylists();
+    if (!list.length) {
+      host.hidden = true;
+      host.innerHTML = '';
+      return;
+    }
+    const lbl = I18N ? tr('recentPlaylists') : 'Recent playlists';
+    const clr = I18N ? tr('clearBtn') : 'Clear';
+    host.innerHTML =
+      '<div class="recent-pl-head">' +
+        '<span class="recent-pl-lbl">' + esc(lbl) + '</span>' +
+        '<button type="button" class="recent-pl-clear" id="clearRecentPlaylists">' + esc(clr) + '</button>' +
+      '</div>' +
+      '<div class="recent-pl-list">' +
+        list.map((item, idx) =>
+          '<button type="button" class="recent-pl-chip" data-recent-pl="' + idx + '" data-src="' + esc(item.source) + '" title="' + esc(item.label) + '">' +
+            (item.cover
+              ? '<img class="recent-pl-art" src="' + esc(item.cover) + '" alt="">'
+              : '<span class="recent-pl-dot" aria-hidden="true"></span>') +
+            '<span class="recent-pl-name">' + esc(item.label) + '</span>' +
+            '<span class="recent-pl-cnt">' + esc(String(item.count)) + '</span>' +
+          '</button>'
+        ).join('') +
+      '</div>';
+    host.hidden = false;
+  }
+
+  if ($('#recentPlaylists')) {
+    $('#recentPlaylists').addEventListener('click', (e) => {
+      if (e.target.closest('#clearRecentPlaylists')) {
+        clearRecentPlaylists();
+        toast(I18N ? tr('toastRecentPlaylistsCleared') : 'Recent playlists cleared');
+        return;
+      }
+      const chip = e.target.closest('[data-recent-pl]');
+      if (!chip || spotifyBusy) return;
+      const idx = Number(chip.dataset.recentPl);
+      const item = loadRecentPlaylists()[idx];
+      if (!item || !item.url) return;
+      if ($('#spotifyUrl')) $('#spotifyUrl').value = item.url;
+      if ($('#spotifyClear')) $('#spotifyClear').hidden = false;
+      updateSpotifyInputHint();
+      startSpotifyPlaylist(item.url);
+    });
   }
 
   if ($('#spotifyUrl')) {
@@ -5519,6 +5746,7 @@
   }
 
   UI.buildControls();
+  renderRecentPlaylists();
   UI.render();
   UI.lobby({ skipRoute: true }); // selalu mulai dari layar pilih mode tanpa menghapus URL deep-link
   if (settings.lang === 'id') applyLanguage();

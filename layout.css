@@ -1404,6 +1404,32 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 .spotify-go{min-height:46px;padding:0 1.35rem;border-radius:12px;font-weight:800;white-space:nowrap}
 .spotify-hint{margin:0;font-size:.76rem;color:var(--dim);line-height:1.4}
 .spotify-hint.err{color:#ff8a8e}
+.recent-playlists{display:flex;flex-direction:column;gap:.45rem;margin-top:.15rem;padding-top:.55rem;border-top:1px solid rgba(255,255,255,.07)}
+.recent-pl-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.recent-pl-lbl{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dimmer)}
+.recent-pl-clear{
+  padding:.18rem .52rem;border-radius:999px;font-size:.72rem;font-weight:600;
+  color:var(--dim);background:transparent;border:1px solid transparent;cursor:pointer;
+  transition:color .15s,background .15s,border-color .15s;
+}
+.recent-pl-clear:hover{color:var(--text);background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1)}
+.recent-pl-list{display:flex;flex-wrap:wrap;gap:.4rem}
+.recent-pl-chip{
+  display:inline-flex;align-items:center;gap:.42rem;max-width:100%;min-height:34px;
+  padding:.32rem .68rem .32rem .48rem;border-radius:999px;
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);
+  color:var(--text);font-size:.78rem;font-weight:600;line-height:1.2;cursor:pointer;
+  transition:background .16s,border-color .16s,transform .12s;
+}
+.recent-pl-chip:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.22)}
+.recent-pl-chip:active{transform:scale(.98)}
+.recent-pl-chip:disabled{opacity:.55;cursor:wait}
+.recent-pl-art{width:18px;height:18px;border-radius:4px;object-fit:cover;flex:none;background:var(--surf2)}
+.recent-pl-dot{width:8px;height:8px;border-radius:50%;flex:none;background:#1ed760}
+.recent-pl-chip[data-src="apple"] .recent-pl-dot{background:#fc3c44}
+.recent-pl-chip[data-src="youtube"] .recent-pl-dot{background:#ff4e45}
+.recent-pl-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:175px}
+.recent-pl-cnt{font-size:.69rem;font-weight:700;color:var(--dim);padding:.06rem .36rem;border-radius:999px;background:rgba(255,255,255,.07);flex:none}
 .spotify-rounds-row{
   display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;
 }

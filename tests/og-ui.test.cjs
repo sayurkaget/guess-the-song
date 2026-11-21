@@ -189,3 +189,43 @@ test('Wave 64 compacts songs.js, caches search buckets, widens sparse Stage 5 fa
   assert.match(app, /tr\('toastCardSaved'\)/);
   assert.match(sw, /url\.pathname\.startsWith\('\/fonts\/'\)/);
 });
+
+test('Wave 65 wires zero-wait next-stage preload and persistent recent playlists across HTML, CSS, i18n, and app.js', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
+  const Backup = require('../backup.js');
+
+  assert.match(html, /id="recentPlaylists" hidden/);
+  assert.match(css, /\.recent-playlists\{/);
+  assert.match(css, /\.recent-pl-chip\[data-src="apple"\]/);
+  assert.match(css, /\.recent-pl-chip\[data-src="youtube"\]/);
+  assert.match(i18n, /recentPlaylists:\s*'Recent playlists'/);
+  assert.match(i18n, /recentPlaylists:\s*'Playlist terakhir'/);
+
+  assert.match(app, /function computePoolForStage\(stageIdx\)/);
+  assert.match(app, /function preloadNextStage\(\)/);
+  assert.match(app, /async function takePreloadedStage\(stageIdx, expectedEpoch\)/);
+  assert.match(app, /function clearNextPreload\(\)/);
+  assert.match(app, /UI\.autoplay\(\);\s*preloadNextStage\(\);/);
+  assert.match(app, /const RECENT_PL_KEY = 'tl:recentPlaylists';/);
+  assert.match(app, /function renderRecentPlaylists\(\)/);
+
+  // Confirm tl:recentPlaylists is automatically included in TuneUpBackup collect/restore
+  const mem = new Map([
+    ['tl:recentPlaylists', JSON.stringify([{ id: 'p1', url: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M', label: 'Top Hits', source: 'spotify', count: 50 }])]
+  ]);
+  const storage = {
+    get length() { return mem.size; },
+    key: (i) => [...mem.keys()][i] ?? null,
+    getItem: (k) => (mem.has(k) ? mem.get(k) : null),
+    setItem: (k, v) => mem.set(k, String(v)),
+    removeItem: (k) => mem.delete(k)
+  };
+  const collected = Backup.collect(storage);
+  assert.ok(collected['tl:recentPlaylists'], 'tl:recentPlaylists must be preserved by TuneUpBackup');
+  const decoded = Backup.decode(Backup.encode(collected));
+  assert.equal(decoded.ok, true);
+  assert.equal(JSON.parse(decoded.entries['tl:recentPlaylists'])[0].label, 'Top Hits');
+});

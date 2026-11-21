@@ -309,7 +309,9 @@
       toastAudioFailed: 'Could not play audio preview.',
       toastAlreadyGuessed: 'Already guessed {name}',
       toastRosterUnavailable: 'Artist roster unavailable.',
-      toastPickArtist: 'Pick an artist from the dropdown list'
+      toastPickArtist: 'Pick an artist from the dropdown list',
+      recentPlaylists: 'Recent playlists',
+      toastRecentPlaylistsCleared: 'Recent playlists cleared'
     },
     id: {
       // Lobby
@@ -614,7 +616,9 @@
       toastAudioFailed: 'Gagal memutar pratinjau audio.',
       toastAlreadyGuessed: '{name} sudah pernah ditebak',
       toastRosterUnavailable: 'Daftar artis tidak tersedia.',
-      toastPickArtist: 'Pilih artis dari daftar dulu'
+      toastPickArtist: 'Pilih artis dari daftar dulu',
+      recentPlaylists: 'Playlist terakhir',
+      toastRecentPlaylistsCleared: 'Riwayat playlist dihapus'
     }
   };
 

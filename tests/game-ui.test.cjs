@@ -392,10 +392,10 @@ test('song win streak increments on wins, shows in game/result/stats, and resets
   t.S.pool = heavyT4;
   t.S.stages = [];
   let t3Count = 0;
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 200; i++) {
     if (t.pickSong(0).tier === 3) t3Count++;
   }
-  assert.ok(t3Count >= 12, 'expected stratified Tier 3 picks >= 12 out of 60, got ' + t3Count);
+  assert.ok(t3Count >= 28, 'expected stratified Tier 3 picks >= 28 out of 200, got ' + t3Count);
 });
 
 test('Wave 12 polish: Other genre button, artistClear, Surprise me, and text-only Challenge share work cleanly', async () => {
