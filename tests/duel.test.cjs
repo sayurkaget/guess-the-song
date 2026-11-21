@@ -99,7 +99,7 @@ test('actual songs.js and duel-streams-v1.js produce rich valid pools with zero 
   }));
 
   const yearPool = Duel.buildPool(all, ctx.window.DUEL_STREAMS_V1, 'year');
-  assert.ok(yearPool.length >= 6000, 'expected >= 6000 iconic & streamed songs for Year deck, got ' + yearPool.length);
+  assert.ok(yearPool.length >= 5400, 'expected >= 5400 iconic & streamed songs for Year deck, got ' + yearPool.length);
 
   const streamsPool = Duel.buildPool(all, ctx.window.DUEL_STREAMS_V1, 'streams');
   assert.ok(streamsPool.length >= 5000, 'expected >= 5000 tracks for Spotify Streams deck, got ' + streamsPool.length);

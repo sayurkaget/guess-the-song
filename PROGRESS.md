@@ -452,3 +452,18 @@
   - Updated all EN/ID copy, meta tags, JSON-LD, Stats scope, Score Card fallback, and `searchIndex` (`topExactCount < 3`) for reliable fuzzy matching across the expanded catalog.
 - **Verification & Deploy**:
   - Updated `tests/artist-game.test.cjs`, `tests/duel.test.cjs`, and `tests/game-ui.test.cjs` (`151/151` passing), verified Playwright desktop (`1280×800`) + mobile (`360×780`, `0px` overflow) across Music Duel & Artist Detective (`BTS`, `NIKI`, `Tyla`, `Tyler, The Creator`, `Laufey`, `BLACKPINK`), bumped SW cache (`gts-v103-duel-artist-expand` / `gts-cf-v83-duel-artist-expand`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 60 — Classic Mode Difficulty Recalibration Using Global Spotify Streams (2026-11-21)
+- **Objective Stream-Calibrated Tiers (`songs.js`)**:
+  - Replaced legacy per-artist iTunes order tiers (which placed 11% `<100M` songs in `Easy`, 71% `<100M` B-sides in `Expert`, and 92% random obscure deep cuts in `Impossible`) with global Spotify all-time stream tiers from `duel-streams-v1.js` plus healthy genre×era bucket backfill across all 28 filters:
+    - **Tier 1 (`Easy`)**: `798` mega-hits (`99% >= 1B`, `100% >= 500M` streams).
+    - **Tier 2 (`Medium` `[1,2]`)**: `1,386` huge hits (`100% >= 500M` streams).
+    - **Tier 3 (`Hard` `[2,3]`)**: `2,061` well-known hits (`100% >= 200M` streams).
+    - **Tier 4 (`Expert` `[3,4]`)**: `1,297` secondary hits & classics (`96% >= 100M` streams).
+    - **Tier 5 (`Impossible` `[4,5]`)**: deep cuts `< 100M` streams.
+- **Fair Stage 5 Selection & Fuzzy Artist Recall (`app.js`)**:
+  - Updated `pickSong()` for Classic Stage 5 (`Impossible`) to sample `65%` Tier 4 (`100M–200M`) and `35%` Tier 5 (`<100M`) drawn preferentially from recognized Tier 1–2 artists while skipping `Intro`/`Outro`/`Interlude` album filler tracks.
+  - Refined `searchIndex()` to track `hasArtistExact` so single-word artist typo queries like `"the weekend"` reliably trigger fuzzy search (`The Weeknd`) even when multiple Tier 1–2 song titles contain `"weekend"`.
+- **Verification & Deploy**:
+  - Updated `tests/duel.test.cjs` (`yearPool` `5,491` 100%-recognizable hits), verified `151/151` unit tests pass, bumped SW cache (`gts-v104-classic-rebalance` / `gts-cf-v84-classic-rebalance`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.

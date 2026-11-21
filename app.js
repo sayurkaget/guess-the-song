@@ -480,23 +480,26 @@
     const out = [];
     const exactSlugs = new Set();
     let topExactCount = 0;
+    let hasArtistExact = false;
     for (let i = 0; i < list.length; i++) {
       const s = list[i];
       if (!toks.every((t) => s.hay.indexOf(t) >= 0)) continue;
       const nt = norm(s.title);
+      const na = norm(s.artist);
       const lowPop = s.tier >= 4;
       let sc = 3;
       if (nt === nq) sc = 0;
       else if (nt.indexOf(nq) === 0) sc = lowPop ? 2.2 : 0.5;
       else if (nt.indexOf(nq) > 0) sc = lowPop ? 2.4 : 1;
-      else if (norm(s.artist).indexOf(nq) === 0) sc = 2;
+      else if (na.indexOf(nq) === 0) sc = 2;
+      if (na.indexOf(nq) >= 0) hasArtistExact = true;
       if (s.tier <= 2) topExactCount++;
       exactSlugs.add(s.slug);
       out.push({ s, sc });
     }
     // Fallback toleransi typo (jarak 1-2 huruf / tanpa spasi) saat hasil eksak sedikit/kosong
-    // atau belum cukup banyak lagu populer eksak (mis. "the weekend" -> The Weeknd).
-    if ((out.length < 12 || (topExactCount < 3 && nq.length >= 4)) && nq.length >= 3) {
+    // atau tidak ada nama artis yang cocok persis (mis. "the weekend" -> The Weeknd).
+    if ((out.length < 12 || (topExactCount < 3 && nq.length >= 4) || (!hasArtistExact && toks.length === 1 && nq.length >= 5)) && nq.length >= 3) {
       const qCompact = nq.replace(/ /g, '');
       for (let i = 0; i < list.length; i++) {
         const s = list[i];
@@ -799,6 +802,7 @@
     loadRun();      // tebakan tahap ini, milik sesi yang baru dipilih
   }
 
+  let classicTopArtists = null;
   function pickSong(offset, excludeSlugs = null) {
     // jangan ulang lagu yang sudah keluar di tahap sebelumnya dalam sesi ini
     const used = S.stages.filter(Boolean);
@@ -824,10 +828,23 @@
       return pool[pool.length - 1];
     }
     if (!S.custom && !S.daily && !S.challenge && src.length > 1) {
-      const tiers = [...new Set(src.map((s) => s.tier).filter(Boolean))];
+      const tiers = [...new Set(src.map((s) => s.tier).filter(Boolean))].sort((a, b) => a - b);
+      let pickTier = tiers.length === 1 ? tiers[0] : 0;
       if (tiers.length > 1) {
-        const pickTier = tiers[Math.floor(Math.random() * tiers.length)];
-        const byTier = src.filter((s) => s.tier === pickTier);
+        // Stage Impossible [4, 5]: 65% Tier 4 (100M–200M) & 35% Tier 5 (<100M) agar tetap susah tapi adil.
+        pickTier = (tiers[0] === 4 && tiers[tiers.length - 1] === 5)
+          ? (Math.random() < 0.65 ? 4 : 5)
+          : tiers[Math.floor(Math.random() * tiers.length)];
+      }
+      if (pickTier) {
+        let byTier = src.filter((s) => s.tier === pickTier);
+        if (pickTier === 5 && byTier.length > 40) {
+          if (!classicTopArtists) {
+            classicTopArtists = new Set(ALL.filter((s) => s.tier <= 2).map((s) => s.artist));
+          }
+          const fair = byTier.filter((s) => classicTopArtists.has(s.artist) && !/^\s*(?:intro|outro|interlude)\b/i.test(s.title));
+          if (fair.length >= 16) byTier = fair;
+        }
         if (byTier.length) return byTier[Math.floor(Math.random() * byTier.length)];
       }
     }
