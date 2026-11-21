@@ -467,3 +467,18 @@
   - Refined `searchIndex()` to track `hasArtistExact` so single-word artist typo queries like `"the weekend"` reliably trigger fuzzy search (`The Weeknd`) even when multiple Tier 1–2 song titles contain `"weekend"`.
 - **Verification & Deploy**:
   - Updated `tests/duel.test.cjs` (`yearPool` `5,491` 100%-recognizable hits), verified `151/151` unit tests pass, bumped SW cache (`gts-v104-classic-rebalance` / `gts-cf-v84-classic-rebalance`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 61 — SongSpot-Style Classic Difficulty Curve & Mainstream `All genres` Focus (2026-11-21)
+- **SongSpot-Calibrated Tier Curve (`songs.js`)**:
+  - Tuned Classic tiers so all 5 stages stay recognizable global hits (`>= 100M` streams) with crisp escalation:
+    - **Tier 1 (`Easy`)**: `329` iconic mega-hits (`>= 2.0B` streams, `322` in Western/international `All genres`).
+    - **Tier 2 (`Medium`)**: `736` massive global hits (`1.0B – 2.0B` streams).
+    - **Tier 3 (`Hard`)**: `1,137` big radio/streaming hits (`500M – 1.0B` streams).
+    - **Tier 4 (`Expert`)**: `2,101` recognizable hits & classics (`200M – 500M` streams).
+    - **Tier 5 (`Impossible`)**: `< 200M` streams (with `1,180` verified `100M – 200M` Western/international tricky hits targeted first in Stage 5).
+- **Stage-Primary Weighting, Zero `<100M` Filler in Stage 5, & `All genres` Focus (`app.js`)**:
+  - Added `CLASSIC_ALL_SKIP_ARTISTS` (`16` Spanish/Bollywood catalogs) to `filtered()` when `S.genre === 'all'` so `All genres` stays focused on mainstream Western/international hits while keeping all tracks playable via `Other` (`lain`), Custom Artist, Playlists, Music Duel, and Artist Detective.
+  - Updated `pickSong()` to weight each stage `75%` toward its primary tier (`T2` Medium, `T3` Hard, `T4` Expert, `100M–200M` streamed `T5` Impossible via `getClassicStreamedTids()`) and `25%` toward the previous tier, eliminating `<100M` obscure B-side gacha on Impossible.
+- **Verification & Deploy**:
+  - Verified `151/151` unit tests pass (all 28 `genre × era` buckets, `songs-catalog`, `duel`, `artist-game`, `og-ui`), bumped SW cache (`gts-v105-songspot-curve` / `gts-cf-v85-songspot-curve`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.

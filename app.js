@@ -349,11 +349,19 @@
     return ALL.find((s) => s.slug === sl) || null;
   }
 
+  // Katalog berbahasa Spanyol/Hindi dipisahkan dari "All genres" agar Classic tetap fokus hits Western/internasional;
+  // tetap bisa dimainkan lewat filter "Other" (lain), Custom Artist, Playlist, Music Duel, & Artist Detective.
+  const CLASSIC_ALL_SKIP_ARTISTS = new Set([
+    'Bad Bunny', 'Karol G', 'Feid', 'Peso Pluma', 'Fuerza Regida', 'Anuel AA', 'Myke Towers',
+    'Rauw Alejandro', 'J Balvin', 'Ozuna', 'Maluma', 'Farruko',
+    'Arijit Singh', 'Shreya Ghoshal', 'Pritam', 'A.R. Rahman'
+  ]);
+
   // lagu yang lolos filter pemain, tanpa memandang tingkat kesulitan
   function filtered() {
     if (S.custom) return S.custom.songs;
     return ALL.filter((s) =>
-      (S.genre === 'all' || s.genre === S.genre) &&
+      (S.genre === 'all' ? !CLASSIC_ALL_SKIP_ARTISTS.has(s.artist) : s.genre === S.genre) &&
       ERAS[S.era].hit(s.year));
   }
 
@@ -803,6 +811,17 @@
   }
 
   let classicTopArtists = null;
+  let classicStreamedTids = null;
+  function getClassicStreamedTids() {
+    if (!classicStreamedTids) {
+      const items = (typeof window !== 'undefined' && window.DUEL_STREAMS_V1 && window.DUEL_STREAMS_V1.items) || [];
+      classicStreamedTids = new Set();
+      for (let i = 0; i < items.length; i++) {
+        if (Array.isArray(items[i]) && items[i][0]) classicStreamedTids.add(String(items[i][0]));
+      }
+    }
+    return classicStreamedTids;
+  }
   function pickSong(offset, excludeSlugs = null) {
     // jangan ulang lagu yang sudah keluar di tahap sebelumnya dalam sesi ini
     const used = S.stages.filter(Boolean);
@@ -831,19 +850,25 @@
       const tiers = [...new Set(src.map((s) => s.tier).filter(Boolean))].sort((a, b) => a - b);
       let pickTier = tiers.length === 1 ? tiers[0] : 0;
       if (tiers.length > 1) {
-        // Stage Impossible [4, 5]: 65% Tier 4 (100M–200M) & 35% Tier 5 (<100M) agar tetap susah tapi adil.
-        pickTier = (tiers[0] === 4 && tiers[tiers.length - 1] === 5)
-          ? (Math.random() < 0.65 ? 4 : 5)
-          : tiers[Math.floor(Math.random() * tiers.length)];
+        // Bobot 75% tier utama tahap ini (T2 Medium, T3 Hard, T4 Expert, T5 Impossible) + 25% tier penyangga.
+        pickTier = Math.random() < 0.75 ? tiers[tiers.length - 1] : tiers[0];
       }
       if (pickTier) {
         let byTier = src.filter((s) => s.tier === pickTier);
-        if (pickTier === 5 && byTier.length > 40) {
-          if (!classicTopArtists) {
-            classicTopArtists = new Set(ALL.filter((s) => s.tier <= 2).map((s) => s.artist));
+        if (pickTier === 5) {
+          const streamedTids = getClassicStreamedTids();
+          const streamed = streamedTids.size
+            ? byTier.filter((s) => s.trackId && streamedTids.has(String(s.trackId)))
+            : [];
+          if (streamed.length >= 5) {
+            byTier = streamed;
+          } else if (byTier.length > 40) {
+            if (!classicTopArtists) {
+              classicTopArtists = new Set(ALL.filter((s) => s.tier <= 2).map((s) => s.artist));
+            }
+            const fair = byTier.filter((s) => classicTopArtists.has(s.artist) && !/^\s*(?:intro|outro|interlude)\b/i.test(s.title));
+            if (fair.length >= 16) byTier = fair;
           }
-          const fair = byTier.filter((s) => classicTopArtists.has(s.artist) && !/^\s*(?:intro|outro|interlude)\b/i.test(s.title));
-          if (fair.length >= 16) byTier = fair;
         }
         if (byTier.length) return byTier[Math.floor(Math.random() * byTier.length)];
       }
