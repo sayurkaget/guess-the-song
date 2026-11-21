@@ -159,3 +159,17 @@ test('Wave 58 summary modal footer aligns Daily in 2x2 grid and wide sheets in 1
   assert.match(css, /\.sheet\.run-sheet #backToMenu,\s*\.sheet\.run-sheet #duelMenu\{[\s\S]*?color:var\(--dim\);/);
   assert.doesNotMatch(css, /\.run-foot-links\{\s*gap:1\.15rem;/);
 });
+
+test('Wave 63 search dropdowns and modals reset scrollTop to 0 whenever opened or closed', () => {
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  assert.match(app, /this\.dd\.hidden = false;\s*this\.dd\.scrollTop = 0;/);
+  assert.match(app, /closeDD\(\) \{[\s\S]*?this\.dd\.scrollTop = 0;\s*this\.dd\.hidden = true;/);
+  assert.match(app, /dd\.hidden = false;\s*dd\.scrollTop = 0;\s*\$\('#agQ'\)/);
+  assert.match(app, /closeAgDD\(\) \{[\s\S]*?dd\.scrollTop = 0;\s*dd\.hidden = true;/);
+  assert.match(app, /box\.hidden = false;\s*box\.scrollTop = 0;/);
+  assert.match(app, /function open\(m\) \{[\s\S]*?m\.hidden = false;\s*m\.scrollTop = 0;/);
+  assert.match(app, /UI\.q\.addEventListener\('focus'/);
+  assert.match(app, /UI\.q\.addEventListener\('click'/);
+  assert.match(app, /\$\('#agQ'\)\.addEventListener\('focus', reopenAgDD\)/);
+  assert.match(app, /\$\('#agQ'\)\.addEventListener\('click', reopenAgDD\)/);
+});

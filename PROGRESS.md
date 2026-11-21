@@ -495,3 +495,11 @@
   - Expanded roster from `450` to **`530` iconic global artists** (`+71` newly fetched superstars + `9` billion-stream/classic hitmakers already in `songs.js`: *MAGIC!, Powfu, OMI, The Walters, Jaymes Young, Travie McCoy, Frankie Valli, The Righteous Brothers, Bobby Darin*), adding `DK` (Denmark), `AR` (Argentina), `PH` (Philippines), re-ranked `#1–#530` via Kworb global Spotify streams.
 - **Verification & Deploy**:
   - Updated `tests/artist-game.test.cjs`, `tests/duel.test.cjs`, `tests/game-ui.test.cjs`, and `tests/songs-catalog.test.cjs` (`151/151` passing), bumped SW cache (`gts-v106-mega-catalog-530` / `gts-cf-v86-mega-catalog-530`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 63 — Reset Search Dropdown & Modal Scroll Position to Top on Reopen (2026-11-21)
+- **Dropdown & Modal Scroll Reset (`app.js`)**:
+  - Reset `scrollTop = 0` immediately after revealing (and before hiding) `#dd` (`UI.openDD`/`UI.closeDD`), `#agDD` (`openAgDD`/`closeAgDD`), `#artistResults` (`renderArtists`/`openCustom`), and every modal + `.sheet` / `.runlist` inside `open(m)` so scrolling down, closing, and reopening always starts cleanly from the top item instead of restoring stale scroll offset.
+  - Added `focus` reopen listeners on `#q` and `#agQ` so clicking back into a populated search input reopens the dropdown right at `scrollTop = 0`.
+- **Verification & Deploy**:
+  - Added Wave 63 guard in `tests/og-ui.test.cjs` (`152/152` passing), verified Playwright E2E scroll-down → blur/close → reopen on both `#dd` (song search `"das"`) and `#agDD` (artist search `"a"`) confirming `scrollTop === 0`, bumped SW cache (`gts-v107-dropdown-scroll-reset` / `gts-cf-v87-dropdown-scroll-reset`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.

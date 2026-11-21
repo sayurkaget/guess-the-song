@@ -1522,21 +1522,22 @@
     setCustomBusy(false);
     $('#artistQ').value = '';
     if ($('#artistClear')) $('#artistClear').hidden = true;
-    const box = $('#artistResults'); box.hidden = true; box.innerHTML = '';
+    const box = $('#artistResults'); box.scrollTop = 0; box.hidden = true; box.innerHTML = '';
     renderQuickArtists(true);
     const h = $('#customHint'); h.className = 'custom-hint'; h.textContent = CUSTOM_HINT;
-    $('#customModal').hidden = false;
+    open($('#customModal'));
     setTimeout(() => $('#artistQ').focus(), 40);
   }
   function renderArtists(list) {
     const box = $('#artistResults');
-    if (!list.length) { box.hidden = true; box.innerHTML = ''; renderQuickArtists(true); return; }
+    if (!list.length) { box.scrollTop = 0; box.hidden = true; box.innerHTML = ''; renderQuickArtists(true); return; }
     box.innerHTML = list.map((a) =>
       '<li><button type="button" class="artist-row" data-id="' + esc(String(a.id)) +
       '" data-name="' + esc(a.name) + '"><span class="artist-name">' + esc(a.name) + '</span>' +
       (a.genre ? '<span class="artist-genre">' + esc(a.genre) + '</span>' : '') +
       '</button></li>').join('');
     box.hidden = false;
+    box.scrollTop = 0;
     renderQuickArtists(false);
   }
 
@@ -2487,9 +2488,12 @@
         this.dd.appendChild(b);
       });
       this.dd.hidden = false;
+      this.dd.scrollTop = 0;
       this.q.setAttribute('aria-expanded', 'true');
     },
     closeDD() {
+      this.ddInteracting = false;
+      this.dd.scrollTop = 0;
       this.dd.hidden = true; this.sel = -1;
       this.q.setAttribute('aria-expanded', 'false');
     },
@@ -3064,7 +3068,15 @@
 
   /* ================= modal & toast ================= */
 
-  function open(m) { m.hidden = false; }
+  function open(m) {
+    if (!m) return;
+    m.hidden = false;
+    m.scrollTop = 0;
+    const sh = typeof m.querySelector === 'function' ? m.querySelector('.sheet') : null;
+    if (sh) sh.scrollTop = 0;
+    const rl = typeof m.querySelector === 'function' ? m.querySelector('.runlist') : null;
+    if (rl) rl.scrollTop = 0;
+  }
   function closeAll() {
     if (typeof stopSummaryPreview === 'function') stopSummaryPreview();
     if (confettiStop) { confettiStop(); confettiStop = null; }
@@ -3531,7 +3543,25 @@
       else toast('Pick a song from the list first');
     }
   });
-  UI.q.addEventListener('blur', () => setTimeout(() => UI.closeDD(), 120));
+  const reopenDD = () => {
+    if (S.done || !UI.dd.hidden) return;
+    const v = UI.q.value.trim();
+    if (v.length >= 1) UI.openDD(searchIndex(v));
+  };
+  if (UI.dd && typeof UI.dd.addEventListener === 'function') {
+    UI.dd.addEventListener('pointerdown', () => { UI.ddInteracting = true; });
+  }
+  document.addEventListener('pointerdown', (e) => {
+    if (UI.dd.hidden) return;
+    const inside = e.target && typeof e.target.closest === 'function' && e.target.closest('.search');
+    if (!inside) UI.closeDD();
+  });
+  UI.q.addEventListener('focus', () => { UI.ddInteracting = false; reopenDD(); });
+  UI.q.addEventListener('click', () => { UI.ddInteracting = false; reopenDD(); });
+  UI.q.addEventListener('blur', () => setTimeout(() => {
+    if (UI.ddInteracting || document.activeElement === UI.q) return;
+    UI.closeDD();
+  }, 120));
   $('#clear').onclick = () => { UI.clearInput(); UI.q.focus(); };
 
   const inGame = () => !$('#game').hidden;
@@ -4580,6 +4610,7 @@
     function closeAgDD() {
       const dd = $('#agDD');
       if (!dd) return;
+      dd.scrollTop = 0;
       dd.hidden = true;
       dd.innerHTML = '';
       $('#agQ').setAttribute('aria-expanded', 'false');
@@ -4637,6 +4668,7 @@
         });
       }
       dd.hidden = false;
+      dd.scrollTop = 0;
       $('#agQ').setAttribute('aria-expanded', 'true');
     }
 
@@ -4785,6 +4817,13 @@
 
     $('#openArtistGame').onclick = () => startArtistGame();
     $('#artistGameBack').onclick = () => { closeAll(); UI.lobby(); };
+    const reopenAgDD = () => {
+      if (ag.done || !$('#agDD').hidden) return;
+      const v = $('#agQ').value.trim();
+      if (v) openAgDD(v);
+    };
+    $('#agQ').addEventListener('focus', reopenAgDD);
+    $('#agQ').addEventListener('click', reopenAgDD);
     $('#agQ').addEventListener('input', () => {
       $('#agClear').hidden = !$('#agQ').value;
       const v = $('#agQ').value.trim();
