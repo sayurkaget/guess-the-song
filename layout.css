@@ -1580,11 +1580,82 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
   #game .dd-item{padding:.48rem .52rem;gap:.55rem}
   #game .dd-art{width:40px;height:40px}
 
-  /* Result modal & 5-stage Run Summary: balanced footer link + comfortable vertical density */
+  /* Result modal & Run/Duel Summary: clean 3-row hero, uniform uncropped track rows, laser-aligned 2x2 footer */
   #resultModal #reportSong{display:block;width:100%;text-align:center;margin:.1rem auto 0;padding:.4rem .5rem}
-  .runlist.run-shelf:not([data-count="1"]) li:not(:last-child) .run-artwrap{aspect-ratio:1.18}
-  .runlist.run-shelf:not([data-count="1"]) li:not(:last-child) .thumb{height:100%;object-fit:cover}
-  .runlist.run-shelf[data-odd="true"] li:last-child{column-gap:.55rem;padding:.44rem .56rem}
+  .sheet.run-sheet .run-hero{
+    display:grid;grid-template-columns:auto minmax(0,1fr);
+    column-gap:.75rem;row-gap:.34rem;align-items:center;
+    padding:0 0 .78rem 0;margin-bottom:.75rem;
+  }
+  .sheet.run-sheet .run-head{display:contents}
+  .sheet.run-sheet .run-kicker{
+    grid-column:1 / -1;grid-row:1;justify-self:start;
+    max-width:calc(100% - 2.65rem);
+    font-size:.62rem;letter-spacing:.06em;padding:.2rem .62rem;
+  }
+  .sheet.run-sheet .run-fan{grid-column:1;grid-row:2;width:82px;height:62px}
+  .sheet.run-sheet .run-fan.count-2{width:74px}
+  .sheet.run-sheet .run-fan.single{width:76px;height:62px}
+  .sheet.run-sheet .run-fan .fan-card{width:48px;height:48px;top:6px;border-radius:9px}
+  .sheet.run-sheet .run-fan .f2{left:14px;top:3px}
+  .sheet.run-sheet .run-fan .f3{left:28px}
+  .sheet.run-sheet .run-fan.count-2 .f2{left:16px}
+  .sheet.run-sheet .run-fan.single .f2{width:58px;height:58px;top:2px}
+  .sheet.run-sheet .fan-disc{width:48px;height:48px;top:6px}
+  .sheet.run-sheet .run-scoreline{grid-column:2;grid-row:2;gap:.45rem;margin-top:0}
+  .sheet.run-sheet #dailyResult,
+  .sheet.run-sheet .challenge-comparison{
+    grid-column:1 / -1;grid-row:3;margin:.12rem 0 0;font-size:.8rem;line-height:1.45;
+  }
+  .runlist.run-shelf,
+  .runlist.run-shelf:is([data-count="2"],[data-count="3"],[data-count="4"],[data-count="5"]),
+  .runlist.run-shelf.duel-runlist,
+  .runlist.run-shelf.duel-runlist:is([data-count="2"],[data-count="3"],[data-count="4"],[data-count="5"]){
+    grid-template-columns:minmax(0,1fr);gap:.38rem;
+    max-height:min(52vh,410px);overflow-y:auto;padding-right:2px;
+  }
+  .runlist.run-shelf li{
+    display:grid;grid-template-columns:48px minmax(0,1fr) auto;grid-template-rows:auto auto;
+    align-items:center;column-gap:.58rem;row-gap:.05rem;padding:.42rem .55rem;border-radius:14px;
+  }
+  .runlist.run-shelf li.has-preview{grid-template-columns:48px minmax(0,1fr) auto auto}
+  .runlist.run-shelf li .run-artwrap{display:contents}
+  .runlist.run-shelf li .thumb{
+    grid-column:1;grid-row:1 / 3;width:48px;height:48px;aspect-ratio:1;border-radius:10px;object-fit:cover;
+  }
+  .runlist.run-shelf li .lvl{
+    position:static;grid-column:2;grid-row:1;justify-self:start;
+    padding:0;background:none;border:0;backdrop-filter:none;font-size:.61rem;letter-spacing:.06em;
+  }
+  .runlist.run-shelf li .txt{grid-column:2;grid-row:2;padding:0;min-width:0}
+  .runlist.run-shelf li .txt b{font-size:.86rem}
+  .runlist.run-shelf li .txt small{font-size:.74rem}
+  .runlist.run-shelf li.has-preview .run-playbtn{
+    position:static;grid-column:3;grid-row:1 / 3;width:30px;height:30px;
+  }
+  .runlist.run-shelf li .at{
+    position:static;grid-column:3;grid-row:1 / 3;padding:.24rem .56rem;font-size:.72rem;white-space:nowrap;
+  }
+  .runlist.run-shelf li.has-preview .at{grid-column:4}
+  .sheet.run-sheet[data-mode="daily"] .runlist[data-count="1"] li{
+    grid-template-columns:minmax(0,1fr) auto;padding:.6rem .78rem;
+  }
+  .sheet.run-sheet[data-mode="daily"] .runlist[data-count="1"] li.has-preview{
+    grid-template-columns:minmax(0,1fr) auto auto;
+  }
+  .sheet.run-sheet[data-mode="daily"] .runlist[data-count="1"] li .thumb{display:none}
+  .sheet.run-sheet[data-mode="daily"] .runlist[data-count="1"] li .lvl,
+  .sheet.run-sheet[data-mode="daily"] .runlist[data-count="1"] li .txt{grid-column:1}
+  .sheet.run-sheet[data-mode="daily"] .runlist[data-count="1"] li.has-preview .run-playbtn{grid-column:2}
+  .sheet.run-sheet[data-mode="daily"] .runlist[data-count="1"] li .at{grid-column:2}
+  .sheet.run-sheet[data-mode="daily"] .runlist[data-count="1"] li.has-preview .at{grid-column:3}
+  .sheet.run-sheet .r-actions,
+  #duelModal .sheet.run-sheet .r-actions,
+  .sheet.run-sheet .run-foot-links{
+    grid-template-columns:repeat(2,minmax(0,1fr));gap:.48rem;width:100%;
+  }
+  .sheet.run-sheet .r-actions .btn,
+  .sheet.run-sheet .customlink{font-size:.76rem;padding:.52rem .36rem}
 
   /* Custom Artist modal: single-row header with matched pill actions */
   #customModal .custom-quick-head{flex-wrap:nowrap;align-items:center;gap:.45rem}

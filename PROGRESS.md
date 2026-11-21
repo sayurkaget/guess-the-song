@@ -522,3 +522,8 @@
     - Shortened `#spotifyUrl` placeholder (`Spotify, Apple, or YouTube link…`) so it never clips at `360px`, and fixed the remaining Bahasa Indonesia leaks on Classic `5 tahap` pill, `#againRun`, `#settingsModal` (`disarmSettingsActions`), and `#feedbackModal` (`feedback.js`).
   - Added Wave 66 regression test in `tests/og-ui.test.cjs` (`156/156` passing), visually re-verified all updated mobile screens at `360×780` via Playwright, bumped SW caches (`gts-v110-wave66-mobile-ui-polish` / `gts-cf-v90-wave66-mobile-ui-polish`), deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
   - Follow-up (`gts-v111-mobile-readout-side` / `gts-cf-v91-mobile-readout-side`): restored `.readout` (`0.1s`) beside the Play button on mobile per user preference while keeping all other Wave 66 mobile refinements intact.
+- **Wave 67 (Mobile Summary Modal Overhaul for `#duelModal` & `#runModal`):**
+  - Redesigned mobile (`<= 520px`) summary modals in `layout.css` based on real phone feedback:
+    - Reflowed `.run-hero` via `display: contents` on `.run-head` into a clean 3-row grid: full-width kicker pill (eliminating `MUSIC DUEL · SPOTIFY STREA...` truncation), compact vinyl fan + verdict/score row, and full-width explanation text.
+    - Unified all mobile `.runlist.run-shelf` entries (`#runModal` & `#duelModal`) into consistent horizontal track rows with uncropped `50×50` 1:1 square album art, full-width titles, and aligned Play + metric pills (eliminating mixed 2-square + 1-strip layouts and cropped covers).
+    - Aligned all 4 mobile footer buttons in both `#runModal` & `#duelModal` into an exact symmetric `50% / 50%` 2×2 grid (`grid-template-columns: repeat(2, minmax(0, 1fr))`) so every vertical seam aligns cleanly.
