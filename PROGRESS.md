@@ -430,3 +430,12 @@
   - Added `/spotify?playlist=<url>&songs=<n>` routing and `applyDeepLink()` support so Apple Music & YouTube playlists can be bookmarked, reloaded, or shared directly via URL.
 - **Verification & Deploy**:
   - Updated `tests/playlist-i18n.test.cjs` (`150/150` passing), verified Playwright desktop (`1280×800`) + mobile (`360×780`) visual & E2E checks (Apple Music rose & YouTube red field transitions, `?playlist=` direct URL boot, full ID mode across Classic, Duel, Artist Detective, Stats, FAQ), bumped SW cache (`gts-v101-i18n-full-playlist-ux` / `gts-cf-v81-i18n-full-playlist-ux`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+
+
+## Wave 58 — Summary Modal Footer Button Alignment & Visual Hierarchy (`#runModal` & `#duelModal`) (2026-11-21)
+- **Footer Alignment & Hierarchy (`layout.css`)**:
+  - Fixed uneven wrapping in the compact Daily summary modal (`.sheet.run-sheet[data-mode="daily"]`, `580px`) and narrow viewports (`<= 820px`) by switching `.run-foot` to a clean, symmetric full-width **2×2 button grid** (`grid-template-columns: repeat(2, minmax(0, 1fr))`, `gap: .55rem`, centered labels) so all 4 buttons share identical widths and flush left/right edges.
+  - Kept wide `820px` summary modals (Classic, Custom/Playlist, and Music Duel on desktop `> 820px`) on a single balanced horizontal row (`flex-wrap: nowrap`, primary `.r-actions` left, `.run-foot-links` pushed right via `margin-left: auto`) and removed the stale duplicate `.run-foot-links { gap: 1.15rem; }` override.
+  - Softened `#backToMenu` / `#duelMenu` to a neutral muted ghost style (`color: var(--dim)`, soft white border) so the 4-tier visual hierarchy clearly separates primary (`Challenge your friend`), secondary (`Play regular game` / `Play again`), accent (`Save score card`), and neutral (`Back to menu`).
+- **Verification & Deploy**:
+  - Added Wave 58 CSS guard in `tests/og-ui.test.cjs` (`151/151` passing), verified Playwright screenshots & bounding boxes across Daily desktop (`1280×800`), Classic desktop (`EN` + `ID`), Music Duel desktop, and Daily mobile (`360×780`, `0px` overflow, zero clipping), bumped SW cache (`gts-v102-runfoot-align` / `gts-cf-v82-runfoot-align`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.

@@ -150,3 +150,12 @@ test('Wave 53/54 Artist Detective Clue + Name Hints and SEO sitemap/JSON-LD are 
   assert.match(css, /\.spotle-hint-box\{/);
   assert.match(css, /\.spotle-hint-chip\{/);
 });
+
+test('Wave 58 summary modal footer aligns Daily in 2x2 grid and wide sheets in 1 row', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  assert.match(css, /\.run-foot\{[\s\S]*?justify-content:space-between;[\s\S]*?flex-wrap:nowrap;/);
+  assert.match(css, /\.sheet\.run-sheet\[data-mode="daily"\] \.run-foot\{[\s\S]*?flex-direction:column;/);
+  assert.match(css, /\.sheet\.run-sheet\[data-mode="daily"\] \.r-actions,\s*\.sheet\.run-sheet\[data-mode="daily"\] \.run-foot-links\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\);/);
+  assert.match(css, /\.sheet\.run-sheet #backToMenu,\s*\.sheet\.run-sheet #duelMenu\{[\s\S]*?color:var\(--dim\);/);
+  assert.doesNotMatch(css, /\.run-foot-links\{\s*gap:1\.15rem;/);
+});
