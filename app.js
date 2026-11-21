@@ -2902,7 +2902,9 @@
       renderRunFan($('#runFan'), fanArts);
 
       $('#againRun').hidden = false;
-      $('#againRun').textContent = (S.daily || S.runChallenge) ? 'Play regular game' : 'Play again';
+      $('#againRun').textContent = (S.daily || S.runChallenge)
+        ? (I18N ? tr('playRegular') : 'Play regular game')
+        : (I18N ? tr('playAgain') : 'Play again');
       $('#dailyResult').hidden = !S.daily;
       if (S.daily) {
         const streak = dailyStreak();
@@ -3446,11 +3448,11 @@
   function disarmSettingsActions() {
     restoreArmedCode = '';
     const rb = $('#backupRestore');
-    if (rb) { rb.textContent = 'Restore from code'; rb.classList.remove('is-armed'); }
+    if (rb) { rb.textContent = I18N ? tr('backupRestore') : 'Restore from code'; rb.classList.remove('is-armed'); }
     resetArmed = false;
     clearTimeout(resetArmedTimer);
     const db = $('#resetAllData');
-    if (db) { db.textContent = 'Reset all data on this device'; db.classList.remove('is-armed'); }
+    if (db) { db.textContent = I18N ? tr('resetAllData') : 'Reset all data on this device'; db.classList.remove('is-armed'); }
   }
 
   function setBackupMsg(txt, kind = '') {
@@ -4759,6 +4761,8 @@
 
       $('#agQ').disabled = ag.done;
       $('#agGiveUp').hidden = ag.done;
+      const topCard = $('#artistGame .spotle-top-card');
+      if (topCard) topCard.hidden = ag.done;
       syncAudioBtns();
       syncAgHints();
 

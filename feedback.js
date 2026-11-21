@@ -25,12 +25,14 @@
       draftKey = key;
     } else if (!message.value && !report) document.querySelector('#feedbackDetails').value = details || '';
     songReport = report;
-    document.querySelector('#feedbackTitle').textContent = report ? 'Report this song' : 'Send feedback';
-    document.querySelector('#feedbackIntro').textContent = report ? 'What is wrong with this song? Its details are included below.' : 'Found a bug, missing a song, or have an idea? Let us know.';
+    const I18N = window.TuneUpI18n;
+    const tr = (k, fb) => (I18N && typeof I18N.t === 'function') ? I18N.t(k) : fb;
+    document.querySelector('#feedbackTitle').textContent = report ? tr('fbReportTitle', 'Report this song') : tr('feedbackTitle', 'Send feedback');
+    document.querySelector('#feedbackIntro').textContent = report ? tr('fbReportIntro', 'What is wrong with this song? Its details are included below.') : tr('feedbackIntro', 'Found a bug, missing a song, or have an idea? Let us know.');
     document.querySelector('#feedbackReasonField').hidden = !report;
     reason.disabled = !report; reason.required = report;
     document.querySelector('#feedbackCategoryField').hidden = report;
-    document.querySelector('#feedbackMessageLabel').textContent = report ? 'Notes (optional)' : 'Message';
+    document.querySelector('#feedbackMessageLabel').textContent = report ? tr('fbNotesOpt', 'Notes (optional)') : tr('fbMsgLbl', 'Message');
     message.required = !report; message.minLength = report ? 0 : 5; message.maxLength = report ? 2900 : 3000;
     message.setCustomValidity(''); reason.setCustomValidity('');
     status.textContent = ''; status.className = '';
@@ -87,7 +89,9 @@
       status.textContent = 'Could not send your feedback. Your message is still here — please try again.';
       status.className = 'feedback-error';
     } finally {
-      sending = false; fields.disabled = false; button.textContent = 'Send feedback';
+      sending = false; fields.disabled = false;
+      const I18N = window.TuneUpI18n;
+      button.textContent = (I18N && typeof I18N.t === 'function') ? I18N.t('sendFeedback') : 'Send feedback';
     }
   });
 })();

@@ -24,7 +24,7 @@
       artistPanelTitle: 'Play your favorite artist',
       artistPanelDesc: 'Pick any artist — guess 5 of their tracks from 0.1s clips',
       chooseArtist: 'Choose artist',
-      playlistPlaceholder: 'Paste Spotify, Apple, or YouTube link…',
+      playlistPlaceholder: 'Spotify, Apple, or YT link…',
       playlistPlay: 'Play',
       songsLbl: 'Songs',
       allBtn: 'All',
@@ -311,7 +311,10 @@
       toastRosterUnavailable: 'Artist roster unavailable.',
       toastPickArtist: 'Pick an artist from the dropdown list',
       recentPlaylists: 'Recent playlists',
-      toastRecentPlaylistsCleared: 'Recent playlists cleared'
+      toastRecentPlaylistsCleared: 'Recent playlists cleared',
+      fbReportTitle: 'Report this song',
+      fbReportIntro: 'What is wrong with this song? Its details are included below.',
+      fbNotesOpt: 'Notes (optional)'
     },
     id: {
       // Lobby
@@ -331,7 +334,7 @@
       artistPanelTitle: 'Mainkan artis favoritmu',
       artistPanelDesc: 'Pilih artis bebas — tebak 5 lagunya dari klip 0,1 detik',
       chooseArtist: 'Pilih artis',
-      playlistPlaceholder: 'Tempel link Spotify / Apple / YT…',
+      playlistPlaceholder: 'Link Spotify, Apple, atau YT…',
       playlistPlay: 'Main',
       songsLbl: 'Lagu',
       allBtn: 'Semua',
@@ -618,7 +621,10 @@
       toastRosterUnavailable: 'Daftar artis tidak tersedia.',
       toastPickArtist: 'Pilih artis dari daftar dulu',
       recentPlaylists: 'Playlist terakhir',
-      toastRecentPlaylistsCleared: 'Riwayat playlist dihapus'
+      toastRecentPlaylistsCleared: 'Riwayat playlist dihapus',
+      fbReportTitle: 'Laporkan lagu ini',
+      fbReportIntro: 'Apa masalah dengan lagu ini? Detail lagunya sudah disertakan di bawah.',
+      fbNotesOpt: 'Catatan (opsional)'
     }
   };
 
@@ -692,6 +698,9 @@
     setText($('#dailyHeading'), 'dailyHeading');
     setText($('.daily-heading > span'), 'dailySub');
     setText($('#classicHeading'), 'classicHeading');
+    if (!$('#classicSpotifyPanel') || $('#classicSpotifyPanel').hidden) {
+      setText($('.classic-title-group .mode-pill'), 'stages5');
+    }
     setText($('#classicTabs [data-classic-tab="filters"]'), 'tabFilters');
     setText($('#classicTabs [data-classic-tab="artist"]'), 'tabArtist');
     setText($('#classicTabs [data-classic-tab="spotify"]'), 'tabPlaylist');

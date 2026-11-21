@@ -229,3 +229,22 @@ test('Wave 65 wires zero-wait next-stage preload and persistent recent playlists
   assert.equal(decoded.ok, true);
   assert.equal(JSON.parse(decoded.entries['tl:recentPlaylists'])[0].label, 'Top Hits');
 });
+
+test('Wave 66 mobile UI polish and remaining ID localization leaks are wired cleanly', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const fb = fs.readFileSync(path.join(ROOT, 'feedback.js'), 'utf8');
+  const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
+
+  assert.match(css, /Wave 66: Comprehensive Mobile UI Polish/);
+  assert.match(css, /#statsModal \.badge-grid\{grid-template-columns:1fr;/);
+  assert.match(css, /\.sp-tile small\{font-size:\.57rem;letter-spacing:\.035em;white-space:nowrap\}/);
+  assert.match(css, /\.spotle-result-actions #agNextBtn\{grid-column:1 \/ -1;order:-1\}/);
+  assert.match(css, /#customModal \.custom-quick-head\{flex-wrap:nowrap;/);
+  assert.match(css, /\.vinyl-card \.player\{flex-direction:column;align-items:center;/);
+  assert.match(app, /if \(topCard\) topCard\.hidden = ag\.done;/);
+  assert.match(app, /tr\('backupRestore'\)/);
+  assert.match(app, /tr\('playAgain'\)/);
+  assert.match(fb, /window\.TuneUpI18n/);
+  assert.match(i18n, /setText\(\$\('\.classic-title-group \.mode-pill'\), 'stages5'\)/);
+});

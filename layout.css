@@ -1561,3 +1561,77 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
   .spotle-result-actions{width:100%;display:flex;flex-direction:column-reverse;gap:.5rem}
   .spotle-result-actions .btn{width:100%;min-height:44px}
 }
+
+/* ====== Wave 66: Comprehensive Mobile UI Polish (<= 520px / <= 420px) ====== */
+@media(max-width:680px){
+  .wrap{padding-bottom:max(1.2rem,env(safe-area-inset-bottom))}
+  .foot{margin-top:1.15rem}
+  .modal{padding-bottom:max(.75rem,env(safe-area-inset-bottom))}
+}
+@media(max-width:520px){
+  /* Song Game Arena: symmetrical Play card, crisp 5-stage pills, elevated dropdown */
+  .vinyl-card{padding:.88rem .85rem .8rem;gap:.65rem}
+  .vinyl-card .player{flex-direction:column;align-items:center;gap:.38rem;padding:.15rem 0}
+  .vinyl-card .spot-play-wrap{flex-direction:column;gap:.42rem}
+  .vinyl-card .readout,.vinyl-card .spot-readout{position:static;left:auto;top:auto;transform:none;margin:0;font-size:.82rem;line-height:1}
+  #game .steps.live{gap:.22rem;margin-bottom:.62rem}
+  #game .steps.live li{padding:.36rem .16rem;font-size:.62rem;letter-spacing:-.01em}
+  #game .dd{
+    max-height:min(46vh,272px);
+    box-shadow:0 20px 48px rgba(0,0,0,.86);
+  }
+  #game .dd-item{padding:.48rem .52rem;gap:.55rem}
+  #game .dd-art{width:40px;height:40px}
+
+  /* Result modal & 5-stage Run Summary: balanced footer link + comfortable vertical density */
+  #resultModal #reportSong{display:block;width:100%;text-align:center;margin:.1rem auto 0;padding:.4rem .5rem}
+  .runlist.run-shelf:not([data-count="1"]) li:not(:last-child) .run-artwrap{aspect-ratio:1.18}
+  .runlist.run-shelf:not([data-count="1"]) li:not(:last-child) .thumb{height:100%;object-fit:cover}
+  .runlist.run-shelf[data-odd="true"] li:last-child{column-gap:.55rem;padding:.44rem .56rem}
+
+  /* Custom Artist modal: single-row header with matched pill actions */
+  #customModal .custom-quick-head{flex-wrap:nowrap;align-items:center;gap:.45rem}
+  #customModal .custom-quick-lbl{white-space:nowrap}
+  #customModal .custom-quick-actions{gap:.32rem}
+  #customModal .custom-quick-clear{
+    min-height:30px;padding:.22rem .54rem;font-size:.71rem;
+    background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11);
+    color:var(--ink);white-space:nowrap;
+  }
+  #customModal .artist-chip{min-height:34px;padding:.36rem .72rem;font-size:.78rem}
+
+  /* Stats & Badges modal: breathable 1-col horizontal badges + crisp stat labels */
+  #statsModal .statgrid small{font-size:.66rem;white-space:nowrap}
+  #statsModal .badge-grid{grid-template-columns:1fr;gap:.45rem}
+  #statsModal .badge-card{align-items:center;padding:.62rem .75rem;gap:.65rem}
+  #statsModal .badge-ico{width:32px;height:32px;border-radius:10px}
+  #statsModal .badge-ico svg{width:16px;height:16px}
+  #statsModal .badge-copy b{font-size:.82rem}
+  #statsModal .badge-copy small{font-size:.72rem;line-height:1.35}
+
+  /* Settings modal: legible monospace backup box + balanced side-by-side buttons */
+  #settingsModal .set-code{font-size:.76rem;line-height:1.48;min-height:76px;padding:.58rem .7rem}
+  #settingsModal .set-actions .btn{font-size:.77rem;padding:.5rem .45rem;min-height:42px}
+
+  /* Music Duel: comfortable vertical rhythm + safe header wrapping */
+  #duel .duel-controls{margin-bottom:.65rem}
+  #duel .duel-prompt{margin-bottom:.75rem;font-size:.82rem}
+  #duel .duel-card{padding:.88rem .82rem;gap:.5rem}
+  #duel .duel-grid{gap:.55rem}
+
+  /* Artist Detective: uniform 6-tile height (no 2-line GLOBAL RANK) + compact 2-row result buttons */
+  .spotle-tiles{gap:.38rem}
+  .sp-tile{padding:.48rem .28rem;min-height:54px}
+  .sp-tile small{font-size:.57rem;letter-spacing:.035em;white-space:nowrap}
+  .sp-tile b{font-size:.78rem}
+  .spotle-result-actions{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.48rem;
+  }
+  .spotle-result-actions #agNextBtn{grid-column:1 / -1;order:-1}
+  .spotle-result-actions .btn{min-height:42px;padding:.52rem .45rem;font-size:.78rem;white-space:normal;line-height:1.2}
+}
+@media(max-width:420px){
+  #duel .gamebar,#artistGame .gamebar{flex-wrap:wrap;row-gap:.4rem}
+  #settingsModal .set-actions .btn{font-size:.74rem;padding:.48rem .38rem}
+  .recent-pl-name{max-width:190px}
+}
