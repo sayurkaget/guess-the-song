@@ -107,7 +107,7 @@ function setupGame(options = {}) {
   vm.runInContext(fs.readFileSync(path.join(root, 'challenge.js'), 'utf8'), ctx);
   const src = fs.readFileSync(path.join(root, 'app.js'), 'utf8')
     .split('  /* ================= event ================= */')[0];
-  vm.runInContext(src + '\nglobalThis.test={S,ALL,UI,slug,submitGuess,skip,searchIndex,startCustom,openCustom,clearRecentArtists,refreshPopularArtists,surprisePopularArtist,POPULAR_ARTISTS,localArtistMatches,dailyStats,allClassicStats,songStreak,finish,pickSong,showIncomingChallenge};})();', ctx);
+  vm.runInContext(src + '\nglobalThis.test={S,ALL,UI,slug,submitGuess,skip,searchIndex,startCustom,openCustom,clearRecentArtists,refreshPopularArtists,surprisePopularArtist,POPULAR_ARTISTS,localArtistMatches,dailyStats,allClassicStats,songStreak,finish,pickSong,showIncomingChallenge,filtered,normalizeMulti,toggleMulti,formatMulti,GENRE_KEYS,ERA_KEYS,genreLabel,eraLabel};})();', ctx);
   return { t: ctx.test, nodes, storage, ctx, tabNodes };
 }
 
@@ -640,4 +640,34 @@ test('Wave 35: #agPlaySongBtn removed, Auto-Play on Skip + SFX, TuneUpCard score
   assert.equal(duelModel.scoreMain, '7');
   assert.deepEqual(duelModel.history, [true, true, false]);
   assert.equal(duelModel.host, 'tuneup.pages.dev');
+});
+
+test('Wave 77 multi-select genre & era filters combine pools, format labels, collapse to all, and aggregate into All Classic stats', () => {
+  const songs = [
+    ['Track Pop 00s', 'A1', 1, 'gl', 'pop', 2005, '', 2001],
+    ['Track Rock 10s', 'A2', 1, 'gl', 'rock', 2014, '', 2002],
+    ['Track Indie 20s', 'A3', 1, 'gl', 'indie', 2022, '', 2003],
+    ['Track HipHop 90s', 'A4', 1, 'gl', 'hiphop', 1996, '', 2004],
+    ['Track Pop 20s', 'A5', 1, 'gl', 'pop', 2023, '', 2005]
+  ];
+  const storage = new Map([
+    ['tl:stats:gl:pop,rock:y00,y10', JSON.stringify({ runs: 2, total: 9, best: 5, perfect: 1, dist: [0, 0, 0, 0, 1, 1] })]
+  ]);
+  const { t } = setupGame({ songs, storage });
+
+  assert.equal(t.toggleMulti('all', 'rock', t.GENRE_KEYS), 'rock');
+  assert.equal(t.toggleMulti('rock', 'pop', t.GENRE_KEYS), 'pop,rock');
+  assert.equal(t.toggleMulti('pop,rock', 'indie', t.GENRE_KEYS), 'pop,rock,indie');
+  assert.equal(t.toggleMulti('pop', 'pop', t.GENRE_KEYS), 'all');
+  assert.equal(t.normalizeMulti(t.GENRE_KEYS, t.GENRE_KEYS), 'all');
+  assert.equal(t.formatMulti('pop,rock,indie', t.GENRE_KEYS, t.genreLabel, 2), 'Pop, Rock +1');
+
+  t.S.genre = 'pop,rock';
+  t.S.era = 'y00,y10';
+  const matched = Array.from(t.filtered(), (s) => s.title);
+  assert.deepEqual(matched, ['Track Pop 00s', 'Track Rock 10s']);
+
+  const agg = t.allClassicStats();
+  assert.equal(agg.runs, 2);
+  assert.equal(agg.perfect, 1);
 });

@@ -113,8 +113,24 @@
       <div id="classicFiltersPanel">
         <div class="classic-controls">
           <div class="subcontrols">
-            <label class="drop"><span class="sr">Genre</span><select id="genre"></select></label>
-            <label class="drop"><span class="sr">Era</span><select id="era"></select></label>
+            <div class="drop multi-drop" id="genreDrop">
+              <span class="sr">Genre</span>
+              <select id="genre" class="sr" tabindex="-1" aria-hidden="true"></select>
+              <button type="button" class="multi-btn" id="genreBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="genreMenu" data-on="0">
+                <span class="multi-lbl">All genres</span>
+                <svg class="multi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="multi-menu" id="genreMenu" role="listbox" aria-multiselectable="true" aria-label="Genre" hidden></div>
+            </div>
+            <div class="drop multi-drop" id="eraDrop">
+              <span class="sr">Era</span>
+              <select id="era" class="sr" tabindex="-1" aria-hidden="true"></select>
+              <button type="button" class="multi-btn" id="eraBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="eraMenu" data-on="0">
+                <span class="multi-lbl">All eras</span>
+                <svg class="multi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="multi-menu" id="eraMenu" role="listbox" aria-multiselectable="true" aria-label="Era" hidden></div>
+            </div>
           </div>
           <button class="btn solid start" id="start">Start</button>
         </div>

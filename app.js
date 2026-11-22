@@ -36,6 +36,39 @@
     y10: { label: '2010s',      hit: function (y) { return y >= 2010 && y < 2020; } },
     y20: { label: '2020s',      hit: function (y) { return y >= 2020; } }
   };
+  const GENRE_KEYS = Object.keys(GENRES).filter((k) => k !== 'all');
+  const ERA_KEYS   = Object.keys(ERAS).filter((k) => k !== 'all');
+
+  function normalizeMulti(raw, validKeys) {
+    if (!raw || raw === 'all') return 'all';
+    const parts = Array.isArray(raw) ? raw : String(raw).split(',');
+    const picked = new Set();
+    for (let i = 0; i < parts.length; i++) {
+      const k = String(parts[i] || '').trim().toLowerCase();
+      if (k === 'all') return 'all';
+      if (validKeys.includes(k)) picked.add(k);
+    }
+    if (!picked.size || picked.size >= validKeys.length) return 'all';
+    return validKeys.filter((k) => picked.has(k)).join(',');
+  }
+  function parseMulti(val, validKeys) {
+    const normVal = normalizeMulti(val, validKeys);
+    return normVal === 'all' ? [] : normVal.split(',');
+  }
+  function toggleMulti(cur, key, validKeys) {
+    if (!key || key === 'all') return 'all';
+    const set = new Set(parseMulti(cur, validKeys));
+    if (set.has(key)) set.delete(key);
+    else if (validKeys.includes(key)) set.add(key);
+    return normalizeMulti([...set], validKeys);
+  }
+  function formatMulti(val, validKeys, labelOf, maxNames = 2) {
+    const list = parseMulti(val, validKeys);
+    if (!list.length) return labelOf('all');
+    const labels = list.map(labelOf);
+    if (labels.length <= maxNames) return labels.join(', ');
+    return labels.slice(0, maxNames).join(', ') + ' +' + (labels.length - maxNames);
+  }
 
   /* ================= util ================= */
 
@@ -227,8 +260,8 @@
 
   // Pilihan region lama tidak lagi berlaku; statistik Western tetap memakai kunci gl.
   LS.del('tl:region');
-  if (!GENRES[S.genre]) S.genre = 'all';
-  if (!ERAS[S.era]) S.era = 'all';
+  S.genre = normalizeMulti(S.genre, GENRE_KEYS);
+  S.era = normalizeMulti(S.era, ERA_KEYS);
 
   // Kombinasi filter memisahkan dua hal: sesi yang berjalan dan statistiknya.
   const filterKey = () => S.daily ? 'daily:' + S.daily.day
@@ -404,9 +437,12 @@
   // lagu yang lolos filter pemain, tanpa memandang tingkat kesulitan
   function filtered() {
     if (S.custom) return S.custom.songs;
+    const gList = parseMulti(S.genre, GENRE_KEYS);
+    const eList = parseMulti(S.era, ERA_KEYS);
+    const gSet = gList.length ? new Set(gList) : null;
     return ALL.filter((s) =>
-      (S.genre === 'all' ? !CLASSIC_ALL_SKIP_ARTISTS.has(s.artist) : s.genre === S.genre) &&
-      ERAS[S.era].hit(s.year));
+      (!gSet ? !CLASSIC_ALL_SKIP_ARTISTS.has(s.artist) : gSet.has(s.genre)) &&
+      (!eList.length || eList.some((ek) => ERAS[ek].hit(s.year))));
   }
 
   function computePoolForStage(stageIdx) {
@@ -2191,18 +2227,31 @@
   function allClassicStats() {
     const agg = blankStats();
     let filtersUsed = 0;
-    for (const g in GENRES) {
-      for (const e in ERAS) {
-        const raw = LS.get('tl:stats:gl:' + g + ':' + e);
-        if (!raw || !raw.runs) continue;
-        filtersUsed++;
-        agg.runs += raw.runs || 0;
-        agg.total += raw.total || 0;
-        agg.best = Math.max(agg.best, raw.best || 0);
-        agg.perfect += raw.perfect || 0;
-        for (let i = 0; i <= STAGES; i++) agg.dist[i] += (raw.dist && raw.dist[i]) || 0;
+    const seen = new Set();
+    const accumulate = (key) => {
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      const raw = LS.get(key);
+      if (!raw || !raw.runs) return;
+      filtersUsed++;
+      agg.runs += raw.runs || 0;
+      agg.total += raw.total || 0;
+      agg.best = Math.max(agg.best, raw.best || 0);
+      agg.perfect += raw.perfect || 0;
+      for (let i = 0; i <= STAGES; i++) agg.dist[i] += (raw.dist && raw.dist[i]) || 0;
+    };
+    try {
+      if (typeof localStorage !== 'undefined' && typeof localStorage.length === 'number' && typeof localStorage.key === 'function') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('tl:stats:gl:')) accumulate(k);
+        }
       }
+    } catch (e) {}
+    for (const g in GENRES) {
+      for (const e in ERAS) accumulate('tl:stats:gl:' + g + ':' + e);
     }
+    accumulate('tl:stats:gl:' + S.genre + ':' + S.era);
     return { ...agg, filtersUsed };
   }
 
@@ -2555,6 +2604,20 @@
     el.dataset.many = count > STAGES ? 'true' : 'false';
   }
 
+  const MULTI_CHECK_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 8.3 6.5 11.6 12.8 4.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function closeFilterMenus() {
+    let closed = false;
+    ['genre', 'era'].forEach((field) => {
+      const wrap = $('#' + field + 'Drop');
+      const btn = $('#' + field + 'Btn');
+      const menu = $('#' + field + 'Menu');
+      if (menu && !menu.hidden) { menu.hidden = true; closed = true; }
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+      if (wrap && wrap.classList) wrap.classList.remove('is-open');
+    });
+    return closed;
+  }
+
   /* ================= UI ================= */
 
   const UI = {
@@ -2566,24 +2629,107 @@
 
     /* --- kontrol lobi --- */
     buildControls() {
-      const fill = (sel, opts, cur, save, labelOf) => {
-        sel.innerHTML = '';
-        for (const k in opts) {
-          const o = document.createElement('option');
-          o.value = k;
-          o.textContent = labelOf ? labelOf(k) : (opts[k].label || opts[k]);
-          o.selected = k === cur;
-          sel.appendChild(o);
+      const setupFilter = (field, opts, validKeys, save, labelOf) => {
+        const cur = normalizeMulti(S[field], validKeys);
+        S[field] = cur;
+        const sel = $('#' + field);
+        if (sel) {
+          sel.innerHTML = '';
+          for (const k in opts) {
+            const o = document.createElement('option');
+            o.value = k;
+            o.textContent = labelOf ? labelOf(k) : (opts[k].label || opts[k]);
+            o.selected = k === cur;
+            sel.appendChild(o);
+          }
+          sel.dataset.on = cur === 'all' ? '0' : '1';
+          sel.onchange = () => {
+            const next = normalizeMulti(sel.value, validKeys);
+            LS.set(save, next); S[field] = next;
+            switchRun();
+            UI.buildControls(); UI.refreshLobby();
+          };
         }
-        sel.dataset.on = cur === 'all' ? '0' : '1';
-        sel.onchange = () => {
-          LS.set(save, sel.value); S[save.slice(3)] = sel.value;
+
+        const wrap = $('#' + field + 'Drop');
+        const btn = $('#' + field + 'Btn');
+        const menu = $('#' + field + 'Menu');
+        if (!btn || !menu) return;
+
+        const renderMenu = () => {
+          const val = normalizeMulti(S[field], validKeys);
+          const picked = parseMulti(val, validKeys);
+          const pickedSet = new Set(picked);
+          const isAll = picked.length === 0;
+          btn.dataset.on = isAll ? '0' : '1';
+          const lblEl = typeof btn.querySelector === 'function' ? btn.querySelector('.multi-lbl') : null;
+          const lblTxt = formatMulti(val, validKeys, labelOf, 2);
+          if (lblEl) lblEl.textContent = lblTxt;
+          else btn.textContent = lblTxt;
+          btn.title = picked.length > 2 ? picked.map(labelOf).join(', ') : '';
+
+          if (sel) {
+            sel.dataset.on = isAll ? '0' : '1';
+            if (isAll || picked.length === 1) sel.value = isAll ? 'all' : picked[0];
+          }
+
+          const doneLbl = I18N ? tr('multiDone') : 'Done';
+          const countLbl = picked.length
+            ? (I18N ? tr('multiSelected', { n: picked.length }) : (picked.length + ' selected'))
+            : '';
+          const rows = [
+            '<button type="button" class="multi-opt multi-opt-all' + (isAll ? ' is-on' : '') + '" role="option" data-val="all" aria-selected="' + isAll + '">' +
+              '<span class="multi-check" aria-hidden="true">' + MULTI_CHECK_SVG + '</span>' +
+              '<span>' + esc(labelOf('all')) + '</span></button>',
+            '<div class="multi-sep" role="separator"></div>'
+          ];
+          validKeys.forEach((k) => {
+            const on = pickedSet.has(k);
+            rows.push(
+              '<button type="button" class="multi-opt' + (on ? ' is-on' : '') + '" role="option" data-val="' + esc(k) + '" aria-selected="' + on + '">' +
+                '<span class="multi-check" aria-hidden="true">' + MULTI_CHECK_SVG + '</span>' +
+                '<span>' + esc(labelOf(k)) + '</span></button>'
+            );
+          });
+          rows.push(
+            '<div class="multi-foot">' +
+              (countLbl ? '<span class="multi-count">' + esc(countLbl) + '</span>' : '') +
+              '<button type="button" class="multi-done" data-multi-done>' + esc(doneLbl) + '</button>' +
+            '</div>'
+          );
+          menu.innerHTML = rows.join('');
+        };
+
+        renderMenu();
+        btn.onclick = () => {
+          const willOpen = menu.hidden;
+          closeFilterMenus();
+          if (willOpen) {
+            menu.hidden = false;
+            btn.setAttribute('aria-expanded', 'true');
+            if (wrap && wrap.classList) wrap.classList.add('is-open');
+          }
+        };
+        menu.onclick = (e) => {
+          if (e.target && typeof e.target.closest === 'function' && e.target.closest('[data-multi-done]')) {
+            closeFilterMenus();
+            btn.focus();
+            return;
+          }
+          const opt = e.target && typeof e.target.closest === 'function' ? e.target.closest('[data-val]') : null;
+          if (!opt) return;
+          const k = opt.dataset.val;
+          const next = toggleMulti(S[field], k, validKeys);
+          LS.set(save, next);
+          S[field] = next;
           switchRun();
-          UI.buildControls(); UI.refreshLobby();
+          renderMenu();
+          UI.refreshLobby();
+          if (k === 'all') { closeFilterMenus(); btn.focus(); }
         };
       };
-      fill($('#genre'),  GENRES,  S.genre,  'tl:genre', genreLabel);
-      fill($('#era'),    ERAS,    S.era,    'tl:era', eraLabel);
+      setupFilter('genre', GENRES, GENRE_KEYS, 'tl:genre', genreLabel);
+      setupFilter('era',   ERAS,   ERA_KEYS,   'tl:era',   eraLabel);
     },
 
     /* --- rangkaian tahap --- */
@@ -2743,8 +2889,8 @@
         : S.runChallenge ? (S.runChallenge.artistLabel ? 'Friend challenge · ' + S.runChallenge.artistLabel : 'Friend challenge')
         : S.custom ? S.custom.label
         : [
-          S.genre === 'all' ? null : GENRES[S.genre],
-          S.era === 'all' ? null : ERAS[S.era].label
+          S.genre === 'all' ? null : formatMulti(S.genre, GENRE_KEYS, genreLabel, 2),
+          S.era === 'all' ? null : formatMulti(S.era, ERA_KEYS, eraLabel, 2)
         ].filter(Boolean).join(' · ');
       $('#gameMode').hidden = !$('#gameMode').textContent;
       if (S.challenge || S.runChallenge) {
@@ -3136,8 +3282,8 @@
           modeTag.textContent = 'Custom · ' + (S.custom.label || 'Artist');
         } else {
           const parts = [];
-          if (S.genre !== 'all' && GENRES[S.genre]) parts.push(GENRES[S.genre]);
-          if (S.era !== 'all' && ERAS[S.era]) parts.push(ERAS[S.era].label);
+          if (S.genre !== 'all') parts.push(formatMulti(S.genre, GENRE_KEYS, genreLabel, 2));
+          if (S.era !== 'all') parts.push(formatMulti(S.era, ERA_KEYS, eraLabel, 2));
           modeTag.textContent = 'Classic · ' + (parts.length ? parts.join(' · ') : (count + ' Stages'));
         }
       }
@@ -3371,8 +3517,8 @@
     }
     if (S.custom) return S.custom.label;
     const tags = [
-      S.genre === 'all' ? null : GENRES[S.genre],
-      S.era === 'all' ? null : ERAS[S.era].label
+      S.genre === 'all' ? null : formatMulti(S.genre, GENRE_KEYS, genreLabel, 2),
+      S.era === 'all' ? null : formatMulti(S.era, ERA_KEYS, eraLabel, 2)
     ].filter(Boolean);
     return tags.length ? tags.join(' · ') : 'All songs';
   }
@@ -3621,6 +3767,7 @@
   }
   function closeAll() {
     setSearchingMode(false);
+    closeFilterMenus();
     if (typeof stopSummaryPreview === 'function') stopSummaryPreview();
     if (confettiStop) { confettiStop(); confettiStop = null; }
     [].forEach.call(document.querySelectorAll('.modal'), (m) => m.hidden = true);
@@ -3659,6 +3806,7 @@
   $('#coverPlay').onclick = playClip;
 
   $('#start').onclick = () => {
+    closeFilterMenus();
     loadRun();
     if (S.runDone) { UI.runResult(); return; }
     UI.game();
@@ -3803,10 +3951,8 @@
     settings.anim = LS.get(SET_KEYS.anim, true) !== false;
     applyAnimSetting();
     settings.lang = I18N ? I18N.load(localStorage) : 'en';
-    S.genre = LS.get('tl:genre', 'all');
-    if (!GENRES[S.genre]) S.genre = 'all';
-    S.era = LS.get('tl:era', 'all');
-    if (!ERAS[S.era]) S.era = 'all';
+    S.genre = normalizeMulti(LS.get('tl:genre', 'all'), GENRE_KEYS);
+    S.era = normalizeMulti(LS.get('tl:era', 'all'), ERA_KEYS);
     const v = Number(LS.get('tl:vol', 0.8));
     S.vol = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.8;
     S.muted = !!LS.get('tl:muted', false);
@@ -4135,6 +4281,8 @@
     UI.dd.addEventListener('pointerdown', () => { UI.ddInteracting = true; });
   }
   document.addEventListener('pointerdown', (e) => {
+    const insideMulti = e.target && typeof e.target.closest === 'function' && e.target.closest('.multi-drop');
+    if (!insideMulti) closeFilterMenus();
     if (UI.dd.hidden) return;
     const inside = e.target && typeof e.target.closest === 'function' && e.target.closest('.search');
     if (!inside) UI.closeDD();
@@ -4159,7 +4307,7 @@
   const inArtist = () => $('#artistGame') && !$('#artistGame').hidden;
   document.addEventListener('keydown', (e) => {
     const typing = e.target === UI.q || e.target === $('#agQ');
-    if (e.key === 'Escape') { dismissModal(); return; }
+    if (e.key === 'Escape') { if (closeFilterMenus()) return; dismissModal(); return; }
     // Dialogs and focused controls keep their native keyboard behavior.
     if (document.querySelector('.modal:not([hidden])') || !$('#challengeIntro').hidden) return;
     if (!typing && e.target.closest('button, input, select, textarea, a')) return;
@@ -6196,13 +6344,19 @@
 
     const genreAliases = { 'hip-hop': 'hiphop', electronic: 'edm', other: 'lain' };
     const eraAliases = { '2000s': 'y00', '2010s': 'y10', '2020s': 'y20', classic: 'old', before2000: 'old' };
-    const rawG = (params.get('genre') || '').toLowerCase();
-    const rawE = (params.get('era') || '').toLowerCase();
-    const g = genreAliases[rawG] || rawG;
-    const e = eraAliases[rawE] || rawE;
+    const parseParamMulti = (raw, aliases, validKeys) => {
+      if (!raw) return '';
+      const mapped = String(raw).toLowerCase().split(',').map((t) => {
+        const k = t.trim();
+        return aliases[k] || k;
+      }).filter((k) => k === 'all' || validKeys.includes(k));
+      return mapped.length ? normalizeMulti(mapped, validKeys) : '';
+    };
+    const g = parseParamMulti(params.get('genre'), genreAliases, GENRE_KEYS);
+    const e = parseParamMulti(params.get('era'), eraAliases, ERA_KEYS);
     let changed = false;
-    if (g && GENRES[g]) { S.genre = g; LS.set('tl:genre', g); changed = true; }
-    if (e && ERAS[e]) { S.era = e; LS.set('tl:era', e); changed = true; }
+    if (g) { S.genre = g; LS.set('tl:genre', g); changed = true; }
+    if (e) { S.era = e; LS.set('tl:era', e); changed = true; }
     if (changed) {
       switchRun();
       UI.buildControls();

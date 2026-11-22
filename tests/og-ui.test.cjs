@@ -438,3 +438,31 @@ test('Wave 76 polishes mobile toast, unifies PC/mobile reveal modal, adds mobile
   }
   assert.match(app, /let statsTab = 'overall';/);
 });
+
+test('Wave 77 adds multi-select Genre & Era filters and unifies PC result modals with mobile across all modes', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
+
+  // 1. Multi-select Genre & Era controls with backward-compatible hidden <select>
+  assert.match(html, /id="genreDrop"[\s\S]*id="genre"[\s\S]*id="genreBtn"[\s\S]*id="genreMenu"/);
+  assert.match(html, /id="eraDrop"[\s\S]*id="era"[\s\S]*id="eraBtn"[\s\S]*id="eraMenu"/);
+  assert.match(css, /#lobby \.multi-btn\{/);
+  assert.match(css, /#lobby \.multi-menu\{/);
+  assert.match(css, /#lobby #eraDrop \.multi-menu\{left:auto;right:0\}/);
+  assert.match(app, /function normalizeMulti\(/);
+  assert.match(app, /function toggleMulti\(/);
+  assert.match(app, /function formatMulti\(/);
+  assert.match(app, /function closeFilterMenus\(/);
+  assert.match(i18n, /multiDone:\s*'Done'/);
+  assert.match(i18n, /multiDone:\s*'Selesai'/);
+
+  // 2. Unified compact PC/mobile result modals across Run, Daily, Duel, and Artist Detective
+  assert.match(css, /\.sheet\.run-sheet\{\s*width:min\(440px,100%\)/);
+  assert.match(css, /\.sheet\.run-sheet\[data-mode="daily"\]\{width:min\(468px,100%\)\}/);
+  assert.match(css, /\.runlist\.run-shelf\{[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.run-foot\{[\s\S]*flex-direction:column;align-items:stretch/);
+  assert.match(css, /\.spotle-result-banner\{[\s\S]*flex-direction:column;align-items:stretch/);
+  assert.match(css, /\.spotle-result-actions\{\s*display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+});
