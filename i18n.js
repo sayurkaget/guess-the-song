@@ -220,7 +220,7 @@
       leaveFinish: 'Finish & see result',
       leaveExit: 'Leave to menu',
       feedbackTitle: 'Send feedback',
-      feedbackIntro: 'Found a bug, missing a song, or have an idea? Let us know.',
+      feedbackIntro: 'Bugs, song requests, or ideas — we read every note.',
       fbIssueLbl: 'Issue',
       fbCategoryLbl: 'Category',
       fbCatBug: 'Report a bug',
@@ -324,7 +324,7 @@
       toastAllReset: 'All data reset',
       toastCantShare: 'This recording cannot be shared right now. Try another song.',
       toastStatsReset: 'Stats reset',
-      toastCopiedFriend: 'Copied — paste it to a friend',
+      toastCopiedFriend: 'Challenge link copied — send it to a friend',
       toastCopyFailed: 'Copy failed',
       toastCardSaved: 'Score card saved!',
       toastCardShared: 'Score card shared!',
@@ -339,8 +339,40 @@
       recentPlaylists: 'Recent playlists',
       toastRecentPlaylistsCleared: 'Recent playlists cleared',
       fbReportTitle: 'Report this song',
-      fbReportIntro: 'What is wrong with this song? Its details are included below.',
-      fbNotesOpt: 'Notes (optional)'
+      fbReportIntro: 'Pick what is wrong with this track. Recording details attach automatically.',
+      fbNotesOpt: 'Notes (optional)',
+      fbTopicKicker: 'Topic',
+      fbReasonKicker: 'What went wrong?',
+      fbCatBugPill: 'Bug',
+      fbCatSongPill: 'Song request',
+      fbCatIdeaPill: 'Idea',
+      fbReasonAudioPill: 'No audio',
+      fbReasonLivePill: 'Live version',
+      fbReasonTitlePill: 'Wrong info',
+      fbReasonOtherPill: 'Other issue',
+      fbBugPh: 'What happened? Tell us what you were playing…',
+      fbSongPh: 'Drop the song title & artist you would love to see…',
+      fbIdeaPh: 'Share a feature idea or anything we can make better…',
+      fbReportPh: 'Optional notes about the audio or song info…',
+      fbPrivacyNote: 'Private to TuneUp',
+      fbEmailToggle: 'Add email for a reply (optional)',
+      fbPickReason: 'Please pick what is wrong with this song.',
+      fbSending: 'Sending…',
+      fbSendingNote: 'Sending your feedback…',
+      fbSent: 'Thanks! Your feedback has been sent.',
+      fbSendFail: 'Could not send your feedback. Your message is still here — please try again.',
+      fbUnavailable: 'Feedback is temporarily unavailable. Please come back later.',
+      acceptChallenge: 'Accept challenge',
+      dailyChalTitle: 'Daily Song challenge',
+      dailyChalRules: 'One song. Five tries. Same clip lengths:<br>0.1s → 0.5s → 2s → 8s → 15s.',
+      dailyChalFriendWon: 'Your friend solved today\'s Daily Song in {len} ({n}/5 tries). Can you beat them?',
+      dailyChalFriendMissed: 'Your friend couldn\'t solve today\'s Daily Song. Can you beat it?',
+      dailyChalOldWon: 'Your friend solved the {day} Daily Song in {len}. Try today\'s Daily Song!',
+      dailyChalOldMissed: 'Your friend played the {day} Daily Song. Try today\'s Daily Song!',
+      plChalKicker: 'Playlist Quiz',
+      plChalTitle: 'Playlist challenge',
+      plChalRules: '{n} songs from the same playlist. Five tries each:<br>0.1s → 0.5s → 2s → 8s → 15s.',
+      plChalFriendScored: 'Your friend scored {s}/{t} on this playlist. Can you beat them?'
     },
     id: {
       // Lobby
@@ -556,7 +588,7 @@
       leaveFinish: 'Selesai & lihat hasil',
       leaveExit: 'Keluar ke menu',
       feedbackTitle: 'Kirim masukan',
-      feedbackIntro: 'Menemukan bug, lagu kurang, atau punya ide? Kasih tahu kami.',
+      feedbackIntro: 'Bug, request lagu, atau ide — semua catatan kamu kami baca.',
       fbIssueLbl: 'Masalah',
       fbCategoryLbl: 'Kategori',
       fbCatBug: 'Laporkan bug',
@@ -660,7 +692,7 @@
       toastAllReset: 'Semua data telah dihapus',
       toastCantShare: 'Rekaman ini belum bisa dibagikan sekarang. Coba lagu lain.',
       toastStatsReset: 'Statistik direset',
-      toastCopiedFriend: 'Tersalin — kirim ke temanmu',
+      toastCopiedFriend: 'Link tantangan disalin — kirim ke temanmu',
       toastCopyFailed: 'Gagal menyalin',
       toastCardSaved: 'Kartu skor tersimpan!',
       toastCardShared: 'Kartu skor dibagikan!',
@@ -675,8 +707,40 @@
       recentPlaylists: 'Playlist terakhir',
       toastRecentPlaylistsCleared: 'Riwayat playlist dihapus',
       fbReportTitle: 'Laporkan lagu ini',
-      fbReportIntro: 'Apa masalah dengan lagu ini? Detail lagunya sudah disertakan di bawah.',
-      fbNotesOpt: 'Catatan (opsional)'
+      fbReportIntro: 'Pilih kendala pada lagu ini. Detail rekaman otomatis dilampirkan.',
+      fbNotesOpt: 'Catatan (opsional)',
+      fbTopicKicker: 'Topik',
+      fbReasonKicker: 'Apa kendalanya?',
+      fbCatBugPill: 'Bug',
+      fbCatSongPill: 'Request lagu',
+      fbCatIdeaPill: 'Ide',
+      fbReasonAudioPill: 'Audio mati',
+      fbReasonLivePill: 'Versi live',
+      fbReasonTitlePill: 'Info salah',
+      fbReasonOtherPill: 'Lainnya',
+      fbBugPh: 'Apa yang terjadi? Ceritakan mode yang sedang kamu mainkan…',
+      fbSongPh: 'Tulis judul lagu & nama artis yang ingin kamu tambahkan…',
+      fbIdeaPh: 'Bagikan ide fitur atau hal yang bisa kami tingkatkan…',
+      fbReportPh: 'Catatan tambahan soal audio atau judul lagu (opsional)…',
+      fbPrivacyNote: 'Privat untuk TuneUp',
+      fbEmailToggle: 'Tambah email untuk balasan (opsional)',
+      fbPickReason: 'Pilih dulu kendala pada lagu ini.',
+      fbSending: 'Mengirim…',
+      fbSendingNote: 'Mengirim masukanmu…',
+      fbSent: 'Makasih! Masukanmu sudah terkirim.',
+      fbSendFail: 'Gagal mengirim masukan. Pesanmu masih aman — silakan coba lagi.',
+      fbUnavailable: 'Masukan sementara tidak tersedia. Silakan coba lagi nanti.',
+      acceptChallenge: 'Terima tantangan',
+      dailyChalTitle: 'Tantangan Lagu Harian',
+      dailyChalRules: 'Satu lagu. Lima kesempatan. Durasi klip sama:<br>0,1d → 0,5d → 2d → 8d → 15d.',
+      dailyChalFriendWon: 'Temanmu menebak Lagu Harian hari ini dalam {len} ({n}/5 percobaan). Bisa kalahkan?',
+      dailyChalFriendMissed: 'Temanmu gagal menebak Lagu Harian hari ini. Kamu bisa?',
+      dailyChalOldWon: 'Temanmu menebak Lagu Harian {day} dalam {len}. Coba Lagu Harian hari ini!',
+      dailyChalOldMissed: 'Temanmu memainkan Lagu Harian {day}. Coba Lagu Harian hari ini!',
+      plChalKicker: 'Kuis Playlist',
+      plChalTitle: 'Tantangan Playlist',
+      plChalRules: '{n} lagu dari playlist yang sama. Lima kesempatan per lagu:<br>0,1d → 0,5d → 2d → 8d → 15d.',
+      plChalFriendScored: 'Temanmu meraih {s}/{t} di playlist ini. Bisa kalahkan?'
     }
   };
 
@@ -790,8 +854,7 @@
     setText($('#agGiveUp'), 'giveUp');
     setText($('#agTabs [data-ag-mode="daily"]'), 'agTabDaily');
     setText($('#agTabs [data-ag-mode="free"]'), 'agTabEndless');
-    setText($('#saveArtistCard'), 'saveScoreCard');
-    setText($('#agShareBtn'), 'challengeFriend');
+    setBtnLabelKeepSvg($('#agShareBtn'), 'challengeFriend');
     setText($('#agNextBtn'), 'nextArtist');
     const legendSpans = doc.querySelectorAll('.spotle-legend span');
     if (legendSpans[0] && legendSpans[0].lastChild) legendSpans[0].lastChild.textContent = t('legendExact');
@@ -835,12 +898,10 @@
     setText($('#listen'), 'listenFull');
     setText($('#reportSong'), 'reportSong');
     setText($('#againRun'), 'playAgain');
-    setText($('#share'), 'challengeFriend');
-    setText($('#saveRunCard'), 'saveScoreCard');
+    setBtnLabelKeepSvg($('#share'), 'challengeFriend');
     setText($('#backToMenu'), 'backToMenu');
     setText($('#duelAgain'), 'playAgain');
-    setText($('#duelShare'), 'challengeFriend');
-    setText($('#saveDuelCard'), 'saveScoreCard');
+    setBtnLabelKeepSvg($('#duelShare'), 'challengeFriend');
     setText($('#duelMenu'), 'backToMenu');
     setText($('#leaveRunTitle'), 'leaveTitle');
     setText($('#leaveKeepPlaying'), 'leaveKeep');
@@ -848,8 +909,15 @@
     setText($('#leaveConfirmExit'), 'leaveExit');
     setText($('#feedbackTitle'), 'feedbackTitle');
     setText($('#feedbackIntro'), 'feedbackIntro');
-    setText($('#feedbackReasonField label'), 'fbIssueLbl');
-    setText($('#feedbackCategoryField label'), 'fbCategoryLbl');
+    setText($('#fbTopicKicker'), 'fbTopicKicker');
+    setText($('#fbReasonKicker'), 'fbReasonKicker');
+    setText($('#feedbackCategoryPills [data-cat="bug"] span'), 'fbCatBugPill');
+    setText($('#feedbackCategoryPills [data-cat="song"] span'), 'fbCatSongPill');
+    setText($('#feedbackCategoryPills [data-cat="other"] span'), 'fbCatIdeaPill');
+    setText($('#feedbackReasonPills [data-reason="audio"]'), 'fbReasonAudioPill');
+    setText($('#feedbackReasonPills [data-reason="live"]'), 'fbReasonLivePill');
+    setText($('#feedbackReasonPills [data-reason="title"]'), 'fbReasonTitlePill');
+    setText($('#feedbackReasonPills [data-reason="other"]'), 'fbReasonOtherPill');
     const fbCat = $('#feedbackCategory');
     if (fbCat && fbCat.options && fbCat.options.length >= 3) {
       fbCat.options[0].textContent = t('fbCatBug');
@@ -857,13 +925,9 @@
       fbCat.options[2].textContent = t('fbCatOther');
     }
     setText($('#feedbackMessageLabel'), 'fbMsgLbl');
-    if ($('#feedbackMessage')) $('#feedbackMessage').placeholder = t('fbMsgPh');
-    const emLbl = $('label[for="feedbackEmail"]');
-    if (emLbl) emLbl.innerHTML = t('fbEmailLbl') + ' <span>' + t('fbEmailOpt') + '</span>';
-    const dtLbl = $('label[for="feedbackDetails"]');
-    if (dtLbl) dtLbl.innerHTML = t('fbDetailsLbl') + ' <span>' + t('fbDetailsOpt') + '</span>';
-    if ($('#feedbackDetails')) $('#feedbackDetails').placeholder = t('fbDetailsPh');
-    setText($('.feedback-note'), 'fbNote');
+    if ($('#feedbackMessage')) $('#feedbackMessage').placeholder = t('fbBugPh');
+    setText($('#fbPrivacyNote span'), 'fbPrivacyNote');
+    setText($('#fbEmailToggleLbl'), 'fbEmailToggle');
     setText($('#sendFeedback'), 'sendFeedback');
     setText($('#leaveChallenge'), 'playRegular');
 

@@ -1919,7 +1919,41 @@
     };
   }
 
+  function parseDailyChallengeHash(hash) {
+    const m = /^#daily=(\d{4}-\d{2}-\d{2})\.([0-5])$/.exec(String(hash || ''));
+    if (!m) return null;
+    return { day: m[1], tries: Number(m[2]) };
+  }
+  function parsePlaylistChallengeSearch(search) {
+    try {
+      const p = new URLSearchParams(search || '');
+      const sp = (p.get('spotify') || p.get('playlist') || '').trim();
+      const raw = (p.get('chal') || '').trim();
+      const m = /^(\d{1,3})\.(\d{1,3})$/.exec(raw);
+      if (!sp || !m) return null;
+      const sc = Number(m[1]), total = Number(m[2]);
+      if (total < 1 || sc > total) return null;
+      const songs = parseInt(p.get('songs') || '', 10);
+      return { sp, score: sc, total, songs: Number.isFinite(songs) && songs >= 1 ? songs : undefined };
+    } catch (e) {
+      return null;
+    }
+  }
+
   async function acceptChallenge() {
+    const dailyIncoming = parseDailyChallengeHash(location.hash);
+    if (dailyIncoming) {
+      startDaily();
+      return;
+    }
+    const plIncoming = parsePlaylistChallengeSearch(location.search);
+    if (plIncoming && !location.hash) {
+      $('#challengeIntro').hidden = true;
+      if (plIncoming.songs) setSpotifyRoundsChoice(plIncoming.songs);
+      setClassicTab('spotify');
+      startSpotifyPlaylist(plIncoming.sp, plIncoming.songs);
+      return;
+    }
     if (location.hash.startsWith('#duel=')) {
       const duelIncoming = window.ReleaseDuel ? window.ReleaseDuel.parseChallenge(location.hash) : null;
       if (!duelIncoming || !launchDuelChallenge) return;
@@ -1987,13 +2021,67 @@
   }
 
   function showIncomingChallenge() {
-    const isSingle = location.hash.startsWith('#challenge=');
-    const isRun = location.hash.startsWith('#run=');
-    const isDuel = location.hash.startsWith('#duel=');
-    const isArtist = location.hash.startsWith('#artist=');
-    if (!isSingle && !isRun && !isDuel && !isArtist) return false;
+    const hash = location.hash || '';
+    const isSingle = hash.startsWith('#challenge=');
+    const isRun = hash.startsWith('#run=');
+    const isDuel = hash.startsWith('#duel=');
+    const isArtist = hash.startsWith('#artist=');
+    const dailyIncoming = parseDailyChallengeHash(hash);
+    const plIncoming = !hash ? parsePlaylistChallengeSearch(location.search || '') : null;
+    if (!isSingle && !isRun && !isDuel && !isArtist && !dailyIncoming && !plIncoming) return false;
     const kicker = $('#challengeKicker');
     const title = $('#challengeTitle');
+    if (dailyIncoming) {
+      const today = window.DailyGame && window.DailyGame.day ? window.DailyGame.day() : '';
+      const sameDay = !today || dailyIncoming.day === today;
+      $('#lobby').hidden = true;
+      $('#challengeIntro').hidden = false;
+      $('#acceptChallenge').hidden = false;
+      $('#acceptChallenge').disabled = false;
+      $('#acceptChallenge').textContent = I18N ? tr('acceptChallenge') : 'Accept challenge';
+      if (kicker) {
+        kicker.textContent = I18N ? tr('dailySongHeading') : 'Daily Song';
+        if (kicker.dataset) delete kicker.dataset.mode;
+      }
+      if (title) title.textContent = I18N ? tr('dailyChalTitle') : 'Daily Song challenge';
+      $('#challengeRules').innerHTML = I18N
+        ? tr('dailyChalRules')
+        : 'One song. Five tries. Same clip lengths:<br>0.1s → 0.5s → 2s → 8s → 15s.';
+      const clipLen = dailyIncoming.tries > 0 ? fmt(LADDER[Math.min(LADDER.length - 1, dailyIncoming.tries - 1)]) : '';
+      if (sameDay) {
+        $('#challengeMessage').textContent = dailyIncoming.tries > 0
+          ? (I18N ? tr('dailyChalFriendWon', { len: clipLen, n: dailyIncoming.tries })
+            : ('Your friend solved today\'s Daily Song in ' + clipLen + ' (' + dailyIncoming.tries + '/5 tries). Can you beat them?'))
+          : (I18N ? tr('dailyChalFriendMissed')
+            : 'Your friend couldn\'t solve today\'s Daily Song. Can you beat it?');
+      } else {
+        $('#challengeMessage').textContent = dailyIncoming.tries > 0
+          ? (I18N ? tr('dailyChalOldWon', { day: dailyIncoming.day, len: clipLen })
+            : ('Your friend solved the ' + dailyIncoming.day + ' Daily Song in ' + clipLen + '. Try today\'s Daily Song!'))
+          : (I18N ? tr('dailyChalOldMissed', { day: dailyIncoming.day })
+            : ('Your friend played the ' + dailyIncoming.day + ' Daily Song. Try today\'s Daily Song!'));
+      }
+      return true;
+    }
+    if (plIncoming) {
+      $('#lobby').hidden = true;
+      $('#challengeIntro').hidden = false;
+      $('#acceptChallenge').hidden = false;
+      $('#acceptChallenge').disabled = false;
+      $('#acceptChallenge').textContent = I18N ? tr('acceptChallenge') : 'Accept challenge';
+      if (kicker) {
+        kicker.textContent = I18N ? tr('plChalKicker') : 'Playlist Quiz';
+        if (kicker.dataset) delete kicker.dataset.mode;
+      }
+      if (title) title.textContent = I18N ? tr('plChalTitle') : 'Playlist challenge';
+      $('#challengeRules').innerHTML = I18N
+        ? tr('plChalRules', { n: plIncoming.total })
+        : (plIncoming.total + ' songs from the same playlist. Five tries each:<br>0.1s → 0.5s → 2s → 8s → 15s.');
+      $('#challengeMessage').textContent = I18N
+        ? tr('plChalFriendScored', { s: plIncoming.score, t: plIncoming.total })
+        : ('Your friend scored ' + plIncoming.score + '/' + plIncoming.total + ' on this playlist. Can you beat them?');
+      return true;
+    }
     if (isArtist) {
       const incoming = window.ArtistDetective ? window.ArtistDetective.parseChallenge(location.hash) : null;
       $('#lobby').hidden = true;
@@ -2868,6 +2956,8 @@
       if (m.link) { link.href = m.link; link.hidden = false; } else link.hidden = true;
 
       $('#next').textContent = S.challenge ? 'Play regular game' : (S.daily ? 'Daily result' : S.stage >= stageCount() - 1 ? 'See result' : 'Next');
+      const shareStageBtn = $('#shareStage');
+      if (shareStageBtn) shareStageBtn.hidden = !S.challenge;
       const friendResult = S.challenge ? S.challenge.result : S.runChallenge ? (S.runChallenge.results[S.stage] || 0) : null;
       const comparison = $('#challengeComparison');
       comparison.hidden = friendResult === null;
@@ -3219,6 +3309,39 @@
            '\n' + lines.join('\n') + '\n' + url;
   }
 
+  function challengeUrlForRun() {
+    if (S.daily) {
+      const st0 = S.stages[0];
+      const at = st0 && st0.won && Array.isArray(st0.guesses) ? st0.guesses.findIndex((g) => g.t === 'right') : -1;
+      const tries = at >= 0 ? Math.min(TRIES, at + 1) : 0;
+      return siteUrl() + '#daily=' + S.daily.day + '.' + tries;
+    }
+    const count = stageCount();
+    if (S.custom && S.custom.kind === 'spotify' && S.custom.spotifyId) {
+      return siteUrl() + '?spotify=' + encodeURIComponent((S.custom.spotifyType === 'album' ? 'album:' : '') + S.custom.spotifyId) +
+        (count < S.custom.songs.length ? '&songs=' + count : '') +
+        '&chal=' + score() + '.' + count;
+    }
+    const ids = [], results = [];
+    for (let i = 0; i < count; i++) {
+      const r = S.stages[i];
+      const cs = S.runChallenge && S.runChallenge.songs[i];
+      const tid = (r && r.trackId) || (cs && (cs.trackId || (cs.pre && cs.pre.trackId))) ||
+        (i === S.stage && ((S.meta && S.meta.trackId) || (S.song && S.song.trackId))) ||
+        (r && r.slug && (findSong(r.slug) || {}).trackId) || null;
+      if (tid == null || !/^[1-9]\d{0,15}$/.test(String(tid))) continue;
+      ids.push(String(tid));
+      const at = r && r.done && r.won ? r.guesses.findIndex((g) => g.t === 'right') : -1;
+      results.push(at >= 0 ? Math.min(TRIES, at + 1) : 0);
+    }
+    const artistId = S.runChallenge ? S.runChallenge.artistId
+      : (S.custom && /^[1-9]\d{0,15}$/.test(String(S.custom.id)) ? String(S.custom.id) : null);
+    if (ids.length && window.TrackChallenge && typeof window.TrackChallenge.createRun === 'function') {
+      return window.TrackChallenge.createRun(siteUrl(), ids, results, artistId);
+    }
+    return siteUrl();
+  }
+
   // Alamat situs mengikuti domain tempat game dibuka (github.io, pages.dev,
   // domain sendiri -- apa pun), jadi tautan tantangan tak pernah usang.
   const ROUTE_SLUGS = new Set(['daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective', 'id']);
@@ -3510,6 +3633,7 @@
     if (typeof renderRecentPlaylists === 'function') renderRecentPlaylists();
     if (typeof syncDuelLang === 'function') syncDuelLang();
     if (typeof syncArtistLang === 'function') syncArtistLang();
+    if (window.PlayerFeedback && typeof window.PlayerFeedback.syncLang === 'function') window.PlayerFeedback.syncLang();
     if ($('#game') && !$('#game').hidden) UI.render();
     UI.refreshLobby();
   }
@@ -3816,8 +3940,13 @@
     });
   }
   $('#shareStage').onclick = () => {
-    try { salin(shareStage(), 'challenge_copy'); }
-    catch (e) { toast(I18N ? tr('toastCantShare') : 'This recording cannot be shared right now. Try another song.'); }
+    try {
+      const at = S.guesses.findIndex((g) => g.t === 'right');
+      const link = (S.meta && S.meta.trackId && window.TrackChallenge)
+        ? window.TrackChallenge.create(siteUrl(), S.meta.trackId, S.won ? at + 1 : 0)
+        : siteUrl();
+      salin(link, 'challenge_copy');
+    } catch (e) { toast(I18N ? tr('toastCantShare') : 'This recording cannot be shared right now. Try another song.'); }
   };
   UI.skipBtn.onclick = () => { if (S.done) UI.result(); else skip(); };
 
@@ -3960,34 +4089,7 @@
     return copied;
   }
 
-  $('#share').onclick = () => salin(shareText(), 'result_copy');
-  if ($('#saveRunCard')) {
-    $('#saveRunCard').onclick = async () => {
-      if (!window.TuneUpCard) return;
-      try {
-        const sub = S.custom ? S.custom.label
-          : [S.genre === 'all' ? null : GENRES[S.genre], S.era === 'all' ? null : ERAS[S.era].label].filter(Boolean).join(' · ') || 'All songs';
-        const outcome = await window.TuneUpCard.shareOrSave({
-          kind: 'run',
-          mode: S.daily ? 'daily' : S.custom ? 'custom' : 'regular',
-          isSpotify: !!(S.custom && S.custom.kind === 'spotify'),
-          playlistSource: (S.custom && S.custom.source) || 'spotify',
-          total: stageCount(),
-          stages: S.stages,
-          ladder: ladder(),
-          day: S.daily ? S.daily.day : '',
-          streak: S.daily ? dailyStats().current : songStreak().current,
-          subtitle: sub,
-          verdict: $('#runVerdict') ? $('#runVerdict').textContent : '',
-          url: siteUrl()
-        });
-        if (outcome === 'downloaded') toast(I18N ? tr('toastCardSaved') : 'Score card saved!');
-        else if (outcome === 'shared') toast(I18N ? tr('toastCardShared') : 'Score card shared!');
-      } catch (e) {
-        toast(I18N ? tr('toastCardFailed') : 'Could not save score card.');
-      }
-    };
-  }
+  $('#share').onclick = () => salin(challengeUrlForRun(), 'result_copy');
 
   audio.addEventListener('ended', stopAudio);
   audio.addEventListener('error', () => {
@@ -4536,31 +4638,9 @@
         : [];
       const challengeUrl = ids.length >= 2
         ? Duel.createChallenge(siteUrl(), { kind: ds.kind, score: ds.score, ids })
-        : '';
-      salin(Duel.shareText({
-        score: ds.score, best: ds.best, history: ds.history, url: siteUrl(), kind: ds.kind, challengeUrl
-      }), 'duel_copy', 'duel');
+        : (siteUrl() + 'duel');
+      salin(challengeUrl, 'duel_copy', 'duel');
     };
-    if ($('#saveDuelCard')) {
-      $('#saveDuelCard').onclick = async () => {
-        if (!window.TuneUpCard) return;
-        try {
-          const outcome = await window.TuneUpCard.shareOrSave({
-            kind: 'duel',
-            deck: ds.kind,
-            score: ds.score,
-            best: ds.best,
-            verdict: $('#duelVerdict') ? $('#duelVerdict').textContent : '',
-            history: ds.history,
-            url: siteUrl()
-          });
-          if (outcome === 'downloaded') toast(I18N ? tr('toastCardSaved') : 'Score card saved!');
-          else if (outcome === 'shared') toast(I18N ? tr('toastCardShared') : 'Score card shared!');
-        } catch (e) {
-          toast(I18N ? tr('toastCardFailed') : 'Could not save score card.');
-        }
-      };
-    }
     $('#duelMenu').onclick = () => { closeAll(); UI.lobby(); $('#openDuel').focus(); };
   })();
 
@@ -5290,33 +5370,6 @@
         if (ag.done && ag.target && ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit');
       };
     }
-    if ($('#saveArtistCard')) {
-      $('#saveArtistCard').onclick = async () => {
-        if (!window.TuneUpCard || !ag.target) return;
-        try {
-          const rows = ag.guesses.map((g) => AD.compare(g, ag.target).map((t) => t.status));
-          const stCard = artistStats();
-          const outcome = await window.TuneUpCard.shareOrSave({
-            kind: 'artist',
-            mode: ag.mode === 'daily' ? 'daily' : 'free',
-            day: ag.mode === 'daily' ? ag.day : '',
-            dailyStreak: stCard.dailyStreak,
-            won: ag.won,
-            tries: ag.guesses.length,
-            maxTries: AD.MAX_TRIES,
-            hintsUsed: ag.hints.length,
-            best: stCard.best,
-            rows,
-            verdict: $('#agVerdict') ? $('#agVerdict').textContent : '',
-            url: siteUrl()
-          });
-          if (outcome === 'downloaded') toast(I18N ? tr('toastCardSaved') : 'Score card saved!');
-          else if (outcome === 'shared') toast(I18N ? tr('toastCardShared') : 'Score card shared!');
-        } catch (e) {
-          toast(I18N ? tr('toastCardFailed') : 'Could not save score card.');
-        }
-      };
-    }
     $('#agShareBtn').onclick = () => {
       if (!ag.target) return;
       const challengeUrl = AD.createChallenge(siteUrl(), {
@@ -5324,16 +5377,7 @@
         tries: ag.guesses.length,
         won: ag.won
       });
-      salin(AD.shareText({
-        mode: ag.mode === 'daily' ? 'daily' : 'free',
-        day: ag.mode === 'daily' ? ag.day : '',
-        guesses: ag.guesses,
-        target: ag.target,
-        won: ag.won,
-        url: siteUrl(),
-        challengeUrl,
-        hintsUsed: ag.hints.length
-      }), 'artist_copy', 'artist');
+      salin(challengeUrl, 'artist_copy', 'artist');
     };
     $('#agNextBtn').onclick = () => startArtistGame(null, 'free');
   })();

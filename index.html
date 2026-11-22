@@ -418,8 +418,10 @@
         </div>
       </div>
       <div class="spotle-result-actions">
-        <button class="btn ghostbtn" id="saveArtistCard" type="button">Save score card</button>
-        <button class="btn ghostbtn" id="agShareBtn" type="button">Challenge your friend</button>
+        <button class="btn ghostbtn share-btn" id="agShareBtn" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.7" fill="none"/></svg>
+          Challenge your friend
+        </button>
         <button class="btn solid" id="agNextBtn" type="button">Next artist</button>
       </div>
     </div>
@@ -579,11 +581,13 @@
     <ol class="runlist run-shelf" id="runList"></ol>
     <div class="run-foot">
       <div class="r-actions">
-        <button class="btn solid" id="share" type="button">Challenge your friend</button>
-        <button class="btn ghost" id="againRun">Play again</button>
+        <button class="btn solid" id="againRun" type="button">Play again</button>
+        <button class="btn ghostbtn share-btn" id="share" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.7" fill="none"/></svg>
+          Challenge your friend
+        </button>
       </div>
       <div class="run-foot-links">
-        <button class="btn ghostbtn customlink" id="saveRunCard" type="button">Save score card</button>
         <button class="btn ghostbtn customlink" id="backToMenu" type="button">Back to menu</button>
       </div>
     </div>
@@ -612,10 +616,12 @@
     <div class="run-foot">
       <div class="r-actions">
         <button class="btn solid" id="duelAgain" type="button">Play again</button>
-        <button class="btn ghost" id="duelShare" type="button">Challenge your friend</button>
+        <button class="btn ghostbtn share-btn" id="duelShare" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.7" fill="none"/></svg>
+          Challenge your friend
+        </button>
       </div>
       <div class="run-foot-links">
-        <button class="btn ghostbtn customlink" id="saveDuelCard" type="button">Save score card</button>
         <button class="btn ghostbtn customlink" id="duelMenu" type="button">Back to menu</button>
       </div>
     </div>
@@ -717,15 +723,28 @@
 <div class="modal" id="feedbackModal" hidden>
   <div class="sheet feedback-sheet" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
     <button class="x" data-close aria-label="Close" type="button">&times;</button>
-    <h2 id="feedbackTitle">Send feedback</h2>
-    <p class="dim" id="feedbackIntro">Found a bug, missing a song, or have an idea? Let us know.</p>
+    <div class="fb-head">
+      <h2 id="feedbackTitle">Send feedback</h2>
+      <p class="dim" id="feedbackIntro">Bugs, song requests, or ideas — we read every note.</p>
+    </div>
     <form name="player-feedback" id="feedbackForm" method="POST" action="/api/feedback" data-feedback-api="true" netlify-honeypot="bot-field">
       <input type="hidden" name="form-name" value="player-feedback">
       <p hidden><label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
       <fieldset id="feedbackFields">
+        <div class="fb-song-chip" id="fbSongChip" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l11-2v12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="17.5" cy="16" r="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>
+          <span id="fbSongChipText"></span>
+        </div>
+
         <div id="feedbackReasonField" hidden>
-          <label for="feedbackReason">Issue</label>
-          <select id="feedbackReason" disabled>
+          <span class="fb-kicker" id="fbReasonKicker">What went wrong?</span>
+          <div class="fb-pills fb-pills-2" id="feedbackReasonPills" role="radiogroup" aria-label="Song issue">
+            <button type="button" class="fb-pill" data-reason="audio" aria-pressed="false">No audio</button>
+            <button type="button" class="fb-pill" data-reason="live" aria-pressed="false">Live version</button>
+            <button type="button" class="fb-pill" data-reason="title" aria-pressed="false">Wrong info</button>
+            <button type="button" class="fb-pill" data-reason="other" aria-pressed="false">Other issue</button>
+          </div>
+          <select id="feedbackReason" class="sr" tabindex="-1" disabled aria-label="Issue">
             <option value="">Choose an issue</option>
             <option value="audio">Audio does not play</option>
             <option value="live">Live version</option>
@@ -733,22 +752,54 @@
             <option value="other">Other song issue</option>
           </select>
         </div>
+
         <div id="feedbackCategoryField">
-        <label for="feedbackCategory">Category</label>
-        <select id="feedbackCategory" name="category" required>
-          <option value="bug">Report a bug</option>
-          <option value="song">Suggest a song</option>
-          <option value="other">Other feedback</option>
-        </select>
+          <span class="fb-kicker" id="fbTopicKicker">Topic</span>
+          <div class="fb-pills" id="feedbackCategoryPills" role="radiogroup" aria-label="Feedback topic">
+            <button type="button" class="fb-pill" data-cat="bug" aria-pressed="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h6v5a3 3 0 0 1-6 0V9Zm3-4a2 2 0 0 1 2 2v2h-4V7a2 2 0 0 1 2-2ZM4 11h5m6 0h5M5.5 7.5 9 9.5m9.5-2L15 9.5M5.5 16.5 9 14.5m9.5 2L15 14.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>Bug</span>
+            </button>
+            <button type="button" class="fb-pill" data-cat="song" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.5a2.5 2.5 0 1 1-2-2.45V7l11-2v10.5a2.5 2.5 0 1 1-2-2.45V8.4L9 9.8v7.7Z" fill="currentColor"/></svg>
+              <span>Song request</span>
+            </button>
+            <button type="button" class="fb-pill" data-cat="other" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6m-5 3h4M12 3a6 6 0 0 0-3.7 10.7c.7.6 1.2 1.4 1.3 2.3h4.8c.1-.9.6-1.7 1.3-2.3A6 6 0 0 0 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>Idea</span>
+            </button>
+          </div>
+          <select id="feedbackCategory" class="sr" tabindex="-1" name="category" required aria-label="Category">
+            <option value="bug">Report a bug</option>
+            <option value="song">Suggest a song</option>
+            <option value="other">Other feedback</option>
+          </select>
         </div>
-        <label for="feedbackMessage" id="feedbackMessageLabel">Message</label>
-        <textarea id="feedbackMessage" name="message" rows="3" minlength="5" maxlength="3000" placeholder="What happened, or what would you like to see?" required></textarea>
-        <label for="feedbackEmail">Email <span>(optional, if you'd like a reply)</span></label>
-        <input id="feedbackEmail" name="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com">
-        <label for="feedbackDetails">Game details <span>(optional)</span></label>
-        <textarea id="feedbackDetails" name="game-details" rows="1" maxlength="600" placeholder="Mode, song, or device details"></textarea>
-        <p class="feedback-note">Your message and any details you include go privately to the site owner.</p>
-        <button class="btn solid" id="sendFeedback" type="submit">Send feedback</button>
+
+        <label class="fb-kicker" for="feedbackMessage" id="feedbackMessageLabel">Message</label>
+        <div class="fb-msg-wrap">
+          <textarea id="feedbackMessage" name="message" rows="4" minlength="5" maxlength="1000" placeholder="What happened? Tell us what you were playing…" required></textarea>
+          <div class="fb-meta-row">
+            <span class="fb-privacy" id="fbPrivacyNote">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span>Private to TuneUp</span>
+            </span>
+            <span class="fb-count" id="feedbackCharCount">0 / 1000</span>
+          </div>
+        </div>
+
+        <div class="fb-opt-row">
+          <button type="button" class="fb-opt-toggle" id="fbEmailToggle" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM4 7l8 6 8-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span id="fbEmailToggleLbl">Add email for a reply (optional)</span>
+          </button>
+          <div class="fb-opt-panel" id="fbEmailPanel" hidden>
+            <input id="feedbackEmail" name="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com" aria-label="Email (optional)">
+          </div>
+        </div>
+
+        <textarea id="feedbackDetails" name="game-details" rows="1" maxlength="600" hidden aria-hidden="true"></textarea>
+        <button class="btn solid fb-submit" id="sendFeedback" type="submit">Send feedback</button>
       </fieldset>
       <p id="feedbackStatus" role="status" aria-live="polite"></p>
     </form>

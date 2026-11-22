@@ -98,7 +98,7 @@ test('TuneUpCard builds spoiler-free purple score card model for Artist Detectiv
 
 test('Wave 55 artist score card, boot optimization, and badges tab are wired across files', () => {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  assert.match(html, /id="saveArtistCard"/);
+  assert.match(html, /id="agShareBtn"/);
   assert.match(html, /data-tab="badges"/);
   assert.match(html, /id="badgeGrid"/);
   assert.match(html, /src="badges\.js"/);
@@ -113,7 +113,7 @@ test('Wave 55 artist score card, boot optimization, and badges tab are wired acr
   assert.match(app, /class SongEntry \{/);
   assert.match(app, /const getDuelPool = \(kind\) =>/);
   assert.match(app, /function ensureRoster\(\)/);
-  assert.match(app, /window\.TuneUpCard\.shareOrSave\(\{\s*kind:\s*'artist'/);
+  assert.match(app, /AD\.createChallenge\(siteUrl\(\)/);
   assert.match(app, /window\.TuneUpBadges/);
 
   const rec = fs.readFileSync(path.join(ROOT, 'recordings.js'), 'utf8');

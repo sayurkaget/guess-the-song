@@ -29,9 +29,9 @@ test('1-song summary shelf keeps .run-playbtn inline, modal uses overflow:clip, 
   assert.match(css, /\.runlist\.run-shelf\[data-count="1"\] \.run-playbtn\{position:static;grid-column:3;grid-row:1 \/ 3;/);
   assert.match(css, /\.runlist\.run-shelf li\{\s*position:relative;/);
   assert.match(css, /\.modal\{[^}]*overflow:clip/);
-  assert.match(css, /#duelModal \.sheet\.run-sheet \.r-actions\{grid-template-columns:minmax\(0,1fr\) minmax\(0,1\.48fr\)\}/);
+  assert.match(css, /#duelModal \.sheet\.run-sheet \.r-actions\{display:grid;grid-template-columns:minmax\(0,\.88fr\) minmax\(0,1\.35fr\);/);
   assert.match(css, /\.spotle-result-actions\{width:100%;display:flex;flex-direction:column-reverse;/);
-  assert.match(css, /\.sheet\.run-sheet \.run-foot-links\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);/);
+  assert.match(css, /\.sheet\.run-sheet \.run-foot-links\{display:grid;grid-template-columns:1fr;/);
 });
 
 test('Wave 49 audio, retry, artist detective, score card, and Spotify focus fixes stay intact', () => {
@@ -155,7 +155,8 @@ test('Wave 58 summary modal footer aligns Daily in 2x2 grid and wide sheets in 1
   const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
   assert.match(css, /\.run-foot\{[\s\S]*?justify-content:space-between;[\s\S]*?flex-wrap:nowrap;/);
   assert.match(css, /\.sheet\.run-sheet\[data-mode="daily"\] \.run-foot\{[\s\S]*?flex-direction:column;/);
-  assert.match(css, /\.sheet\.run-sheet\[data-mode="daily"\] \.r-actions,\s*\.sheet\.run-sheet\[data-mode="daily"\] \.run-foot-links\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\);/);
+  assert.match(css, /\.sheet\.run-sheet\[data-mode="daily"\] \.r-actions\{[\s\S]*?grid-template-columns:minmax\(0,1fr\) minmax\(0,1\.22fr\);/);
+  assert.match(css, /\.sheet\.run-sheet\[data-mode="daily"\] \.run-foot-links\{[\s\S]*?grid-template-columns:1fr;/);
   assert.match(css, /\.sheet\.run-sheet #backToMenu,\s*\.sheet\.run-sheet #duelMenu\{[\s\S]*?color:var\(--dim\);/);
   assert.doesNotMatch(css, /\.run-foot-links\{\s*gap:1\.15rem;/);
 });
@@ -186,7 +187,7 @@ test('Wave 64 compacts songs.js, caches search buckets, widens sparse Stage 5 fa
   assert.match(app, /const srcStreamed = streamedTids\.size/);
   assert.match(app, /tr\('triedBadge'\)/);
   assert.match(app, /tr\('guessedIn'/);
-  assert.match(app, /tr\('toastCardSaved'\)/);
+  assert.match(app, /tr\('toastCopiedFriend'\)/);
   assert.match(sw, /url\.pathname\.startsWith\('\/fonts\/'\)/);
 });
 
@@ -239,11 +240,11 @@ test('Wave 66 mobile UI polish and remaining ID localization leaks are wired cle
   assert.match(css, /Wave 66: Comprehensive Mobile UI Polish/);
   assert.match(css, /#statsModal \.badge-grid\{grid-template-columns:1fr;/);
   assert.match(css, /\.sp-tile small\{font-size:\.57rem;letter-spacing:\.035em;white-space:nowrap\}/);
-  assert.match(css, /\.spotle-result-actions #agNextBtn\{grid-column:1 \/ -1;order:-1\}/);
+  assert.match(css, /\.spotle-result-actions #agNextBtn\{order:-1\}/);
   assert.match(css, /#customModal \.custom-quick-head\{flex-wrap:nowrap;/);
   assert.doesNotMatch(css, /\.vinyl-card \.spot-play-wrap\{flex-direction:column/);
   assert.match(css, /\.sheet\.run-sheet \.run-head\{display:contents\}/);
-  assert.match(css, /#duelModal \.sheet\.run-sheet \.r-actions,\s*\.sheet\.run-sheet \.run-foot-links\{\s*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /#duelModal \.sheet\.run-sheet \.r-actions\{\s*grid-template-columns:minmax\(0,\.84fr\) minmax\(0,1\.42fr\)/);
   assert.match(app, /if \(topCard\) topCard\.hidden = ag\.done;/);
   assert.match(app, /tr\('backupRestore'\)/);
   assert.match(app, /tr\('playAgain'\)/);
@@ -327,4 +328,37 @@ test('Wave 70 promotes Daily Artist onto the homepage alongside Daily Song with 
   assert.match(i18n, /dailyArtistHeading:\s*'Daily Artist'/);
   assert.match(i18n, /dailyArtistHeading:\s*'Artis Harian'/);
   assert.match(build, /<h2 id="dailyArtistHeading">Artis Harian<\/h2>/);
+});
+
+test('Wave 71 removes Save score card in favor of link-only share buttons, hides mid-Classic shareStage, and redesigns Feedback modal', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const fb = fs.readFileSync(path.join(ROOT, 'feedback.js'), 'utf8');
+  const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
+
+  assert.doesNotMatch(html, /id="saveRunCard"|id="saveDuelCard"|id="saveArtistCard"/);
+  assert.match(html, /class="btn ghostbtn share-btn" id="share"[\s\S]*<svg[\s\S]*Challenge your friend/);
+  assert.match(html, /class="btn ghostbtn share-btn" id="duelShare"[\s\S]*<svg[\s\S]*Challenge your friend/);
+  assert.match(html, /class="btn ghostbtn share-btn" id="agShareBtn"[\s\S]*<svg[\s\S]*Challenge your friend/);
+  assert.match(app, /if \(shareStageBtn\) shareStageBtn\.hidden = !S\.challenge;/);
+  assert.match(app, /function challengeUrlForRun\(\)/);
+  assert.match(app, /\$\('#share'\)\.onclick = \(\) => salin\(challengeUrlForRun\(\), 'result_copy'\);/);
+  assert.match(app, /salin\(challengeUrl, 'duel_copy', 'duel'\)/);
+  assert.match(app, /salin\(challengeUrl, 'artist_copy', 'artist'\)/);
+  assert.match(app, /function parseDailyChallengeHash\(hash\)/);
+  assert.match(app, /function parsePlaylistChallengeSearch\(search\)/);
+  assert.match(i18n, /setBtnLabelKeepSvg\(\$\('#share'\), 'challengeFriend'\)/);
+  assert.match(i18n, /setBtnLabelKeepSvg\(\$\('#duelShare'\), 'challengeFriend'\)/);
+  assert.match(i18n, /setBtnLabelKeepSvg\(\$\('#agShareBtn'\), 'challengeFriend'\)/);
+
+  // Redesigned original TuneUp feedback modal
+  assert.match(html, /id="feedbackCategoryPills"[\s\S]*data-cat="bug"[\s\S]*data-cat="song"[\s\S]*data-cat="other"/);
+  assert.match(html, /id="feedbackCharCount"/);
+  assert.match(html, /id="fbEmailToggle"/);
+  assert.match(html, /id="fbSongChip"/);
+  assert.match(css, /\.share-btn\{/);
+  assert.match(css, /#feedbackModal \.fb-pills\{/);
+  assert.match(fb, /function syncCharCount\(\)/);
+  assert.match(fb, /function syncPills\(\)/);
 });

@@ -403,11 +403,11 @@ test('Wave 12 polish: Other genre button, artistClear, Surprise me, and text-onl
   assert.match(html, /data-guide-genre="lain"/);
   assert.match(html, /id="artistClear"/);
   assert.doesNotMatch(html, /id="trackBars"/);
-  assert.match(html, /id="share"[^>]*>Challenge your friend<\/button>/);
+  assert.match(html, /id="share"[^>]*>[\s\S]*?Challenge your friend\s*<\/button>/);
   assert.doesNotMatch(html, /src="result-image\.js"/);
   const appCode = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
   assert.doesNotMatch(appCode, /ResultImage|prepareResultImage/);
-  assert.match(appCode, /\$\('#share'\)\.onclick\s*=\s*\(\)\s*=>\s*salin\(shareText\(\),\s*'result_copy'\)/);
+  assert.match(appCode, /\$\('#share'\)\.onclick\s*=\s*\(\)\s*=>\s*salin\(challengeUrlForRun\(\),\s*'result_copy'\)/);
 
   const fetched = [];
   const sampleTracks = Array.from({ length: 6 }, (_, i) => ({
@@ -515,7 +515,7 @@ test('Duel target pill, Duel stats tab, Space preview key, and duel summary scor
   assert.match(html, /data-tab="duel"/);
   assert.match(html, /id="duelLobbySub"/);
   assert.match(html, /id="artBgDuel"/);
-  assert.match(html, /id="duelShare"[^>]*>Challenge your friend<\/button>/);
+  assert.match(html, /id="duelShare"[^>]*>[\s\S]*?Challenge your friend\s*<\/button>/);
   assert.match(html, /<summary>Can I challenge a friend\?<\/summary>/);
   assert.match(css, /#duelModal \.runscore\{gap:\.5rem\}/);
   assert.match(css, /#duelTarget\[data-passed="1"\]/);
@@ -601,8 +601,8 @@ test('Wave 35: #agPlaySongBtn removed, Auto-Play on Skip + SFX, TuneUpCard score
   const TuneUpCard = require('../score-card.js');
 
   assert.doesNotMatch(html, /id="agPlaySongBtn"/);
-  assert.match(html, /id="saveRunCard"/);
-  assert.match(html, /id="saveDuelCard"/);
+  assert.match(html, /id="share"/);
+  assert.match(html, /id="duelShare"/);
   assert.match(html, /src="score-card\.js"/);
   assert.match(swCode, /'\.\/score-card\.js'/);
   assert.match(appCode, /function playSfx\(kind\)/);
