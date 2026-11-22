@@ -31,7 +31,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v98-wave72-clean-artist-modes'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v99-wave73-icons-mobile-reveal'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -194,8 +194,8 @@ function localizeIdStaticHtml(html) {
     .replace('<span class="daily-meta" id="dailyArtistSub">1 artist · 10 tries</span>', '<span class="daily-meta" id="dailyArtistSub">1 artis · 10 tebakan</span>')
     .replaceAll('>Play daily</button>', '>Main harian</button>')
     .replace('<span class="mode-pill">5 stages</span>', '<span class="mode-pill">5 tahap</span>')
-    .replace('>By Artist</button>', '>Per Artis</button>')
-    .replace('>Playlists</button>', '>Playlist</button>')
+    .replace('<span class="lbl">By Artist</span>', '<span class="lbl">Per Artis</span>')
+    .replace('<span class="lbl">Playlists</span>', '<span class="lbl">Playlist</span>')
     .replace('id="start">Start</button>', 'id="start">Mulai</button>')
     .replace('<b>Play your favorite artist</b>', '<b>Mainkan artis favoritmu</b>')
     .replace('<span>Pick any artist &mdash; guess 5 of their tracks from 0.1s clips</span>', '<span>Pilih artis bebas &mdash; tebak 5 lagunya dari klip 0,1 detik</span>')
@@ -212,9 +212,9 @@ function localizeIdStaticHtml(html) {
     .replace('<span class="mode-pill is-purple">Endless</span>', '<span class="mode-pill is-purple">Tanpa batas</span>')
     .replace('<p id="artistLobbySub">Deduce the mystery artist from 6 clues</p>', '<p id="artistLobbySub">Tebak artis misterius dari 6 petunjuk</p>')
     .replace('Play artist\n', 'Main artis\n')
-    .replace('>Stats</button>', '>Statistik</button>')
-    .replace('>Settings</button>', '>Pengaturan</button>')
-    .replace('>Feedback</button>', '>Masukan</button>')
+    .replace('<span class="lbl">Stats</span>', '<span class="lbl">Statistik</span>')
+    .replace('<span class="lbl">Settings</span>', '<span class="lbl">Pengaturan</span>')
+    .replace('<span class="lbl">Feedback</span>', '<span class="lbl">Masukan</span>')
     .replace('<h2 id="musicBrowserTitle">Choose your music</h2>', '<h2 id="musicBrowserTitle">Pilih musikmu</h2>')
     .replace('<p class="browser-intro">A few shortcuts for your next Classic run.</p>', '<p class="browser-intro">Pintasan cepat untuk sesi Classic berikutnya.</p>')
     .replace('<h3>Genres</h3>', '<h3>Genre</h3>')

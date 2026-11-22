@@ -360,3 +360,24 @@ test('Wave 71 removes Save score card in favor of link-only share buttons, hides
   assert.match(fb, /function syncCharCount\(\)/);
   assert.match(fb, /function syncPills\(\)/);
 });
+
+test('Wave 73 keeps #resultModal .reveal-foot on a single mobile row and adds cohesive inline icons across modes & modals', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
+
+  assert.doesNotMatch(css, /#resultModal #reportSong\{display:block;width:100%/);
+  assert.match(css, /#resultModal \.reveal-foot\{gap:\.6rem;justify-content:space-between;flex-wrap:nowrap\}/);
+  assert.match(css, /\.title-with-ico\{/);
+  assert.match(css, /\.btn-ico\{/);
+  assert.match(html, /class="title-ico is-green"[\s\S]*id="dailyHeading"/);
+  assert.match(html, /class="title-ico is-purple"[\s\S]*id="dailyArtistHeading"/);
+  assert.match(html, /class="title-ico is-gold"[\s\S]*<h2>Music Duel<\/h2>/);
+  assert.match(html, /id="openStats"[^>]*><svg class="btn-ico"/);
+  assert.match(html, /id="listen"[^>]*><svg class="btn-ico"/);
+  assert.match(html, /id="reportSong"[^>]*><svg class="btn-ico"/);
+  assert.match(html, /id="againRun"[^>]*><svg class="btn-ico"/);
+  assert.match(html, /id="backToMenu"[^>]*><svg class="btn-ico"/);
+  assert.match(html, /id="sendFeedback"[^>]*><svg class="btn-ico"/);
+  assert.match(i18n, /el\.querySelector\('\.lbl'\)/);
+});

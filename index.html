@@ -67,7 +67,10 @@
       <section class="daily-card" id="dailySongCard" aria-labelledby="dailyHeading">
         <div class="daily-heading">
           <div class="daily-title-row">
-            <h2 id="dailyHeading">Daily Song</h2>
+            <div class="title-with-ico">
+              <svg class="title-ico is-green" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.5a2.5 2.5 0 1 1-2-2.45V7.2l11-2.2v10.5a2.5 2.5 0 1 1-2-2.45V8.4L9 9.8v7.7Z" fill="currentColor"/></svg>
+              <h2 id="dailyHeading">Daily Song</h2>
+            </div>
             <span class="daily-done-badge" id="dailyDoneBadge" hidden></span>
           </div>
           <span class="daily-meta" id="dailySub">1 song · 5 tries</span>
@@ -79,7 +82,10 @@
       <section class="daily-card is-artist" id="dailyArtistCard" aria-labelledby="dailyArtistHeading">
         <div class="daily-heading">
           <div class="daily-title-row">
-            <h2 id="dailyArtistHeading">Daily Artist</h2>
+            <div class="title-with-ico">
+              <svg class="title-ico is-purple" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.2 4.8L19 9.2l-3.6 3.5.9 5-4.3-2.4L7.7 17.7l.9-5L5 9.2l4.8-1.4L12 3Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>
+              <h2 id="dailyArtistHeading">Daily Artist</h2>
+            </div>
             <span class="daily-done-badge is-purple" id="dailyArtistDoneBadge" hidden></span>
           </div>
           <span class="daily-meta" id="dailyArtistSub">1 artist · 10 tries</span>
@@ -92,13 +98,16 @@
     <section class="classic-section" aria-labelledby="classicHeading">
       <div class="classic-heading">
         <div class="classic-title-group">
-          <h2 id="classicHeading">Classic</h2>
+          <div class="title-with-ico">
+            <svg class="title-ico is-green" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/></svg>
+            <h2 id="classicHeading">Classic</h2>
+          </div>
           <span class="mode-pill">5 stages</span>
         </div>
         <div class="seg classic-seg" id="classicTabs" role="tablist" aria-label="Classic setup">
-          <button type="button" role="tab" data-classic-tab="filters" aria-selected="true" aria-pressed="true">Genre &amp; Era</button>
-          <button type="button" role="tab" data-classic-tab="artist" aria-selected="false" aria-pressed="false">By Artist</button>
-          <button type="button" role="tab" data-classic-tab="spotify" aria-selected="false" aria-pressed="false">Playlists</button>
+          <button type="button" role="tab" data-classic-tab="filters" aria-selected="true" aria-pressed="true"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10m4 0h2M4 12h4m4 0h8M4 17h12m4 0h0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="16" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="10" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lbl">Genre &amp; Era</span></button>
+          <button type="button" role="tab" data-classic-tab="artist" aria-selected="false" aria-pressed="false"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-3 0h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg><span class="lbl">By Artist</span></button>
+          <button type="button" role="tab" data-classic-tab="spotify" aria-selected="false" aria-pressed="false"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h11M4 11h11M4 16h7m8-7v7.5a2.5 2.5 0 1 1-1.5-2.3V8.2l3-1.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl">Playlists</span></button>
         </div>
       </div>
       <div id="classicFiltersPanel">
@@ -155,7 +164,10 @@
       <button class="duel-card-wide" id="openDuel" type="button">
         <div class="duel-card-copy">
           <div class="duel-card-title">
-            <h2>Music Duel</h2>
+            <div class="title-with-ico">
+              <svg class="title-ico is-gold" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4.5 13.5H12L11 22l8.5-11.5H12L13 2Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>
+              <h2>Music Duel</h2>
+            </div>
             <span class="mode-pill is-gold">Higher or lower</span>
           </div>
           <p id="duelLobbySub">Spotify streams &amp; release year</p>
@@ -169,7 +181,10 @@
       <button class="duel-card-wide artist-detective-card" id="openArtistGame" type="button">
         <div class="duel-card-copy">
           <div class="duel-card-title">
-            <h2>Artist Detective</h2>
+            <div class="title-with-ico">
+              <svg class="title-ico is-purple" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+              <h2>Artist Detective</h2>
+            </div>
             <span class="mode-pill is-purple">Endless</span>
           </div>
           <p id="artistLobbySub">Deduce the mystery artist from 6 clues</p>
@@ -290,8 +305,8 @@
 
     <div class="duel-controls">
       <div class="seg duel-tabs" id="duelTabs" role="tablist" aria-label="Duel deck">
-        <button type="button" role="tab" data-duel="streams" aria-pressed="true">Spotify Streams</button>
-        <button type="button" role="tab" data-duel="year" aria-pressed="false">Release Year</button>
+        <button type="button" role="tab" data-duel="streams" aria-pressed="true"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 14v5M10 9v10M15 5v14M20 11v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="lbl">Spotify Streams</span></button>
+        <button type="button" role="tab" data-duel="year" aria-pressed="false"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 3v4m8-4v4M3 10h18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="lbl">Release Year</span></button>
       </div>
       <button class="duel-hover-toggle" id="duelHoverToggle" type="button" role="switch" aria-checked="true" aria-pressed="true" title="Auto-play song preview on hover">
         <span class="dh-dot" aria-hidden="true"></span>
@@ -394,7 +409,8 @@
             <span id="agHintLbl">Hint in 5</span>
           </button>
           <button class="btn ghostbtn spotle-giveup-btn" id="agGiveUp" type="button">
-            Give up
+            <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v16M5 5h11l-2.2 4L16 13H5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="lbl">Give up</span>
           </button>
         </div>
       </div>
@@ -427,8 +443,8 @@
 
   <footer class="foot">
     <div class="foot-menu-links">
-      <button class="menu-stats" id="openStats" type="button" aria-haspopup="dialog" aria-controls="statsModal">Stats</button>
-      <button class="menu-stats" id="openSettings" type="button" aria-haspopup="dialog" aria-controls="settingsModal">Settings</button>
+      <button class="menu-stats" id="openStats" type="button" aria-haspopup="dialog" aria-controls="statsModal"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13v6m7-11v11m7-7v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="lbl">Stats</span></button>
+      <button class="menu-stats" id="openSettings" type="button" aria-haspopup="dialog" aria-controls="settingsModal"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9m5 0h2M4 17h4m5 0h7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="15.5" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="10.5" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lbl">Settings</span></button>
     </div>
     <div class="vol">
       <button class="iconbtn" id="mute" aria-label="Mute">
@@ -436,7 +452,7 @@
       </button>
       <input id="volume" type="range" min="0" max="100" value="80" aria-label="Volume">
     </div>
-    <button class="feedback-link" id="openFeedback" type="button" aria-haspopup="dialog" aria-controls="feedbackModal">Feedback</button>
+    <button class="feedback-link" id="openFeedback" type="button" aria-haspopup="dialog" aria-controls="feedbackModal"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3v-3H6.5A2.5 2.5 0 0 1 4 14.5v-8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="lbl">Feedback</span></button>
   </footer>
 </main>
 <div class="site-guide">
@@ -544,8 +560,8 @@
             <button class="btn solid" id="next">Next</button>
           </div>
           <div class="reveal-foot">
-            <a class="listenlink" id="listen" target="_blank" rel="noopener">Listen in full &#8599;</a>
-            <button class="report-song" id="reportSong" type="button">Report this song</button>
+            <a class="listenlink" id="listen" target="_blank" rel="noopener"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13a8 8 0 0 1 16 0v5a2 2 0 0 1-2 2h-1.5v-6H20M4 13v5a2 2 0 0 0 2 2h1.5v-6H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl">Listen in full &#8599;</span></a>
+            <button class="report-song" id="reportSong" type="button"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v16M5 5h11l-2.2 4L16 13H5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl">Report this song</span></button>
           </div>
         </div>
       </div>
@@ -575,14 +591,14 @@
     <ol class="runlist run-shelf" id="runList"></ol>
     <div class="run-foot">
       <div class="r-actions">
-        <button class="btn solid" id="againRun" type="button">Play again</button>
+        <button class="btn solid icon-btn" id="againRun" type="button"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 1 2.4 5.7M4 12V7m0 5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl">Play again</span></button>
         <button class="btn ghostbtn share-btn" id="share" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.7" fill="none"/></svg>
           Challenge your friend
         </button>
       </div>
       <div class="run-foot-links">
-        <button class="btn ghostbtn customlink" id="backToMenu" type="button">Back to menu</button>
+        <button class="btn ghostbtn customlink icon-btn" id="backToMenu" type="button"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H5.5A1.5 1.5 0 0 1 4 19v-8.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="lbl">Back to menu</span></button>
       </div>
     </div>
   </div>
@@ -609,14 +625,14 @@
     <ol class="runlist duel-runlist run-shelf" id="duelRunList"></ol>
     <div class="run-foot">
       <div class="r-actions">
-        <button class="btn solid" id="duelAgain" type="button">Play again</button>
+        <button class="btn solid icon-btn" id="duelAgain" type="button"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 1 2.4 5.7M4 12V7m0 5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl">Play again</span></button>
         <button class="btn ghostbtn share-btn" id="duelShare" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.7" fill="none"/></svg>
           Challenge your friend
         </button>
       </div>
       <div class="run-foot-links">
-        <button class="btn ghostbtn customlink" id="duelMenu" type="button">Back to menu</button>
+        <button class="btn ghostbtn customlink icon-btn" id="duelMenu" type="button"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H5.5A1.5 1.5 0 0 1 4 19v-8.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="lbl">Back to menu</span></button>
       </div>
     </div>
   </div>
@@ -706,8 +722,8 @@
     <p class="dim set-note" id="setBackupNote">No account needed. Copy your code, then paste it on another browser or device to bring over your stats, streaks, and Daily history.</p>
     <textarea id="backupCode" class="set-code" rows="3" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Backup code" placeholder="Your backup code appears here — or paste a code to restore"></textarea>
     <div class="set-actions">
-      <button class="btn ghostbtn" id="backupCopy" type="button">Copy backup code</button>
-      <button class="btn ghostbtn" id="backupRestore" type="button">Restore from code</button>
+      <button class="btn ghostbtn icon-btn" id="backupCopy" type="button"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 15H4a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 4 3h9a1.5 1.5 0 0 1 1.5 1.5V6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="lbl">Copy backup code</span></button>
+      <button class="btn ghostbtn icon-btn" id="backupRestore" type="button"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl">Restore from code</span></button>
     </div>
     <p class="set-msg" id="backupMsg" role="status" aria-live="polite" hidden></p>
     <button class="set-danger" id="resetAllData" type="button">Reset all data on this device</button>
@@ -733,10 +749,10 @@
         <div id="feedbackReasonField" hidden>
           <span class="fb-kicker" id="fbReasonKicker">What went wrong?</span>
           <div class="fb-pills fb-pills-2" id="feedbackReasonPills" role="radiogroup" aria-label="Song issue">
-            <button type="button" class="fb-pill" data-reason="audio" aria-pressed="false">No audio</button>
-            <button type="button" class="fb-pill" data-reason="live" aria-pressed="false">Live version</button>
-            <button type="button" class="fb-pill" data-reason="title" aria-pressed="false">Wrong info</button>
-            <button type="button" class="fb-pill" data-reason="other" aria-pressed="false">Other issue</button>
+            <button type="button" class="fb-pill" data-reason="audio" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m16 9 5 6m0-6-5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="lbl">No audio</span></button>
+            <button type="button" class="fb-pill" data-reason="live" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4m-3 0h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="lbl">Live version</span></button>
+            <button type="button" class="fb-pill" data-reason="title" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="lbl">Wrong info</span></button>
+            <button type="button" class="fb-pill" data-reason="other" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v5m0 3.2h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="lbl">Other issue</span></button>
           </div>
           <select id="feedbackReason" class="sr" tabindex="-1" disabled aria-label="Issue">
             <option value="">Choose an issue</option>
@@ -793,7 +809,7 @@
         </div>
 
         <textarea id="feedbackDetails" name="game-details" rows="1" maxlength="600" hidden aria-hidden="true"></textarea>
-        <button class="btn solid fb-submit" id="sendFeedback" type="submit">Send feedback</button>
+        <button class="btn solid fb-submit icon-btn" id="sendFeedback" type="submit"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14m11-11-7 18-4-7-7-4 18-7Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl">Send feedback</span></button>
       </fieldset>
       <p id="feedbackStatus" role="status" aria-live="polite"></p>
     </form>

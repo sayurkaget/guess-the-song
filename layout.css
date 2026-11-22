@@ -145,14 +145,27 @@
 #lobby .duel-card-wide:hover .duel-cta-pill{background:rgba(245,177,61,.12);border-color:#ffd06b}
 #lobby .duel-cta-pill svg{width:16px;height:16px;flex:none}
 #lobby :is(button,select):focus-visible{outline:2px solid var(--acc);outline-offset:4px}
+.title-with-ico{display:inline-flex;align-items:center;gap:.46rem;min-width:0}
+.title-ico{width:19px;height:19px;flex:none;opacity:.92}
+.title-ico.is-green{color:#35e88b}
+.title-ico.is-gold{color:#ffd06b}
+.title-ico.is-purple{color:#d8b4fe}
+.btn-ico{width:14px;height:14px;flex:none;opacity:.88}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;gap:.44rem}
+.icon-btn .btn-ico{width:15px;height:15px}
+#lobby .classic-seg button,
+#duel .duel-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:.38rem}
+#lobby .classic-seg button[aria-pressed="true"] .btn-ico,
+#duel .duel-tabs button[aria-pressed="true"] .btn-ico{opacity:1}
 .menu-stats{display:none}
 .foot-menu-links{display:none}
 .wrap:has(#lobby:not([hidden])) .foot-menu-links{display:flex;align-items:center;gap:1.05rem}
-.wrap:has(#lobby:not([hidden])) .menu-stats{display:block;min-height:40px;padding:.4rem .2rem;background:transparent;border:0;color:var(--dim);font:inherit;font-size:.82rem}
+.wrap:has(#lobby:not([hidden])) .menu-stats{display:inline-flex;align-items:center;gap:.36rem;min-height:40px;padding:.4rem .2rem;background:transparent;border:0;color:var(--dim);font:inherit;font-size:.82rem}
 .wrap:has(#lobby:not([hidden])) .menu-stats:hover{color:var(--acc)}
 .wrap:has(#lobby:not([hidden])) .foot{width:100%;justify-content:space-between;margin-top:.55rem}
 .wrap:has(#lobby:not([hidden])) .foot button:focus-visible{outline:2px solid var(--acc);outline-offset:4px}
 .wrap:has(#lobby:not([hidden])) .vol{display:none}
+.feedback-link{display:inline-flex;align-items:center;gap:.36rem}
 .wrap:has(#lobby:not([hidden])) .feedback-link{min-height:40px;padding:.4rem .2rem;font-size:.82rem}
 @media(max-width:560px){
   .wrap:has(#lobby:not([hidden])){padding:1.45rem 1rem 1.45rem}
@@ -162,6 +175,7 @@
   #lobby .daily-row{grid-template-columns:minmax(0,1fr);gap:.6rem}
   #lobby .daily-card{grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:.98rem 1.05rem;gap:.65rem}
   #lobby .daily-title-row{justify-content:flex-start;flex-wrap:wrap;gap:.4rem;margin-bottom:.2rem}
+  .title-ico{width:17px;height:17px}
   #lobby .daily-heading h2{font-size:1.1rem}
   #lobby .daily-heading .daily-meta{font-size:.79rem}
   #lobby .daily-note{font-size:.73rem;margin-top:.22rem}
@@ -169,8 +183,9 @@
   #lobby #openDailyArtist{width:auto;min-height:40px;padding:.52rem .82rem;font-size:.81rem;min-width:0;max-width:136px;white-space:normal}
   #lobby .classic-section{padding:1.05rem}
   #lobby .classic-heading{gap:.65rem}
-  #lobby .classic-seg{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
-  #lobby .classic-seg button{min-height:36px;padding:.4rem .3rem;font-size:.77rem;white-space:nowrap}
+  #lobby .classic-seg{width:100%;display:grid;grid-template-columns:minmax(0,1.16fr) minmax(0,.96fr) minmax(0,.88fr)}
+  #lobby .classic-seg button{min-height:36px;padding:.38rem .24rem;font-size:.73rem;gap:.24rem;white-space:nowrap}
+  #lobby .classic-seg button .btn-ico{width:12px;height:12px}
   #lobby .classic-controls{grid-template-columns:1fr;gap:.65rem}
   #lobby .subcontrols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
   #lobby .drop{max-width:none}
@@ -567,12 +582,18 @@
 #resultModal .r-actions .btn{min-height:44px;padding:.62rem 1rem;font-size:.85rem}
 #resultModal #next{flex:1 1 auto;min-width:118px}
 .reveal-foot{
-  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:nowrap;
   padding-top:.72rem;border-top:1px solid rgba(255,255,255,.08);
 }
-#resultModal .listenlink{margin:0;border-bottom:0;font-size:.78rem;color:var(--dim)}
+#resultModal .listenlink{
+  margin:0;border-bottom:0;font-size:.78rem;color:var(--dim);
+  display:inline-flex;align-items:center;gap:.36rem;white-space:nowrap;flex:none;
+}
 #resultModal .listenlink:hover{color:var(--ink);text-decoration:underline}
-#resultModal .report-song{margin:0;padding:.2rem 0;min-height:32px;font-size:.78rem}
+#resultModal .report-song{
+  margin:0;padding:.2rem 0;min-height:32px;font-size:.78rem;
+  display:inline-flex;align-items:center;gap:.36rem;white-space:nowrap;flex:none;
+}
 @media(max-width:560px){
   #resultModal .reveal{padding:1.35rem 1.15rem 1.15rem;border-radius:20px}
   #resultModal .reveal .x{top:10px;right:10px;width:36px;height:36px}
@@ -1736,8 +1757,10 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
   #game .dd-item{padding:.48rem .52rem;gap:.55rem}
   #game .dd-art{width:40px;height:40px}
 
-  /* Result modal & Run/Duel Summary: clean 3-row hero, original 2-col 1:1 square cards, laser-aligned 2x2 footer */
-  #resultModal #reportSong{display:block;width:100%;text-align:center;margin:.1rem auto 0;padding:.4rem .5rem}
+  /* Result modal & Run/Duel Summary: single-row reveal footer (no wrap), clean 3-row hero, 2-col square cards */
+  #resultModal .reveal-foot{gap:.6rem;justify-content:space-between;flex-wrap:nowrap}
+  #resultModal #listen,
+  #resultModal #reportSong{display:inline-flex;align-items:center;width:auto;margin:0;padding:.25rem 0;font-size:.76rem;white-space:nowrap;flex:none}
   .sheet.run-sheet .run-hero{
     display:grid;grid-template-columns:auto minmax(0,1fr);
     column-gap:.75rem;row-gap:.34rem;align-items:center;

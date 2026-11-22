@@ -188,7 +188,8 @@
     }
     sending = true;
     fields.disabled = true;
-    button.textContent = tr('fbSending', 'Sending…');
+    const btnLbl = (button && typeof button.querySelector === 'function' && button.querySelector('.lbl')) || button;
+    btnLbl.textContent = tr('fbSending', 'Sending…');
     status.textContent = tr('fbSendingNote', 'Sending your feedback…');
     status.className = '';
     try {
@@ -216,7 +217,8 @@
     } finally {
       sending = false;
       fields.disabled = false;
-      button.textContent = tr('sendFeedback', 'Send feedback');
+      const btnLbl = (button && typeof button.querySelector === 'function' && button.querySelector('.lbl')) || button;
+      btnLbl.textContent = tr('sendFeedback', 'Send feedback');
     }
   });
 })();

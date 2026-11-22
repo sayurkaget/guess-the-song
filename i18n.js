@@ -786,7 +786,9 @@
   }
 
   function setText(el, key) {
-    if (el) el.textContent = t(key);
+    if (!el) return;
+    const lbl = typeof el.querySelector === 'function' ? el.querySelector('.lbl') : null;
+    (lbl || el).textContent = t(key);
   }
 
   function setBtnLabelKeepSvg(el, key) {

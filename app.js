@@ -3064,7 +3064,8 @@
       renderRunFan($('#runFan'), fanArts);
 
       $('#againRun').hidden = false;
-      $('#againRun').textContent = (S.daily || S.runChallenge)
+      const againLbl = ($('#againRun').querySelector && $('#againRun').querySelector('.lbl')) || $('#againRun');
+      againLbl.textContent = (S.daily || S.runChallenge)
         ? (I18N ? tr('playRegular') : 'Play regular game')
         : (I18N ? tr('playAgain') : 'Play again');
       $('#dailyResult').hidden = !S.daily;
@@ -3641,7 +3642,10 @@
   function disarmSettingsActions() {
     restoreArmedCode = '';
     const rb = $('#backupRestore');
-    if (rb) { rb.textContent = I18N ? tr('backupRestore') : 'Restore from code'; rb.classList.remove('is-armed'); }
+    if (rb) {
+      ((rb.querySelector && rb.querySelector('.lbl')) || rb).textContent = I18N ? tr('backupRestore') : 'Restore from code';
+      rb.classList.remove('is-armed');
+    }
     resetArmed = false;
     clearTimeout(resetArmedTimer);
     const db = $('#resetAllData');
@@ -3806,7 +3810,7 @@
       if (restoreArmedCode !== raw) {
         disarmSettingsActions();
         restoreArmedCode = raw;
-        btn.textContent = 'Confirm restore';
+        ((btn.querySelector && btn.querySelector('.lbl')) || btn).textContent = 'Confirm restore';
         btn.classList.add('is-armed');
         setBackupMsg('Valid backup (' + parsed.count + (parsed.count === 1 ? ' item' : ' items') + '). Click "Confirm restore" to replace progress on this device.', 'ok');
         return;
