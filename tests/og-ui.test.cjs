@@ -250,3 +250,59 @@ test('Wave 66 mobile UI polish and remaining ID localization leaks are wired cle
   assert.match(fb, /window\.TuneUpI18n/);
   assert.match(i18n, /setText\(\$\('\.classic-title-group \.mode-pill'\), 'stages5'\)/);
 });
+
+test('Wave 69 compacts songs.js with dictionary tables under 2.6 MB and wires Daily Artist Detective end-to-end', () => {
+  const songsStat = fs.statSync(path.join(ROOT, 'songs.js'));
+  assert.ok(songsStat.size < 2.6 * 1024 * 1024, 'expected dictionary-compacted songs.js under 2.6 MB, got ' + songsStat.size);
+
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
+  const TuneUpCard = require('../score-card.js');
+  const Backup = require('../backup.js');
+
+  assert.match(html, /id="agTabs"[^>]*role="tablist"/);
+  assert.match(html, /data-ag-mode="daily"/);
+  assert.match(html, /data-ag-mode="free"/);
+  assert.match(css, /\.spotle-mode-bar\{/);
+  assert.match(css, /\.spotle-tabs\{/);
+  assert.match(app, /tl:artist:daily:v1:/);
+  assert.match(app, /tl:artist:daily:completed/);
+  assert.match(app, /AD\.dailyArtist\(list, today\)/);
+  assert.match(app, /function saveDailyArtistState\(\)/);
+  assert.match(i18n, /agTabDaily:\s*'Daily Artist'/);
+  assert.match(i18n, /agTabDaily:\s*'Artis Harian'/);
+
+  // Daily Artist score card produces DAILY ARTIST kicker & dated filename
+  const dailyCard = TuneUpCard.buildCardData({
+    kind: 'artist',
+    mode: 'daily',
+    day: '2026-11-22',
+    dailyStreak: 4,
+    won: true,
+    tries: 3,
+    maxTries: 10,
+    rows: [['exact', 'exact', 'exact', 'exact', 'exact', 'exact']],
+    url: 'https://tuneup.pages.dev/'
+  });
+  assert.equal(dailyCard.kicker, 'DAILY ARTIST');
+  assert.equal(dailyCard.filename, 'tuneup-daily-artist-2026-11-22.png');
+  assert.match(dailyCard.subtitle, /2026-11-22 · 4-day streak/);
+
+  // Daily Artist storage keys persist automatically through TuneUpBackup
+  const mem = new Map([
+    ['tl:artist:daily:completed', JSON.stringify(['2026-11-21', '2026-11-22'])],
+    ['tl:artist:daily:v1:2026-11-22', JSON.stringify({ day: '2026-11-22', targetId: 'taylor-swift', guessIds: ['taylor-swift'], hints: [], done: true, won: true })]
+  ]);
+  const storage = {
+    get length() { return mem.size; },
+    key: (i) => [...mem.keys()][i] ?? null,
+    getItem: (k) => (mem.has(k) ? mem.get(k) : null),
+    setItem: (k, v) => mem.set(k, String(v)),
+    removeItem: (k) => mem.delete(k)
+  };
+  const collected = Backup.collect(storage);
+  assert.ok(collected['tl:artist:daily:completed']);
+  assert.ok(collected['tl:artist:daily:v1:2026-11-22']);
+});

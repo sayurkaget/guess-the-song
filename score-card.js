@@ -66,20 +66,24 @@
       const tries = Number.isFinite(Number(input.tries)) ? Math.max(0, Number(input.tries)) : rows.length;
       const hintsUsed = Math.max(0, Number(input.hintsUsed) || 0);
       const best = Math.max(0, Number(input.best) || 0);
+      const isDaily = input.mode === 'daily' && !!input.day;
+      const dailyStreak = Math.max(0, Number(input.dailyStreak) || 0);
       const verdict = String(input.verdict || (won ? ('Solved in ' + tries + (tries === 1 ? ' try!' : ' tries!')) : 'Mystery unsolved'));
-      const subParts = [best > 0 ? ('Best streak ' + best) : 'Top 530 global roster'];
+      const subParts = isDaily
+        ? [String(input.day) + (dailyStreak > 0 ? (' · ' + dailyStreak + '-day streak') : '')]
+        : [best > 0 ? ('Best streak ' + best) : 'Top 530 global roster'];
       if (hintsUsed > 0 && !/\bhints?\b/i.test(verdict)) subParts.push(hintsUsed + (hintsUsed === 1 ? ' hint' : ' hints'));
       return {
         kind: 'artist',
         theme: 'purple',
-        kicker: 'ARTIST DETECTIVE',
+        kicker: isDaily ? 'DAILY ARTIST' : 'ARTIST DETECTIVE',
         scoreMain: won ? String(tries) : 'X',
         scoreSub: '/ ' + maxTries,
         subtitle: subParts.join(' · '),
         verdict,
         rows,
         host,
-        filename: 'tuneup-artist-detective-score.png'
+        filename: isDaily ? ('tuneup-daily-artist-' + String(input.day) + '.png') : 'tuneup-artist-detective-score.png'
       };
     }
 

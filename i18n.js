@@ -122,6 +122,16 @@
       agSolvedTryHint: 'Solved in {n} {unit} · {h} {hUnit}',
       agRevealed: 'Mystery Artist Revealed',
       agTopHit: 'Top Hit: {title} ({country} · {genre})',
+      agTabDaily: 'Daily Artist',
+      agTabEndless: 'Endless',
+      agPlayEndless: 'Play Endless',
+      agDailyWait: 'Next Daily Artist in {t}',
+      agDailyMeta: 'Daily · {day}',
+      agDailyStreakPill: 'Daily streak {n}',
+      artistSubDailyDone: 'Daily {n}/10 · Endless ready',
+      artistSubDailyMissed: 'Daily complete · Endless ready',
+      artistSubDailyStreak: 'Daily + Endless · {n}-day streak',
+      artistSubDailyReady: 'Daily Artist + Endless · 6 clues',
       clue_debut: 'Debut',
       clue_members: 'Type',
       clue_gender: 'Gender',
@@ -439,6 +449,16 @@
       agSolvedTryHint: 'Tertebak dalam {n} percobaan · {h} petunjuk',
       agRevealed: 'Artis Misterius Terungkap',
       agTopHit: 'Lagu Hits: {title} ({country} · {genre})',
+      agTabDaily: 'Artis Harian',
+      agTabEndless: 'Tanpa Batas',
+      agPlayEndless: 'Main Tanpa Batas',
+      agDailyWait: 'Artis Harian berikutnya dalam {t}',
+      agDailyMeta: 'Harian · {day}',
+      agDailyStreakPill: 'Streak harian {n}',
+      artistSubDailyDone: 'Harian {n}/10 · Mode bebas siap',
+      artistSubDailyMissed: 'Harian selesai · Mode bebas siap',
+      artistSubDailyStreak: 'Harian + Bebas · Streak {n} hari',
+      artistSubDailyReady: 'Artis Harian + Bebas · 6 petunjuk',
       clue_debut: 'Debut',
       clue_members: 'Tipe',
       clue_gender: 'Gender',
@@ -748,6 +768,8 @@
     setText($('#duelTagB'), 'duelChallenger');
     if ($('#agQ')) $('#agQ').placeholder = t('searchArtistPh');
     setText($('#agGiveUp'), 'giveUp');
+    setText($('#agTabs [data-ag-mode="daily"]'), 'agTabDaily');
+    setText($('#agTabs [data-ag-mode="free"]'), 'agTabEndless');
     setText($('#saveArtistCard'), 'saveScoreCard');
     setText($('#agShareBtn'), 'challengeFriend');
     setText($('#agNextBtn'), 'nextArtist');
