@@ -263,11 +263,9 @@ test('Wave 69 compacts songs.js with dictionary tables under 2.6 MB and wires Da
   const TuneUpCard = require('../score-card.js');
   const Backup = require('../backup.js');
 
-  assert.match(html, /id="agTabs"[^>]*role="tablist"/);
-  assert.match(html, /data-ag-mode="daily"/);
-  assert.match(html, /data-ag-mode="free"/);
-  assert.match(css, /\.spotle-mode-bar\{/);
-  assert.match(css, /\.spotle-tabs\{/);
+  assert.doesNotMatch(html, /id="agTabs"|id="agModeBar"/);
+  assert.match(html, /class="daily-game-pill is-purple" id="agDailyMeta"/);
+  assert.match(css, /\.daily-game-pill\.is-purple\{/);
   assert.match(app, /tl:artist:daily:v1:/);
   assert.match(app, /tl:artist:daily:completed/);
   assert.match(app, /AD\.dailyArtist\(list, today\)/);

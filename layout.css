@@ -1349,28 +1349,12 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 #agTargetPill[data-passed="1"]{background:rgba(37,224,125,.14);border-color:rgba(37,224,125,.42);color:#41f596}
 #agTriesPill{background:rgba(168,85,247,.16);border-color:rgba(168,85,247,.42);color:#e9d5ff}
 
-.spotle-mode-bar{
-  display:flex;align-items:center;justify-content:space-between;gap:.65rem;flex-wrap:wrap;
-  margin-top:-.15rem;
-}
-.spotle-mode-bar[hidden]{display:none}
-.spotle-tabs{
-  background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.26);
-}
-.spotle-tabs button[aria-pressed="true"]{
-  background:rgba(168,85,247,.26);color:#f3e8ff;
-  box-shadow:inset 0 0 0 1px rgba(192,132,252,.48);
-}
-.spotle-daily-tag{
-  font-size:.76rem;font-weight:600;color:#d8b4fe;letter-spacing:.01em;
+.daily-game-pill.is-purple{
+  margin:-.1rem 0 .1rem;
+  background:rgba(168,85,247,.16);border-color:rgba(168,85,247,.38);color:#e9d5ff;
   font-variant-numeric:tabular-nums;
 }
-.spotle-daily-tag[hidden]{display:none}
-@media(max-width:600px){
-  .spotle-mode-bar{justify-content:center;gap:.45rem}
-  .spotle-tabs{width:100%;max-width:340px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
-  .spotle-tabs button{min-height:36px;padding:.4rem .5rem;font-size:.78rem;white-space:nowrap}
-}
+.daily-game-pill[hidden]{display:none}
 
 .spotle-top-card{
   position:relative;z-index:20;

@@ -135,7 +135,7 @@
       agTabEndless: 'Endless',
       agPlayEndless: 'Play Endless',
       agDailyWait: 'Next Daily Artist in {t}',
-      agDailyMeta: 'Daily · {day}',
+      agDailyMeta: 'Daily Artist · {day}',
       agDailyStreakPill: 'Daily streak {n}',
       artistSubDailyDone: 'Daily {n}/10 · Endless ready',
       artistSubDailyMissed: 'Daily complete · Endless ready',
@@ -503,7 +503,7 @@
       agTabEndless: 'Tanpa Batas',
       agPlayEndless: 'Main Tanpa Batas',
       agDailyWait: 'Artis Harian berikutnya dalam {t}',
-      agDailyMeta: 'Harian · {day}',
+      agDailyMeta: 'Artis Harian · {day}',
       agDailyStreakPill: 'Streak harian {n}',
       artistSubDailyDone: 'Harian {n}/10 · Mode bebas siap',
       artistSubDailyMissed: 'Harian selesai · Mode bebas siap',
@@ -852,8 +852,6 @@
     setText($('#duelTagB'), 'duelChallenger');
     if ($('#agQ')) $('#agQ').placeholder = t('searchArtistPh');
     setText($('#agGiveUp'), 'giveUp');
-    setText($('#agTabs [data-ag-mode="daily"]'), 'agTabDaily');
-    setText($('#agTabs [data-ag-mode="free"]'), 'agTabEndless');
     setBtnLabelKeepSvg($('#agShareBtn'), 'challengeFriend');
     setText($('#agNextBtn'), 'nextArtist');
     const legendSpans = doc.querySelectorAll('.spotle-legend span');

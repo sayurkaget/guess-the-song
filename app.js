@@ -4901,22 +4901,11 @@
 
     function renderAgBoard() {
       const st = artistStats();
-      const modeBar = $('#agModeBar');
-      if (modeBar) modeBar.hidden = !!ag.challenge;
-      const agTabs = $('#agTabs');
-      if (agTabs && typeof agTabs.querySelectorAll === 'function') {
-        const activeKey = ag.mode === 'daily' ? 'daily' : 'free';
-        agTabs.querySelectorAll('[data-ag-mode]').forEach((b) => {
-          const on = b.dataset.agMode === activeKey;
-          b.setAttribute('aria-selected', String(on));
-          b.setAttribute('aria-pressed', String(on));
-        });
-      }
       const dailyMeta = $('#agDailyMeta');
       if (dailyMeta) {
-        if (ag.mode === 'daily' && ag.day) {
+        if (ag.mode === 'daily' && !ag.challenge && ag.day) {
           dailyMeta.hidden = false;
-          dailyMeta.textContent = I18N ? tr('agDailyMeta', { day: ag.day }) : ('Daily · ' + ag.day);
+          dailyMeta.textContent = I18N ? tr('agDailyMeta', { day: ag.day }) : ('Daily Artist · ' + ag.day);
         } else {
           dailyMeta.hidden = true;
           dailyMeta.textContent = '';
@@ -5281,15 +5270,6 @@
 
     if ($('#openDailyArtist')) $('#openDailyArtist').onclick = () => startArtistGame(null, 'daily');
     $('#openArtistGame').onclick = () => startArtistGame(null, 'free');
-    if ($('#agTabs')) {
-      $('#agTabs').addEventListener('click', (e) => {
-        const b = e.target.closest('[data-ag-mode]');
-        if (!b || ag.challenge) return;
-        const nextMode = b.dataset.agMode === 'free' ? 'free' : 'daily';
-        if (ag.mode === nextMode) return;
-        startArtistGame(null, nextMode);
-      });
-    }
     $('#artistGameBack').onclick = () => { closeAll(); UI.lobby(); };
     const reopenAgDD = () => {
       if (ag.done || !$('#agDD').hidden) return;
