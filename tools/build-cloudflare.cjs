@@ -31,7 +31,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v95-wave69-daily-artist-compact'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v96-wave70-homepage-daily-artist'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -188,9 +188,11 @@ const SEO_PAGES = [
 
 function localizeIdStaticHtml(html) {
   let out = html
-    .replace('<h2 id="dailyHeading">Daily Challenge</h2>', '<h2 id="dailyHeading">Tantangan Harian</h2>')
-    .replace('<span>1 song · 5 tries</span>', '<span>1 lagu · 5 percobaan</span>')
-    .replace('>Play daily</button>', '>Main harian</button>')
+    .replace('<h2 id="dailyHeading">Daily Song</h2>', '<h2 id="dailyHeading">Lagu Harian</h2>')
+    .replace('<span class="daily-meta" id="dailySub">1 song · 5 tries</span>', '<span class="daily-meta" id="dailySub">1 lagu · 5 percobaan</span>')
+    .replace('<h2 id="dailyArtistHeading">Daily Artist</h2>', '<h2 id="dailyArtistHeading">Artis Harian</h2>')
+    .replace('<span class="daily-meta" id="dailyArtistSub">1 artist · 10 tries</span>', '<span class="daily-meta" id="dailyArtistSub">1 artis · 10 tebakan</span>')
+    .replaceAll('>Play daily</button>', '>Main harian</button>')
     .replace('<span class="mode-pill">5 stages</span>', '<span class="mode-pill">5 tahap</span>')
     .replace('>By Artist</button>', '>Per Artis</button>')
     .replace('>Playlists</button>', '>Playlist</button>')
@@ -207,7 +209,7 @@ function localizeIdStaticHtml(html) {
     .replace('<span class="mode-pill is-gold">Higher or lower</span>', '<span class="mode-pill is-gold">Tinggi / rendah</span>')
     .replace('<p id="duelLobbySub">Spotify streams &amp; release year</p>', '<p id="duelLobbySub">Spotify streams &amp; tahun rilis</p>')
     .replace('Play duel\n', 'Main duel\n')
-    .replace('<span class="mode-pill is-purple">10 tries</span>', '<span class="mode-pill is-purple">10 tebakan</span>')
+    .replace('<span class="mode-pill is-purple">Endless</span>', '<span class="mode-pill is-purple">Tanpa batas</span>')
     .replace('<p id="artistLobbySub">Deduce the mystery artist from 6 clues</p>', '<p id="artistLobbySub">Tebak artis misterius dari 6 petunjuk</p>')
     .replace('Play artist\n', 'Main artis\n')
     .replace('>Stats</button>', '>Statistik</button>')

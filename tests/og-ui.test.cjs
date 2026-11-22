@@ -306,3 +306,25 @@ test('Wave 69 compacts songs.js with dictionary tables under 2.6 MB and wires Da
   assert.ok(collected['tl:artist:daily:completed']);
   assert.ok(collected['tl:artist:daily:v1:2026-11-22']);
 });
+
+test('Wave 70 promotes Daily Artist onto the homepage alongside Daily Song with full EN/ID & Endless parity', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
+  const build = fs.readFileSync(path.join(ROOT, 'tools/build-cloudflare.cjs'), 'utf8');
+
+  assert.match(html, /class="daily-row"[\s\S]*id="dailySongCard"[\s\S]*id="openDaily"[\s\S]*id="dailyArtistCard"[\s\S]*id="openDailyArtist"/);
+  assert.match(html, /id="dailyDoneBadge"[\s\S]*id="dailyArtistDoneBadge"/);
+  assert.match(css, /#lobby \.daily-row\{/);
+  assert.match(css, /#lobby \.daily-card\.is-artist\{/);
+  assert.match(css, /#lobby #openDailyArtist\{/);
+  assert.match(app, /function refreshDailyArtist\(\)/);
+  assert.match(app, /\$\('#openDailyArtist'\)\.onclick\s*=\s*\(\)\s*=>\s*startArtistGame\(null,\s*'daily'\)/);
+  assert.match(app, /\$\('#openArtistGame'\)\.onclick\s*=\s*\(\)\s*=>\s*startArtistGame\(null,\s*'free'\)/);
+  assert.match(i18n, /dailySongHeading:\s*'Daily Song'/);
+  assert.match(i18n, /dailySongHeading:\s*'Lagu Harian'/);
+  assert.match(i18n, /dailyArtistHeading:\s*'Daily Artist'/);
+  assert.match(i18n, /dailyArtistHeading:\s*'Artis Harian'/);
+  assert.match(build, /<h2 id="dailyArtistHeading">Artis Harian<\/h2>/);
+});

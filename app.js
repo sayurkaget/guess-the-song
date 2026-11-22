@@ -1804,16 +1804,76 @@
     return { ...streak, played, won: wins.length, dist };
   }
   const dailyStreak = dailyStats;
+  function refreshDailyArtist() {
+    const btn = $('#openDailyArtist');
+    const status = $('#dailyArtistStatus');
+    const badge = $('#dailyArtistDoneBadge');
+    const card = $('#dailyArtistCard');
+    if (!btn || !status) return;
+    const DG = window.DailyGame;
+    const day = DG && DG.day ? DG.day() : '';
+    const saved = day ? LS.get(artistDailyKey(day), null) : null;
+    const current = artistStats().dailyStreak || 0;
+    const triesN = saved && Array.isArray(saved.guessIds) ? saved.guessIds.length : 0;
+    const details = [];
+    if (current > 0) details.push(I18N ? tr('dailyArtistStreakLbl', { n: current }) : (current + '-day streak'));
+    if (saved && saved.done) {
+      const rem = DG && DG.remaining ? DG.remaining() : '';
+      if (rem) details.push(I18N ? tr('dailyArtistNextShort', { t: rem }) : ('Next artist in ' + rem));
+    } else if (triesN > 0) {
+      details.push(I18N ? tr('dailyArtistTriesSoFar', { n: triesN }) : (triesN + '/10 tries used'));
+    }
+    status.textContent = details.join(' · ');
+    status.hidden = !details.length;
+    if (badge) {
+      if (saved && saved.done) {
+        badge.textContent = saved.won ? ('✓ ' + triesN + '/10') : (I18N ? tr('dailyBadgeDone') : 'Done');
+        badge.hidden = false;
+      } else {
+        badge.hidden = true;
+      }
+    }
+    if (card) {
+      if (saved && saved.done) card.dataset.done = saved.won ? 'win' : 'lose';
+      else if (card.removeAttribute) card.removeAttribute('data-done');
+    }
+    btn.textContent = saved && saved.done
+      ? (I18N ? tr('viewResult') : 'View daily result')
+      : (triesN > 0 ? (I18N ? tr('continueDaily') : 'Continue daily') : (I18N ? tr('playDaily') : 'Play daily'));
+  }
   function refreshDaily() {
     const day = window.DailyGame.day(), saved = LS.get(dailyKey(day)) || LS.get('tl:daily:v1:' + day);
     const current = dailyStreak().current;
     const status = $('#dailyStatus');
+    const badge = $('#dailyDoneBadge');
+    const card = $('#dailySongCard');
     const details = [];
-    if (current) details.push(current + '-win streak');
-    if (saved && saved.runDone) details.push('Next song in ' + window.DailyGame.remaining());
+    if (current) details.push(I18N ? tr('dailyWinStreakLbl', { n: current }) : (current + '-win streak'));
+    if (saved && saved.runDone) {
+      const rem = window.DailyGame.remaining();
+      details.push(I18N ? tr('dailyNextSongShort', { t: rem }) : ('Next song in ' + rem));
+    }
     status.textContent = details.join(' · ');
     status.hidden = !details.length;
-    $('#openDaily').textContent = saved && saved.runDone ? 'View daily result' : saved ? 'Continue daily' : 'Play daily';
+    const st0 = saved && saved.runDone && Array.isArray(saved.stages) ? saved.stages[0] : null;
+    const won = !!(st0 && st0.won);
+    const triesN = st0 && Array.isArray(st0.guesses) ? st0.guesses.length : 0;
+    if (badge) {
+      if (saved && saved.runDone) {
+        badge.textContent = won && triesN ? ('✓ ' + triesN + '/' + TRIES) : (I18N ? tr('dailyBadgeDone') : 'Done');
+        badge.hidden = false;
+      } else {
+        badge.hidden = true;
+      }
+    }
+    if (card) {
+      if (saved && saved.runDone) card.dataset.done = won ? 'win' : 'lose';
+      else if (card.removeAttribute) card.removeAttribute('data-done');
+    }
+    $('#openDaily').textContent = saved && saved.runDone
+      ? (I18N ? tr('viewResult') : 'View daily result')
+      : saved ? (I18N ? tr('continueDaily') : 'Continue daily') : (I18N ? tr('playDaily') : 'Play daily');
+    refreshDailyArtist();
   }
   function saveDaily() {
     const key = dailyKey(S.daily.day), saved = LS.get(key);
@@ -2436,22 +2496,11 @@
       const artistSub = $('#artistLobbySub');
       if (artistSub) {
         const st = artistStats();
-        const today = window.DailyGame ? window.DailyGame.day() : '';
-        const dailySaved = today ? LS.get(artistDailyKey(today), null) : null;
-        if (dailySaved && dailySaved.done) {
-          const triesN = Array.isArray(dailySaved.guessIds) ? dailySaved.guessIds.length : 0;
-          artistSub.textContent = dailySaved.won
-            ? (I18N ? tr('artistSubDailyDone', { n: triesN }) : ('Daily ' + triesN + '/10 · Endless ready'))
-            : (I18N ? tr('artistSubDailyMissed') : 'Daily complete · Endless ready');
-        } else if (st.dailyStreak > 0) {
-          artistSub.textContent = I18N ? tr('artistSubDailyStreak', { n: st.dailyStreak }) : ('Daily + Endless · ' + st.dailyStreak + '-day streak');
-        } else if (st.best > 0) {
-          artistSub.textContent = I18N ? tr('artistSubBest', { n: st.best }) : ('6 clues · Best streak ' + st.best);
-        } else if (st.won > 0) {
-          artistSub.textContent = I18N ? tr('artistSubWon', { n: st.won }) : ('6 clues · Solved ' + st.won);
-        } else {
-          artistSub.textContent = I18N ? tr('artistSubDailyReady') : 'Daily Artist + Endless · 6 clues';
-        }
+        artistSub.textContent = st.best > 0
+          ? (I18N ? tr('artistSubBest', { n: st.best }) : ('6 clues · Best streak ' + st.best))
+          : (st.won > 0
+            ? (I18N ? tr('artistSubWon', { n: st.won }) : ('6 clues · Solved ' + st.won))
+            : (I18N ? tr('artistSub') : 'Deduce the mystery artist from 6 clues'));
       }
     },
 
@@ -3463,14 +3512,6 @@
     if (typeof syncArtistLang === 'function') syncArtistLang();
     if ($('#game') && !$('#game').hidden) UI.render();
     UI.refreshLobby();
-    const dailyBtn = $('#openDaily');
-    if (dailyBtn) {
-      const day = window.DailyGame && window.DailyGame.day ? window.DailyGame.day() : '';
-      const saved = day ? (LS.get(dailyKey(day)) || LS.get('tl:daily:v1:' + day)) : null;
-      dailyBtn.textContent = (saved && saved.runDone) ? tr('viewResult')
-        : (saved && saved.guesses && saved.guesses.length) ? tr('continueDaily')
-        : tr('playDaily');
-    }
   }
 
   function disarmSettingsActions() {
@@ -5158,7 +5199,8 @@
       else syncAgHints();
     };
 
-    $('#openArtistGame').onclick = () => startArtistGame(null, 'daily');
+    if ($('#openDailyArtist')) $('#openDailyArtist').onclick = () => startArtistGame(null, 'daily');
+    $('#openArtistGame').onclick = () => startArtistGame(null, 'free');
     if ($('#agTabs')) {
       $('#agTabs').addEventListener('click', (e) => {
         const b = e.target.closest('[data-ag-mode]');

@@ -9,7 +9,16 @@
     en: {
       // Lobby
       dailyHeading: 'Daily Challenge',
+      dailySongHeading: 'Daily Song',
       dailySub: '1 song · 5 tries',
+      dailyArtistHeading: 'Daily Artist',
+      dailyArtistSub: '1 artist · 10 tries',
+      dailyWinStreakLbl: '{n}-win streak',
+      dailyNextSongShort: 'Next song in {t}',
+      dailyArtistStreakLbl: '{n}-day streak',
+      dailyArtistNextShort: 'Next artist in {t}',
+      dailyArtistTriesSoFar: '{n}/10 tries used',
+      dailyBadgeDone: 'Done',
       playDaily: 'Play daily',
       continueDaily: 'Continue',
       viewResult: 'See result',
@@ -34,7 +43,7 @@
       duelSub: 'Spotify streams & release year',
       duelSubBest: 'Spotify streams & release year · Best {n}',
       playDuel: 'Play duel',
-      artistPill: '10 tries',
+      artistPill: 'Endless',
       artistSub: 'Deduce the mystery artist from 6 clues',
       artistSubBest: '6 clues · Best streak {n}',
       artistSubWon: '6 clues · Solved {n}',
@@ -336,7 +345,16 @@
     id: {
       // Lobby
       dailyHeading: 'Tantangan Harian',
+      dailySongHeading: 'Lagu Harian',
       dailySub: '1 lagu · 5 percobaan',
+      dailyArtistHeading: 'Artis Harian',
+      dailyArtistSub: '1 artis · 10 tebakan',
+      dailyWinStreakLbl: 'Streak {n} menang',
+      dailyNextSongShort: 'Lagu baru {t}',
+      dailyArtistStreakLbl: 'Streak {n} hari',
+      dailyArtistNextShort: 'Artis baru {t}',
+      dailyArtistTriesSoFar: '{n}/10 tebakan',
+      dailyBadgeDone: 'Selesai',
       playDaily: 'Main harian',
       continueDaily: 'Lanjutkan',
       viewResult: 'Lihat hasil',
@@ -361,7 +379,7 @@
       duelSub: 'Spotify streams & tahun rilis',
       duelSubBest: 'Spotify streams & tahun rilis · Terbaik {n}',
       playDuel: 'Main duel',
-      artistPill: '10 tebakan',
+      artistPill: 'Tanpa batas',
       artistSub: 'Tebak artis misterius dari 6 petunjuk',
       artistSubBest: '6 petunjuk · Streak terbaik {n}',
       artistSubWon: '6 petunjuk · Tertebak {n}',
@@ -729,8 +747,10 @@
     if (doc.documentElement) doc.documentElement.lang = currentLang;
 
     // Lobby
-    setText($('#dailyHeading'), 'dailyHeading');
-    setText($('.daily-heading > span'), 'dailySub');
+    setText($('#dailyHeading'), 'dailySongHeading');
+    setText($('#dailySub') || $('.daily-heading > span'), 'dailySub');
+    setText($('#dailyArtistHeading'), 'dailyArtistHeading');
+    setText($('#dailyArtistSub'), 'dailyArtistSub');
     setText($('#classicHeading'), 'classicHeading');
     if (!$('#classicSpotifyPanel') || $('#classicSpotifyPanel').hidden) {
       setText($('.classic-title-group .mode-pill'), 'stages5');

@@ -8,29 +8,73 @@
   margin-bottom:2.05rem;
 }
 #lobby{align-items:stretch;gap:.85rem}
+#lobby .daily-row{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.85rem;width:100%;
+}
 #lobby .daily-card{
   max-width:none;
   display:grid;
-  grid-template-columns:minmax(0,1fr) 172px;
-  align-items:center;
-  gap:1.2rem;
+  grid-template-columns:minmax(0,1fr);
+  align-content:space-between;
+  gap:.88rem;
   margin:0;
-  padding:1.25rem 1.45rem;
+  padding:1.18rem 1.3rem;
   border-radius:16px;
   text-align:left;
   background:linear-gradient(135deg,rgba(var(--acc-rgb),.085),rgba(var(--acc-rgb),.03));
   border-color:rgba(var(--acc-rgb),.28);
+  transition:background .16s,border-color .16s;
+}
+#lobby .daily-card:hover{
+  background:linear-gradient(135deg,rgba(var(--acc-rgb),.125),rgba(var(--acc-rgb),.045));
+  border-color:rgba(var(--acc-rgb),.46);
+}
+#lobby .daily-card.is-artist{
+  background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(168,85,247,.03));
+  border-color:rgba(168,85,247,.32);
+}
+#lobby .daily-card.is-artist:hover{
+  background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(168,85,247,.045));
+  border-color:rgba(168,85,247,.52);
+}
+#lobby .daily-card[data-done="win"]{
+  border-color:rgba(37,224,125,.48);
+}
+#lobby .daily-card.is-artist[data-done="win"]{
+  border-color:rgba(192,132,252,.56);
+}
+#lobby .daily-title-row{
+  display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.28rem;
 }
 #lobby .daily-heading{margin:0;min-width:0}
-#lobby .daily-heading h2{font-size:1.3rem;line-height:1.2;margin:0 0 .35rem}
-#lobby .daily-heading>span{font-size:.84rem;color:#b4cbbd}
-#lobby .daily-note{margin:.32rem 0 0;font-size:.8rem;color:var(--dim);line-height:1.45}
-#lobby #openDaily{
-  width:100%;min-width:0;min-height:46px;padding:.65rem .9rem;box-shadow:none;white-space:nowrap;
+#lobby .daily-heading h2{font-size:1.28rem;line-height:1.2;margin:0}
+#lobby .daily-heading .daily-meta{display:block;font-size:.83rem;color:#b4cbbd}
+#lobby .daily-card.is-artist .daily-heading .daily-meta{color:#cbbde0}
+#lobby .daily-done-badge{
+  flex:none;padding:.18rem .55rem;border-radius:999px;font-size:.71rem;font-weight:800;
+  background:rgba(37,224,125,.16);border:1px solid rgba(37,224,125,.4);color:#6df7ad;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+#lobby .daily-done-badge[hidden]{display:none}
+#lobby .daily-done-badge.is-purple{
+  background:rgba(168,85,247,.2);border-color:rgba(192,132,252,.45);color:#e9d5ff;
+}
+#lobby .daily-card[data-done="lose"] .daily-done-badge{
+  background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16);color:var(--dim);
+}
+#lobby .daily-note{margin:.32rem 0 0;font-size:.78rem;color:var(--dim);line-height:1.4;font-variant-numeric:tabular-nums}
+#lobby #openDaily,
+#lobby #openDailyArtist{
+  width:100%;min-width:0;min-height:44px;padding:.62rem .9rem;box-shadow:none;white-space:nowrap;
   background:transparent;border:1px solid rgba(var(--acc-rgb),.6);color:var(--acc);font-size:.88rem;
 }
 #lobby #openDaily:hover{background:rgba(var(--acc-rgb),.1);border-color:var(--acc)}
 #lobby #openDaily:active{background:rgba(var(--acc-rgb),.16)}
+#lobby #openDailyArtist{
+  border-color:rgba(168,85,247,.62);color:#d8b4fe;
+}
+#lobby #openDailyArtist:hover{background:rgba(168,85,247,.14);border-color:#d8b4fe}
+#lobby #openDailyArtist:active{background:rgba(168,85,247,.2)}
 #lobby .classic-section{
   width:100%;padding:1.3rem 1.45rem;border-radius:16px;
   background:var(--surf);border:1px solid var(--line);
@@ -115,10 +159,14 @@
   .wrap:has(#lobby:not([hidden])) .head{margin-bottom:1.35rem}
   .wrap:has(#lobby:not([hidden])) .logo{font-size:clamp(2.1rem,8.5vw,2.85rem)}
   #lobby{gap:.75rem}
-  #lobby .daily-card{grid-template-columns:minmax(0,1fr) auto;padding:1.05rem 1.1rem;gap:.65rem}
-  #lobby .daily-heading h2{font-size:1.12rem}
-  #lobby .daily-note{font-size:.75rem}
-  #lobby #openDaily{width:auto;padding:.56rem .88rem;font-size:.82rem;min-width:0;max-width:136px;white-space:normal}
+  #lobby .daily-row{grid-template-columns:minmax(0,1fr);gap:.6rem}
+  #lobby .daily-card{grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:.98rem 1.05rem;gap:.65rem}
+  #lobby .daily-title-row{justify-content:flex-start;flex-wrap:wrap;gap:.4rem;margin-bottom:.2rem}
+  #lobby .daily-heading h2{font-size:1.1rem}
+  #lobby .daily-heading .daily-meta{font-size:.79rem}
+  #lobby .daily-note{font-size:.73rem;margin-top:.22rem}
+  #lobby #openDaily,
+  #lobby #openDailyArtist{width:auto;min-height:40px;padding:.52rem .82rem;font-size:.81rem;min-width:0;max-width:136px;white-space:normal}
   #lobby .classic-section{padding:1.05rem}
   #lobby .classic-heading{gap:.65rem}
   #lobby .classic-seg{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -134,7 +182,8 @@
 }
 @media(max-width:350px){
   #lobby .daily-card{grid-template-columns:minmax(0,1fr)}
-  #lobby #openDaily{width:100%;max-width:none;justify-self:stretch}
+  #lobby #openDaily,
+  #lobby #openDailyArtist{width:100%;max-width:none;justify-self:stretch}
 }
 
 /* Audio feedback stays visible while a request is pending or has failed. */

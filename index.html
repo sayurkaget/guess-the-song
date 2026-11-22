@@ -63,14 +63,31 @@
 
   <!-- ====== mode picker ====== -->
   <section class="lobby" id="lobby">
-    <section class="daily-card" aria-labelledby="dailyHeading">
-      <div class="daily-heading">
-        <h2 id="dailyHeading">Daily Challenge</h2>
-        <span>1 song · 5 tries</span>
-        <p class="daily-note" id="dailyStatus" hidden></p>
-      </div>
-      <button class="btn solid" id="openDaily" type="button">Play daily</button>
-    </section>
+    <div class="daily-row" aria-label="Daily challenges">
+      <section class="daily-card" id="dailySongCard" aria-labelledby="dailyHeading">
+        <div class="daily-heading">
+          <div class="daily-title-row">
+            <h2 id="dailyHeading">Daily Song</h2>
+            <span class="daily-done-badge" id="dailyDoneBadge" hidden></span>
+          </div>
+          <span class="daily-meta" id="dailySub">1 song · 5 tries</span>
+          <p class="daily-note" id="dailyStatus" hidden></p>
+        </div>
+        <button class="btn solid" id="openDaily" type="button">Play daily</button>
+      </section>
+
+      <section class="daily-card is-artist" id="dailyArtistCard" aria-labelledby="dailyArtistHeading">
+        <div class="daily-heading">
+          <div class="daily-title-row">
+            <h2 id="dailyArtistHeading">Daily Artist</h2>
+            <span class="daily-done-badge is-purple" id="dailyArtistDoneBadge" hidden></span>
+          </div>
+          <span class="daily-meta" id="dailyArtistSub">1 artist · 10 tries</span>
+          <p class="daily-note" id="dailyArtistStatus" hidden></p>
+        </div>
+        <button class="btn solid is-purple-btn" id="openDailyArtist" type="button">Play daily</button>
+      </section>
+    </div>
 
     <section class="classic-section" aria-labelledby="classicHeading">
       <div class="classic-heading">
@@ -153,7 +170,7 @@
         <div class="duel-card-copy">
           <div class="duel-card-title">
             <h2>Artist Detective</h2>
-            <span class="mode-pill is-purple">10 tries</span>
+            <span class="mode-pill is-purple">Endless</span>
           </div>
           <p id="artistLobbySub">Deduce the mystery artist from 6 clues</p>
         </div>
