@@ -1,7 +1,7 @@
 {
-  "name": "TuneUp — Music Games & Song Duel",
+  "name": "TuneUp — Free Guess the Song Game & Music Duel",
   "short_name": "TuneUp",
-  "description": "Play free music games: guess songs from split-second clips in Daily, Classic, Artist, and Spotify Playlist modes, battle streams in Music Duel, or deduce 250 global artists in Artist Detective.",
+  "description": "Play free guess the song games: identify tracks from 0.1s clips in Daily, Classic, Artist, and Spotify Playlist, Apple Music & YouTube modes, battle streams in Music Duel, or deduce 530 global artists in Artist Detective.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

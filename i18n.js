@@ -239,6 +239,13 @@
       faqQ5: 'Where is my progress saved?',
       faqA5: 'Your Daily progress, streaks, stats, badges, and settings are saved in this browser. Open Settings → Backup & transfer to copy a backup code and restore your progress on another browser or device.',
       backToTop: 'Back to top',
+      modeLinkDaily: 'Daily Challenge',
+      modeLinkClassic: 'Classic',
+      modeLinkArtist: 'By Artist',
+      modeLinkSpotify: 'Playlist Quiz',
+      modeLinkDuel: 'Music Duel',
+      modeLinkDetective: 'Artist Detective',
+      modeLinkLang: 'Bahasa Indonesia',
       // Playlist / Dynamic strings
       allSongs: 'All songs',
       nSongs: '{n} songs',
@@ -534,9 +541,9 @@
       guideGenres: 'Genre',
       guideEras: 'Era',
       guideNote: 'Pintasan genre mencakup semua era; pintasan era mencakup semua genre. Gabungkan keduanya lewat filter di atas.',
-      aboutTitle: 'Tentang game',
-      aboutP1: 'TuneUp menghadirkan game musik cepat langsung di browser. Uji telingamu dengan klip 0,1–15 detik di mode Harian, Classic, Artis, & Playlist (Spotify, Apple Music, YouTube), adu lagu hits di Music Duel, atau tebak 530 artis global dari 6 petunjuk di Artist Detective.',
-      aboutP2: 'Gratis dimainkan kapan saja.',
+      aboutTitle: 'Tentang TuneUp',
+      aboutP1: 'TuneUp adalah game tebak lagu online gratis langsung di browser tanpa akun. Uji telingamu menebak judul lagu dari klip 0,1–15 detik di Tantangan Harian, Classic (33.500+ lagu), Per Artis, & Playlist Spotify, Apple Music, dan YouTube, adu lagu hits di Music Duel, atau tebak 530 artis global di Artist Detective.',
+      aboutP2: 'Gratis dimainkan kapan saja di HP maupun laptop.',
       faqTitle: 'Perlu diketahui',
       faqQ1: 'Apakah perlu bikin akun?',
       faqA1: 'Tidak perlu daftar. Buka game di HP atau laptop lalu pilih mode, atau tempel link playlist publik Spotify, Apple Music, maupun YouTube untuk main pakai lagumu sendiri.',
@@ -549,6 +556,13 @@
       faqQ5: 'Di mana progres saya disimpan?',
       faqA5: 'Progres Harian, streak, statistik, lencana, dan pengaturan tersimpan di browser ini. Buka Pengaturan → Cadangkan & pindah data untuk menyalin kode backup dan memulihkannya di browser atau perangkat lain.',
       backToTop: 'Kembali ke atas',
+      modeLinkDaily: 'Tantangan Harian',
+      modeLinkClassic: 'Classic',
+      modeLinkArtist: 'Per Artis',
+      modeLinkSpotify: 'Kuis Playlist',
+      modeLinkDuel: 'Music Duel',
+      modeLinkDetective: 'Artist Detective',
+      modeLinkLang: 'English',
       // Playlist / Dynamic strings
       allSongs: 'Semua lagu',
       nSongs: '{n} lagu',
@@ -833,6 +847,19 @@
       if (p) p.textContent = t('faqA' + (i + 1));
     }
     setBtnLabelKeepSvg($('[data-guide-top]'), 'backToTop');
+    setText($('[data-mode-link="daily"]'), 'modeLinkDaily');
+    setText($('[data-mode-link="classic"]'), 'modeLinkClassic');
+    setText($('[data-mode-link="artist"]'), 'modeLinkArtist');
+    setText($('[data-mode-link="spotify"]'), 'modeLinkSpotify');
+    setText($('[data-mode-link="duel"]'), 'modeLinkDuel');
+    setText($('[data-mode-link="detective"]'), 'modeLinkDetective');
+    const langLink = $('[data-mode-link="lang"]');
+    if (langLink) {
+      langLink.textContent = t('modeLinkLang');
+      langLink.setAttribute('href', currentLang === 'id' ? '/' : '/id');
+      langLink.setAttribute('hreflang', currentLang === 'id' ? 'en' : 'id');
+      langLink.setAttribute('lang', currentLang === 'id' ? 'en' : 'id');
+    }
   }
 
   const api = { STORAGE_KEY, DICT, load, set, get, t, apply };

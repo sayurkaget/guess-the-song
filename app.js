@@ -2453,7 +2453,7 @@
       $('#lobby').hidden = false;
       this.buildControls();
       this.refreshLobby();
-      if (!skipRoute) syncRoute('', { title: DEFAULT_TITLE, replace: replaceRoute });
+      if (!skipRoute) syncRoute('', { title: lobbyTitle(), replace: replaceRoute });
     },
 
     game() {
@@ -2474,7 +2474,7 @@
       if (S.challenge || S.runChallenge) {
         if (typeof document !== 'undefined') document.title = 'Friend Challenge — TuneUp';
       } else if (S.daily) {
-        syncRoute('daily', { title: 'Daily Challenge — TuneUp', replace: wasInGame });
+        syncRoute('daily', { title: 'Daily Guess the Song Challenge (Heardle Alternative) — TuneUp', replace: wasInGame });
       } else if (S.custom && S.custom.kind === 'spotify') {
         const count = stageCount();
         const q = S.custom.spotifyId
@@ -2498,8 +2498,12 @@
           ['genre', S.genre !== 'all' ? S.genre : ''],
           ['era', S.era !== 'all' ? S.era : '']
         ]);
-        const modeTitle = $('#gameMode').textContent || 'Classic';
-        syncRoute('classic', { query: q, title: modeTitle + ' — TuneUp', replace: wasInGame });
+        const modeTitle = $('#gameMode').textContent;
+        syncRoute('classic', {
+          query: q,
+          title: modeTitle ? (modeTitle + ' — Guess the Song Game | TuneUp') : 'Classic Guess the Song Game — 33,500+ Songs (0.1s Clips) | TuneUp',
+          replace: wasInGame
+        });
       }
       this.steps($('#steps'), true);
       $('#stageNow').innerHTML = S.daily ? (I18N ? tr('oneSong5Tries') : 'One song · <b>5 tries</b>') : S.challenge
@@ -3146,8 +3150,10 @@
 
   // Alamat situs mengikuti domain tempat game dibuka (github.io, pages.dev,
   // domain sendiri -- apa pun), jadi tautan tantangan tak pernah usang.
-  const ROUTE_SLUGS = new Set(['daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective']);
-  const DEFAULT_TITLE = (typeof document !== 'undefined' && document.title) || 'TuneUp — Music Games & Song Duel';
+  const ROUTE_SLUGS = new Set(['daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective', 'id']);
+  const DEFAULT_TITLE = 'TuneUp — Free Guess the Song Game, Spotify Playlist Quiz & Music Duel';
+  const DEFAULT_TITLE_ID = 'TuneUp — Game Tebak Lagu Online Gratis (Spotify, Harian & Duel)';
+  const lobbyTitle = () => (settings.lang === 'id' ? DEFAULT_TITLE_ID : DEFAULT_TITLE);
   const locObj = () => (typeof location !== 'undefined' && location) || null;
   const ROOT_PATH = (() => {
     const loc = locObj();
@@ -3527,6 +3533,10 @@
       renderSettings();
       applyLanguage();
       refreshBackupPreview();
+      if ($('#lobby') && !$('#lobby').hidden) {
+        if (next === 'en' && currentRouteSlug() === 'id') syncRoute('', { title: DEFAULT_TITLE, replace: true });
+        else if (typeof document !== 'undefined') document.title = lobbyTitle();
+      }
       toast(settings.lang === 'id' ? 'Bahasa diubah ke Indonesia' : 'Language set to English');
     });
   }
@@ -4401,7 +4411,9 @@
       } else {
         syncRoute('duel', {
           query: ds.kind === 'year' ? 'deck=year' : '',
-          title: 'Music Duel · ' + (ds.kind === 'year' ? 'Release Year' : 'Spotify Streams') + ' — TuneUp',
+          title: ds.kind === 'year'
+            ? 'Music Duel · Release Year — Higher or Lower | TuneUp'
+            : 'Music Duel — Higher or Lower Spotify Streams & Release Year | TuneUp',
           replace: wasInDuel
         });
       }
@@ -5024,7 +5036,7 @@
       if (ag.challenge) {
         if (typeof document !== 'undefined') document.title = 'Artist Challenge — TuneUp';
       } else {
-        syncRoute('artist-detective', { title: 'Artist Detective — TuneUp', replace: wasInArtist });
+        syncRoute('artist-detective', { title: 'Artist Detective — Guess the Mystery Artist (Spotle Alternative) | TuneUp', replace: wasInArtist });
       }
       renderAgBoard();
       trackActivity(incoming ? 'artist_challenge_start' : 'artist_free_start', { mode: 'artist' });
@@ -5753,11 +5765,25 @@
   renderRecentPlaylists();
   UI.render();
   UI.lobby({ skipRoute: true }); // selalu mulai dari layar pilih mode tanpa menghapus URL deep-link
+  if (currentRouteSlug() === 'id' && I18N) {
+    settings.lang = I18N.set('id', localStorage);
+    renderSettings();
+  }
   if (settings.lang === 'id') applyLanguage();
 
   function applyDeepLink() {
     const hash = location.hash || '';
     const slug = currentRouteSlug();
+    if (slug === 'id') {
+      if (I18N && settings.lang !== 'id') {
+        settings.lang = I18N.set('id', localStorage);
+        renderSettings();
+        applyLanguage();
+      }
+      if ($('#lobby') && $('#lobby').hidden) UI.lobby({ skipRoute: true });
+      if (typeof document !== 'undefined') document.title = DEFAULT_TITLE_ID;
+      return true;
+    }
     if (hash === '#daily' || slug === 'daily') { startDaily(); return true; }
 
     let params;
