@@ -171,7 +171,7 @@
   };
 
   // Pengaturan pemain (tersimpan di browser). Semua default-nya aktif.
-  const SET_KEYS = { autoplay: 'tl:set:autoplay', sfx: 'tl:set:sfx', hover: 'tl:duel:hoverPlay', lang: 'tl:set:lang' };
+  const SET_KEYS = { autoplay: 'tl:set:autoplay', sfx: 'tl:set:sfx', hover: 'tl:duel:hoverPlay', anim: 'tl:set:anim', lang: 'tl:set:lang' };
   const I18N = window.TuneUpI18n || null;
   const tr = (key, vars) => (I18N ? I18N.t(key, vars) : key);
   const genreLabel = (k) => (I18N && k === 'all' ? tr('allGenres') : I18N && k === 'lain' ? tr('otherGenre') : (GENRES[k] || k));
@@ -180,8 +180,19 @@
     autoplay: LS.get(SET_KEYS.autoplay, true) !== false,
     sfx: LS.get(SET_KEYS.sfx, true) !== false,
     hover: LS.get(SET_KEYS.hover, true) !== false,
+    anim: LS.get(SET_KEYS.anim, true) !== false,
     lang: I18N ? I18N.load(localStorage) : 'en'
   };
+  function applyAnimSetting() {
+    if (typeof document === 'undefined' || !document.body) return;
+    if (settings.anim) {
+      if (typeof document.body.removeAttribute === 'function') document.body.removeAttribute('data-anim');
+      else if (document.body.dataset) delete document.body.dataset.anim;
+    } else if (document.body.dataset) {
+      document.body.dataset.anim = 'off';
+    }
+  }
+  applyAnimSetting();
   let syncDuelHover = null;
   let syncDuelLang = null;
   let syncArtistLang = null;
@@ -276,20 +287,29 @@
       try {
         const now = ctx.currentTime;
         const gainScale = Math.min(0.20, Math.max(0.03, 0.16 * S.vol));
-        const notes = kind === 'fanfare'
+        const notes = kind === 'achievement'
+          ? [
+              [523.25, 0.00, 0.20, 'triangle', 0.90],
+              [659.25, 0.06, 0.22, 'triangle', 0.92],
+              [783.99, 0.12, 0.26, 'sine', 0.95],
+              [1046.50, 0.18, 0.50, 'sine', 1.00],
+              [1567.98, 0.21, 0.44, 'sine', 0.48],
+              [2093.00, 0.25, 0.38, 'sine', 0.26]
+            ]
+          : kind === 'fanfare'
           ? [[523.25, 0, 0.14, 'triangle'], [659.25, 0.08, 0.15, 'triangle'], [783.99, 0.16, 0.18, 'triangle'], [1046.5, 0.24, 0.30, 'sine']]
           : kind === 'win'
           ? [[523.25, 0, 0.12, 'triangle'], [659.25, 0.07, 0.14, 'triangle'], [783.99, 0.14, 0.24, 'sine']]
           : kind === 'near'
           ? [[440, 0, 0.11, 'sine'], [554.37, 0.07, 0.14, 'sine']]
           : [[293.66, 0, 0.09, 'triangle'], [220, 0.065, 0.15, 'triangle']];
-        for (const [freq, delay, dur, type] of notes) {
+        for (const [freq, delay, dur, type, mult] of notes) {
           const osc = ctx.createOscillator();
           const g = ctx.createGain();
           osc.type = type;
           osc.frequency.setValueAtTime(freq, now + delay);
           g.gain.setValueAtTime(0.0001, now + delay);
-          g.gain.linearRampToValueAtTime(gainScale, now + delay + 0.014);
+          g.gain.linearRampToValueAtTime(gainScale * (mult || 1), now + delay + 0.014);
           g.gain.exponentialRampToValueAtTime(0.0001, now + delay + dur);
           osc.connect(g);
           g.connect(ctx.destination);
@@ -2215,22 +2235,80 @@
   }
 
   const BADGE_SVG = {
+    note: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.5a2.5 2.5 0 1 1-2-2.45V7l11-2v10.5a2.5 2.5 0 1 1-2-2.45V8.4L9 9.8v7.7Z" fill="currentColor"/></svg>',
     bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4.5 13h6l-1 9L19.5 11h-6l-.5-9Z" fill="currentColor"/></svg>',
+    heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.7-9.2-9.1C1.4 7.8 4 4.5 7.4 4.5c2 0 3.5 1.1 4.6 2.6 1.1-1.5 2.6-2.6 4.6-2.6 3.4 0 6 3.3 4.6 6.9-1.7 4.4-9.2 9.1-9.2 9.1Z" fill="currentColor"/></svg>',
+    shield: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v6c0 4.6 3 7.8 7 9 4-1.2 7-4.4 7-9V6l-7-3Zm-1.1 12.2L7.7 12l1.4-1.4 1.8 1.8 4-4 1.4 1.4-5.4 5.4Z" fill="currentColor"/></svg>',
     crown: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18l-1.5-10-4.5 4-3-6-3 6-4.5-4L3 18Z" fill="currentColor"/></svg>',
     flame: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 2.5c.6 3.5-2.6 5.2-2.6 8.2 0 1.4 1 2.4 2.2 2.4 1.5 0 2.6-1.4 2.6-3.4 2.5 1.9 3.8 4.6 3.8 7.3A6.5 6.5 0 0 1 5.5 17c0-4 2.6-7.6 7-14.5Z" fill="currentColor"/></svg>',
+    disc: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.8" fill="currentColor"/></svg>',
+    list: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h11M4 11h11M4 16h7m8-7v7.5a2.5 2.5 0 1 1-1.5-2.3V8.2l3-1.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     cal: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3v4M16 3v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
     trophy: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Zm-3 1h3v3a3 3 0 0 1-3-3Zm13 0h3a3 3 0 0 1-3 3V5Zm-5 9v4m-4 2h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     spark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2Z" fill="currentColor"/></svg>',
+    medal: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 3h6l-1.5 5h-3L9 3Zm3 9.2 1 1.9 2.1.3-1.5 1.4.4 2.1-2-1-2 1 .4-2.1-1.5-1.4 2.1-.3 1-1.9Z" fill="currentColor"/></svg>',
     lens: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17l-5.6 3 1.1-6.2L3 9.4l6.2-.9L12 2.8Z" fill="currentColor"/></svg>',
+    ribbon: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.5 14-1.5 7 5-2.5 5 2.5-1.5-7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>',
     grid: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8" fill="currentColor"/></svg>'
   };
 
+  const achQueue = [];
+  let achTimer = 0, achHideTimer = 0, achActive = false;
+
+  function showNextAchievement() {
+    const box = $('#achToast');
+    if (!box) { achQueue.length = 0; achActive = false; return; }
+    if (!achQueue.length) { achActive = false; return; }
+    achActive = true;
+    const def = achQueue.shift();
+    const bName = I18N ? tr('badge_' + def.id + '_name') : def.name;
+    const bDesc = I18N ? tr('badge_' + def.id + '_desc') : def.desc;
+    const kicker = $('#achToastKicker');
+    if (kicker) kicker.textContent = I18N ? tr('achUnlockedKicker') : 'Achievement unlocked';
+    const ico = $('#achToastIco');
+    if (ico) ico.innerHTML = BADGE_SVG[def.icon] || BADGE_SVG.trophy;
+    const titleEl = $('#achToastTitle');
+    if (titleEl) titleEl.textContent = bName;
+    const descEl = $('#achToastDesc');
+    if (descEl) descEl.textContent = bDesc;
+    if (box.dataset) box.dataset.theme = def.theme || 'emerald';
+    box.classList.remove('is-show');
+    box.hidden = false;
+    void box.offsetWidth;
+    box.classList.add('is-show');
+    playSfx('achievement');
+    clearTimeout(achTimer);
+    clearTimeout(achHideTimer);
+    achTimer = setTimeout(() => {
+      box.classList.remove('is-show');
+      achHideTimer = setTimeout(() => {
+        box.hidden = true;
+        showNextAchievement();
+      }, 340);
+    }, 4200);
+  }
+
+  function dismissAchievementToast() {
+    const box = $('#achToast');
+    clearTimeout(achTimer);
+    clearTimeout(achHideTimer);
+    if (box) { box.classList.remove('is-show'); box.hidden = true; }
+    achQueue.length = 0;
+    achActive = false;
+  }
+
   function announceBadges(added) {
     if (!added || !added.length) return;
-    const label = added.length === 1
-      ? ('Badge unlocked: ' + added[0].name)
-      : ('Badges unlocked: ' + added.map((b) => b.name).join(', '));
-    toast(label);
+    if (!$('#achToast')) {
+      const label = added.length === 1
+        ? ('Achievement unlocked: ' + added[0].name)
+        : ('Achievements unlocked: ' + added.map((b) => b.name).join(', '));
+      toast(label);
+      return;
+    }
+    for (const def of added) achQueue.push(def);
+    if (!achActive) showNextAchievement();
   }
 
   function unlockBadges(ids, notify = true) {
@@ -2259,9 +2337,17 @@
     const B = window.TuneUpBadges;
     if (!B) return;
     const earned = [];
+    if (won) earned.push('firstwin');
     if (won && !S.challenge && !S.runChallenge && S.guesses.length === 1) earned.push('sniper');
+    if (won && !S.challenge && !S.runChallenge && S.guesses.length === TRIES) earned.push('clutch');
+    if (won && !S.daily && !S.custom && !S.challenge && !S.runChallenge && S.stage === STAGES - 1) {
+      earned.push('impossible');
+    }
     if (S.runDone && !S.daily && !S.challenge && !S.runChallenge && stageCount() === STAGES && score() === STAGES) {
       earned.push('sweep');
+    }
+    if (S.runDone && S.custom && S.custom.kind === 'spotify') {
+      earned.push('playlist');
     }
     const added = earned.length ? B.unlock(localStorage, earned) : [];
     const synced = syncBadges(false);
@@ -3066,7 +3152,7 @@
       $('#againRun').hidden = false;
       const againLbl = ($('#againRun').querySelector && $('#againRun').querySelector('.lbl')) || $('#againRun');
       againLbl.textContent = (S.daily || S.runChallenge)
-        ? (I18N ? tr('playRegular') : 'Play regular game')
+        ? (I18N ? tr('playClassic') : 'Play Classic')
         : (I18N ? tr('playAgain') : 'Play again');
       $('#dailyResult').hidden = !S.daily;
       if (S.daily) {
@@ -3431,8 +3517,9 @@
   let confettiStop = null;
   function confetti(sel, mode) {
     if (confettiStop) { confettiStop(); confettiStop = null; }
-    if (mode === 'lose' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (mode === 'lose' || (typeof settings !== 'undefined' && !settings.anim)) return;
     const cv = $(sel);
+    if (!cv || typeof cv.getContext !== 'function') return;
     const ctx = cv.getContext('2d');
     if (!ctx) return;
     // Keep the raster workload bounded on large/high-DPI screens. CSS still
@@ -3615,6 +3702,8 @@
     sync('#setAutoplay', settings.autoplay);
     sync('#setSfx', settings.sfx);
     sync('#setHover', settings.hover);
+    sync('#setAnim', settings.anim);
+    applyAnimSetting();
     const langSeg = $('#setLangSeg');
     if (langSeg && typeof langSeg.querySelectorAll === 'function') {
       langSeg.querySelectorAll('[data-lang]').forEach((b) => {
@@ -3676,6 +3765,8 @@
     settings.autoplay = LS.get(SET_KEYS.autoplay, true) !== false;
     settings.sfx = LS.get(SET_KEYS.sfx, true) !== false;
     settings.hover = LS.get(SET_KEYS.hover, true) !== false;
+    settings.anim = LS.get(SET_KEYS.anim, true) !== false;
+    applyAnimSetting();
     settings.lang = I18N ? I18N.load(localStorage) : 'en';
     S.genre = LS.get('tl:genre', 'all');
     if (!GENRES[S.genre]) S.genre = 'all';
@@ -3772,6 +3863,21 @@
       if (syncDuelHover) syncDuelHover();
       refreshBackupPreview();
       toast(I18N ? tr(settings.hover ? 'toastHoverOn' : 'toastHoverOff') : (settings.hover ? 'Hover play on' : 'Hover play off'));
+    };
+  }
+  if ($('#setAnim')) {
+    $('#setAnim').onclick = () => {
+      settings.anim = !settings.anim;
+      LS.set(SET_KEYS.anim, settings.anim);
+      renderSettings();
+      refreshBackupPreview();
+      toast(I18N ? tr(settings.anim ? 'toastAnimOn' : 'toastAnimOff') : (settings.anim ? 'Animations on' : 'Animations off'));
+    };
+  }
+  if ($('#achToast')) {
+    $('#achToast').onclick = () => {
+      dismissAchievementToast();
+      UI.stats('badges');
     };
   }
   if ($('#backupCode')) {
@@ -4913,7 +5019,10 @@
           LS.set('tl:artist:daily:completed', doneDays);
         }
       }
-      if (won && tries >= 1 && tries <= 3) unlockBadges(['detective'], true);
+      const agEarned = [];
+      if (won && tries === 1) agEarned.push('artist1');
+      if (won && tries >= 1 && tries <= 3) agEarned.push('detective');
+      if (agEarned.length) unlockBadges(agEarned, true);
       syncBadges(true);
     }
 

@@ -21,7 +21,7 @@ function makeStorage(initial = {}) {
 
 test('TuneUpBadges unlocks idempotently, backfills from stats, and round-trips through TuneUpBackup', () => {
   const st = makeStorage();
-  assert.equal(Badges.CATALOG.length, 8);
+  assert.equal(Badges.CATALOG.length, 16);
   assert.equal(Badges.summary(st).unlocked, 0);
 
   const first = Badges.unlock(st, ['sniper', 'unknown-id']);
@@ -34,16 +34,20 @@ test('TuneUpBadges unlocks idempotently, backfills from stats, and round-trips t
   assert.equal(Badges.unlock(st, ['sniper']).length, 0);
   assert.equal(Badges.load(st).sniper, ts1);
 
-  // Backfill remaining milestones from existing stats snapshot
+  // Backfill remaining stat-derivable milestones from existing stats snapshot
   const backfilled = Badges.syncFromStats(st, {
-    classic: { runs: 4, dist: [0, 0, 1, 1, 1, 1] },
+    classic: { runs: 10, total: 35, dist: [0, 0, 1, 1, 1, 1] },
     songStreakBest: 12,
-    daily: { played: 7, best: 7, dist: [1, 2, 2, 1, 1, 0] },
-    duel: { runs: 2, best: 11 },
-    artist: { played: 3, dist: [0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0] }
+    daily: { played: 7, won: 7, best: 7, dist: [1, 2, 2, 1, 1, 0] },
+    duel: { runs: 2, best: 21 },
+    artist: { played: 3, dailyBest: 3, dist: [1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0] }
   });
-  assert.equal(backfilled.length, 7);
-  assert.equal(Badges.summary(st).unlocked, 8);
+  assert.equal(backfilled.length, 13);
+  assert.equal(Badges.summary(st).unlocked, 14);
+
+  // Event-driven achievements unlock cleanly too
+  assert.equal(Badges.unlock(st, ['impossible', 'playlist']).length, 2);
+  assert.equal(Badges.summary(st).unlocked, 16);
 
   // tl:badges is automatically included in TuneUpBackup transfer & cleared on reset
   const code = Backup.encode(Backup.collect(st));
@@ -53,7 +57,7 @@ test('TuneUpBadges unlocks idempotently, backfills from stats, and round-trips t
 
   const st2 = makeStorage();
   Backup.restore(st2, decoded.entries);
-  assert.equal(Badges.summary(st2).unlocked, 8);
+  assert.equal(Badges.summary(st2).unlocked, 16);
 
   Backup.clear(st2);
   assert.equal(Badges.summary(st2).unlocked, 0);

@@ -155,7 +155,7 @@ test('Wave 58 summary modal footer aligns Daily in 2x2 grid and wide sheets in 1
   const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
   assert.match(css, /\.run-foot\{[\s\S]*?justify-content:space-between;[\s\S]*?flex-wrap:nowrap;/);
   assert.match(css, /\.sheet\.run-sheet\[data-mode="daily"\] \.run-foot\{[\s\S]*?flex-direction:column;/);
-  assert.match(css, /\.sheet\.run-sheet\[data-mode="daily"\] \.r-actions\{[\s\S]*?grid-template-columns:minmax\(0,1fr\) minmax\(0,1\.22fr\);/);
+  assert.match(css, /\.sheet\.run-sheet\[data-mode="daily"\] \.r-actions\{[\s\S]*?grid-template-columns:minmax\(0,\.92fr\) minmax\(0,1\.28fr\);/);
   assert.match(css, /\.sheet\.run-sheet\[data-mode="daily"\] \.run-foot-links\{[\s\S]*?grid-template-columns:1fr;/);
   assert.match(css, /\.sheet\.run-sheet #backToMenu,\s*\.sheet\.run-sheet #duelMenu\{[\s\S]*?color:var\(--dim\);/);
   assert.doesNotMatch(css, /\.run-foot-links\{\s*gap:1\.15rem;/);
@@ -380,4 +380,31 @@ test('Wave 73 keeps #resultModal .reveal-foot on a single mobile row and adds co
   assert.match(html, /id="backToMenu"[^>]*><svg class="btn-ico"/);
   assert.match(html, /id="sendFeedback"[^>]*><svg class="btn-ico"/);
   assert.match(i18n, /el\.querySelector\('\.lbl'\)/);
+});
+
+test('Wave 75 upgrades Badges to 16 Steam-style Achievements with SFX, adds in-app Animations toggle independent of OS, and fixes Daily Play Classic CTA', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  const styles = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
+  const Badges = require('../badges.js');
+
+  assert.equal(Badges.CATALOG.length, 16);
+  assert.match(html, /data-tab="badges"[^>]*>[\s\S]*Achievements/);
+  assert.match(html, /id="achToast"[\s\S]*id="achToastKicker"[\s\S]*id="achToastTitle"/);
+  assert.match(html, /id="setAnim"[^>]*role="switch"/);
+  assert.match(css, /\.ach-toast\{/);
+  assert.match(css, /\.badge-card\.is-earned\[data-theme="blue"\]\{/);
+  assert.doesNotMatch(styles, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  assert.doesNotMatch(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  assert.match(styles, /body\[data-anim="off"\]/);
+  assert.match(app, /kind === 'achievement'/);
+  assert.match(app, /playSfx\('achievement'\)/);
+  assert.match(app, /if \(mode === 'lose' \|\| \(typeof settings !== 'undefined' && !settings\.anim\)\) return;/);
+  assert.match(app, /tr\('playClassic'\)/);
+  assert.match(i18n, /tabBadges:\s*'Achievements'/);
+  assert.match(i18n, /tabBadges:\s*'Pencapaian'/);
+  assert.match(i18n, /playClassic:\s*'Play Classic'/);
+  assert.match(i18n, /playClassic:\s*'Main Classic'/);
 });

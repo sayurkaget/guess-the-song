@@ -73,9 +73,8 @@ body{
 /* Do not composite the ambient motion behind an opaque result overlay. */
 body:has(.modal:not([hidden])) .glow::before,
 body:has(.modal:not([hidden])) .glow::after{animation-play-state:paused}
-@media (prefers-reduced-motion:reduce){
-  .glow::before,.glow::after{animation:none}
-}
+body[data-anim="off"] .glow::before,
+body[data-anim="off"] .glow::after{animation:none}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
 h2,h3{margin:0 0 .5rem}
@@ -747,9 +746,7 @@ kbd{
 @supports (-webkit-touch-callout:none){
   #q{font-size:16px}
 }
-@media (prefers-reduced-motion:reduce){
-  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
-}
+body[data-anim="off"] *{animation-duration:.01ms!important;transition-duration:.01ms!important}
 
 /* ============ custom game: main satu artis ============ */
 

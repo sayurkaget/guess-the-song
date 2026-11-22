@@ -168,7 +168,7 @@ test('TuneUpI18n maintains EN/ID dictionary parity, persists tl:set:lang through
   assert.equal(I18n.get(), 'id');
   assert.equal(I18n.t('dailyHeading'), 'Tantangan Harian');
   assert.equal(I18n.t('hintIn', { n: 3 }), 'Petunjuk dlm 3');
-  assert.equal(I18n.t('badgesScope', { u: 4, t: 8 }), '4 dari 8 terbuka · tersimpan di perangkat ini');
+  assert.equal(I18n.t('badgesScope', { u: 4, t: 8 }), '4 dari 8 pencapaian terbuka · tersimpan di perangkat ini');
 
   // Persists through TuneUpBackup
   const code = Backup.encode(Backup.collect(st));

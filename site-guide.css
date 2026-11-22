@@ -82,4 +82,4 @@
   .guide-modes{gap:.3rem .85rem}
   .guide-lang{margin-left:0}
 }
-@media(prefers-reduced-motion:reduce){.music-tags button{transition:none}}
+body[data-anim="off"] .music-tags button{transition:none}

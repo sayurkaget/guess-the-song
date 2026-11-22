@@ -685,7 +685,7 @@
       <button type="button" role="tab" data-tab="daily" aria-selected="false" aria-pressed="false">Daily</button>
       <button type="button" role="tab" data-tab="duel" aria-selected="false" aria-pressed="false">Duel</button>
       <button type="button" role="tab" data-tab="artist" aria-selected="false" aria-pressed="false">Artist</button>
-      <button type="button" role="tab" data-tab="badges" aria-selected="false" aria-pressed="false">Badges</button>
+      <button type="button" role="tab" data-tab="badges" aria-selected="false" aria-pressed="false"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Zm-3 1h3v3a3 3 0 0 1-3-3Zm13 0h3a3 3 0 0 1-3 3V5Zm-5 9v4m-4 2h8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl">Achievements</span></button>
     </div>
     <p class="dim" id="statScope"></p>
     <div class="statgrid" id="statgrid"></div>
@@ -720,6 +720,10 @@
       <li class="set-row">
         <div class="set-copy"><b id="setHoverLbl">Hover play</b><small id="setHoverDesc">Music Duel &middot; play a card when your mouse is over it</small></div>
         <button class="set-switch" id="setHover" type="button" role="switch" aria-checked="true" aria-labelledby="setHoverLbl"><span class="set-knob"></span></button>
+      </li>
+      <li class="set-row">
+        <div class="set-copy"><b id="setAnimLbl">Animations</b><small id="setAnimDesc">Confetti, spinning vinyl &amp; smooth effects (even if OS animations are off)</small></div>
+        <button class="set-switch" id="setAnim" type="button" role="switch" aria-checked="true" aria-labelledby="setAnimLbl"><span class="set-knob"></span></button>
       </li>
     </ul>
 
@@ -822,6 +826,16 @@
 </div>
 
 <div class="toast" id="toast" hidden></div>
+
+<button class="ach-toast" id="achToast" type="button" hidden aria-live="polite" aria-atomic="true">
+  <span class="ach-ico" id="achToastIco" aria-hidden="true"></span>
+  <span class="ach-copy">
+    <small class="ach-kicker" id="achToastKicker">Achievement unlocked</small>
+    <b class="ach-title" id="achToastTitle"></b>
+    <span class="ach-desc" id="achToastDesc"></span>
+  </span>
+  <span class="ach-bar" aria-hidden="true"></span>
+</button>
 
 <script src="recordings.js"></script>
 <script src="songs.js"></script>
