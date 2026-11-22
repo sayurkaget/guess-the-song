@@ -3714,21 +3714,35 @@
   if ($('#openSettings')) {
     $('#openSettings').onclick = openSettings;
   }
+  function switchLanguage(next) {
+    if (!I18N) return;
+    const target = next === 'id' ? 'id' : 'en';
+    if (settings.lang === target) return;
+    settings.lang = I18N.set(target, localStorage);
+    renderSettings();
+    applyLanguage();
+    refreshBackupPreview();
+    if ($('#lobby') && !$('#lobby').hidden) {
+      if (target === 'en' && currentRouteSlug() === 'id') syncRoute('', { title: DEFAULT_TITLE, replace: true });
+      else if (target === 'id' && !currentRouteSlug() && !location.search && !location.hash) syncRoute('id', { title: DEFAULT_TITLE_ID, replace: true });
+      else if (typeof document !== 'undefined') document.title = lobbyTitle();
+    }
+    toast(settings.lang === 'id' ? 'Bahasa diubah ke Indonesia' : 'Language set to English');
+  }
   if ($('#setLangSeg')) {
     $('#setLangSeg').addEventListener('click', (e) => {
       const b = e.target.closest('[data-lang]');
-      if (!b || !I18N) return;
-      const next = b.dataset.lang === 'id' ? 'id' : 'en';
-      if (settings.lang === next) return;
-      settings.lang = I18N.set(next, localStorage);
-      renderSettings();
-      applyLanguage();
-      refreshBackupPreview();
-      if ($('#lobby') && !$('#lobby').hidden) {
-        if (next === 'en' && currentRouteSlug() === 'id') syncRoute('', { title: DEFAULT_TITLE, replace: true });
-        else if (typeof document !== 'undefined') document.title = lobbyTitle();
-      }
-      toast(settings.lang === 'id' ? 'Bahasa diubah ke Indonesia' : 'Language set to English');
+      if (!b) return;
+      switchLanguage(b.dataset.lang);
+    });
+  }
+  const guideLang = $('.guide-lang');
+  if (guideLang && typeof guideLang.addEventListener === 'function') {
+    guideLang.addEventListener('click', (e) => {
+      const a = e.target.closest('[data-mode-link="lang-en"],[data-mode-link="lang-id"]');
+      if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      switchLanguage(a.dataset.modeLink === 'lang-id' ? 'id' : 'en');
     });
   }
   if ($('#setAutoplay')) {

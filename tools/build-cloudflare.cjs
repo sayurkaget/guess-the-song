@@ -31,7 +31,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v99-wave73-icons-mobile-reveal'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v100-wave74-footer-lang-switcher'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -226,7 +226,8 @@ function localizeIdStaticHtml(html) {
     .replace('>Daily Challenge</a>', '>Tantangan Harian</a>')
     .replace('>By Artist</a>', '>Per Artis</a>')
     .replace('>Playlist Quiz</a>', '>Kuis Playlist</a>')
-    .replace('<a href="/id" hreflang="id" lang="id" data-mode-link="lang">Bahasa Indonesia</a>', '<a href="/" hreflang="en" lang="en" data-mode-link="lang">English</a>')
+    .replace('<a href="/" hreflang="en" lang="en" data-mode-link="lang-en" aria-current="page">EN</a>', '<a href="/" hreflang="en" lang="en" data-mode-link="lang-en">EN</a>')
+    .replace('<a href="/id" hreflang="id" lang="id" data-mode-link="lang-id">ID</a>', '<a href="/id" hreflang="id" lang="id" data-mode-link="lang-id" aria-current="page">ID</a>')
     .replace('Back to top <svg', 'Kembali ke atas <svg');
 
   const idFaqMarkup = ID_FAQS.map(([q, a]) => `      <details><summary>${escHtml(q)}</summary><p>${escHtml(a)}</p></details>`).join('\n');

@@ -959,12 +959,15 @@
     setText($('[data-mode-link="spotify"]'), 'modeLinkSpotify');
     setText($('[data-mode-link="duel"]'), 'modeLinkDuel');
     setText($('[data-mode-link="detective"]'), 'modeLinkDetective');
-    const langLink = $('[data-mode-link="lang"]');
-    if (langLink) {
-      langLink.textContent = t('modeLinkLang');
-      langLink.setAttribute('href', currentLang === 'id' ? '/' : '/id');
-      langLink.setAttribute('hreflang', currentLang === 'id' ? 'en' : 'id');
-      langLink.setAttribute('lang', currentLang === 'id' ? 'en' : 'id');
+    const langEn = $('[data-mode-link="lang-en"]');
+    const langId = $('[data-mode-link="lang-id"]');
+    if (langEn) {
+      if (currentLang === 'en') langEn.setAttribute('aria-current', 'page');
+      else langEn.removeAttribute('aria-current');
+    }
+    if (langId) {
+      if (currentLang === 'id') langId.setAttribute('aria-current', 'page');
+      else langId.removeAttribute('aria-current');
     }
   }
 

@@ -119,7 +119,8 @@ test('Cloudflare bundle uses its own URLs, isolates APIs, and preserves the orig
         assert.ok(pageHtml.includes('<html lang="id">'), 'id.html must set lang="id"');
         assert.ok(pageHtml.includes('Game Tebak Lagu'), 'id.html must include Indonesian title/copy');
         assert.ok(pageHtml.includes('Apakah perlu bikin akun?'), 'id.html must include static Indonesian FAQ');
-        assert.ok(pageHtml.includes('<a href="/" hreflang="en" lang="en" data-mode-link="lang">English</a>'), 'id.html must link back to English /');
+        assert.ok(pageHtml.includes('<a href="/" hreflang="en" lang="en" data-mode-link="lang-en">EN</a>'), 'id.html must link back to English /');
+        assert.ok(pageHtml.includes('<a href="/id" hreflang="id" lang="id" data-mode-link="lang-id" aria-current="page">ID</a>'), 'id.html must mark ID active');
       }
     }
   } finally {
