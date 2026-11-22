@@ -408,3 +408,33 @@ test('Wave 75 upgrades Badges to 16 Steam-style Achievements with SFX, adds in-a
   assert.match(i18n, /playClassic:\s*'Play Classic'/);
   assert.match(i18n, /playClassic:\s*'Main Classic'/);
 });
+
+test('Wave 76 polishes mobile toast, unifies PC/mobile reveal modal, adds mobile search auto-scroll, and removes This filter tab with icons on all stats tabs', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  const styles = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+
+  // 1. Mobile top-floating frosted glass toast
+  assert.match(styles, /\.toast::before\{/);
+  assert.match(styles, /@keyframes toasttop/);
+  assert.match(styles, /top:max\(14px,env\(safe-area-inset-top\)\);bottom:auto/);
+
+  // 2. Unified compact #resultModal on desktop & mobile
+  assert.match(css, /#resultModal \.reveal\{\s*width:min\(468px,100%\)/);
+  assert.match(css, /\.reveal-info\{display:contents\}/);
+  assert.match(css, /\.reveal-body\{grid-column:1 \/ -1/);
+
+  // 3. Mobile search auto-scroll runway + JS helper
+  assert.match(css, /body\.is-searching \.wrap/);
+  assert.match(css, /max-height:min\(42dvh,256px\)/);
+  assert.match(app, /function scrollSearchIntoView\(/);
+  assert.match(app, /window\.visualViewport\.addEventListener\('resize'/);
+
+  // 4. Stats tabs: This filter removed + all 5 remaining tabs have inline vector icons
+  assert.doesNotMatch(html, /data-tab="filter"/);
+  for (const tab of ['overall', 'daily', 'duel', 'artist', 'badges']) {
+    assert.match(html, new RegExp('data-tab="' + tab + '"[^>]*><svg class="btn-ico"'));
+  }
+  assert.match(app, /let statsTab = 'overall';/);
+});

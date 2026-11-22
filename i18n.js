@@ -929,7 +929,6 @@
 
     // Stats modal
     setText($('#sTitle'), 'statsTitle');
-    setText($('#statsTabs [data-tab="filter"]'), 'tabThisFilter');
     setText($('#statsTabs [data-tab="overall"]'), 'tabAllClassic');
     setText($('#statsTabs [data-tab="daily"]'), 'tabDaily');
     setText($('#statsTabs [data-tab="duel"]'), 'tabDuel');

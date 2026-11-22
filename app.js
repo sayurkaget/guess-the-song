@@ -2206,7 +2206,41 @@
     return { ...agg, filtersUsed };
   }
 
-  let statsTab = 'filter';
+  let statsTab = 'overall';
+  let searchScrollTimer = 0;
+  function isMobileSearchViewport() {
+    try {
+      return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 760px)').matches;
+    } catch (e) { return false; }
+  }
+  function setSearchingMode(on) {
+    if (document.body && document.body.classList && typeof document.body.classList.toggle === 'function') {
+      document.body.classList.toggle('is-searching', !!on);
+    }
+  }
+  function scrollSearchIntoView(inputEl, immediate) {
+    if (!inputEl || !isMobileSearchViewport()) return;
+    setSearchingMode(true);
+    if (typeof window === 'undefined' || typeof window.scrollTo !== 'function') return;
+    const card = (typeof inputEl.closest === 'function' && inputEl.closest('.guess-card, .spotle-top-card')) || inputEl;
+    const doScroll = (instant) => {
+      if (!card || typeof card.getBoundingClientRect !== 'function') return;
+      const rect = card.getBoundingClientRect();
+      if (rect.top >= 6 && rect.top <= 24) return;
+      const targetTop = Math.max(0, Math.round((window.scrollY || window.pageYOffset || 0) + rect.top - 12));
+      try {
+        window.scrollTo({ top: targetTop, behavior: (settings.anim && !instant) ? 'smooth' : 'auto' });
+      } catch (e) {
+        window.scrollTo(0, targetTop);
+      }
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => doScroll(!!immediate));
+    else doScroll(!!immediate);
+    clearTimeout(searchScrollTimer);
+    searchScrollTimer = setTimeout(() => {
+      if (document.activeElement === inputEl) doScroll(true);
+    }, 320);
+  }
   const SONG_STREAK_KEY = 'tl:song:streak';
   const CUSTOM_STREAK_KEY = 'tl:custom:streak';
   let lastStreak = null;
@@ -2944,12 +2978,14 @@
       this.dd.hidden = false;
       this.dd.scrollTop = 0;
       this.q.setAttribute('aria-expanded', 'true');
+      if (document.activeElement === this.q) scrollSearchIntoView(this.q);
     },
     closeDD() {
       this.ddInteracting = false;
       this.dd.scrollTop = 0;
       this.dd.hidden = true; this.sel = -1;
       this.q.setAttribute('aria-expanded', 'false');
+      if (document.activeElement !== this.q) setSearchingMode(false);
     },
     move(d) {
       if (this.dd.hidden || !this.list.length) return;
@@ -3199,7 +3235,7 @@
     },
 
     stats(tab = statsTab) {
-      statsTab = (tab === 'overall' || tab === 'daily' || tab === 'duel' || tab === 'artist' || tab === 'badges') ? tab : 'filter';
+      statsTab = (tab === 'daily' || tab === 'duel' || tab === 'artist' || tab === 'badges') ? tab : 'overall';
       const tabs = $('#statsTabs');
       if (tabs && typeof tabs.querySelectorAll === 'function') {
         tabs.querySelectorAll('[data-tab]').forEach((b) => {
@@ -3294,14 +3330,11 @@
           Math.max(8, b.val / top * 100) + '%">' + b.val + '</div></div>').join('');
         if (rt) rt.hidden = true;
       } else {
-        const overall = statsTab === 'overall';
-        const st = overall ? allClassicStats() : Object.assign(blankStats(), LS.get(statKey(), {}));
-        const bestStreak = overall ? songStreak('classic').best : 0;
+        const st = allClassicStats();
+        const bestStreak = songStreak('classic').best;
         const allLbl = I18N ? tr('statScopeAllClassic') : 'All Classic filters';
-        $('#statScope').textContent = overall
-          ? [(st.filtersUsed ? allLbl + ' · ' + st.filtersUsed + (st.filtersUsed === 1 ? ' preset' : ' presets') : allLbl),
-             bestStreak ? (settings.lang === 'id' ? 'Streak lagu terbaik ' : 'Best song streak ') + bestStreak : ''].filter(Boolean).join(' · ')
-          : [genreLabel(S.genre), eraLabel(S.era)].join(' · ');
+        $('#statScope').textContent = [(st.filtersUsed ? allLbl + ' · ' + st.filtersUsed + (st.filtersUsed === 1 ? ' preset' : ' presets') : allLbl),
+          bestStreak ? (settings.lang === 'id' ? 'Streak lagu terbaik ' : 'Best song streak ') + bestStreak : ''].filter(Boolean).join(' · ');
         const avg = st.runs ? (st.total / st.runs).toFixed(1) : '0';
         $('#statgrid').innerHTML =
           cell(st.runs, I18N ? tr('statRuns') : 'runs') + cell(avg, I18N ? tr('statAvg') : 'average') +
@@ -3312,7 +3345,7 @@
           '<div class="row"><span class="n">' + i + '</span>' +
           '<div class="bar' + (c && c === top ? ' hot' : '') + '" style="width:' +
           Math.max(8, c / top * 100) + '%">' + c + '</div></div>').join('');
-        if (rt) rt.hidden = overall;
+        if (rt) rt.hidden = true;
       }
       open($('#statsModal'));
     }
@@ -3578,6 +3611,7 @@
 
   function open(m) {
     if (!m) return;
+    setSearchingMode(false);
     m.hidden = false;
     m.scrollTop = 0;
     const sh = typeof m.querySelector === 'function' ? m.querySelector('.sheet') : null;
@@ -3586,6 +3620,7 @@
     if (rl) rl.scrollTop = 0;
   }
   function closeAll() {
+    setSearchingMode(false);
     if (typeof stopSummaryPreview === 'function') stopSummaryPreview();
     if (confettiStop) { confettiStop(); confettiStop = null; }
     [].forEach.call(document.querySelectorAll('.modal'), (m) => m.hidden = true);
@@ -4104,12 +4139,19 @@
     const inside = e.target && typeof e.target.closest === 'function' && e.target.closest('.search');
     if (!inside) UI.closeDD();
   });
-  UI.q.addEventListener('focus', () => { UI.ddInteracting = false; reopenDD(); });
-  UI.q.addEventListener('click', () => { UI.ddInteracting = false; reopenDD(); });
+  UI.q.addEventListener('focus', () => { UI.ddInteracting = false; reopenDD(); scrollSearchIntoView(UI.q); });
+  UI.q.addEventListener('click', () => { UI.ddInteracting = false; reopenDD(); scrollSearchIntoView(UI.q); });
   UI.q.addEventListener('blur', () => setTimeout(() => {
     if (UI.ddInteracting || document.activeElement === UI.q) return;
     UI.closeDD();
+    if (document.activeElement !== $('#agQ')) setSearchingMode(false);
   }, 120));
+  if (typeof window !== 'undefined' && window.visualViewport && typeof window.visualViewport.addEventListener === 'function') {
+    window.visualViewport.addEventListener('resize', () => {
+      const ae = document.activeElement;
+      if (ae === UI.q || ae === $('#agQ')) scrollSearchIntoView(ae, true);
+    });
+  }
   $('#clear').onclick = () => { UI.clearInput(); UI.q.focus(); };
 
   const inGame = () => !$('#game').hidden;
@@ -5165,6 +5207,7 @@
       $('#agQ').setAttribute('aria-expanded', 'false');
       ag.sel = -1;
       ag.matches = [];
+      if (document.activeElement !== $('#agQ')) setSearchingMode(false);
     }
 
     function openAgDD(query) {
@@ -5219,6 +5262,7 @@
       dd.hidden = false;
       dd.scrollTop = 0;
       $('#agQ').setAttribute('aria-expanded', 'true');
+      if (document.activeElement === $('#agQ')) scrollSearchIntoView($('#agQ'));
     }
 
     function moveAgSel(dir) {
@@ -5384,7 +5428,7 @@
       }
       renderAgBoard();
       trackActivity(incoming ? 'artist_challenge_start' : (ag.mode === 'daily' ? 'artist_daily_start' : 'artist_free_start'), { mode: 'artist' });
-      if (!ag.done) setTimeout(() => $('#agQ').focus(), 40);
+      if (!ag.done && !isMobileSearchViewport()) setTimeout(() => $('#agQ').focus(), 40);
       return true;
     }
 
@@ -5399,12 +5443,17 @@
     $('#openArtistGame').onclick = () => startArtistGame(null, 'free');
     $('#artistGameBack').onclick = () => { closeAll(); UI.lobby(); };
     const reopenAgDD = () => {
+      scrollSearchIntoView($('#agQ'));
       if (ag.done || !$('#agDD').hidden) return;
       const v = $('#agQ').value.trim();
       if (v) openAgDD(v);
     };
     $('#agQ').addEventListener('focus', reopenAgDD);
     $('#agQ').addEventListener('click', reopenAgDD);
+    $('#agQ').addEventListener('blur', () => setTimeout(() => {
+      if (document.activeElement === $('#agQ')) return;
+      if (document.activeElement !== UI.q) setSearchingMode(false);
+    }, 140));
     $('#agQ').addEventListener('input', () => {
       $('#agClear').hidden = !$('#agQ').value;
       const v = $('#agQ').value.trim();

@@ -719,14 +719,31 @@ kbd{
 }
 
 .toast{
-  position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
-  z-index:90; padding:.7rem 1.15rem;
-  background:#0e2418;border:1px solid var(--line);border-radius:999px;
-  font-size:.86rem;font-weight:600;
-  box-shadow:0 18px 44px -14px rgba(0,0,0,.85);
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+  z-index:980;max-width:min(440px,calc(100vw - 28px));width:max-content;
+  display:inline-flex;align-items:center;justify-content:center;gap:.52rem;
+  padding:.62rem 1.05rem;text-align:left;line-height:1.35;pointer-events:none;
+  background:rgba(10,28,19,.95);border:1px solid rgba(var(--acc-rgb),.36);border-radius:14px;
+  color:var(--ink);font-size:.84rem;font-weight:600;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 18px 44px -12px rgba(0,0,0,.88),inset 0 1px 0 rgba(255,255,255,.08);
   animation:toastin .24s cubic-bezier(.2,.9,.3,1);
 }
+.toast::before{
+  content:"";width:7px;height:7px;border-radius:50%;flex:none;
+  background:var(--acc);box-shadow:0 0 10px rgba(var(--acc-rgb),.75);
+}
+.toast[hidden]{display:none}
+body[data-anim="off"] .toast{animation:none}
 @keyframes toastin{from{opacity:0;transform:translate(-50%,10px)}}
+@keyframes toasttop{from{opacity:0;transform:translate(-50%,-10px)}}
+@media (max-width:600px){
+  .toast{
+    top:max(14px,env(safe-area-inset-top));bottom:auto;
+    max-width:calc(100vw - 28px);padding:.56rem .92rem;font-size:.8rem;border-radius:13px;
+    animation:toasttop .24s cubic-bezier(.2,.9,.3,1);
+  }
+}
 
 @media (max-width:520px){
   .readout{position:static;transform:none;margin-left:1rem}

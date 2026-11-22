@@ -57,7 +57,7 @@ function setupGame(options = {}) {
     return nodes.get(sel);
   };
   // Pre-seed tab nodes on #statsTabs
-  const tabNodes = ['filter', 'overall', 'daily', 'duel', 'artist'].map((t) => {
+  const tabNodes = ['overall', 'daily', 'duel', 'artist', 'badges'].map((t) => {
     const b = makeNode(t);
     b.dataset.tab = t;
     return b;
@@ -283,22 +283,16 @@ test('stats modal summarizes active filter, all Classic filters combined, and Da
     stage: 0, runDone: true, stages: [{ slug: t.slug(s2), guesses: [{ t: 'right' }], done: true, won: true }]
   }));
 
-  // Tab 1: filter
-  t.UI.stats('filter');
+  // Tab 1 (default): overall Classic (This filter tab removed in Wave 76)
+  t.UI.stats();
   assert.equal(tabNodes[0].getAttribute('aria-pressed'), 'true');
-  assert.match(nodes.get('#statgrid').innerHTML, />2<\/b><small>runs<\/small>/);
-  assert.equal(nodes.get('#reset').hidden, false);
-
-  // Tab 2: overall Classic
-  t.UI.stats('overall');
-  assert.equal(tabNodes[1].getAttribute('aria-pressed'), 'true');
   assert.match(nodes.get('#statScope').textContent, /2 presets/);
   assert.match(nodes.get('#statgrid').innerHTML, />3<\/b><small>runs<\/small>/);
   assert.equal(nodes.get('#reset').hidden, true);
 
-  // Tab 3: Daily
+  // Tab 2: Daily
   t.UI.stats('daily');
-  assert.equal(tabNodes[2].getAttribute('aria-pressed'), 'true');
+  assert.equal(tabNodes[1].getAttribute('aria-pressed'), 'true');
   assert.match(nodes.get('#statgrid').innerHTML, />2<\/b><small>played<\/small>/);
   assert.match(nodes.get('#statgrid').innerHTML, />2<\/b><small>wins<\/small>/);
   assert.match(nodes.get('#statgrid').innerHTML, />2<\/b><small>streak<\/small>/);
@@ -532,7 +526,7 @@ test('Duel target pill, Duel stats tab, Space preview key, and duel summary scor
   t.UI.refreshLobby();
   assert.equal(nodes.get('#duelLobbySub').textContent, 'Spotify streams & release year · Best 9');
   t.UI.stats('duel');
-  assert.equal(tabNodes[3].getAttribute('aria-pressed'), 'true');
+  assert.equal(tabNodes[2].getAttribute('aria-pressed'), 'true');
   assert.match(nodes.get('#statScope').textContent, /Spotify Streams & Release Year/);
   assert.match(nodes.get('#statgrid').innerHTML, /<b>9<\/b><small>streams best<\/small>/);
   assert.match(nodes.get('#statgrid').innerHTML, /<b>5<\/b><small>year best<\/small>/);
@@ -576,7 +570,7 @@ test('Artist Detective lobby card, arena DOM, and #artist= challenge intro work 
   assert.equal(harness.nodes.get('#artistLobbySub').textContent, '6 clues · Best streak 4');
 
   harness.t.UI.stats('artist');
-  assert.equal(harness.tabNodes[4].getAttribute('aria-pressed'), 'true');
+  assert.equal(harness.tabNodes[3].getAttribute('aria-pressed'), 'true');
   assert.match(harness.nodes.get('#statScope').textContent, /Artist Detective · Top 530 roster/);
   assert.match(harness.nodes.get('#statgrid').innerHTML, /<b>8<\/b><small>played<\/small>/);
   assert.match(harness.nodes.get('#statgrid').innerHTML, /<b>6<\/b><small>solved<\/small>/);
