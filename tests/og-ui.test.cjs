@@ -466,3 +466,14 @@ test('Wave 77 adds multi-select Genre & Era filters and unifies PC result modals
   assert.match(css, /\.spotle-result-banner\{[\s\S]*flex-direction:column;align-items:stretch/);
   assert.match(css, /\.spotle-result-actions\{\s*display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
+
+test('Wave 78 restores spinning vinyl disc on #resultModal across PC & mobile with dedicated 3-row mobile-friendly typography', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+
+  assert.match(html, /class="reveal-tags"[\s\S]*class="reveal-copy"[\s\S]*id="rTitle"[\s\S]*id="rArtist"/);
+  assert.match(css, /\.reveal-disc\{\s*display:block;/);
+  assert.match(css, /\.reveal-head\{display:contents\}/);
+  assert.match(css, /\.reveal-tags\{\s*grid-column:1 \/ -1;grid-row:1;/);
+  assert.match(css, /\.reveal-copy\{\s*grid-column:2;grid-row:2;/);
+});
