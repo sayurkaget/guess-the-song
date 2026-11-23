@@ -1,0 +1,133 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const ROOT = path.join(__dirname, '..');
+const { isStudio } = require(path.join(ROOT, 'recordings.js'));
+const PRESETS = require(path.join(ROOT, 'presets.js'));
+
+const apiSource = fs.readFileSync(path.join(ROOT, 'functions/api/daily-stats.js'), 'utf8');
+const apiHandler = import('data:text/javascript;base64,' + Buffer.from(apiSource).toString('base64'));
+
+function createMockDb() {
+  const rows = new Map();
+  return {
+    prepare(sql) {
+      return {
+        bind(...args) {
+          return {
+            async first() {
+              const [kind, day] = args;
+              return rows.get(`${kind}:${day}`) || null;
+            },
+            async run() {
+              if (/INSERT INTO daily_stats/i.test(sql)) {
+                const [kind, day, winInc, triesInc, b1, b2, b3, b4, b5] = args;
+                const key = `${kind}:${day}`;
+                const prev = rows.get(key) || { plays: 0, wins: 0, tries_sum: 0, t1: 0, t2: 0, t3: 0, t4: 0, t5: 0 };
+                rows.set(key, {
+                  plays: prev.plays + 1,
+                  wins: prev.wins + winInc,
+                  tries_sum: prev.tries_sum + triesInc,
+                  t1: prev.t1 + b1,
+                  t2: prev.t2 + b2,
+                  t3: prev.t3 + b3,
+                  t4: prev.t4 + b4,
+                  t5: prev.t5 + b5
+                });
+                return { success: true };
+              }
+              return { success: false };
+            }
+          };
+        }
+      };
+    }
+  };
+}
+
+test('Wave 85 /api/daily-stats validates requests and aggregates anonymous Daily Song & Artist stats', async () => {
+  const { onRequest } = await apiHandler;
+  const db = createMockDb();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const post = (body, headers = {}) => onRequest({
+    request: new Request('https://tuneup.my.id/api/daily-stats', {
+      method: 'POST',
+      headers: { Origin: 'https://tuneup.my.id', 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(body)
+    }),
+    env: { FEEDBACK_DB: db }
+  });
+
+  // Empty GET
+  const g0 = await onRequest({
+    request: new Request(`https://tuneup.my.id/api/daily-stats?kind=song&day=${today}`),
+    env: { FEEDBACK_DB: db }
+  });
+  assert.equal(g0.status, 200);
+  const g0Body = await g0.json();
+  assert.equal(g0Body.plays, 0);
+  assert.equal(g0Body.winRate, 0);
+
+  // Rejections
+  assert.equal((await post({ kind: 'song', day: today, won: true, tries: 2 }, { Origin: 'https://evil.example' })).status, 403);
+  assert.equal((await post({ kind: 'bad', day: today, won: true, tries: 2 })).status, 400);
+  assert.equal((await post({ kind: 'song', day: '2020-01-01', won: true, tries: 2 })).status, 400);
+  assert.equal((await post({ kind: 'song', day: today, won: true, tries: 6 })).status, 400);
+  assert.equal((await post({ kind: 'artist', day: today, won: true, tries: 11 })).status, 400);
+
+  // Valid Daily Song submissions: win in 1, win in 3, loss
+  const p1 = await (await post({ kind: 'song', day: today, won: true, tries: 1 })).json();
+  assert.equal(p1.plays, 1);
+  assert.equal(p1.wins, 1);
+  assert.equal(p1.winRate, 100);
+  assert.equal(p1.avgTries, 1);
+
+  await post({ kind: 'song', day: today, won: true, tries: 3 });
+  const p3 = await (await post({ kind: 'song', day: today, won: false, tries: 0 })).json();
+  assert.equal(p3.plays, 3);
+  assert.equal(p3.wins, 2);
+  assert.equal(p3.winRate, 67);
+  assert.equal(p3.avgTries, 2);
+  assert.deepEqual(p3.buckets, [1, 0, 1, 0, 0]);
+
+  // Valid Daily Artist submission: win in 4 tries -> bucket 2 (3-4 tries)
+  const a1 = await (await post({ kind: 'artist', day: today, won: true, tries: 4 })).json();
+  assert.equal(a1.plays, 1);
+  assert.equal(a1.wins, 1);
+  assert.equal(a1.avgTries, 4);
+  assert.deepEqual(a1.buckets, [0, 1, 0, 0, 0]);
+});
+
+test('Wave 85 Quick Preset Playlists are studio-verified, unique, and fully wired', () => {
+  assert.ok(Array.isArray(PRESETS) && PRESETS.length === 4, 'expected 4 curated presets');
+  const ids = PRESETS.map((p) => p.id);
+  assert.deepEqual(ids, ['indo', 'kpop', 'anime', 'throwback']);
+  for (const p of PRESETS) {
+    assert.ok(p.cover && /^https:\/\//.test(p.cover), `${p.id} must have HTTPS cover`);
+    assert.ok(Array.isArray(p.tracks) && p.tracks.length >= 20, `${p.id} must have >= 20 tracks (got ${p.tracks?.length})`);
+    const seen = new Set();
+    for (const row of p.tracks) {
+      const [title, artist, year, trackId] = row;
+      assert.ok(title && artist, `${p.id} track missing title/artist`);
+      assert.ok(Number.isInteger(trackId) && trackId > 0, `${p.id} invalid trackId for ${title}`);
+      assert.ok(!seen.has(trackId), `${p.id} duplicate trackId ${trackId}`);
+      seen.add(trackId);
+      assert.ok(isStudio({ trackName: title, artistName: artist }), `${p.id} non-studio track leaked: ${title} — ${artist}`);
+    }
+  }
+
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  assert.match(html, /id="presetPlaylists"/);
+  assert.match(html, /id="dailyCommunity"/);
+  assert.match(html, /id="agDailyCommunity"/);
+  assert.match(html, /<script src="presets\.js"><\/script>/);
+
+  const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+  assert.match(sw, /'\.\/presets\.js'/);
+
+  const build = fs.readFileSync(path.join(ROOT, 'tools/build-cloudflare.cjs'), 'utf8');
+  assert.match(build, /'presets\.js'/);
+});

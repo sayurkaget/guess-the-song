@@ -809,6 +809,25 @@ body[data-anim="off"] .fan-disc::before{animation:none}
 .sheet.run-sheet .runscore span{font-size:.84rem;color:var(--dim)}
 .sheet.run-sheet #dailyResult,
 .sheet.run-sheet .challenge-comparison{grid-column:1 / -1;grid-row:3;margin:.14rem 0 0;font-size:.82rem;line-height:1.45;text-align:left;max-width:none}
+.daily-community{
+  display:inline-flex;align-items:flex-start;gap:.44rem;flex-wrap:nowrap;
+  margin:.28rem 0 0;padding:.28rem .64rem;border-radius:10px;
+  font-size:.73rem;font-weight:600;line-height:1.35;letter-spacing:-.005em;
+  color:#bfead2;background:rgba(37,224,125,.09);
+  border:1px solid rgba(37,224,125,.24);width:fit-content;max-width:100%;
+}
+.daily-community[hidden]{display:none !important}
+.daily-community::before{
+  content:"";width:6px;height:6px;border-radius:50%;flex:none;margin-top:.32rem;
+  background:var(--acc,#25e07d);box-shadow:0 0 8px rgba(37,224,125,.65);
+}
+.sheet.run-sheet #dailyCommunity{grid-column:1 / -1;grid-row:4;justify-self:start;margin:.2rem 0 0}
+.daily-community.is-artist{
+  margin:0;color:#e9d5ff;background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.3);
+}
+.daily-community.is-artist::before{
+  background:#c084fc;box-shadow:0 0 8px rgba(192,132,252,.55);
+}
 
 .runlist.run-shelf{
   margin:0;padding:0 2px 0 0;list-style:none;
@@ -1705,6 +1724,22 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 .spotify-go{min-height:46px;padding:0 1.35rem;border-radius:12px;font-weight:800;white-space:nowrap}
 .spotify-hint{margin:0;font-size:.76rem;color:var(--dim);line-height:1.4}
 .spotify-hint.err{color:#ff8a8e}
+.preset-playlists{display:flex;flex-direction:column;gap:.45rem;margin-top:.15rem;padding-top:.55rem;border-top:1px solid rgba(255,255,255,.07)}
+.preset-playlists[hidden]{display:none !important}
+.preset-pl-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.42rem}
+.preset-pl-chip{
+  display:flex;align-items:center;gap:.45rem;min-width:0;min-height:38px;
+  padding:.32rem .58rem .32rem .42rem;border-radius:12px;
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.1);
+  color:var(--text);font:inherit;font-size:.78rem;font-weight:700;line-height:1.2;cursor:pointer;
+  transition:background .16s,border-color .16s,transform .12s;text-align:left;
+}
+.preset-pl-chip:hover{background:rgba(37,224,125,.09);border-color:rgba(37,224,125,.35)}
+.preset-pl-chip:active{transform:scale(.98)}
+.preset-pl-chip:disabled{opacity:.55;cursor:wait}
+.preset-pl-art{width:22px;height:22px;border-radius:6px;object-fit:cover;flex:none;background:var(--surf2);border:1px solid rgba(255,255,255,.1)}
+.preset-pl-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0}
+.preset-pl-cnt{font-size:.68rem;font-weight:700;color:var(--dim);padding:.08rem .36rem;border-radius:999px;background:rgba(255,255,255,.07);flex:none;font-variant-numeric:tabular-nums}
 .recent-playlists{display:flex;flex-direction:column;gap:.45rem;margin-top:.15rem;padding-top:.55rem;border-top:1px solid rgba(255,255,255,.07)}
 .recent-pl-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
 .recent-pl-lbl{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dimmer)}
@@ -1909,6 +1944,8 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   .sheet.run-sheet .challenge-comparison{
     grid-column:1 / -1;grid-row:3;margin:.12rem 0 0;font-size:.8rem;line-height:1.45;
   }
+  .sheet.run-sheet #dailyCommunity{grid-column:1 / -1;grid-row:4;justify-self:start;font-size:.71rem;padding:.22rem .55rem}
+  .preset-pl-list{grid-template-columns:repeat(2,minmax(0,1fr))}
   .sheet.run-sheet .r-actions,
   #duelModal .sheet.run-sheet .r-actions{
     grid-template-columns:minmax(0,.84fr) minmax(0,1.42fr);gap:.48rem;width:100%;

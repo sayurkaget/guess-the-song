@@ -9,7 +9,7 @@ if (site.protocol !== 'https:' || site.pathname !== '/' || site.search || site.h
 }
 fs.mkdirSync(output, { recursive: true });
 const files = ['index.html', 'styles.css', 'layout.css', 'site-guide.css', 'site-guide.js', 'app.js', 'songs.js', 'recordings.js',
-  'daily.js', 'daily-pool-v1.js', 'challenge.js', 'duel-streams-v1.js', 'duel.js', 'artist-game.js', 'backup.js', 'badges.js', 'i18n.js', 'feedback.js', 'analytics.js',
+  'daily.js', 'daily-pool-v1.js', 'presets.js', 'challenge.js', 'duel-streams-v1.js', 'duel.js', 'artist-game.js', 'backup.js', 'badges.js', 'i18n.js', 'feedback.js', 'analytics.js',
   'app.webmanifest', 'sw.js', 'robots.txt', 'sitemap.xml',
   'googlebc29a838b567dfc0.html',
   '7b4e9c2a1f8d4e60b3c5a9d1e2f48076.txt',
@@ -32,7 +32,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v110-wave84-pages-redirect'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v111-wave85-presets-community'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }

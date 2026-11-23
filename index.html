@@ -172,6 +172,7 @@
           <input id="spotifyRoundsCustom" class="spotify-rounds-custom" type="number" min="1" max="500" inputmode="numeric" placeholder="Custom" aria-label="Custom number of songs">
         </div>
         <p class="spotify-hint" id="spotifyStatus" role="status" aria-live="polite">Paste Spotify, Apple Music, or YouTube playlist links (or Ctrl+A Spotify tracks)</p>
+        <div class="preset-playlists" id="presetPlaylists" hidden></div>
         <div class="recent-playlists" id="recentPlaylists" hidden></div>
       </div>
     </section>
@@ -443,6 +444,7 @@
           <p class="ag-challenge-note" id="agChallengeNote" hidden></p>
         </div>
       </div>
+      <p class="daily-community is-artist" id="agDailyCommunity" hidden></p>
       <div class="spotle-result-actions">
         <button class="btn ghostbtn share-btn" id="agShareBtn" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.7" fill="none"/></svg>
@@ -608,6 +610,7 @@
         </div>
         <h2 class="sr" id="runTitle">Run result</h2>
         <p class="dim" id="dailyResult" hidden></p>
+        <p class="daily-community" id="dailyCommunity" hidden></p>
         <p class="dim challenge-comparison" id="runChallengeResult" hidden></p>
       </div>
     </div>
@@ -856,6 +859,7 @@
 <script src="recordings.js"></script>
 <script src="songs.js"></script>
 <script src="daily-pool-v1.js"></script>
+<script src="presets.js"></script>
 <script src="daily.js"></script>
 <script src="challenge.js"></script>
 <script src="feedback.js"></script>

@@ -1306,7 +1306,10 @@
     saveRun();
     playSfx(won ? ((S.daily || (S.runDone && score() >= stageCount())) ? 'fanfare' : 'win') : 'wrong');
     lastStreak = updateSongStreak(won);
-    if (S.daily) trackActivity('daily_complete', { won, attempts: S.guesses.length });
+    if (S.daily) {
+      trackActivity('daily_complete', { won, attempts: S.guesses.length });
+      submitDailyCommunity('song', S.daily.day, won, won ? S.guesses.length : 0);
+    }
     if (S.runDone) { if (S.daily) completeDaily(); else recordStats(); }
     checkRunBadges(won);
     UI.render(); UI.streak(); UI.clearInput();
@@ -1937,6 +1940,80 @@
     if (saved && saved.runDone) return;
     LS.set(key, { stage: S.stage, stages: S.stages, runDone: S.runDone });
   }
+  const dailyCommunityCache = new Map();
+  function canUseCommunityApi() {
+    return typeof fetch === 'function' && typeof location === 'object' && /^https?:$/.test(location.protocol || '');
+  }
+  function formatDailyCommunity(data) {
+    if (!data || !data.ok || !(Number(data.plays) >= 1)) return '';
+    const plays = Number(data.plays) || 0;
+    const wins = Number(data.wins) || 0;
+    const pct = Number.isFinite(Number(data.winRate)) ? Number(data.winRate) : Math.round((wins / plays) * 100);
+    if (wins <= 0) {
+      return I18N ? tr('dailyCommunityZero') : 'Today · 0% solved';
+    }
+    const avgNum = Number(data.avgTries) || 0;
+    const avgStr = (I18N && settings.lang === 'id')
+      ? String(avgNum.toFixed(1)).replace('.', ',')
+      : avgNum.toFixed(1);
+    return I18N
+      ? tr('dailyCommunityStat', { pct, avg: avgStr })
+      : ('Today · ' + pct + '% solved · avg ' + avgStr + ' tries');
+  }
+  function paintDailyCommunity(el, data, userWon) {
+    if (!el) return;
+    const txt = formatDailyCommunity(data, userWon);
+    el.textContent = txt;
+    el.hidden = !txt;
+  }
+  function submitDailyCommunity(kind, day, won, tries) {
+    if (!canUseCommunityApi() || !day) return;
+    const sentKey = 'tl:dailyStatSent:' + kind + ':' + day;
+    if (LS.get(sentKey)) return;
+    const cacheKey = kind + ':' + day;
+    const targetEl = () => (kind === 'artist' ? $('#agDailyCommunity') : $('#dailyCommunity'));
+    fetch('/api/daily-stats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind, day, won: !!won, tries: won ? Number(tries) || 1 : 0 })
+    }).then((r) => (r && r.ok ? r.json() : null)).then((data) => {
+      if (!data || !data.ok) return;
+      LS.set(sentKey, 1);
+      dailyCommunityCache.set(cacheKey, { data, userWon: !!won });
+      paintDailyCommunity(targetEl(), data, !!won);
+    }).catch(() => {});
+  }
+  function refreshDailyCommunity(kind, day, el, userWon) {
+    if (!el) return;
+    const cacheKey = kind + ':' + day;
+    const cached = dailyCommunityCache.get(cacheKey);
+    if (cached && cached.data) {
+      paintDailyCommunity(el, cached.data, userWon);
+    } else {
+      el.hidden = true;
+      el.textContent = '';
+    }
+    if (!canUseCommunityApi() || !day) return;
+    fetch('/api/daily-stats?kind=' + encodeURIComponent(kind) + '&day=' + encodeURIComponent(day))
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data || !data.ok || !(Number(data.plays) >= 1)) return;
+        dailyCommunityCache.set(cacheKey, { data, userWon: !!userWon });
+        paintDailyCommunity(el, data, !!userWon);
+      }).catch(() => {});
+  }
+  function syncDailyCommunityLang() {
+    if (S.daily && S.daily.day && $('#dailyCommunity') && !$('#dailyCommunity').hidden) {
+      const c = dailyCommunityCache.get('song:' + S.daily.day);
+      if (c) paintDailyCommunity($('#dailyCommunity'), c.data, c.userWon);
+    }
+    if ($('#agDailyCommunity') && !$('#agDailyCommunity').hidden) {
+      const day = window.DailyGame && typeof window.DailyGame.day === 'function' ? window.DailyGame.day() : '';
+      const c = day && dailyCommunityCache.get('artist:' + day);
+      if (c) paintDailyCommunity($('#agDailyCommunity'), c.data, c.userWon);
+    }
+  }
+
   function completeDaily() {
     const completed = LS.get('tl:daily:completed', []);
     if (!completed.includes(S.daily.day)) LS.set('tl:daily:completed', [...completed, S.daily.day].sort());
@@ -2895,7 +2972,12 @@
         syncRoute('daily', { title: 'Daily Guess the Song Challenge (Heardle Alternative) — TuneUp', replace: wasInGame });
       } else if (S.custom && S.custom.kind === 'spotify') {
         const count = stageCount();
-        const q = S.custom.spotifyId
+        const q = S.custom.presetId
+          ? encodeQuery([
+              ['preset', S.custom.presetId],
+              ['songs', count < S.custom.songs.length ? count : '']
+            ])
+          : S.custom.spotifyId
           ? encodeQuery([
               ['id', (S.custom.spotifyType === 'album' ? 'album:' : '') + S.custom.spotifyId],
               ['songs', count < S.custom.songs.length ? count : '']
@@ -3357,6 +3439,16 @@
         $('#dailyResult').textContent = I18N
           ? tr('dailyResultStreak', { cur: streak.current, best: streak.best, rem })
           : ('Win streak ' + streak.current + ' · Best ' + streak.best + ' · Next daily in ' + rem);
+      }
+      const commEl = $('#dailyCommunity');
+      if (commEl) {
+        if (S.daily && S.daily.day) {
+          const st0 = S.stages[0];
+          refreshDailyCommunity('song', S.daily.day, commEl, !!(st0 && st0.won));
+        } else {
+          commEl.hidden = true;
+          commEl.textContent = '';
+        }
       }
       const runComp = $('#runChallengeResult');
       if (S.runChallenge) {
@@ -3920,7 +4012,9 @@
     UI.buildControls();
     if (typeof syncSpotifyRoundsUI === 'function') syncSpotifyRoundsUI();
     if (typeof updateSpotifyInputHint === 'function') updateSpotifyInputHint();
+    if (typeof renderPresetPlaylists === 'function') renderPresetPlaylists();
     if (typeof renderRecentPlaylists === 'function') renderRecentPlaylists();
+    syncDailyCommunityLang();
     if (typeof syncDuelLang === 'function') syncDuelLang();
     if (typeof syncArtistLang === 'function') syncArtistLang();
     if (window.PlayerFeedback && typeof window.PlayerFeedback.syncLang === 'function') window.PlayerFeedback.syncLang();
@@ -5236,6 +5330,9 @@
         best,
         dist
       });
+      if (ag.mode === 'daily' && !ag.challenge && ag.day) {
+        submitDailyCommunity('artist', ag.day, won, won ? tries : 0);
+      }
       if (ag.mode === 'daily' && won && ag.day) {
         const doneDays = LS.get('tl:artist:daily:completed', []);
         if (!doneDays.includes(ag.day)) {
@@ -5342,6 +5439,15 @@
             } else {
               noteEl.hidden = true;
               noteEl.textContent = '';
+            }
+          }
+          const agComm = $('#agDailyCommunity');
+          if (agComm) {
+            if (ag.mode === 'daily' && !ag.challenge && ag.day) {
+              refreshDailyCommunity('artist', ag.day, agComm, !!ag.won);
+            } else {
+              agComm.hidden = true;
+              agComm.textContent = '';
             }
           }
           $('#agNextBtn').textContent = ag.mode === 'daily'
@@ -6183,6 +6289,102 @@
     }
   }
 
+  const PRESET_LABELS = { indo: 'presetIndo', kpop: 'presetKpop', anime: 'presetAnime', throwback: 'presetThrowback' };
+  function presetLabel(p) {
+    if (!p) return '';
+    const key = PRESET_LABELS[p.id];
+    return (I18N && key) ? tr(key) : p.name;
+  }
+  function renderPresetPlaylists() {
+    const host = $('#presetPlaylists');
+    const list = (typeof window !== 'undefined' && Array.isArray(window.TUNEUP_PRESETS)) ? window.TUNEUP_PRESETS : [];
+    if (!host) return;
+    if (!list.length) {
+      host.hidden = true;
+      host.innerHTML = '';
+      return;
+    }
+    const lbl = I18N ? tr('quickPresets') : 'Quick playlists';
+    host.innerHTML =
+      '<div class="recent-pl-head">' +
+        '<span class="recent-pl-lbl">' + esc(lbl) + '</span>' +
+      '</div>' +
+      '<div class="preset-pl-list">' +
+        list.map((p) => {
+          const title = presetLabel(p);
+          const count = Array.isArray(p.tracks) ? p.tracks.length : 0;
+          const cover = p.cover || (p.tracks && p.tracks[0] && p.tracks[0][4]) || '';
+          return '<button type="button" class="preset-pl-chip" data-preset-pl="' + esc(p.id) + '" title="' + esc(title) + '">' +
+            (cover ? '<img class="preset-pl-art" src="' + esc(cover) + '" alt="">' : '<span class="recent-pl-dot" aria-hidden="true"></span>') +
+            '<span class="preset-pl-name">' + esc(title) + '</span>' +
+            '<span class="preset-pl-cnt">' + esc(String(count)) + '</span>' +
+          '</button>';
+        }).join('') +
+      '</div>';
+    host.hidden = false;
+  }
+  function startPresetPlaylist(presetId, overrideRounds) {
+    const list = (typeof window !== 'undefined' && Array.isArray(window.TUNEUP_PRESETS)) ? window.TUNEUP_PRESETS : [];
+    const preset = list.find((p) => p && p.id === String(presetId || '').toLowerCase());
+    if (!preset || !Array.isArray(preset.tracks) || !preset.tracks.length) return false;
+    const label = presetLabel(preset);
+    const cover = preset.cover || (preset.tracks[0] && preset.tracks[0][4]) || '';
+    const songs = preset.tracks.map((t, i) => {
+      const title = t[0], artist = t[1], year = t[2] || 0, trackId = Number(t[3]) || 0, art = t[4] || '';
+      const hdArt = art ? art.replace('300x300', '600x600') : '';
+      return {
+        slug: 'preset:' + preset.id + ':' + (trackId || i),
+        title,
+        artist,
+        tier: 1,
+        genre: 'preset',
+        year,
+        art,
+        hdArt,
+        artTried: true,
+        trackId,
+        pre: null,
+        hay: norm(title + ' ' + artist)
+      };
+    });
+    const chosenRounds = overrideRounds != null ? overrideRounds : spotifyRoundsChoice;
+    const rounds = chosenRounds === 'all'
+      ? songs.length
+      : Math.max(1, Math.min(songs.length, parseInt(chosenRounds, 10) || songs.length));
+    S.daily = null; S.challenge = null; S.runChallenge = null;
+    S.custom = {
+      id: 'preset:' + preset.id,
+      presetId: preset.id,
+      kind: 'spotify',
+      source: 'preset',
+      sourceUrl: '',
+      spotifyId: '',
+      spotifyType: 'playlist',
+      label,
+      owner: 'TuneUp',
+      cover,
+      rounds,
+      fullRounds: rounds,
+      songs
+    };
+    switchRun();
+    S.stages = []; S.stage = 0; S.runDone = false;
+    saveRun();
+    if ($('#spotifyUrl') && typeof $('#spotifyUrl').blur === 'function') $('#spotifyUrl').blur();
+    if ($('#spotifyRoundsCustom') && typeof $('#spotifyRoundsCustom').blur === 'function') $('#spotifyRoundsCustom').blur();
+    UI.clearInput();
+    UI.game();
+    load();
+    return true;
+  }
+  if ($('#presetPlaylists')) {
+    $('#presetPlaylists').addEventListener('click', (e) => {
+      const chip = e.target.closest('[data-preset-pl]');
+      if (!chip || spotifyBusy) return;
+      startPresetPlaylist(chip.dataset.presetPl);
+    });
+  }
+
   const RECENT_PL_KEY = 'tl:recentPlaylists';
   const RECENT_PL_MAX = 5;
   function loadRecentPlaylists() {
@@ -6307,6 +6509,7 @@
   }
 
   UI.buildControls();
+  renderPresetPlaylists();
   renderRecentPlaylists();
   UI.render();
   UI.lobby({ skipRoute: true }); // selalu mulai dari layar pilih mode tanpa menghapus URL deep-link
@@ -6347,6 +6550,14 @@
         launchArtistMode((sub === 'endless' || sub === 'free') ? 'free' : 'daily');
         return true;
       }
+    }
+
+    const presetParam = (params.get('preset') || '').trim().toLowerCase();
+    if (presetParam) {
+      const spSongs = parseInt(params.get('songs') || '', 10);
+      if (Number.isFinite(spSongs) && spSongs >= 1) setSpotifyRoundsChoice(spSongs);
+      setClassicTab('spotify');
+      if (startPresetPlaylist(presetParam, Number.isFinite(spSongs) && spSongs >= 1 ? spSongs : undefined)) return true;
     }
 
     const sp = (params.get('playlist') || params.get('spotify') || (slug === 'spotify' ? (params.get('id') || '') : '')).trim();
