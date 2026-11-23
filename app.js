@@ -4099,8 +4099,11 @@
     S.vol = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.8;
     S.muted = !!LS.get('tl:muted', false);
     audio.volume = S.muted ? 0 : S.vol;
-    if ($('#volume')) $('#volume').value = Math.round(S.vol * 100);
-    if ($('#mute')) $('#mute').classList.toggle('muted', S.muted);
+    if (typeof syncVolumeUI === 'function') syncVolumeUI();
+    else {
+      if ($('#volume')) $('#volume').value = Math.round(S.vol * 100);
+      if ($('#mute')) $('#mute').classList.toggle('muted', S.muted);
+    }
     if (syncDuelVolume) syncDuelVolume();
     if (syncArtistVolume) syncArtistVolume();
     syncSummaryVolume();
@@ -4492,27 +4495,41 @@
     if (e.key === 'Tab' && !typing && !e.shiftKey && !S.done) { e.preventDefault(); skip(); }
   });
 
-  $('#volume').value = Math.round(S.vol * 100);
+  function syncVolumeUI() {
+    const volEl = $('#volume');
+    const muteEl = $('#mute');
+    const pct = Math.round((S.muted ? 0 : S.vol) * 100);
+    if (volEl) {
+      volEl.value = Math.round(S.vol * 100);
+      if (volEl.style && typeof volEl.style.setProperty === 'function') {
+        volEl.style.setProperty('--vol-pct', pct + '%');
+      }
+      const wrap = typeof volEl.closest === 'function' ? volEl.closest('.vol') : null;
+      if (wrap && wrap.classList) wrap.classList.toggle('is-muted', S.muted || S.vol <= 0);
+    }
+    if (muteEl && muteEl.classList) muteEl.classList.toggle('muted', S.muted || S.vol <= 0);
+  }
   $('#volume').oninput = (e) => {
     S.vol = e.target.value / 100;
-    S.muted = false;
-    LS.set('tl:vol', S.vol); LS.set('tl:muted', false);
-    audio.volume = S.vol;
+    S.muted = S.vol <= 0;
+    LS.set('tl:vol', S.vol); LS.set('tl:muted', S.muted);
+    audio.volume = S.muted ? 0 : S.vol;
     if (syncDuelVolume) syncDuelVolume();
     if (syncArtistVolume) syncArtistVolume();
     syncSummaryVolume();
-    $('#mute').classList.remove('muted');
+    syncVolumeUI();
   };
   $('#mute').onclick = () => {
+    if (S.muted && S.vol <= 0) { S.vol = 0.8; LS.set('tl:vol', S.vol); }
     S.muted = !S.muted;
     LS.set('tl:muted', S.muted);
     audio.volume = S.muted ? 0 : S.vol;
     if (syncDuelVolume) syncDuelVolume();
     if (syncArtistVolume) syncArtistVolume();
     syncSummaryVolume();
-    $('#mute').classList.toggle('muted', S.muted);
+    syncVolumeUI();
   };
-  $('#mute').classList.toggle('muted', S.muted);
+  syncVolumeUI();
 
   $('#reset').onclick = () => {
     LS.del(statKey());

@@ -499,7 +499,6 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
 }
 #game .skip-wide:hover:not(:disabled){background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.18)}
 .wrap:has(#game:not([hidden])) .foot{width:100%;justify-content:space-between;margin-top:1.45rem}
-.wrap:has(#game:not([hidden])) .vol{background:var(--surf);border:1px solid var(--line);padding:.26rem .85rem .26rem .35rem}
 @media(max-width:680px){
   .wrap:has(#game:not([hidden])){padding:1.05rem .9rem 1.25rem}
   .wrap:has(#game:not([hidden])) .head{margin-bottom:.75rem}
@@ -1135,8 +1134,6 @@ body[data-anim="off"] .fan-disc{transition:none}
 #duel .duel-actions{margin-top:0}
 .wrap:has(#duel:not([hidden])) .foot,
 .wrap:has(#artistGame:not([hidden])) .foot{width:100%;justify-content:space-between;margin-top:1.25rem}
-.wrap:has(#duel:not([hidden])) .vol,
-.wrap:has(#artistGame:not([hidden])) .vol{background:var(--surf);border:1px solid var(--line);padding:.26rem .85rem .26rem .35rem}
 @media(max-width:600px){
   .wrap:has(#duel:not([hidden])){padding:1.05rem .9rem 1.25rem}
   .wrap:has(#duel:not([hidden])) .head{margin-bottom:.75rem}
