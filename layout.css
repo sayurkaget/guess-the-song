@@ -227,12 +227,12 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
 #lobby .duel-card-wide:hover .duel-cta-pill{background:rgba(245,177,61,.12);border-color:#ffd06b}
 #lobby .duel-cta-pill svg{width:16px;height:16px;flex:none}
 #lobby :is(button,select):focus-visible{outline:2px solid var(--acc);outline-offset:4px}
-.title-with-ico{display:inline-flex;align-items:center;gap:.46rem;min-width:0}
-.title-ico{width:19px;height:19px;flex:none;opacity:.92}
+.title-with-ico{display:inline-flex;align-items:center;gap:.48rem;min-width:0}
+.title-ico{width:20px;height:20px;flex:none;display:block;opacity:.95}
 .title-ico.is-green{color:#35e88b}
 .title-ico.is-gold{color:#ffd06b}
 .title-ico.is-purple{color:#d8b4fe}
-.btn-ico{width:14px;height:14px;flex:none;opacity:.88}
+.btn-ico{width:14px;height:14px;flex:none;display:block;opacity:.88}
 .icon-btn{display:inline-flex;align-items:center;justify-content:center;gap:.44rem}
 .icon-btn .btn-ico{width:15px;height:15px}
 #lobby .classic-seg button,
@@ -257,7 +257,7 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
   #lobby .daily-row{grid-template-columns:minmax(0,1fr);gap:.6rem}
   #lobby .daily-card{grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:.98rem 1.05rem;gap:.65rem}
   #lobby .daily-title-row{justify-content:flex-start;flex-wrap:wrap;gap:.4rem;margin-bottom:.2rem}
-  .title-ico{width:17px;height:17px}
+  .title-ico{width:18px;height:18px}
   #lobby .daily-heading h2{font-size:1.1rem}
   #lobby .daily-heading .daily-meta{font-size:.79rem}
   #lobby .daily-note{font-size:.73rem;margin-top:.22rem}

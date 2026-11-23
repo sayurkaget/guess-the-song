@@ -489,3 +489,23 @@ test('Wave 79 removes Achievement unlocked kicker and scales down mobile toast &
   assert.match(css, /@media\(max-width:560px\)\{\s*\.ach-toast\{[\s\S]*max-width:min\(274px/);
   assert.match(styles, /@media \(max-width:600px\)\{\s*\.toast\{[\s\S]*font-size:\.72rem;border-radius:999px/);
 });
+
+test('Wave 80 normalizes stroke style, viewBox centering, and optical sizing across all lobby, tab, footer, stats, and feedback icons', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+
+  // All 5 lobby title-ico SVGs use unified outline stroke-width="1.9" (no solid music blob)
+  assert.doesNotMatch(html, /class="title-ico[^"]*"[^>]*><path[^>]*fill="currentColor"/);
+  assert.match(html, /class="title-ico is-green"[^>]*><path d="M9 17\.8V5\.2l11-2v12\.6" fill="none"/);
+  assert.match(html, /class="title-ico is-purple"[^>]*><path d="m12 2\.6 2\.85 5\.8/);
+  assert.match(html, /class="title-ico is-purple"[^>]*><circle cx="10\.5" cy="10\.5" r="7\.2"/);
+  // Broken zero-length dot on Genre & Era and open-arc playlist / gapped trophy stems are fixed
+  assert.doesNotMatch(html, /m4 0h0/);
+  assert.doesNotMatch(html, /a2\.5 2\.5 0 1 1-1\.5-2\.3V8\.2/);
+  assert.doesNotMatch(html, /m-5 9v4m-4 2h8/);
+  assert.doesNotMatch(app, /a2\.5 2\.5 0 1 1-1\.5-2\.3V8\.2/);
+  assert.doesNotMatch(app, /m-5 9v4m-4 2h8/);
+  assert.match(css, /\.title-ico\{width:20px;height:20px;flex:none;display:block;opacity:\.95\}/);
+  assert.match(css, /\.btn-ico\{width:14px;height:14px;flex:none;display:block;opacity:\.88\}/);
+});
