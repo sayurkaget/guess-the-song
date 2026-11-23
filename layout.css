@@ -447,9 +447,18 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
   white-space:nowrap;font-variant-numeric:tabular-nums;
   text-shadow:0 0 18px rgba(var(--acc-rgb),.35);
 }
-.vinyl-foot{width:100%;display:flex;flex-direction:column;align-items:center;gap:.35rem}
+.vinyl-foot{width:100%;display:flex;flex-direction:column;align-items:center;gap:.32rem}
 .vinyl-foot .status{margin:0;min-height:1.25em;font-size:.78rem;color:var(--dim)}
 .vinyl-foot #retrySong{margin-top:.25rem}
+.vinyl-foot .vol{margin-top:.15rem;justify-content:center}
+.vol-slot{display:inline-flex;align-items:center}
+.vol-slot:empty{display:none}
+#duel .duel-controls .vol{
+  height:34px;padding:0 .72rem 0 .26rem;border-radius:999px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.11);
+}
+#agVolSlot{display:flex;align-items:center;justify-content:flex-start}
+#agVolSlot:empty{display:none}
 
 .guess-card{
   padding:1.2rem;border-radius:20px;background:var(--surf);border:1px solid var(--line);
@@ -498,7 +507,7 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
   background:rgba(255,255,255,.05);border:1px solid var(--line);
 }
 #game .skip-wide:hover:not(:disabled){background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.18)}
-.wrap:has(#game:not([hidden])) .foot{width:100%;justify-content:space-between;margin-top:1.45rem}
+.wrap:has(#game:not([hidden])) .foot{width:100%;justify-content:flex-end;margin-top:1.1rem}
 @media(max-width:680px){
   .wrap:has(#game:not([hidden])){padding:1.05rem .9rem 1.25rem}
   .wrap:has(#game:not([hidden])) .head{margin-bottom:.75rem}
@@ -521,7 +530,7 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
   .vinyl-card .player{width:100%;justify-content:center;padding:.06rem 0}
   .vinyl-card .playbtn{width:84px;height:84px}
   .vinyl-card .spot-readout{font-size:.92rem;left:calc(100% + 10px)}
-  .vinyl-foot{width:100%;align-items:stretch}
+  .vinyl-foot{width:100%;align-items:center}
   .vinyl-foot .status{text-align:center;font-size:.75rem}
   .guess-card{padding:.85rem;gap:.55rem}
   #game .guessbar{margin-top:0}
@@ -1133,7 +1142,7 @@ body[data-anim="off"] .fan-disc{transition:none}
 }
 #duel .duel-actions{margin-top:0}
 .wrap:has(#duel:not([hidden])) .foot,
-.wrap:has(#artistGame:not([hidden])) .foot{width:100%;justify-content:space-between;margin-top:1.25rem}
+.wrap:has(#artistGame:not([hidden])) .foot{width:100%;justify-content:flex-end;margin-top:1.1rem}
 @media(max-width:600px){
   .wrap:has(#duel:not([hidden])){padding:1.05rem .9rem 1.25rem}
   .wrap:has(#duel:not([hidden])) .head{margin-bottom:.75rem}

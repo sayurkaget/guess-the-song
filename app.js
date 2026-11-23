@@ -2705,6 +2705,13 @@
 
   /* ================= UI ================= */
 
+  function dockVolume(slotSel) {
+    const vol = $('#volDock');
+    const slot = $(slotSel);
+    if (vol && slot && typeof slot.appendChild === 'function' && vol.parentNode !== slot) {
+      slot.appendChild(vol);
+    }
+  }
   const UI = {
     q: $('#q'), dd: $('#dd'), track: $('#track'),
     wave: $('#trackWave'), fill: $('#trackFill'), seams: $('#trackSeams'), headEl: $('#trackHead'),
@@ -2968,6 +2975,7 @@
       $('#lobby').hidden = true;
       $('#challengeIntro').hidden = true;
       $('#game').hidden = false;
+      dockVolume('#gameVolSlot');
       const artistMode = S.runChallenge ? !!S.runChallenge.artistId : !!S.custom;
       document.body.dataset.diff = artistMode ? 'custom' : ORDER[S.stage];  // warna mewarnai seluruh halaman
       $('#gameMode').textContent = S.daily ? S.daily.day
@@ -5061,6 +5069,7 @@
       $('#game').hidden = true;
       document.body.dataset.diff = 'duel';
       $('#duel').hidden = false;
+      dockVolume('#duelVolSlot');
       if (ds.challenge) {
         if (typeof document !== 'undefined') document.title = 'Friend Duel — TuneUp';
       } else {
@@ -5753,6 +5762,7 @@
       if ($('#duel')) $('#duel').hidden = true;
       document.body.dataset.diff = 'artist';
       $('#artistGame').hidden = false;
+      dockVolume('#agVolSlot');
       if (ag.challenge) {
         if (typeof document !== 'undefined') document.title = 'Artist Challenge — TuneUp';
       } else {
