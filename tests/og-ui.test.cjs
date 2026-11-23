@@ -392,7 +392,7 @@ test('Wave 75 upgrades Badges to 16 Steam-style Achievements with SFX, adds in-a
 
   assert.equal(Badges.CATALOG.length, 16);
   assert.match(html, /data-tab="badges"[^>]*>[\s\S]*Achievements/);
-  assert.match(html, /id="achToast"[\s\S]*id="achToastKicker"[\s\S]*id="achToastTitle"/);
+  assert.match(html, /id="achToast"[\s\S]*id="achToastTitle"[\s\S]*id="achToastDesc"/);
   assert.match(html, /id="setAnim"[^>]*role="switch"/);
   assert.match(css, /\.ach-toast\{/);
   assert.match(css, /\.badge-card\.is-earned\[data-theme="blue"\]\{/);
@@ -418,7 +418,7 @@ test('Wave 76 polishes mobile toast, unifies PC/mobile reveal modal, adds mobile
   // 1. Mobile top-floating frosted glass toast
   assert.match(styles, /\.toast::before\{/);
   assert.match(styles, /@keyframes toasttop/);
-  assert.match(styles, /top:max\(14px,env\(safe-area-inset-top\)\);bottom:auto/);
+  assert.match(styles, /top:max\(10px,env\(safe-area-inset-top\)\);bottom:auto/);
 
   // 2. Unified compact #resultModal on desktop & mobile
   assert.match(css, /#resultModal \.reveal\{\s*width:min\(468px,100%\)/);
@@ -476,4 +476,16 @@ test('Wave 78 restores spinning vinyl disc on #resultModal across PC & mobile wi
   assert.match(css, /\.reveal-head\{display:contents\}/);
   assert.match(css, /\.reveal-tags\{\s*grid-column:1 \/ -1;grid-row:1;/);
   assert.match(css, /\.reveal-copy\{\s*grid-column:2;grid-row:2;/);
+});
+
+test('Wave 79 removes Achievement unlocked kicker and scales down mobile toast & achievement notifications', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  const styles = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+
+  assert.doesNotMatch(html, /id="achToastKicker"|Achievement unlocked/);
+  assert.doesNotMatch(app, /#achToastKicker|Achievement unlocked/);
+  assert.match(css, /@media\(max-width:560px\)\{\s*\.ach-toast\{[\s\S]*max-width:min\(274px/);
+  assert.match(styles, /@media \(max-width:600px\)\{\s*\.toast\{[\s\S]*font-size:\.72rem;border-radius:999px/);
 });

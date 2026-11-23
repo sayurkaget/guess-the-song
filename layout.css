@@ -1973,9 +1973,9 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 .ach-toast{
   --ach-c:#25e07d;--ach-rgb:37,224,125;--ach-l:#8ef7bd;
   position:fixed;right:20px;bottom:20px;z-index:960;
-  width:min(368px,calc(100vw - 24px));
-  display:flex;align-items:center;gap:.82rem;text-align:left;
-  padding:.82rem 1rem .92rem .88rem;border-radius:16px;overflow:hidden;cursor:pointer;
+  width:min(326px,calc(100vw - 24px));
+  display:flex;align-items:center;gap:.72rem;text-align:left;
+  padding:.66rem .9rem .74rem .76rem;border-radius:14px;overflow:hidden;cursor:pointer;
   background:linear-gradient(145deg,rgba(12,30,22,.97),rgba(6,15,11,.99));
   border:1px solid rgba(var(--ach-rgb),.55);
   box-shadow:0 24px 58px -12px rgba(0,0,0,.92),0 0 28px -6px rgba(var(--ach-rgb),.38),inset 0 1px 0 rgba(255,255,255,.12);
@@ -1995,28 +1995,25 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 }
 .ach-toast.is-show::before{animation:achShine 1.15s ease .15s forwards}
 .ach-ico{
-  flex:none;width:46px;height:46px;border-radius:12px;
+  flex:none;width:40px;height:40px;border-radius:10px;
   display:grid;place-items:center;color:var(--ach-l);
   background:linear-gradient(145deg,rgba(var(--ach-rgb),.32),rgba(var(--ach-rgb),.12));
   border:1px solid rgba(var(--ach-rgb),.52);
   box-shadow:0 0 20px -4px rgba(var(--ach-rgb),.55);
 }
 .ach-toast.is-show .ach-ico{animation:achPop .52s cubic-bezier(.18,1.35,.4,1) .08s both}
-.ach-ico svg{width:23px;height:23px}
+.ach-ico svg{width:20px;height:20px}
 .ach-copy{min-width:0;display:flex;flex-direction:column;gap:.12rem;flex:1}
-.ach-kicker{
-  font-size:.63rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:var(--ach-l);
-}
 .ach-title{
-  font-family:'Cabinet Grotesk',var(--fs);font-size:1.02rem;font-weight:800;color:#fff;
+  font-family:'Cabinet Grotesk',var(--fs);font-size:.96rem;font-weight:800;color:#fff;
   line-height:1.18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .ach-desc{
-  font-size:.76rem;color:var(--dim);line-height:1.3;
+  font-size:.74rem;color:var(--dim);line-height:1.3;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
 .ach-bar{
-  position:absolute;left:0;right:0;bottom:0;height:3px;transform-origin:left center;
+  position:absolute;left:0;right:0;bottom:0;height:2.5px;transform-origin:left center;
   background:linear-gradient(90deg,var(--ach-c),var(--ach-l));opacity:.85;
 }
 .ach-toast.is-show .ach-bar{animation:achTimer 4.2s linear forwards}
@@ -2025,14 +2022,18 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 @keyframes achTimer{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 @media(max-width:560px){
   .ach-toast{
-    right:12px;left:12px;bottom:max(14px,env(safe-area-inset-bottom));width:auto;
-    transform:translate3d(0,120%,0);padding:.74rem .88rem .84rem .78rem;gap:.7rem;
+    left:50%;right:auto;bottom:max(12px,env(safe-area-inset-bottom));
+    width:max-content;max-width:min(274px,calc(100vw - 36px));
+    padding:.44rem .7rem .52rem .52rem;gap:.52rem;border-radius:12px;
+    transform:translate3d(-50%,130%,0);
   }
-  .ach-toast.is-show{transform:translate3d(0,0,0)}
-  .ach-ico{width:40px;height:40px;border-radius:11px}
-  .ach-ico svg{width:20px;height:20px}
-  .ach-title{font-size:.94rem}
-  .ach-desc{font-size:.73rem}
+  .ach-toast.is-show{transform:translate3d(-50%,0,0)}
+  .ach-ico{width:30px;height:30px;border-radius:8px}
+  .ach-ico svg{width:15px;height:15px}
+  .ach-copy{gap:.05rem}
+  .ach-title{font-size:.81rem;line-height:1.15}
+  .ach-desc{font-size:.67rem;line-height:1.25;-webkit-line-clamp:1}
+  .ach-bar{height:2px}
 }
 
 /* ====== Wave 76: Mobile Search Auto-Scroll Runway & Keyboard-Aware Dropdown ====== */

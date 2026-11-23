@@ -739,10 +739,12 @@ body[data-anim="off"] .toast{animation:none}
 @keyframes toasttop{from{opacity:0;transform:translate(-50%,-10px)}}
 @media (max-width:600px){
   .toast{
-    top:max(14px,env(safe-area-inset-top));bottom:auto;
-    max-width:calc(100vw - 28px);padding:.56rem .92rem;font-size:.8rem;border-radius:13px;
+    top:max(10px,env(safe-area-inset-top));bottom:auto;
+    max-width:calc(100vw - 44px);padding:.36rem .72rem;gap:.4rem;
+    font-size:.72rem;border-radius:999px;
     animation:toasttop .24s cubic-bezier(.2,.9,.3,1);
   }
+  .toast::before{width:5.5px;height:5.5px}
 }
 
 @media (max-width:520px){

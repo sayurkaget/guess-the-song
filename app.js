@@ -2347,8 +2347,6 @@
     const def = achQueue.shift();
     const bName = I18N ? tr('badge_' + def.id + '_name') : def.name;
     const bDesc = I18N ? tr('badge_' + def.id + '_desc') : def.desc;
-    const kicker = $('#achToastKicker');
-    if (kicker) kicker.textContent = I18N ? tr('achUnlockedKicker') : 'Achievement unlocked';
     const ico = $('#achToastIco');
     if (ico) ico.innerHTML = BADGE_SVG[def.icon] || BADGE_SVG.trophy;
     const titleEl = $('#achToastTitle');
@@ -2384,10 +2382,7 @@
   function announceBadges(added) {
     if (!added || !added.length) return;
     if (!$('#achToast')) {
-      const label = added.length === 1
-        ? ('Achievement unlocked: ' + added[0].name)
-        : ('Achievements unlocked: ' + added.map((b) => b.name).join(', '));
-      toast(label);
+      toast(added.map((b) => b.name).join(', '));
       return;
     }
     for (const def of added) achQueue.push(def);
