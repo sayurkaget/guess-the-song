@@ -152,6 +152,14 @@ test('Wave 85/86 Quick Preset Playlists (12 curated & dynamic) and foreground co
 
   const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
   assert.match(app, /activeTrackId \? 'Track ID: ' \+ activeTrackId : ''/);
-  assert.equal(isStudio({ trackName: 'Passionfruit', artistName: 'Drake', trackId: 1440892167 }), false);
-  assert.equal(isStudio({ trackName: 'Passionfruit', artistName: 'Drake', trackId: 1440891494 }), false);
+  const { resolvePreviewUrl } = require('../recordings.js');
+  assert.equal(isStudio({ trackName: 'Passionfruit', artistName: 'Drake', trackId: 1440892167 }), true);
+  assert.equal(
+    resolvePreviewUrl({ trackId: 1440892167, previewUrl: 'https://audio-ssl.itunes.apple.com/broken.m4a' }),
+    'https://p.scdn.co/mp3-preview/f54450b33a17422d771eb9c70f171cb015273dc9'
+  );
+  assert.equal(
+    resolvePreviewUrl({ trackId: 1440891494, previewUrl: 'https://audio-ssl.itunes.apple.com/broken-explicit.m4a' }),
+    'https://p.scdn.co/mp3-preview/f54450b33a17422d771eb9c70f171cb015273dc9'
+  );
 });

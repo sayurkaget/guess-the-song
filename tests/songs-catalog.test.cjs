@@ -173,11 +173,11 @@ test('catalog has valid years, clean formatting, high trackId coverage, no homon
     ['Ludacris', 'Butter.Atl'],
     ['System Of A Down', 'Arto'],
     ['Skrillex', 'Make It Bun Dem'],
-    ['Marshmello', 'One Thing Right'],
-    ['Drake', 'Passionfruit']
+    ['Marshmello', 'One Thing Right']
   ]) {
     assert.equal(has(artist, title), false, `expected unplayable/impostor removal: ${artist} - ${title}`);
   }
+  assert.equal(has('Drake', 'Passionfruit'), true);
 
   // Fixed years, titles, SOAD upgrades, and Louis Armstrong cleanup
   const payTheMan = SONGS.find((s) => s[1] === 'Foster the People' && s[0] === 'Pay the Man');

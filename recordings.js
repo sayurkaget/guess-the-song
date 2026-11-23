@@ -11,14 +11,20 @@
   const STEVE_LACY_DEMO_RE = /^steve lacy['’]?s demo\b/i;
   const ENDS_LIVE_RE = /\blive$/i;
   const TO_LIVE_RE = /\bto\s+live\s*$/i;
-  const BAD_PREVIEW_TRACK_IDS = new Set([
-    1440892167, 1440891494 // Drake — Passionfruit (iTunes 30s preview is Moodymann spoken DJ intro with no Drake vocals)
-  ]);
+  const PREVIEW_OVERRIDES = {
+    // Drake — Passionfruit (iTunes 30s preview is Moodymann spoken DJ intro; replace with official Spotify vocal preview)
+    1440892167: 'https://p.scdn.co/mp3-preview/f54450b33a17422d771eb9c70f171cb015273dc9',
+    1440891494: 'https://p.scdn.co/mp3-preview/f54450b33a17422d771eb9c70f171cb015273dc9'
+  };
+
+  function resolvePreviewUrl(track) {
+    if (!track || typeof track !== 'object') return '';
+    const tid = Number(track.trackId);
+    if (tid && PREVIEW_OVERRIDES[tid]) return PREVIEW_OVERRIDES[tid];
+    return track.previewUrl || track.preview || '';
+  }
 
   function isStudio(track) {
-    if (track && typeof track === 'object' && track.trackId && BAD_PREVIEW_TRACK_IDS.has(Number(track.trackId))) {
-      return false;
-    }
     const title = typeof track === 'string' ? track : (track && (track.trackName || track.title)) || '';
     if (!title) return false;
     const album = typeof track === 'string' ? '' : (track && (track.collectionName || track.album)) || '';
@@ -41,7 +47,7 @@
     const infinitiveLive = TO_LIVE_RE.test(album);
     return namedSingle || infinitiveLive || !LIVE_ALBUM_RE.test(album);
   }
-  const policy = { isStudio };
+  const policy = { isStudio, resolvePreviewUrl, PREVIEW_OVERRIDES };
   if (typeof module === 'object' && module.exports) module.exports = policy;
   else root.RecordingPolicy = policy;
 })(typeof window === 'object' ? window : globalThis);

@@ -688,14 +688,23 @@
     return sc + (14 - rank) * 0.04;
   }
 
+  function previewOf(r) {
+    if (window.RecordingPolicy && typeof window.RecordingPolicy.resolvePreviewUrl === 'function') {
+      return window.RecordingPolicy.resolvePreviewUrl(r);
+    }
+    return (r && (r.previewUrl || r.preview)) || '';
+  }
+
   async function resolve(song) {
     if (song.pre) {
       if (!song.pre.fromSpotify && !window.RecordingPolicy.isStudio(song.pre)) throw new Error('Studio recording unavailable');
+      song.pre.preview = previewOf(song.pre);
       return song.pre;
     }
     const ck = 'tl:trk5:' + song.slug;
     const c = LS.get(ck);
     if (c && c.exp > Date.now() && c.preview && window.RecordingPolicy.isStudio(c)) {
+      c.preview = previewOf(c);
       if (!song.art && c.art) song.art = c.art;
       return c;
     }
@@ -732,7 +741,7 @@
 
     const rec = {
       trackId: best.trackId,
-      preview: best.previewUrl,
+      preview: previewOf(best),
       art: song.hdArt || (best.artworkUrl100 || '').replace('100x100', '600x600'),
       title: best.trackName,
       artist: best.artistName,
@@ -1409,7 +1418,7 @@
       const song = {
         title, artist, tier: 0, region: '', genre: '', year, art,
         slug: sl, hay: norm(title + ' ' + artist),
-        pre: { trackId: r.trackId, preview: r.previewUrl, art, title, artist, album: r.collectionName || '',
+        pre: { trackId: r.trackId, preview: previewOf(r), art, title, artist, album: r.collectionName || '',
                year, link: r.trackViewUrl || '', exp: Date.now() + 7 * 864e5 }
       };
       const ek = editionKey(title);
@@ -2059,7 +2068,7 @@
     return {
       title, artist, tier: 0, region: '', genre: '', year, art, trackId: r.trackId,
       slug: slug([title, artist]), hay: norm(title + ' ' + artist),
-      pre: { trackId: r.trackId, preview: r.previewUrl, art, title, artist,
+      pre: { trackId: r.trackId, preview: previewOf(r), art, title, artist,
         album: r.collectionName || '', year, link: r.trackViewUrl || '' }
     };
   }
