@@ -2736,8 +2736,8 @@
       if ($('#dailyGameBadge')) {
         const showSpBadge = isSpotify;
         $('#dailyGameBadge').hidden = !S.daily && !S.challenge && !showSpBadge;
-        if (S.daily) $('#dailyGameBadge').textContent = 'Daily Challenge · 1 song';
-        else if (S.challenge) $('#dailyGameBadge').textContent = 'Friend Challenge · 1 song';
+        if (S.daily) $('#dailyGameBadge').textContent = I18N ? tr('dailyBadgePill') : 'Daily Challenge · 1 song';
+        else if (S.challenge) $('#dailyGameBadge').textContent = I18N ? tr('friendBadgePill') : 'Friend Challenge · 1 song';
         else if (showSpBadge) {
           const played = S.stages.filter((x) => x && x.done).length;
           const kindLbl = S.custom.spotifyType === 'album' ? 'Album' : 'Playlist';
@@ -3218,7 +3218,13 @@
       const link = $('#listen');
       if (m.link) { link.href = m.link; link.hidden = false; } else link.hidden = true;
 
-      $('#next').textContent = S.challenge ? 'Play regular game' : (S.daily ? 'Daily result' : S.stage >= stageCount() - 1 ? 'See result' : 'Next');
+      $('#next').textContent = S.challenge
+        ? (I18N ? tr('playClassic') : 'Play Classic')
+        : S.daily
+        ? (I18N ? tr('dailyResultBtn') : 'Daily result')
+        : S.stage >= stageCount() - 1
+        ? (I18N ? tr('seeResultBtn') : 'See result')
+        : (I18N ? tr('nextBtn') : 'Next');
       const shareStageBtn = $('#shareStage');
       if (shareStageBtn) shareStageBtn.hidden = !S.challenge;
       const friendResult = S.challenge ? S.challenge.result : S.runChallenge ? (S.runChallenge.results[S.stage] || 0) : null;
@@ -3243,19 +3249,28 @@
       v.className = 'verdict ' + (wonRun ? 'win' : 'lose');
       const ratio = count ? sc / count : 0;
       v.textContent = S.daily
-        ? (sc ? 'Daily solved!' : 'New song tomorrow.')
-        : sc === 0 ? 'Zero. Try again!'
-        : sc === count ? (artistMode ? 'Perfect. Every song!' : 'Perfect. Every stage.')
+        ? (sc ? (I18N ? tr('verdictDailyWon') : 'Daily solved!') : (I18N ? tr('verdictDailyLost') : 'New song tomorrow.'))
+        : sc === 0 ? (I18N ? tr('verdictZero') : 'Zero. Try again!')
+        : sc === count ? (artistMode ? (I18N ? tr('verdictPerfectSongs') : 'Perfect. Every song!') : (I18N ? tr('verdictPerfectStages') : 'Perfect. Every stage.'))
         : count === STAGES
-        ? ['Zero. Try again!', 'One down.', 'Not bad.',
-           'Nice run!', 'So close to perfect!', 'Perfect. Every stage.'][Math.min(5, sc)]
-        : ratio >= 0.8 ? 'So close to perfect!'
-        : ratio >= 0.6 ? 'Nice run!'
-        : ratio >= 0.3 ? 'Not bad.'
-        : 'Tough playlist!';
+        ? [
+            I18N ? tr('verdictZero') : 'Zero. Try again!',
+            I18N ? tr('verdictOne') : 'One down.',
+            I18N ? tr('verdictNotBad') : 'Not bad.',
+            I18N ? tr('verdictNice') : 'Nice run!',
+            I18N ? tr('verdictClose') : 'So close to perfect!',
+            I18N ? tr('verdictPerfectStages') : 'Perfect. Every stage.'
+          ][Math.min(5, sc)]
+        : ratio >= 0.8 ? (I18N ? tr('verdictClose') : 'So close to perfect!')
+        : ratio >= 0.6 ? (I18N ? tr('verdictNice') : 'Nice run!')
+        : ratio >= 0.3 ? (I18N ? tr('verdictNotBad') : 'Not bad.')
+        : (I18N ? tr('verdictToughPlaylist') : 'Tough playlist!');
       $('#runScore').textContent = sc;
-      $('#runScoreLabel').textContent = S.daily ? '/1 song'
-        : '/' + count + (artistMode ? (count === 1 ? ' song' : ' songs') : (count === 1 ? ' stage' : ' stages'));
+      const unitSong = I18N ? tr(count === 1 ? 'scoreUnitSong' : 'scoreUnitSongs') : (count === 1 ? 'song' : 'songs');
+      const unitStage = I18N ? tr(count === 1 ? 'scoreUnitStage' : 'scoreUnitStages') : (count === 1 ? 'stage' : 'stages');
+      $('#runScoreLabel').textContent = S.daily
+        ? ('/1 ' + (I18N ? tr('scoreUnitSong') : 'song'))
+        : ('/' + count + ' ' + (artistMode ? unitSong : unitStage));
 
       const modeKind = S.daily ? 'daily' : artistMode ? 'custom' : 'classic';
       const runSheet = $('#runModal .run-sheet');
@@ -3267,19 +3282,20 @@
       const modeTag = $('#runModeTag');
       if (modeTag) {
         if (modeTag.dataset) modeTag.dataset.mode = modeKind;
+        const fcTag = I18N ? tr('friendChallengeTag') : 'Friend Challenge';
         if (S.daily) {
-          modeTag.textContent = 'Daily Challenge · ' + S.daily.day;
+          modeTag.textContent = (I18N ? tr('dailySongHeading') : 'Daily Challenge') + ' · ' + S.daily.day;
         } else if (S.runChallenge) {
           modeTag.textContent = S.runChallenge.artistId
-            ? ('Friend Challenge · ' + (S.runChallenge.artistLabel || 'Artist'))
-            : ('Friend Challenge · ' + count + ' Stages');
+            ? (fcTag + ' · ' + (S.runChallenge.artistLabel || (I18N ? tr('tabArtistStat') : 'Artist')))
+            : (fcTag + ' · ' + count + ' ' + unitStage);
         } else if (S.custom) {
-          modeTag.textContent = 'Custom · ' + (S.custom.label || 'Artist');
+          modeTag.textContent = (I18N ? tr('customTag') : 'Custom') + ' · ' + (S.custom.label || (I18N ? tr('tabArtistStat') : 'Artist'));
         } else {
           const parts = [];
           if (S.genre !== 'all') parts.push(formatMulti(S.genre, GENRE_KEYS, genreLabel, 2));
           if (S.era !== 'all') parts.push(formatMulti(S.era, ERA_KEYS, eraLabel, 2));
-          modeTag.textContent = 'Classic · ' + (parts.length ? parts.join(' · ') : (count + ' Stages'));
+          modeTag.textContent = 'Classic · ' + (parts.length ? parts.join(' · ') : (count + ' ' + unitStage));
         }
       }
 
@@ -3289,10 +3305,12 @@
       listEl.innerHTML = Array.from({ length: count }, (_, i) => {
         const k = ORDER[i] || ORDER[ORDER.length - 1];
         const r = S.stages[i];
-        const lvl = S.daily ? "Today's song" : artistMode ? ('Song ' + (i + 1)) : DIFFS[k].label;
+        const lvl = S.daily ? (I18N ? tr('todaysSong') : "Today's song")
+          : artistMode ? (I18N ? tr('songNum', { n: i + 1 }) : ('Song ' + (i + 1)))
+          : DIFFS[k].label;
         const diff = S.daily ? 'daily' : artistMode ? 'custom' : k;
         if (!r || !r.done) {
-          return renderShelfCard({ diff, kosong: true, art: '', lvl, title: 'Not played' });
+          return renderShelfCard({ diff, kosong: true, art: '', lvl, title: I18N ? tr('notPlayed') : 'Not played' });
         }
         const cat = (S.runChallenge && S.runChallenge.songs[i]) || findSong(r.slug);
         const art = (cat && cat.art) || '';

@@ -509,3 +509,27 @@ test('Wave 80 normalizes stroke style, viewBox centering, and optical sizing acr
   assert.match(css, /\.title-ico\{width:20px;height:20px;flex:none;display:block;opacity:\.95\}/);
   assert.match(css, /\.btn-ico\{width:14px;height:14px;flex:none;display:block;opacity:\.88\}/);
 });
+
+test('Wave 81 fixes ID localization in custom/result/run modals & /id SSR, removes unused score-card.js load, syncs site-guide anim, and standardizes search icons', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
+  const guide = fs.readFileSync(path.join(ROOT, 'site-guide.js'), 'utf8');
+  const build = fs.readFileSync(path.join(ROOT, 'tools/build-cloudflare.cjs'), 'utf8');
+
+  assert.doesNotMatch(html, /Play regular game/);
+  assert.doesNotMatch(app, /Play regular game/);
+  assert.doesNotMatch(i18n, /Play regular game|Main mode biasa|#cTitle/);
+  assert.match(i18n, /setText\(\$\('#customTitle'\), 'customTitle'\)/);
+  assert.match(i18n, /setText\(\$\('#customModal \.custom-lbl'\), 'customSub'\)/);
+  assert.match(i18n, /setText\(\$\('#customHint'\), 'customHint'\)/);
+  assert.match(app, /tr\('dailyBadgePill'\)/);
+  assert.match(app, /tr\('verdictDailyWon'\)/);
+  assert.match(app, /tr\('notPlayed'\)/);
+  assert.doesNotMatch(html, /src="score-card\.js"/);
+  assert.doesNotMatch(build, /'score-card\.js'/);
+  assert.match(build, /<span class="multi-lbl">Semua genre<\/span>/);
+  assert.match(build, /<span class="lbl">Pencapaian<\/span>/);
+  assert.match(guide, /document\.body\.dataset\.anim === 'off'/);
+  assert.doesNotMatch(html, /class="search-ico"[^>]*><circle cx="11" cy="11" r="6\.5"/);
+});

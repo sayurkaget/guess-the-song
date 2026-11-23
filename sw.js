@@ -3,7 +3,7 @@
    ke server (no-cache / ETag) agar update langsung masuk dan file besar seperti
    songs.js tetap hemat kuota via 304 Not Modified saat belum berubah. */
 
-const CACHE = 'gts-v126-wave80-icon-alignment-audit';
+const CACHE = 'gts-v127-wave81-id-i18n-cleanup';
 const SHELL = [
   './',
   './index.html',
@@ -24,7 +24,6 @@ const SHELL = [
   './duel-streams-v1.js',
   './duel.js',
   './artist-game.js',
-  './score-card.js',
   './backup.js',
   './badges.js',
   './i18n.js',

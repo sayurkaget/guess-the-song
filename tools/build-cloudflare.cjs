@@ -9,7 +9,7 @@ if (site.protocol !== 'https:' || site.pathname !== '/' || site.search || site.h
 }
 fs.mkdirSync(output, { recursive: true });
 const files = ['index.html', 'styles.css', 'layout.css', 'site-guide.css', 'site-guide.js', 'app.js', 'songs.js', 'recordings.js',
-  'daily.js', 'daily-pool-v1.js', 'challenge.js', 'duel-streams-v1.js', 'duel.js', 'artist-game.js', 'score-card.js', 'backup.js', 'badges.js', 'i18n.js', 'feedback.js', 'analytics.js',
+  'daily.js', 'daily-pool-v1.js', 'challenge.js', 'duel-streams-v1.js', 'duel.js', 'artist-game.js', 'backup.js', 'badges.js', 'i18n.js', 'feedback.js', 'analytics.js',
   'app.webmanifest', 'sw.js', 'robots.txt', 'sitemap.xml',
   'googlebc29a838b567dfc0.html',
   '7b4e9c2a1f8d4e60b3c5a9d1e2f48076.txt',
@@ -31,7 +31,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v106-wave80-icon-alignment-audit'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v107-wave81-id-i18n-cleanup'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -196,6 +196,8 @@ function localizeIdStaticHtml(html) {
     .replace('<span class="mode-pill">5 stages</span>', '<span class="mode-pill">5 tahap</span>')
     .replace('<span class="lbl">By Artist</span>', '<span class="lbl">Per Artis</span>')
     .replace('<span class="lbl">Playlists</span>', '<span class="lbl">Playlist</span>')
+    .replace('<span class="multi-lbl">All genres</span>', '<span class="multi-lbl">Semua genre</span>')
+    .replace('<span class="multi-lbl">All eras</span>', '<span class="multi-lbl">Semua era</span>')
     .replace('id="start">Start</button>', 'id="start">Mulai</button>')
     .replace('<b>Play your favorite artist</b>', '<b>Mainkan artis favoritmu</b>')
     .replace('<span>Pick any artist &mdash; guess 5 of their tracks from 0.1s clips</span>', '<span>Pilih artis bebas &mdash; tebak 5 lagunya dari klip 0,1 detik</span>')
@@ -212,9 +214,17 @@ function localizeIdStaticHtml(html) {
     .replace('<span class="mode-pill is-purple">Endless</span>', '<span class="mode-pill is-purple">Tanpa batas</span>')
     .replace('<p id="artistLobbySub">Deduce the mystery artist from 6 clues</p>', '<p id="artistLobbySub">Tebak artis misterius dari 6 petunjuk</p>')
     .replace('Play artist\n', 'Main artis\n')
+    .replace('id="leaveChallenge" type="button">Play Classic</button>', 'id="leaveChallenge" type="button">Main Classic</button>')
     .replace('<span class="lbl">Stats</span>', '<span class="lbl">Statistik</span>')
     .replace('<span class="lbl">Settings</span>', '<span class="lbl">Pengaturan</span>')
     .replace('<span class="lbl">Feedback</span>', '<span class="lbl">Masukan</span>')
+    .replace('<span class="lbl">All Classic</span>', '<span class="lbl">Semua Classic</span>')
+    .replace('<span class="lbl">Daily</span>', '<span class="lbl">Harian</span>')
+    .replace('<span class="lbl">Artist</span>', '<span class="lbl">Artis</span>')
+    .replace('<span class="lbl">Achievements</span>', '<span class="lbl">Pencapaian</span>')
+    .replace('<h2 class="custom-h" id="customTitle">&#10022; Custom Game</h2>', '<h2 class="custom-h" id="customTitle">Pilih artis</h2>')
+    .replace('<p class="custom-lbl">Play an artist</p>', '<p class="custom-lbl">Mainkan artis</p>')
+    .replace('<p class="custom-hint" id="customHint">Pick an artist &mdash; we pick 5 of their songs.</p>', '<p class="custom-hint" id="customHint">Pilih artis &mdash; kami pilihkan 5 lagunya.</p>')
     .replace('<h2 id="musicBrowserTitle">Choose your music</h2>', '<h2 id="musicBrowserTitle">Pilih musikmu</h2>')
     .replace('<p class="browser-intro">A few shortcuts for your next Classic run.</p>', '<p class="browser-intro">Pintasan cepat untuk sesi Classic berikutnya.</p>')
     .replace('<h3>Genres</h3>', '<h3>Genre</h3>')

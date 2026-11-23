@@ -209,6 +209,7 @@
       statScopeAllClassic: 'All Classic filters',
       // Custom Modal
       customTitle: 'Pick an artist',
+      customSub: 'Play an artist',
       customHint: 'Pick an artist — we pick 5 of their songs.',
       customPhInput: 'Search any artist…',
       recentArtists: 'Recent artists',
@@ -218,6 +219,29 @@
       refreshBtn: '↻ Refresh',
       // Result / Run / Leave / Feedback / Challenge
       nextBtn: 'Next',
+      dailyResultBtn: 'Daily result',
+      seeResultBtn: 'See result',
+      dailyBadgePill: 'Daily Challenge · 1 song',
+      friendBadgePill: 'Friend Challenge · 1 song',
+      friendChallengeTag: 'Friend Challenge',
+      customTag: 'Custom',
+      verdictDailyWon: 'Daily solved!',
+      verdictDailyLost: 'New song tomorrow.',
+      verdictZero: 'Zero. Try again!',
+      verdictOne: 'One down.',
+      verdictNotBad: 'Not bad.',
+      verdictNice: 'Nice run!',
+      verdictClose: 'So close to perfect!',
+      verdictPerfectSongs: 'Perfect. Every song!',
+      verdictPerfectStages: 'Perfect. Every stage.',
+      verdictToughPlaylist: 'Tough playlist!',
+      scoreUnitSong: 'song',
+      scoreUnitSongs: 'songs',
+      scoreUnitStage: 'stage',
+      scoreUnitStages: 'stages',
+      todaysSong: "Today's song",
+      songNum: 'Song {n}',
+      notPlayed: 'Not played',
       playAgain: 'Play again',
       backToMenu: 'Back to menu',
       listenFull: 'Listen in full ↗',
@@ -243,7 +267,7 @@
       fbNote: 'Your message and any details you include go privately to the site owner.',
       sendFeedback: 'Send feedback',
       acceptChallenge: 'Accept challenge',
-      playRegular: 'Play regular game',
+      playRegular: 'Play Classic',
       playClassic: 'Play Classic',
       // Guide & FAQ
       guideTitle: 'Choose your music',
@@ -601,6 +625,7 @@
       statScopeAllClassic: 'Semua filter Classic',
       // Custom Modal
       customTitle: 'Pilih artis',
+      customSub: 'Mainkan artis',
       customHint: 'Pilih artis — kami pilihkan 5 lagunya.',
       customPhInput: 'Cari nama artis…',
       recentArtists: 'Artis terbaru',
@@ -610,6 +635,29 @@
       refreshBtn: '↻ Segarkan',
       // Result / Run / Leave / Feedback / Challenge
       nextBtn: 'Berikutnya',
+      dailyResultBtn: 'Hasil Harian',
+      seeResultBtn: 'Lihat hasil',
+      dailyBadgePill: 'Lagu Harian · 1 lagu',
+      friendBadgePill: 'Tantangan Teman · 1 lagu',
+      friendChallengeTag: 'Tantangan Teman',
+      customTag: 'Kustom',
+      verdictDailyWon: 'Lagu Harian tertebak!',
+      verdictDailyLost: 'Lagu baru besok.',
+      verdictZero: 'Nol. Coba lagi!',
+      verdictOne: 'Satu kena.',
+      verdictNotBad: 'Lumayan.',
+      verdictNice: 'Keren!',
+      verdictClose: 'Nyaris sempurna!',
+      verdictPerfectSongs: 'Sempurna. Semua lagu!',
+      verdictPerfectStages: 'Sempurna. Semua tahap.',
+      verdictToughPlaylist: 'Playlist yang menantang!',
+      scoreUnitSong: 'lagu',
+      scoreUnitSongs: 'lagu',
+      scoreUnitStage: 'tahap',
+      scoreUnitStages: 'tahap',
+      todaysSong: 'Lagu hari ini',
+      songNum: 'Lagu {n}',
+      notPlayed: 'Belum dimainkan',
       playAgain: 'Main lagi',
       backToMenu: 'Kembali ke menu',
       listenFull: 'Dengar penuh ↗',
@@ -635,7 +683,7 @@
       fbNote: 'Pesan dan detail yang kamu kirim langsung masuk secara privat ke pemilik situs.',
       sendFeedback: 'Kirim masukan',
       acceptChallenge: 'Terima tantangan',
-      playRegular: 'Main mode biasa',
+      playRegular: 'Main Classic',
       playClassic: 'Main Classic',
       // Guide & FAQ
       guideTitle: 'Pilih musikmu',
@@ -941,7 +989,9 @@
     setText($('#reset'), 'resetStats');
 
     // Custom modal & result/run/duel/leave/feedback modals
-    setText($('#cTitle'), 'customTitle');
+    setText($('#customTitle'), 'customTitle');
+    setText($('#customModal .custom-lbl'), 'customSub');
+    setText($('#customHint'), 'customHint');
     if ($('#artistQ')) $('#artistQ').placeholder = t('customPhInput');
     setBtnLabelKeepSvg($('#shareStage'), 'challengeFriend');
     setText($('#listen'), 'listenFull');

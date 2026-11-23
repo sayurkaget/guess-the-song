@@ -10,8 +10,10 @@
     if (document.querySelector('#lobby').hidden) document.querySelector('#back').click();
   };
   const showMenu = () => {
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.querySelector('.wrap').scrollIntoView({behavior:reduced ? 'auto' : 'smooth',block:'start'});
+    const noAnim = document.body
+      ? Boolean(document.body.dataset && document.body.dataset.anim === 'off')
+      : Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    document.querySelector('.wrap').scrollIntoView({behavior:noAnim ? 'auto' : 'smooth',block:'start'});
     const spotifyCta = document.querySelector('#classicSpotifyPanel:not([hidden]) #spotifyUrl');
     const customCta = document.querySelector('#classicArtistPanel:not([hidden]) #openCustom');
     const start = spotifyCta || customCta || document.querySelector('#start');
