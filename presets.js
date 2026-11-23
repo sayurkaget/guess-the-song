@@ -1,4 +1,6 @@
-/* Curated Quick Preset Playlists (100% US iTunes studio-verified trackIds). */
+/* Curated & Dynamic Quick Preset Playlists (US iTunes studio-verified).
+   Static presets carry pinned studio trackIds; dynamic presets shuffle 50 fresh
+   hits from SONGS on every launch. */
 (function (root) {
   'use strict';
   const PRESETS = [
@@ -181,6 +183,76 @@
         2010,
         808649228,
         "https://is1-ssl.mzstatic.com/image/thumb/Music6/v4/54/b9/00/54b90031-1726-c16b-981d-8f1c351a6577/Kahitna_-_Lebih_Dari_Sekedar_Cantik.jpg/300x300bb.jpg"
+      ],
+      [
+        "Hingga Tua Bersama",
+        "Rizky Febian",
+        2021,
+        1567263887,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/34/fb/b9/34fbb9af-cb44-5fc4-ac8e-b2aca5b4f912/artwork.jpg/300x300bb.jpg"
+      ],
+      [
+        "Melawan Restu",
+        "Mahalini",
+        2021,
+        1557456160,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/a7/9e/bd/a79ebd67-f79d-b5ea-c305-8463b06d206a/cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "Interaksi",
+        "Tulus",
+        2022,
+        1612164256,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/6f/18/10/6f1810e0-2d6a-a456-1362-de607c70408a/cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "Pamit",
+        "Tulus",
+        2016,
+        1086493644,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/b1/8a/1e/b18a1ebe-59bb-6e49-f64b-5be2c40e510f/cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "Sewindu",
+        "Tulus",
+        2011,
+        918912453,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/63/22/42/632242fa-4a88-ccde-fa08-d8688d492262/cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "Cincin",
+        "Hindia",
+        2023,
+        1691585282,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/7f/5f/99/7f5f99c7-1ddd-93cb-9b79-7efec9d6dd53/cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "Membasuh (feat. Rara Sekar)",
+        "Hindia",
+        2019,
+        1481804581,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music123/v4/2a/da/57/2ada5765-472f-3193-11a3-861db06da99d/cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "Kemesraan",
+        "Iwan Fals, Chrisye, Rafika Duri, Betharia Sonatha, Jamal Mirdad, Etrie Jayanthie, Nani Sugianto & Itang Yunasz",
+        1990,
+        1824130839,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/25/d7/7c/25d77c43-c5cd-8019-d2ce-15817fcd541d/25UMGIM82473.rgb.jpg/300x300bb.jpg"
+      ],
+      [
+        "Dia",
+        "Anji",
+        2016,
+        1368025193,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/cf/3c/41/cf3c41a4-6cef-726a-12c0-b3aaf19dddc8/Dia-iTunes_copy.jpg/300x300bb.jpg"
+      ],
+      [
+        "Bukti",
+        "Virgoun",
+        2017,
+        1882285189,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/63/d4/44/63d44485-b321-f5d9-07ed-0b718411b063/8995888635524_Cover.jpg/300x300bb.jpg"
       ]
     ]
   },
@@ -363,6 +435,76 @@
         2024,
         1734500896,
         "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/3e/49/1e/3e491e43-4961-21ab-2abe-37fb1c0feb40/196922879227_Cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "Boy With Luv (feat. Halsey)",
+        "BTS",
+        2019,
+        1599172208,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/40/d4/93/40d493e3-ac9e-1746-8d4c-f380f27c97cb/193483706238_Cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "FAKE LOVE",
+        "BTS",
+        2018,
+        1598730630,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/ff/00/2c/ff002c29-6da9-1a26-16b3-282a73180366/192562871591_Cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "Pink Venom",
+        "BLACKPINK",
+        2022,
+        1639174482,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/72/48/88/72488832-558c-fcba-4aa0-03d88dc79eb3/22UMGIM87808.rgb.jpg/300x300bb.jpg"
+      ],
+      [
+        "Shut Down",
+        "BLACKPINK",
+        2022,
+        1644431999,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/52/8e/5a/528e5a30-52b0-b68c-f184-635fcf15e6d7/22UM1IM01017.rgb.jpg/300x300bb.jpg"
+      ],
+      [
+        "Ditto",
+        "NewJeans",
+        2022,
+        1657231962,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/f6/29/42/f629426e-92fe-535c-cbe4-76e70850819b/196922287107_Cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "ETA",
+        "NewJeans",
+        2023,
+        1695951900,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/d3/4b/7e/d34b7e1e-af3b-43b6-2949-7a8c652a1bc9/196922462726_Cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "Feel Special",
+        "TWICE",
+        2019,
+        1556087008,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/75/bb/cc/75bbcc8c-bc12-983b-196f-bb6e355cc978/00602508875281_Cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "TT",
+        "TWICE",
+        2016,
+        1555401122,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/0e/c5/67/0ec5678b-9070-ac48-f01d-c8af72b92d01/00602508870064_Cover.jpg/300x300bb.jpg"
+      ],
+      [
+        "LALISA",
+        "LISA",
+        2021,
+        1584836387,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/ee/8a/62/ee8a62ef-d973-b255-204e-be6a1fad0da7/21UMGIM86117.rgb.jpg/300x300bb.jpg"
+      ],
+      [
+        "Standing Next to You",
+        "Jung Kook",
+        2023,
+        1709554997,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/86/78/b4/8678b4b3-2341-7239-b6cb-bcfdaef0e4e0/196922656545_Cover.jpg/300x300bb.jpg"
       ]
     ]
   },
@@ -545,6 +687,76 @@
         2019,
         1480313619,
         "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/86/12/f4/8612f495-10a5-0189-0f39-6644100a2434/19UMGIM67614.rgb.jpg/300x300bb.jpg"
+      ],
+      [
+        "Guren No Yumiya",
+        "Linked Horizon",
+        2013,
+        666788983,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/68/3d/2b/683d2b87-f72d-9aa1-c6a5-956d3d25c80e/PCCA_03837_itunes.png/300x300bb.jpg"
+      ],
+      [
+        "Crossing Field",
+        "LiSA",
+        2012,
+        1537785962,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/bc/b1/d0/bcb1d0bc-8736-61ac-cb16-51c623c2b0bc/jacket_SVWC07875B00Z_550.jpg/300x300bb.jpg"
+      ],
+      [
+        "Oath Sign",
+        "LiSA",
+        2011,
+        1537785552,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/b6/e8/75/b6e87557-292a-463e-2fd7-daadff97ba51/jacket_SVWC07804B00Z_550.jpg/300x300bb.jpg"
+      ],
+      [
+        "Brave Shine",
+        "Aimer",
+        2015,
+        1536130474,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/a7/e4/91/a7e4914b-3e96-d119-0ce7-d9e7d5ab113a/4560429730019.jpg/300x300bb.jpg"
+      ],
+      [
+        "A Cruel Angel's Thesis (Director's Edit Version)",
+        "Yoko Takahashi",
+        1995,
+        1500836562,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/77/65/fa/7765fa66-2af8-dce3-fb4c-18cc68d6ba77/886448179139.jpg/300x300bb.jpg"
+      ],
+      [
+        "We Are!",
+        "Kitadani Hiroshi",
+        1999,
+        1770907052,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/31/c2/f0/31c2f094-7046-5a0e-b71e-96400d455369/COKM-45371.jpg/300x300bb.jpg"
+      ],
+      [
+        "Haruka Kanata",
+        "Asian Kung-Fu Generation",
+        2002,
+        1536394884,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/48/96/3e/48963e5a-75d7-7a8b-132c-233f26ebd70d/jacket_KSCL01917B00Z_550.jpg/300x300bb.jpg"
+      ],
+      [
+        "Rewrite",
+        "Asian Kung-Fu Generation",
+        2004,
+        1536364096,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/9b/90/54/9b90547e-6743-bd7b-4d17-c6a485c0124e/4560427295664.jpg/300x300bb.jpg"
+      ],
+      [
+        "Sign",
+        "FLOW",
+        2013,
+        1536382006,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/d1/36/28/d1362856-9a92-94bb-213f-80b767322a13/jacket_KSCL01600B00Z_550.jpg/300x300bb.jpg"
+      ],
+      [
+        "Colors",
+        "FLOW",
+        2006,
+        1538160322,
+        "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/cd/ca/89/cdca8927-8181-fe15-976c-e4ece60f53ea/jacket_KSCL03035B00Z_550.jpg/300x300bb.jpg"
       ]
     ]
   },
@@ -552,183 +764,92 @@
     "id": "throwback",
     "name": "2000s",
     "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/53/a7/7f/53a77fab-c54c-a57b-8130-248fc12d0c80/093624948995.jpg/300x300bb.jpg",
-    "tracks": [
-      [
-        "In the End",
-        "Linkin Park",
-        2000,
-        590431785,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/53/a7/7f/53a77fab-c54c-a57b-8130-248fc12d0c80/093624948995.jpg/300x300bb.jpg"
-      ],
-      [
-        "Numb",
-        "Linkin Park",
-        2003,
-        528437514,
-        "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/dd/7d/72/dd7d7259-d27f-5b3e-ce64-9e304d2cb40f/dj.rxzrauer.jpg/300x300bb.jpg"
-      ],
-      [
-        "Mr. Brightside",
-        "The Killers",
-        2003,
-        1526194192,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/07/1a/5a/071a5aee-6e42-060c-35b9-6a6e45b9ea59/06UMGIM10441.rgb.jpg/300x300bb.jpg"
-      ],
-      [
-        "Crazy In Love",
-        "Beyonce",
-        2003,
-        201274644,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music/03/c5/d4/mzi.ldvrmhxt.jpg/300x300bb.jpg"
-      ],
-      [
-        "Umbrella",
-        "Rihanna",
-        2007,
-        1441154437,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/ff/ed/70/ffed704e-95e3-b433-ea40-e0e78d07aef6/08UMGIM10017.rgb.jpg/200x200bb.jpg"
-      ],
-      [
-        "Yeah!",
-        "Usher",
-        2004,
-        386153478,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/02/c6/e1/02c6e1cd-8d57-97b4-6ef1-77d2be004509/mzi.sjrqsmrq.jpg/300x300bb.jpg"
-      ],
-      [
-        "Lose Yourself",
-        "Eminem",
-        2002,
-        1440903439,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/08/23/fc/0823fcd9-cb44-695b-32bf-b3bf51d9f800/00606949351229.rgb.jpg/300x300bb.jpg"
-      ],
-      [
-        "Hey Ya!",
-        "OutKast",
-        2003,
-        1774799818,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/71/ae/6a/71ae6a46-99a6-e9d8-d7f3-41c0f2df45c4/196872579123.jpg/300x300bb.jpg"
-      ],
-      [
-        "Yellow",
-        "Coldplay",
-        2000,
-        1122782283,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f5/93/8c/f5938c49-964c-31d1-4b33-78b634f71fb7/190295978075.jpg/300x300bb.jpg"
-      ],
-      [
-        "Viva La Vida",
-        "Coldplay",
-        2008,
-        1122773680,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/52/aa/85/52aa851f-15b7-6322-f91f-df84b15b7b19/190295978044.jpg/300x300bb.jpg"
-      ],
-      [
-        "Toxic",
-        "Britney Spears",
-        2003,
-        251948354,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/38/8b/7a/388b7a8f-10ff-a4e0-7624-65e29ac6a793/828765374828.jpg/300x300bb.jpg"
-      ],
-      [
-        "Poker Face",
-        "Lady Gaga",
-        2008,
-        1440818665,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/73/3d/bf/733dbf16-61b9-f095-976d-1965b735bd3d/13UAAIM66793.rgb.jpg/200x200bb.jpg"
-      ],
-      [
-        "Bad Romance",
-        "Lady Gaga",
-        2009,
-        1476095084,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/1f/25/c4/1f25c4bf-7f7a-ff26-8769-20ab6052dadf/09UMGIM40719.rgb.jpg/200x200bb.jpg"
-      ],
-      [
-        "Hips Don't Lie",
-        "Shakira",
-        2005,
-        1817217063,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/0d/b5/8a/0db58a8b-7b17-dd53-3464-116a415d0f49/196872648836.jpg/200x200bb.jpg"
-      ],
-      [
-        "Complicated",
-        "Avril Lavigne",
-        2002,
-        315025823,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/32/2c/f3/322cf324-9ea1-3962-865a-f4f9bf83764d/888880191069.jpg/300x300bb.jpg"
-      ],
-      [
-        "Misery Business",
-        "Paramore",
-        2007,
-        604804763,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/9a/3a/26/9a3a2608-29a7-5585-f990-cdfeb10b7394/075679955005.jpg/300x300bb.jpg"
-      ],
-      [
-        "Seven Nation Army",
-        "The White Stripes",
-        2003,
-        1533513537,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/07/25/09/0725098a-09f4-f240-e551-94384a590371/886448799009.jpg/300x300bb.jpg"
-      ],
-      [
-        "This Love",
-        "Maroon 5",
-        2002,
-        1440851719,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d0/3e/25/d03e255d-e205-0e66-20f6-01e251896c25/14UMGIM27076.rgb.jpg/300x300bb.jpg"
-      ],
-      [
-        "Cry Me a River",
-        "Justin Timberlake",
-        2002,
-        252606592,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/f9/76/d2/f976d242-4e68-1919-6576-ef4c869c077a/dj.umvqrvup.jpg/300x300bb.jpg"
-      ],
-      [
-        "Stronger",
-        "Kanye West",
-        2007,
-        1442846328,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/39/25/2d/39252d65-2d50-b991-0962-f7a98a761271/00602517483507.rgb.jpg/300x300bb.jpg"
-      ],
-      [
-        "If I Ain't Got You",
-        "Alicia Keys",
-        2003,
-        1714012402,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/7d/a3/2d/7da32df5-bec0-99fa-1431-5df4d6fd930a/196871575188.jpg/300x300bb.jpg"
-      ],
-      [
-        "So Sick",
-        "Ne-Yo",
-        2005,
-        1440783502,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f1/37/c5/f137c5cc-c6c0-cdf3-909f-6800c3e4e31c/06UMGIM17731.rgb.jpg/300x300bb.jpg"
-      ],
-      [
-        "I Gotta Feeling",
-        "Black Eyed Peas",
-        2009,
-        1440769310,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/42/fc/47/42fc4794-3c69-8c00-e528-1c7e92b5ac93/09UMGIM13833.rgb.jpg/300x300bb.jpg"
-      ],
-      [
-        "Party In the U.S.A.",
-        "Miley Cyrus",
-        2009,
-        1444113373,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f6/38/e5/f638e56e-163d-1e71-591b-2a29d1d887d4/09BVMIM00863.rgb.jpg/300x300bb.jpg"
-      ],
-      [
-        "Chasing Cars",
-        "Snow Patrol",
-        2005,
-        1440758864,
-        "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/c4/25/bf/c425bf7c-f3d8-6baf-7397-40868971f77f/06UMGIM43473.rgb.jpg/300x300bb.jpg"
-      ]
-    ]
+    "filter": {
+      "era": "y00",
+      "tierMax": 2,
+      "limit": 50
+    }
+  },
+  {
+    "id": "y10s",
+    "name": "2010s Hits",
+    "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music5/v4/43/03/57/430357e0-e142-8d4d-ca56-87f4bd41e017/886444976145.jpg/200x200bb.jpg",
+    "filter": {
+      "era": "y10",
+      "tierMax": 2,
+      "limit": 50
+    }
+  },
+  {
+    "id": "y90s",
+    "name": "90s Hits",
+    "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/95/fd/b9/95fdb9b2-6d2b-92a6-97f2-51c1a6d77f1a/00602527874609.rgb.jpg/300x300bb.jpg",
+    "filter": {
+      "era": "old",
+      "tierMax": 2,
+      "limit": 50
+    }
+  },
+  {
+    "id": "y20s",
+    "name": "2020s Pop",
+    "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a6/6e/bf/a66ebf79-5008-8948-b352-a790fc87446b/19UM1IM04638.rgb.jpg/300x300bb.jpg",
+    "filter": {
+      "genre": "pop",
+      "era": "y20",
+      "tierMax": 2,
+      "limit": 50
+    }
+  },
+  {
+    "id": "rock",
+    "name": "Rock Hits",
+    "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/4d/08/2a/4d082a9e-7898-1aa1-a02f-339810058d9e/14DMGIM05632.rgb.jpg/300x300bb.jpg",
+    "filter": {
+      "genre": "rock",
+      "tierMax": 2,
+      "limit": 50
+    }
+  },
+  {
+    "id": "hiphop",
+    "name": "Hip-Hop",
+    "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/e7/49/8f/e7498f65-df8f-bead-d6e3-2a8d4d642a79/886447235317.jpg/300x300bb.jpg",
+    "filter": {
+      "genre": "hiphop",
+      "tierMax": 2,
+      "limit": 50
+    }
+  },
+  {
+    "id": "rnb",
+    "name": "R&B & Soul",
+    "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/bd/3b/a9/bd3ba9fb-9609-144f-bcfe-ead67b5f6ab3/196589564931.jpg/300x300bb.jpg",
+    "filter": {
+      "genre": "rnb",
+      "tierMax": 2,
+      "limit": 50
+    }
+  },
+  {
+    "id": "indie",
+    "name": "Indie Chill",
+    "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/69/9c/b5/699cb5d6-115c-ff73-9d26-e57ea4350d72/887828031795.png/300x300bb.jpg",
+    "filter": {
+      "genre": "indie",
+      "tierMax": 2,
+      "limit": 50
+    }
+  },
+  {
+    "id": "edm",
+    "name": "EDM & Dance",
+    "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/18/5b/1e/185b1ef5-5d97-19d8-aebf-8e29e41874ef/13UAAIM59255.rgb.jpg/300x300bb.jpg",
+    "filter": {
+      "genre": "edm",
+      "tierMax": 2,
+      "limit": 50
+    }
   }
 ];
   if (typeof module === 'object' && module.exports) module.exports = PRESETS;

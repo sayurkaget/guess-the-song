@@ -588,7 +588,7 @@ body[data-anim="off"] #lobby .duel-cta-pill{transition:none}
 
 /* ===== Stage reveal modal: Unified Compact Card (desktop + mobile) ===== */
 #resultModal{background:rgba(4,11,7,.9);backdrop-filter:blur(10px)}
-#resultModal .confetti{z-index:3}
+#resultModal .confetti{z-index:5}
 #resultModal .artbg.on{opacity:.22}
 #resultModal .reveal{
   width:min(468px,100%);padding:1.5rem 1.45rem 1.35rem;
@@ -1726,6 +1726,8 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 .spotify-hint.err{color:#ff8a8e}
 .preset-playlists{display:flex;flex-direction:column;gap:.45rem;margin-top:.15rem;padding-top:.55rem;border-top:1px solid rgba(255,255,255,.07)}
 .preset-playlists[hidden]{display:none !important}
+.preset-pl-refresh{display:inline-flex;align-items:center;gap:.3rem}
+.preset-pl-refresh svg{width:13px;height:13px;flex:none;display:block}
 .preset-pl-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.42rem}
 .preset-pl-chip{
   display:flex;align-items:center;gap:.45rem;min-width:0;min-height:38px;

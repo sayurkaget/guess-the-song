@@ -61,7 +61,7 @@ export async function onRequest({ request, env }) {
       const row = await env.FEEDBACK_DB.prepare(
         'SELECT plays, wins, tries_sum, t1, t2, t3, t4, t5 FROM daily_stats WHERE kind = ? AND day = ?'
       ).bind(kind, day).first();
-      return reply(200, formatSummary(kind, day, row), 'public, max-age=30');
+      return reply(200, formatSummary(kind, day, row), 'no-store');
     } catch {
       return reply(503, { ok: false });
     }
@@ -71,8 +71,10 @@ export async function onRequest({ request, env }) {
     return reply(405, { ok: false });
   }
 
+  const reqOrigin = new URL(request.url).origin;
   const origin = request.headers.get('Origin');
-  if (origin !== new URL(request.url).origin) {
+  const secFetch = request.headers.get('Sec-Fetch-Site');
+  if (origin !== reqOrigin && !(!origin && secFetch === 'same-origin')) {
     return reply(403, { ok: false });
   }
   if (!(request.headers.get('Content-Type') || '').includes('application/json')) {

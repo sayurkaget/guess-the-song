@@ -550,7 +550,7 @@ body[data-diff="impossible"]{--acc:#9b7bf5;--acc-l:#b49bff;--acc-d:#7355d6;--acc
 .dim.small{font-size:.78rem;color:var(--dimmer);margin-top:1.5rem}
 
 .confetti{
-  position:fixed;inset:0;z-index:1;
+  position:fixed;inset:0;z-index:5;
   pointer-events:none;width:100%;height:100%;
 }
 /* ===== layar reveal: penuh, tanpa kartu ===== */

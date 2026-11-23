@@ -61,12 +61,13 @@ test('Wave 85 /api/daily-stats validates requests and aggregates anonymous Daily
     env: { FEEDBACK_DB: db }
   });
 
-  // Empty GET
+  // Empty GET (must be no-store so newly submitted solves appear immediately)
   const g0 = await onRequest({
     request: new Request(`https://tuneup.my.id/api/daily-stats?kind=song&day=${today}`),
     env: { FEEDBACK_DB: db }
   });
   assert.equal(g0.status, 200);
+  assert.equal(g0.headers.get('Cache-Control'), 'no-store');
   const g0Body = await g0.json();
   assert.equal(g0Body.plays, 0);
   assert.equal(g0Body.winRate, 0);
@@ -101,21 +102,25 @@ test('Wave 85 /api/daily-stats validates requests and aggregates anonymous Daily
   assert.deepEqual(a1.buckets, [0, 1, 0, 0, 0]);
 });
 
-test('Wave 85 Quick Preset Playlists are studio-verified, unique, and fully wired', () => {
-  assert.ok(Array.isArray(PRESETS) && PRESETS.length === 4, 'expected 4 curated presets');
+test('Wave 85/86 Quick Preset Playlists (12 curated & dynamic) and foreground confetti are wired cleanly', () => {
+  assert.ok(Array.isArray(PRESETS) && PRESETS.length === 12, 'expected 12 presets across 3 refresh pages');
   const ids = PRESETS.map((p) => p.id);
-  assert.deepEqual(ids, ['indo', 'kpop', 'anime', 'throwback']);
+  assert.deepEqual(ids, ['indo', 'kpop', 'anime', 'throwback', 'y10s', 'y90s', 'y20s', 'rock', 'hiphop', 'rnb', 'indie', 'edm']);
   for (const p of PRESETS) {
     assert.ok(p.cover && /^https:\/\//.test(p.cover), `${p.id} must have HTTPS cover`);
-    assert.ok(Array.isArray(p.tracks) && p.tracks.length >= 20, `${p.id} must have >= 20 tracks (got ${p.tracks?.length})`);
-    const seen = new Set();
-    for (const row of p.tracks) {
-      const [title, artist, year, trackId] = row;
-      assert.ok(title && artist, `${p.id} track missing title/artist`);
-      assert.ok(Number.isInteger(trackId) && trackId > 0, `${p.id} invalid trackId for ${title}`);
-      assert.ok(!seen.has(trackId), `${p.id} duplicate trackId ${trackId}`);
-      seen.add(trackId);
-      assert.ok(isStudio({ trackName: title, artistName: artist }), `${p.id} non-studio track leaked: ${title} — ${artist}`);
+    if (Array.isArray(p.tracks)) {
+      assert.ok(p.tracks.length >= 35, `${p.id} must have >= 35 pinned tracks (got ${p.tracks.length})`);
+      const seen = new Set();
+      for (const row of p.tracks) {
+        const [title, artist, year, trackId] = row;
+        assert.ok(title && artist, `${p.id} track missing title/artist`);
+        assert.ok(Number.isInteger(trackId) && trackId > 0, `${p.id} invalid trackId for ${title}`);
+        assert.ok(!seen.has(trackId), `${p.id} duplicate trackId ${trackId}`);
+        seen.add(trackId);
+        assert.ok(isStudio({ trackName: title, artistName: artist }), `${p.id} non-studio track leaked: ${title} — ${artist}`);
+      }
+    } else {
+      assert.ok(p.filter && p.filter.limit === 50, `${p.id} dynamic preset must define filter with limit 50`);
     }
   }
 
@@ -124,6 +129,9 @@ test('Wave 85 Quick Preset Playlists are studio-verified, unique, and fully wire
   assert.match(html, /id="dailyCommunity"/);
   assert.match(html, /id="agDailyCommunity"/);
   assert.match(html, /<script src="presets\.js"><\/script>/);
+
+  const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
+  assert.match(css, /\.confetti\{[\s\S]*?z-index:5;/, 'confetti must render above modal windows');
 
   const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
   assert.match(sw, /'\.\/presets\.js'/);

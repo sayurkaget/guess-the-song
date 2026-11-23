@@ -1941,6 +1941,7 @@
     LS.set(key, { stage: S.stage, stages: S.stages, runDone: S.runDone });
   }
   const dailyCommunityCache = new Map();
+  const dailyCommunityInFlight = new Set();
   function canUseCommunityApi() {
     return typeof fetch === 'function' && typeof location === 'object' && /^https?:$/.test(location.protocol || '');
   }
@@ -1960,57 +1961,68 @@
       ? tr('dailyCommunityStat', { pct, avg: avgStr })
       : ('Today · ' + pct + '% solved · avg ' + avgStr + ' tries');
   }
-  function paintDailyCommunity(el, data, userWon) {
+  function paintDailyCommunity(el, data) {
     if (!el) return;
-    const txt = formatDailyCommunity(data, userWon);
+    const txt = formatDailyCommunity(data);
     el.textContent = txt;
     el.hidden = !txt;
   }
   function submitDailyCommunity(kind, day, won, tries) {
     if (!canUseCommunityApi() || !day) return;
     const sentKey = 'tl:dailyStatSent:' + kind + ':' + day;
-    if (LS.get(sentKey)) return;
     const cacheKey = kind + ':' + day;
+    if (LS.get(sentKey) || dailyCommunityInFlight.has(cacheKey)) return;
+    dailyCommunityInFlight.add(cacheKey);
     const targetEl = () => (kind === 'artist' ? $('#agDailyCommunity') : $('#dailyCommunity'));
     fetch('/api/daily-stats', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind, day, won: !!won, tries: won ? Number(tries) || 1 : 0 })
+      body: JSON.stringify({ kind, day, won: !!won, tries: won ? Math.max(1, Number(tries) || 1) : 0 })
     }).then((r) => (r && r.ok ? r.json() : null)).then((data) => {
       if (!data || !data.ok) return;
       LS.set(sentKey, 1);
       dailyCommunityCache.set(cacheKey, { data, userWon: !!won });
-      paintDailyCommunity(targetEl(), data, !!won);
-    }).catch(() => {});
+      paintDailyCommunity(targetEl(), data);
+    }).catch(() => {}).finally(() => {
+      dailyCommunityInFlight.delete(cacheKey);
+    });
   }
-  function refreshDailyCommunity(kind, day, el, userWon) {
+  function ensureDailyCommunity(kind, day, el, won, tries) {
     if (!el) return;
     const cacheKey = kind + ':' + day;
     const cached = dailyCommunityCache.get(cacheKey);
-    if (cached && cached.data) {
-      paintDailyCommunity(el, cached.data, userWon);
+    if (cached && cached.data && Number(cached.data.plays) >= 1) {
+      paintDailyCommunity(el, cached.data);
     } else {
       el.hidden = true;
       el.textContent = '';
     }
     if (!canUseCommunityApi() || !day) return;
-    fetch('/api/daily-stats?kind=' + encodeURIComponent(kind) + '&day=' + encodeURIComponent(day))
+    const sentKey = 'tl:dailyStatSent:' + kind + ':' + day;
+    if (!LS.get(sentKey)) {
+      submitDailyCommunity(kind, day, won, tries);
+      return;
+    }
+    if (dailyCommunityInFlight.has(cacheKey)) return;
+    fetch('/api/daily-stats?kind=' + encodeURIComponent(kind) + '&day=' + encodeURIComponent(day), { cache: 'no-store' })
       .then((r) => (r && r.ok ? r.json() : null))
       .then((data) => {
         if (!data || !data.ok || !(Number(data.plays) >= 1)) return;
-        dailyCommunityCache.set(cacheKey, { data, userWon: !!userWon });
-        paintDailyCommunity(el, data, !!userWon);
+        const cur = dailyCommunityCache.get(cacheKey);
+        if (cur && cur.data && Number(cur.data.plays) > Number(data.plays)) return;
+        dailyCommunityCache.set(cacheKey, { data, userWon: !!won });
+        paintDailyCommunity(el, data);
       }).catch(() => {});
   }
   function syncDailyCommunityLang() {
     if (S.daily && S.daily.day && $('#dailyCommunity') && !$('#dailyCommunity').hidden) {
       const c = dailyCommunityCache.get('song:' + S.daily.day);
-      if (c) paintDailyCommunity($('#dailyCommunity'), c.data, c.userWon);
+      if (c) paintDailyCommunity($('#dailyCommunity'), c.data);
     }
     if ($('#agDailyCommunity') && !$('#agDailyCommunity').hidden) {
       const day = window.DailyGame && typeof window.DailyGame.day === 'function' ? window.DailyGame.day() : '';
       const c = day && dailyCommunityCache.get('artist:' + day);
-      if (c) paintDailyCommunity($('#agDailyCommunity'), c.data, c.userWon);
+      if (c) paintDailyCommunity($('#agDailyCommunity'), c.data);
     }
   }
 
@@ -3444,7 +3456,10 @@
       if (commEl) {
         if (S.daily && S.daily.day) {
           const st0 = S.stages[0];
-          refreshDailyCommunity('song', S.daily.day, commEl, !!(st0 && st0.won));
+          const won0 = !!(st0 && st0.won);
+          const at0 = won0 && Array.isArray(st0.guesses) ? st0.guesses.findIndex((g) => g.t === 'right') : -1;
+          const tries0 = won0 ? (at0 >= 0 ? at0 + 1 : Math.max(1, (st0.guesses || []).length)) : 0;
+          ensureDailyCommunity('song', S.daily.day, commEl, won0, tries0);
         } else {
           commEl.hidden = true;
           commEl.textContent = '';
@@ -5444,7 +5459,7 @@
           const agComm = $('#agDailyCommunity');
           if (agComm) {
             if (ag.mode === 'daily' && !ag.challenge && ag.day) {
-              refreshDailyCommunity('artist', ag.day, agComm, !!ag.won);
+              ensureDailyCommunity('artist', ag.day, agComm, !!ag.won, ag.won ? ag.guesses.length : 0);
             } else {
               agComm.hidden = true;
               agComm.textContent = '';
@@ -6289,11 +6304,66 @@
     }
   }
 
-  const PRESET_LABELS = { indo: 'presetIndo', kpop: 'presetKpop', anime: 'presetAnime', throwback: 'presetThrowback' };
+  const PRESET_LABELS = {
+    indo: 'presetIndo', kpop: 'presetKpop', anime: 'presetAnime', throwback: 'presetThrowback',
+    y10s: 'presetY10s', y90s: 'presetY90s', y20s: 'presetY20s',
+    rock: 'presetRock', hiphop: 'presetHiphop', rnb: 'presetRnb', indie: 'presetIndie', edm: 'presetEdm'
+  };
+  const PRESET_PAGE_SIZE = 4;
+  let presetPage = 0;
   function presetLabel(p) {
     if (!p) return '';
     const key = PRESET_LABELS[p.id];
     return (I18N && key) ? tr(key) : p.name;
+  }
+  function presetPoolCount(p) {
+    if (!p) return 0;
+    if (Array.isArray(p.tracks)) return p.tracks.length;
+    if (p.filter && p.filter.limit) return p.filter.limit;
+    return 50;
+  }
+  function shuffleList(arr) {
+    const out = arr.slice();
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = (Math.random() * (i + 1)) | 0;
+      const tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+    }
+    return out;
+  }
+  function resolvePresetSongs(preset) {
+    if (Array.isArray(preset.tracks) && preset.tracks.length) {
+      const list = preset.tracks.map((t, i) => {
+        const title = t[0], artist = t[1], year = t[2] || 0, trackId = Number(t[3]) || 0, art = t[4] || '';
+        const hdArt = art ? art.replace('300x300', '600x600') : '';
+        return {
+          slug: 'preset:' + preset.id + ':' + (trackId || i),
+          title, artist, tier: 1, genre: 'preset', year, art, hdArt, artTried: true, trackId, pre: null,
+          hay: norm(title + ' ' + artist)
+        };
+      });
+      return shuffleList(list);
+    }
+    if (preset.filter) {
+      const f = preset.filter;
+      const tierMax = Number(f.tierMax) || 2;
+      const limit = Math.max(5, Number(f.limit) || 50);
+      const eraRule = f.era && ERAS[f.era];
+      const pool = ALL.filter((s) => {
+        if (!s || !s.trackId) return false;
+        if (s.tier > tierMax) return false;
+        if (f.genre && s.genre !== f.genre) return false;
+        if (eraRule && !eraRule.hit(s.year)) return false;
+        return true;
+      });
+      const picked = shuffleList(pool).slice(0, limit);
+      return picked.map((s) => ({
+        slug: 'preset:' + preset.id + ':' + s.trackId,
+        title: s.title, artist: s.artist, tier: s.tier || 1, genre: s.genre || 'preset',
+        year: s.year || 0, art: s.art || '', hdArt: s.art ? s.art.replace('300x300', '600x600') : '',
+        artTried: true, trackId: s.trackId, pre: null, hay: s.hay || norm(s.title + ' ' + s.artist)
+      }));
+    }
+    return [];
   }
   function renderPresetPlaylists() {
     const host = $('#presetPlaylists');
@@ -6304,15 +6374,25 @@
       host.innerHTML = '';
       return;
     }
+    const pages = Math.max(1, Math.ceil(list.length / PRESET_PAGE_SIZE));
+    presetPage = ((presetPage % pages) + pages) % pages;
+    const slice = list.slice(presetPage * PRESET_PAGE_SIZE, (presetPage + 1) * PRESET_PAGE_SIZE);
     const lbl = I18N ? tr('quickPresets') : 'Quick playlists';
+    const refLbl = I18N ? tr('refreshPresets') : 'Refresh';
     host.innerHTML =
       '<div class="recent-pl-head">' +
         '<span class="recent-pl-lbl">' + esc(lbl) + '</span>' +
+        (pages > 1
+          ? '<button type="button" class="recent-pl-clear preset-pl-refresh" id="refreshPresets" aria-label="' + esc(refLbl) + '">' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 1 2.4 5.7M4 12V7m0 5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+              '<span>' + esc(refLbl) + '</span>' +
+            '</button>'
+          : '') +
       '</div>' +
       '<div class="preset-pl-list">' +
-        list.map((p) => {
+        slice.map((p) => {
           const title = presetLabel(p);
-          const count = Array.isArray(p.tracks) ? p.tracks.length : 0;
+          const count = presetPoolCount(p);
           const cover = p.cover || (p.tracks && p.tracks[0] && p.tracks[0][4]) || '';
           return '<button type="button" class="preset-pl-chip" data-preset-pl="' + esc(p.id) + '" title="' + esc(title) + '">' +
             (cover ? '<img class="preset-pl-art" src="' + esc(cover) + '" alt="">' : '<span class="recent-pl-dot" aria-hidden="true"></span>') +
@@ -6326,27 +6406,11 @@
   function startPresetPlaylist(presetId, overrideRounds) {
     const list = (typeof window !== 'undefined' && Array.isArray(window.TUNEUP_PRESETS)) ? window.TUNEUP_PRESETS : [];
     const preset = list.find((p) => p && p.id === String(presetId || '').toLowerCase());
-    if (!preset || !Array.isArray(preset.tracks) || !preset.tracks.length) return false;
+    if (!preset) return false;
+    const songs = resolvePresetSongs(preset);
+    if (!songs.length) return false;
     const label = presetLabel(preset);
-    const cover = preset.cover || (preset.tracks[0] && preset.tracks[0][4]) || '';
-    const songs = preset.tracks.map((t, i) => {
-      const title = t[0], artist = t[1], year = t[2] || 0, trackId = Number(t[3]) || 0, art = t[4] || '';
-      const hdArt = art ? art.replace('300x300', '600x600') : '';
-      return {
-        slug: 'preset:' + preset.id + ':' + (trackId || i),
-        title,
-        artist,
-        tier: 1,
-        genre: 'preset',
-        year,
-        art,
-        hdArt,
-        artTried: true,
-        trackId,
-        pre: null,
-        hay: norm(title + ' ' + artist)
-      };
-    });
+    const cover = preset.cover || (songs[0] && songs[0].art) || '';
     const chosenRounds = overrideRounds != null ? overrideRounds : spotifyRoundsChoice;
     const rounds = chosenRounds === 'all'
       ? songs.length
@@ -6379,6 +6443,11 @@
   }
   if ($('#presetPlaylists')) {
     $('#presetPlaylists').addEventListener('click', (e) => {
+      if (e.target.closest('#refreshPresets')) {
+        presetPage += 1;
+        renderPresetPlaylists();
+        return;
+      }
       const chip = e.target.closest('[data-preset-pl]');
       if (!chip || spotifyBusy) return;
       startPresetPlaylist(chip.dataset.presetPl);
