@@ -2356,6 +2356,7 @@
 
   let statsTab = 'overall';
   let searchScrollTimer = 0;
+  let searchScrollRaf = 0;
   let isSearchingActive = false;
   let searchKeyboardOpen = false;
   let searchMaxViewportH = 0;
@@ -2364,28 +2365,72 @@
       return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 760px)').matches;
     } catch (e) { return false; }
   }
+  function cancelMobileScrollAnim() {
+    if (searchScrollRaf && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(searchScrollRaf);
+    }
+    searchScrollRaf = 0;
+  }
+  function animateMobileScrollTo(targetY, durationMs, onDone) {
+    cancelMobileScrollAnim();
+    if (typeof window === 'undefined' || typeof window.scrollTo !== 'function') {
+      if (onDone) onDone();
+      return;
+    }
+    const startY = Math.max(0, Math.round(window.scrollY || window.pageYOffset || 0));
+    const endY = Math.max(0, Math.round(targetY || 0));
+    const delta = endY - startY;
+    if (!settings.anim || durationMs <= 0 || Math.abs(delta) <= 2 || typeof requestAnimationFrame !== 'function') {
+      window.scrollTo(0, endY);
+      if (onDone) onDone();
+      return;
+    }
+    const startTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const step = (nowTs) => {
+      const now = (typeof nowTs === 'number' && nowTs > 0) ? nowTs : Date.now();
+      const t = Math.min(1, Math.max(0, (now - startTime) / durationMs));
+      const eased = 1 - Math.pow(1 - t, 3);
+      window.scrollTo(0, Math.round(startY + delta * eased));
+      if (t < 1) {
+        searchScrollRaf = requestAnimationFrame(step);
+      } else {
+        searchScrollRaf = 0;
+        window.scrollTo(0, endY);
+        if (onDone) onDone();
+      }
+    };
+    searchScrollRaf = requestAnimationFrame(step);
+  }
   function setSearchingMode(on) {
     const active = !!on;
-    if (!active) clearTimeout(searchScrollTimer);
-    if (document.body && document.body.classList && typeof document.body.classList.toggle === 'function') {
-      document.body.classList.toggle('is-searching', active);
-    }
     if (active) {
       isSearchingActive = true;
-    } else if (isSearchingActive) {
-      isSearchingActive = false;
-      searchKeyboardOpen = false;
-      if (isMobileSearchViewport() && typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
-        const restoreTop = () => {
-          try {
-            window.scrollTo({ top: 0, behavior: settings.anim ? 'smooth' : 'auto' });
-          } catch (e) {
-            window.scrollTo(0, 0);
-          }
-        };
-        restoreTop();
-        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(restoreTop);
+      if (document.body && document.body.classList && typeof document.body.classList.toggle === 'function') {
+        document.body.classList.toggle('is-searching', true);
       }
+      return;
+    }
+    clearTimeout(searchScrollTimer);
+    const removeRunwayClass = () => {
+      if (!isSearchingActive && document.body && document.body.classList && typeof document.body.classList.toggle === 'function') {
+        document.body.classList.toggle('is-searching', false);
+      }
+    };
+    if (!isSearchingActive) {
+      cancelMobileScrollAnim();
+      removeRunwayClass();
+      return;
+    }
+    isSearchingActive = false;
+    searchKeyboardOpen = false;
+    const curY = (typeof window !== 'undefined' && (window.scrollY || window.pageYOffset)) || 0;
+    if (isMobileSearchViewport() && typeof window !== 'undefined' && typeof window.scrollTo === 'function' && curY > 2) {
+      // Keep body.is-searching (padding-bottom: 52vh) alive during the 260ms
+      // cubic-eased scroll back to top: 0, then remove it on completion.
+      animateMobileScrollTo(0, 260, removeRunwayClass);
+    } else {
+      cancelMobileScrollAnim();
+      removeRunwayClass();
     }
   }
   function scrollSearchIntoView(inputEl, immediate) {
@@ -2402,17 +2447,13 @@
       const rect = card.getBoundingClientRect();
       if (rect.top >= 6 && rect.top <= 24) return;
       const targetTop = Math.max(0, Math.round((window.scrollY || window.pageYOffset || 0) + rect.top - 12));
-      try {
-        window.scrollTo({ top: targetTop, behavior: (settings.anim && !instant) ? 'smooth' : 'auto' });
-      } catch (e) {
-        window.scrollTo(0, targetTop);
-      }
+      animateMobileScrollTo(targetTop, instant ? 0 : 260);
     };
     if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => doScroll(!!immediate));
     else doScroll(!!immediate);
     clearTimeout(searchScrollTimer);
     searchScrollTimer = setTimeout(() => {
-      if (document.activeElement === inputEl) doScroll(true);
+      if (document.activeElement === inputEl && !searchScrollRaf) doScroll(false);
     }, 320);
   }
   const SONG_STREAK_KEY = 'tl:song:streak';
@@ -4450,7 +4491,11 @@
   UI.q.addEventListener('input', () => {
     $('#clear').hidden = !UI.q.value;
     const v = UI.q.value.trim();
-    if (v.length < 1) return UI.closeDD();
+    if (v.length < 1) {
+      UI.closeDD();
+      setSearchingMode(false);
+      return;
+    }
     UI.openDD(searchIndex(v));
   });
   UI.q.addEventListener('keydown', (e) => {
@@ -4512,7 +4557,8 @@
       }
     });
   }
-  $('#clear').onclick = () => { UI.q.focus(); UI.clearInput(); };
+  $('#clear').onpointerdown = (e) => e.preventDefault();
+  $('#clear').onclick = () => { UI.clearInput(); setSearchingMode(false); };
 
   const inGame = () => !$('#game').hidden;
   const inDuel = () => $('#duel') && !$('#duel').hidden;
@@ -5863,7 +5909,7 @@
     $('#agQ').addEventListener('input', () => {
       $('#agClear').hidden = !$('#agQ').value;
       const v = $('#agQ').value.trim();
-      if (!v) { closeAgDD(); return; }
+      if (!v) { closeAgDD(); setSearchingMode(false); return; }
       openAgDD(v);
     });
     $('#agQ').addEventListener('keydown', (e) => {
@@ -5916,11 +5962,12 @@
       if ($('#agDD').hidden) return;
       if (!e.target.closest('.spotle-search')) closeAgDD();
     });
+    $('#agClear').onpointerdown = (e) => e.preventDefault();
     $('#agClear').onclick = () => {
       $('#agQ').value = '';
       $('#agClear').hidden = true;
       closeAgDD();
-      $('#agQ').focus();
+      setSearchingMode(false);
     };
     if ($('#agHintBtn')) {
       $('#agHintBtn').onclick = () => revealAgHint();
