@@ -162,4 +162,7 @@ test('Wave 85/86 Quick Preset Playlists (12 curated & dynamic) and foreground co
     resolvePreviewUrl({ trackId: 1440891494, previewUrl: 'https://audio-ssl.itunes.apple.com/broken-explicit.m4a' }),
     'https://p.scdn.co/mp3-preview/f54450b33a17422d771eb9c70f171cb015273dc9'
   );
+  // Wave 92: mobile search restores scroll to top when keyboard closes or guess is chosen
+  assert.match(app, /window\.scrollTo\(\{ top: 0, behavior: settings\.anim \? 'smooth' : 'auto' \}\)/);
+  assert.match(app, /searchKeyboardOpen && fullH - curH < 60/);
 });

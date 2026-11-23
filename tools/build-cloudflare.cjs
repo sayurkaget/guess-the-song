@@ -32,7 +32,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v117-wave91-passionfruit-preview'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v118-wave92-mobile-scroll-restore'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }

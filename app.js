@@ -2356,18 +2356,44 @@
 
   let statsTab = 'overall';
   let searchScrollTimer = 0;
+  let isSearchingActive = false;
+  let searchKeyboardOpen = false;
+  let searchMaxViewportH = 0;
   function isMobileSearchViewport() {
     try {
       return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 760px)').matches;
     } catch (e) { return false; }
   }
   function setSearchingMode(on) {
+    const active = !!on;
+    if (!active) clearTimeout(searchScrollTimer);
     if (document.body && document.body.classList && typeof document.body.classList.toggle === 'function') {
-      document.body.classList.toggle('is-searching', !!on);
+      document.body.classList.toggle('is-searching', active);
+    }
+    if (active) {
+      isSearchingActive = true;
+    } else if (isSearchingActive) {
+      isSearchingActive = false;
+      searchKeyboardOpen = false;
+      if (isMobileSearchViewport() && typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+        const restoreTop = () => {
+          try {
+            window.scrollTo({ top: 0, behavior: settings.anim ? 'smooth' : 'auto' });
+          } catch (e) {
+            window.scrollTo(0, 0);
+          }
+        };
+        restoreTop();
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(restoreTop);
+      }
     }
   }
   function scrollSearchIntoView(inputEl, immediate) {
     if (!inputEl || !isMobileSearchViewport()) return;
+    if (typeof window !== 'undefined') {
+      const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight || 0;
+      if (vh > searchMaxViewportH) searchMaxViewportH = vh;
+    }
     setSearchingMode(true);
     if (typeof window === 'undefined' || typeof window.scrollTo !== 'function') return;
     const card = (typeof inputEl.closest === 'function' && inputEl.closest('.guess-card, .spotle-top-card')) || inputEl;
@@ -3260,6 +3286,7 @@
       const s = this.list[i];
       if (!s || S.guesses.some((g) => sameStageGuess(g, s))) return;
       this.q.value = s.title + ' · ' + s.artist;
+      if (isMobileSearchViewport() && this.q && typeof this.q.blur === 'function') this.q.blur();
       this.closeDD();
       submitGuess(s);
     },
@@ -4460,12 +4487,32 @@
     if (document.activeElement !== $('#agQ')) setSearchingMode(false);
   }, 120));
   if (typeof window !== 'undefined' && window.visualViewport && typeof window.visualViewport.addEventListener === 'function') {
+    searchMaxViewportH = Math.max(window.innerHeight || 0, Math.round(window.visualViewport.height || 0));
     window.visualViewport.addEventListener('resize', () => {
+      const vv = window.visualViewport;
+      const curH = Math.round((vv && vv.height) || window.innerHeight || 0);
+      const fullH = Math.max(searchMaxViewportH, window.innerHeight || 0, curH);
+      if (!isSearchingActive || curH > searchMaxViewportH) searchMaxViewportH = fullH;
       const ae = document.activeElement;
-      if (ae === UI.q || ae === $('#agQ')) scrollSearchIntoView(ae, true);
+      const isSearchInput = ae === UI.q || ae === $('#agQ');
+      if (fullH - curH >= 100) {
+        searchKeyboardOpen = true;
+        if (isSearchInput) scrollSearchIntoView(ae, true);
+      } else if (searchKeyboardOpen && fullH - curH < 60) {
+        searchKeyboardOpen = false;
+        if (ae === UI.q) {
+          if (typeof UI.q.blur === 'function') UI.q.blur();
+          UI.closeDD();
+        } else if (ae === $('#agQ')) {
+          if (typeof ae.blur === 'function') ae.blur();
+          if ($('#agDD')) $('#agDD').hidden = true;
+          ae.setAttribute('aria-expanded', 'false');
+        }
+        setSearchingMode(false);
+      }
     });
   }
-  $('#clear').onclick = () => { UI.clearInput(); UI.q.focus(); };
+  $('#clear').onclick = () => { UI.q.focus(); UI.clearInput(); };
 
   const inGame = () => !$('#game').hidden;
   const inDuel = () => $('#duel') && !$('#duel').hidden;
@@ -5650,6 +5697,7 @@
       ag.guesses.push(artist);
       $('#agQ').value = '';
       $('#agClear').hidden = true;
+      if (isMobileSearchViewport() && $('#agQ') && typeof $('#agQ').blur === 'function') $('#agQ').blur();
       closeAgDD();
 
       if (artist.id === ag.target.id) {

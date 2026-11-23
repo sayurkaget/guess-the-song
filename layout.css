@@ -2081,11 +2081,11 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   .ach-bar{height:2px}
 }
 
-/* ====== Wave 76: Mobile Search Auto-Scroll Runway & Keyboard-Aware Dropdown ====== */
+/* ====== Wave 76 & 92: Mobile Search Auto-Scroll Runway & Keyboard-Aware Dropdown ====== */
 @media(max-width:760px){
   body.is-searching .wrap,
-  .wrap:has(#q:focus,#dd:not([hidden])),
-  .wrap:has(#agQ:focus,#agDD:not([hidden])){
+  .wrap:has(#dd:not([hidden])),
+  .wrap:has(#agDD:not([hidden])){
     padding-bottom:52vh;
   }
   #game .dd,
