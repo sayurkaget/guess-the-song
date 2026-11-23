@@ -173,7 +173,8 @@ test('catalog has valid years, clean formatting, high trackId coverage, no homon
     ['Ludacris', 'Butter.Atl'],
     ['System Of A Down', 'Arto'],
     ['Skrillex', 'Make It Bun Dem'],
-    ['Marshmello', 'One Thing Right']
+    ['Marshmello', 'One Thing Right'],
+    ['Drake', 'Passionfruit']
   ]) {
     assert.equal(has(artist, title), false, `expected unplayable/impostor removal: ${artist} - ${title}`);
   }

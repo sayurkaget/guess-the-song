@@ -4311,16 +4311,19 @@
     if (stopArtistAudio) stopArtistAudio();
     const inDuelMode = $('#duel') && !$('#duel').hidden;
     const inArtistMode = $('#artistGame') && !$('#artistGame').hidden;
+    const inGameMode = $('#game') && !$('#game').hidden;
     const artistMode = S.custom && (!S.runChallenge || S.runChallenge.artistId);
+    const activeTrackId = inGameMode && ((S.meta && S.meta.trackId) || (S.song && S.song.trackId));
     const details = [inDuelMode ? 'Mode: Music Duel'
       : inArtistMode ? 'Mode: Artist Detective'
       : S.daily ? 'Mode: Daily ' + S.daily.day
       : (S.challenge || S.runChallenge) ? ('Mode: Friend challenge' + (S.runChallenge && S.runChallenge.artistLabel ? ' — ' + S.runChallenge.artistLabel : ''))
       : S.custom ? (S.custom.kind === 'spotify' ? 'Mode: Spotify playlist — ' : 'Mode: Custom artist — ') + S.custom.label
       : 'Mode: Free play',
-      !$('#game').hidden && !S.daily && !S.challenge
+      inGameMode && !S.daily && !S.challenge
         ? ('Stage: ' + (artistMode ? 'Song ' + (S.stage + 1) : D().label))
         : '',
+      activeTrackId ? 'Track ID: ' + activeTrackId : '',
       S.done && S.meta ? 'Song: ' + S.meta.title + ' — ' + S.meta.artist : ''].filter(Boolean).join('\n');
     closeAll();
     window.PlayerFeedback.open(details);

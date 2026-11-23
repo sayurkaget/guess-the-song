@@ -14,7 +14,7 @@ const files = ['index.html', 'styles.css', 'layout.css', 'site-guide.css', 'site
   'googlebc29a838b567dfc0.html',
   '7b4e9c2a1f8d4e60b3c5a9d1e2f48076.txt',
   'og-image.png',
-  'icon-32.png', 'icon-96.png', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
+  'favicon.ico', 'icon-32.png', 'icon-96.png', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 let builtIndexHtml = '';
 for (const file of files) {
@@ -32,7 +32,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v115-wave89-player-volume'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v116-wave90-favicon-feedback-catalog'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -289,7 +289,7 @@ fs.cpSync(path.join(root, 'fonts'), path.join(output, 'fonts'), { recursive: tru
 const staticAssetExcludes = [
   '/fonts/*',
   ...files
-    .filter((f) => /\.(css|js|png|webmanifest)$/.test(f))
+    .filter((f) => /\.(css|js|png|ico|webmanifest)$/.test(f))
     .map((f) => `/${f}`)
 ];
 fs.writeFileSync(path.join(output, '_routes.json'), JSON.stringify({

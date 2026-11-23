@@ -138,4 +138,20 @@ test('Wave 85/86 Quick Preset Playlists (12 curated & dynamic) and foreground co
 
   const build = fs.readFileSync(path.join(ROOT, 'tools/build-cloudflare.cjs'), 'utf8');
   assert.match(build, /'presets\.js'/);
+  assert.match(build, /'favicon\.ico'/);
+
+  // Wave 90: real multi-resolution favicon.ico (48x48, 32x32, 16x16), spoiler-free mid-round Track ID in feedback, and broken-preview blocklist
+  const ico = fs.readFileSync(path.join(ROOT, 'favicon.ico'));
+  assert.equal(ico.readUInt16LE(0), 0);
+  assert.equal(ico.readUInt16LE(2), 1);
+  assert.equal(ico.readUInt16LE(4), 3);
+  assert.equal(ico.readUInt8(6), 48);
+  assert.equal(ico.readUInt8(7), 48);
+  assert.match(html, /<link rel="icon" href="favicon\.ico" sizes="48x48">/);
+  assert.match(sw, /'\.\/favicon\.ico'/);
+
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  assert.match(app, /activeTrackId \? 'Track ID: ' \+ activeTrackId : ''/);
+  assert.equal(isStudio({ trackName: 'Passionfruit', artistName: 'Drake', trackId: 1440892167 }), false);
+  assert.equal(isStudio({ trackName: 'Passionfruit', artistName: 'Drake', trackId: 1440891494 }), false);
 });

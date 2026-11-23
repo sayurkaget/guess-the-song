@@ -11,8 +11,14 @@
   const STEVE_LACY_DEMO_RE = /^steve lacy['’]?s demo\b/i;
   const ENDS_LIVE_RE = /\blive$/i;
   const TO_LIVE_RE = /\bto\s+live\s*$/i;
+  const BAD_PREVIEW_TRACK_IDS = new Set([
+    1440892167, 1440891494 // Drake — Passionfruit (iTunes 30s preview is Moodymann spoken DJ intro with no Drake vocals)
+  ]);
 
   function isStudio(track) {
+    if (track && typeof track === 'object' && track.trackId && BAD_PREVIEW_TRACK_IDS.has(Number(track.trackId))) {
+      return false;
+    }
     const title = typeof track === 'string' ? track : (track && (track.trackName || track.title)) || '';
     if (!title) return false;
     const album = typeof track === 'string' ? '' : (track && (track.collectionName || track.album)) || '';
