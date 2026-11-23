@@ -854,7 +854,7 @@
       if (attempt !== playbackEpoch) return;
       if (e.name === 'NotAllowedError') {
         stopAudio();
-        UI.status('Your browser paused playback. Tap Play to listen.', true);
+        UI.status(typeof I18N !== 'undefined' && I18N ? tr('browserPausedAudio') : 'Your browser paused playback. Tap Play to listen.', true);
       } else audioFailure();
       return;
     }
@@ -1029,7 +1029,7 @@
 
     S.song = null; S.meta = null; S.picked = null; S.loading = true;
     UI.playState('loading');
-    UI.status('Loading song…');
+    UI.status(typeof I18N !== 'undefined' && I18N ? tr('loadingSong') : 'Loading song…');
     UI.render();
 
     const failedSlugs = new Set();
@@ -2144,65 +2144,66 @@
       $('#challengeIntro').hidden = false;
       $('#acceptChallenge').hidden = !incoming;
       $('#acceptChallenge').disabled = false;
-      $('#acceptChallenge').textContent = 'Accept challenge';
+      $('#acceptChallenge').textContent = I18N ? tr('acceptChallenge') : 'Accept challenge';
       if (kicker) {
         kicker.textContent = 'Artist Detective';
         kicker.dataset.mode = 'artist';
       }
-      if (title) title.textContent = 'Mystery artist challenge';
+      if (title) title.textContent = I18N ? tr('chArtistTitle') : 'Mystery artist challenge';
       $('#challengeRules').innerHTML = incoming
-        ? 'Same mystery artist. Up to 10 tries.<br>Use 6 clues (Debut, Type, Gender, Genre, Country, Rank) to solve it faster!'
-        : 'Mystery artist deduction challenge.<br>Ask your friend for a valid challenge link.';
+        ? (I18N ? tr('chArtistRules') : 'Same mystery artist. Up to 10 tries.<br>Use 6 clues (Debut, Type, Gender, Genre, Country, Rank) to solve it faster!')
+        : (I18N ? tr('chArtistRulesInvalid') : 'Mystery artist deduction challenge.<br>Ask your friend for a valid challenge link.');
       $('#challengeMessage').textContent = !incoming
-        ? 'This challenge link is invalid or uses an unsupported version. Ask your friend for a new link.'
+        ? (I18N ? tr('chInvalidLink') : 'This challenge link is invalid or uses an unsupported version. Ask your friend for a new link.')
         : incoming.won
-        ? 'Your friend solved this Mystery Artist in ' + incoming.tries + (incoming.tries === 1 ? ' try. ' : ' tries. ') + 'Can you beat them?'
-        : 'Your friend was stumped by this Mystery Artist. Can you solve it?';
+        ? (I18N ? tr('chArtistMsgWon', { n: incoming.tries, unit: incoming.tries === 1 ? 'try' : 'tries' }) : ('Your friend solved this Mystery Artist in ' + incoming.tries + (incoming.tries === 1 ? ' try. ' : ' tries. ') + 'Can you beat them?'))
+        : (I18N ? tr('chArtistMsgLost') : 'Your friend was stumped by this Mystery Artist. Can you solve it?');
       return true;
     }
     if (isDuel) {
       const incoming = window.ReleaseDuel ? window.ReleaseDuel.parseChallenge(location.hash) : null;
-      const duelModeLabel = incoming && incoming.kind === 'streams' ? 'Spotify Streams' : 'Release Year';
+      const duelModeLabel = incoming && incoming.kind === 'streams'
+        ? (I18N ? tr('duelTabStreams') : 'Spotify Streams')
+        : (I18N ? tr('duelTabYear') : 'Release Year');
       $('#lobby').hidden = true;
       $('#challengeIntro').hidden = false;
       $('#acceptChallenge').hidden = !incoming;
       $('#acceptChallenge').disabled = false;
-      $('#acceptChallenge').textContent = 'Accept duel';
+      $('#acceptChallenge').textContent = I18N ? tr('chDuelAccept') : 'Accept duel';
       if (kicker) {
         kicker.textContent = incoming ? ('Music Duel · ' + duelModeLabel) : 'Music Duel';
         kicker.dataset.mode = 'duel';
       }
-      if (title) title.textContent = 'Friend duel';
+      if (title) title.textContent = I18N ? tr('chDuelTitle') : 'Friend duel';
       $('#challengeRules').innerHTML = incoming
-        ? 'Exact same song sequence as your friend.<br>Beat their score of ' + incoming.score + ' to win!'
-        : 'Head-to-head music duel.<br>Ask your friend for a valid duel link.';
+        ? (I18N ? tr('chDuelRules', { n: incoming.score }) : ('Exact same song sequence as your friend.<br>Beat their score of ' + incoming.score + ' to win!'))
+        : (I18N ? tr('chDuelRulesInvalid') : 'Head-to-head music duel.<br>Ask your friend for a valid duel link.');
       $('#challengeMessage').textContent = !incoming
-        ? 'This challenge link is invalid or uses an unsupported version. Ask your friend for a new link.'
-        : 'Your friend scored ' + incoming.score + ' in ' + duelModeLabel + ' Duel. Can you beat them?';
+        ? (I18N ? tr('chInvalidLink') : 'This challenge link is invalid or uses an unsupported version. Ask your friend for a new link.')
+        : (I18N ? tr('chDuelMsg', { n: incoming.score, deck: duelModeLabel }) : ('Your friend scored ' + incoming.score + ' in ' + duelModeLabel + ' Duel. Can you beat them?'));
       return true;
     }
     if (kicker) {
-      kicker.textContent = 'Song Challenge';
+      kicker.textContent = I18N ? tr('chSongKicker') : 'Song Challenge';
       if (kicker.dataset) delete kicker.dataset.mode;
     }
-    if (title) title.textContent = 'Friend challenge';
+    if (title) title.textContent = I18N ? tr('chFriendTitle') : 'Friend challenge';
     const incoming = isRun
       ? window.TrackChallenge.parseRun(location.hash)
       : window.TrackChallenge.parse(location.hash);
     $('#lobby').hidden = true;
     $('#challengeIntro').hidden = false;
     $('#acceptChallenge').hidden = !incoming;
-    $('#acceptChallenge').textContent = 'Accept challenge';
+    $('#acceptChallenge').textContent = I18N ? tr('acceptChallenge') : 'Accept challenge';
     const count = incoming && isRun ? incoming.ids.length : 1;
     $('#challengeRules').innerHTML = isRun && incoming
-      ? count + (count === 1 ? ' song. Five tries. ' : ' songs. Five tries each. ') +
-        'Same recordings, same clip lengths:<br>0.1s → 0.5s → 2s → 8s → 15s.'
-      : 'One song. Five tries. Same recording, same clip lengths:<br>0.1s → 0.5s → 2s → 8s → 15s.';
+      ? (I18N ? tr('chRunRules', { n: count, unit: count === 1 ? 'song' : 'songs' }) : (count + (count === 1 ? ' song. Five tries. ' : ' songs. Five tries each. ') + 'Same recordings, same clip lengths:<br>0.1s → 0.5s → 2s → 8s → 15s.'))
+      : (I18N ? tr('chSongRules') : 'One song. Five tries. Same recording, same clip lengths:<br>0.1s → 0.5s → 2s → 8s → 15s.');
     $('#challengeMessage').textContent = !incoming
-      ? 'This challenge link is invalid or uses an unsupported version. Ask your friend for a new link.'
+      ? (I18N ? tr('chInvalidLink') : 'This challenge link is invalid or uses an unsupported version. Ask your friend for a new link.')
       : isRun
-      ? 'Your friend scored ' + window.TrackChallenge.describeRun(incoming.results) + '. Can you beat them?'
-      : 'Your friend ' + window.TrackChallenge.describe(incoming.result) + '. Can you beat them?';
+      ? (I18N ? tr('chRunMsg', { desc: window.TrackChallenge.describeRun(incoming.results) }) : ('Your friend scored ' + window.TrackChallenge.describeRun(incoming.results) + '. Can you beat them?'))
+      : (I18N ? tr('chSongMsg', { desc: window.TrackChallenge.describe(incoming.result) }) : ('Your friend ' + window.TrackChallenge.describe(incoming.result) + '. Can you beat them?'));
     return true;
   }
 
@@ -3352,7 +3353,10 @@
       $('#dailyResult').hidden = !S.daily;
       if (S.daily) {
         const streak = dailyStreak();
-        $('#dailyResult').textContent = 'Win streak ' + streak.current + ' · Best ' + streak.best + ' · Next daily in ' + window.DailyGame.remaining();
+        const rem = window.DailyGame.remaining();
+        $('#dailyResult').textContent = I18N
+          ? tr('dailyResultStreak', { cur: streak.current, best: streak.best, rem })
+          : ('Win streak ' + streak.current + ' · Best ' + streak.best + ' · Next daily in ' + rem);
       }
       const runComp = $('#runChallengeResult');
       if (S.runChallenge) {
@@ -4722,18 +4726,34 @@
       const beatFriend = friendTarget !== null && ds.score > friendTarget;
       const tiedFriend = friendTarget !== null && ds.score === friendTarget;
       if (friendTarget !== null) {
-        $('#duelVerdict').textContent = beatFriend ? 'You won the duel!' : tiedFriend ? 'Duel tied!' : 'Friend wins this round';
+        $('#duelVerdict').textContent = beatFriend
+          ? (I18N ? tr('duelVerdictWon') : 'You won the duel!')
+          : tiedFriend
+          ? (I18N ? tr('duelVerdictTie') : 'Duel tied!')
+          : (I18N ? tr('duelVerdictLost') : 'Friend wins this round');
         $('#duelVerdict').className = 'verdict ' + (beatFriend ? 'win' : tiedFriend ? '' : 'lose');
       } else {
-        $('#duelVerdict').textContent = ds.score === 0 ? 'Zero. Try again!' : ds.newBest ? 'New personal best!' : ds.score >= 5 ? 'On fire!' : 'Good run!';
+        $('#duelVerdict').textContent = ds.score === 0
+          ? (I18N ? tr('verdictZero') : 'Zero. Try again!')
+          : ds.newBest
+          ? (I18N ? tr('duelVerdictBest') : 'New personal best!')
+          : ds.score >= 5
+          ? (I18N ? tr('duelVerdictFire') : 'On fire!')
+          : (I18N ? tr('duelVerdictGood') : 'Good run!');
         $('#duelVerdict').className = 'verdict ' + (ds.newBest || ds.score >= 3 ? 'win' : ds.score === 0 ? 'lose' : '');
       }
       $('#duelFinalScore').textContent = ds.score;
-      $('#duelFinalBest').textContent = 'best ' + ds.best;
+      $('#duelFinalBest').textContent = I18N ? tr('duelFinalBest', { n: ds.best }) : ('best ' + ds.best);
+      const bm = last ? Duel.formatMetric(last.b, ds.kind).main : '';
+      const am = last ? Duel.formatMetric(last.a, ds.kind).main : '';
       const metricNote = last
         ? (isStreams
-            ? last.b.title + ' (' + Duel.formatMetric(last.b, ds.kind).main + ') has ' + (last.b.streams >= last.a.streams ? 'more' : 'fewer') + ' Spotify streams than ' + last.a.title + ' (' + Duel.formatMetric(last.a, ds.kind).main + ').'
-            : last.b.title + ' (' + Duel.formatMetric(last.b, ds.kind).main + ') came out ' + (last.b.year > last.a.year ? 'after ' : 'before ') + last.a.title + ' (' + Duel.formatMetric(last.a, ds.kind).main + ').')
+            ? (I18N
+                ? tr(last.b.streams >= last.a.streams ? 'duelSummaryMore' : 'duelSummaryFewer', { b: last.b.title, bm, a: last.a.title, am })
+                : (last.b.title + ' (' + bm + ') has ' + (last.b.streams >= last.a.streams ? 'more' : 'fewer') + ' Spotify streams than ' + last.a.title + ' (' + am + ').'))
+            : (I18N
+                ? tr(last.b.year > last.a.year ? 'duelSummaryAfter' : 'duelSummaryBefore', { b: last.b.title, bm, a: last.a.title, am })
+                : (last.b.title + ' (' + bm + ') came out ' + (last.b.year > last.a.year ? 'after ' : 'before ') + last.a.title + ' (' + am + ').')))
         : '';
       const summaryCopy = friendTarget !== null
         ? (Duel.compareChallenge(friendTarget, ds.score) + ' (Friend: ' + friendTarget + ' · You: ' + ds.score + ').' + (metricNote ? ' ' + metricNote : ''))
@@ -4742,7 +4762,8 @@
       const modeTag = $('#duelModeTag');
       if (modeTag) {
         if (modeTag.dataset) modeTag.dataset.mode = 'duel';
-        modeTag.textContent = (friendTarget !== null ? 'Friend Duel · ' : 'Music Duel · ') + (isStreams ? 'Spotify Streams' : 'Release Year');
+        const deckLbl = isStreams ? (I18N ? tr('duelTabStreams') : 'Spotify Streams') : (I18N ? tr('duelTabYear') : 'Release Year');
+        modeTag.textContent = (friendTarget !== null ? (I18N ? tr('duelFriendPrefix') : 'Friend Duel · ') : 'Music Duel · ') + deckLbl;
       }
       stopSummaryPreview();
       const entries = ds.history.length ? [{ song: ds.history[0].a, won: true }, ...ds.history.map((h) => ({ song: h.b, won: h.won }))] : [];
@@ -4754,7 +4775,7 @@
           diff: 'duel',
           won: e.won,
           art: e.song.art || '',
-          lvl: i === 0 ? 'Start' : ('Round ' + i),
+          lvl: i === 0 ? (I18N ? tr('duelStartLbl') : 'Start') : (I18N ? tr('duelRoundNum', { n: i }) : ('Round ' + i)),
           playKey,
           badge: Duel.formatMetric(e.song, ds.kind).main,
           title: e.song.title,

@@ -533,3 +533,21 @@ test('Wave 81 fixes ID localization in custom/result/run modals & /id SSR, remov
   assert.match(guide, /document\.body\.dataset\.anim === 'off'/);
   assert.doesNotMatch(html, /class="search-ico"[^>]*><circle cx="11" cy="11" r="6\.5"/);
 });
+
+test('Wave 82 completes ID localization across Duel summary, challenge intros, audio status, and removes stale score-card/badges SEO copy', () => {
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
+  const build = fs.readFileSync(path.join(ROOT, 'tools/build-cloudflare.cjs'), 'utf8');
+  const sitemap = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
+
+  assert.match(app, /tr\('browserPausedAudio'\)/);
+  assert.match(app, /tr\('loadingSong'\)/);
+  assert.match(app, /tr\('dailyResultStreak'/);
+  assert.match(app, /tr\('duelVerdictBest'\)/);
+  assert.match(app, /'duelSummaryMore'/);
+  assert.match(app, /tr\('chArtistTitle'\)/);
+  assert.match(app, /tr\('chDuelMsg'/);
+  assert.doesNotMatch(build, /save score cards|save purple score cards|save your custom score card|earn badges|lencana/);
+  assert.doesNotMatch(i18n, /lencana/);
+  assert.match(sitemap, /<lastmod>2026-11-23<\/lastmod>/);
+});

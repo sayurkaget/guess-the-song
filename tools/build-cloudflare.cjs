@@ -31,7 +31,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v107-wave81-id-i18n-cleanup'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v108-wave82-full-id-seo'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -56,7 +56,7 @@ const ID_FAQS = [
   ['Mode apa saja yang bisa dimainkan berulang kali?', 'Classic, Per Artis, Playlist Spotify/Apple/YouTube, Music Duel, dan Artist Detective bisa dimainkan sepuasnya. Tantangan Harian tersedia satu lagu per hari dengan lima kesempatan.'],
   ['Kapan Tantangan Harian berikutnya dibuka?', 'Setiap pukul 07.00 waktu perangkatmu. Menang berturut-turut menambah streak; terlewat sehari atau kalah akan mereset streak.'],
   ['Bisa menantang teman?', 'Bisa. Setelah menyelesaikan lagu, sesi 5 tahap, Music Duel, atau Artist Detective, klik Tantang teman untuk menyalin link bebas spoiler dengan lagu atau artis yang persis sama.'],
-  ['Di mana progres saya disimpan?', 'Progres Harian, streak, statistik, lencana, dan pengaturan tersimpan di browser ini. Buka Pengaturan -> Cadangkan & pindah data untuk menyalin kode backup dan memulihkannya di browser atau perangkat lain.']
+  ['Di mana progres saya disimpan?', 'Progres Harian, streak, statistik, pencapaian, dan pengaturan tersimpan di browser ini. Buka Pengaturan -> Cadangkan & pindah data untuk menyalin kode backup dan memulihkannya di browser atau perangkat lain.']
 ];
 
 function buildLdJson(origin, page) {
@@ -116,7 +116,7 @@ const SEO_PAGES = [
     imageAlt: 'TuneUp Daily Challenge — Free daily guess the song game from 0.1s clips',
     aboutHeading: 'About Daily Challenge',
     aboutP1: 'TuneUp Daily Challenge gives every player the same hand-picked hit song each day — a free Heardle alternative in your browser with no sign-up. Start with a 0.1-second audio clip and unlock longer previews (0.5s, 2s, 8s, 15s) across 5 tries.',
-    aboutP2: 'Resets daily at 7:00 AM local time. Build streaks, earn badges, save score cards, and share spoiler-free results with friends.'
+    aboutP2: 'Resets daily at 7:00 AM local time. Build streaks, unlock achievements, and challenge friends with spoiler-free links.'
   },
   {
     slug: 'classic',
@@ -138,7 +138,7 @@ const SEO_PAGES = [
     imageAlt: 'TuneUp By Artist — Custom artist music guessing game',
     aboutHeading: 'About By Artist Mode',
     aboutP1: 'Test how well you really know your favorite singer or band. Search any artist in TuneUp to generate an instant 5-song discography quiz with 0.1s–15s clips and smart fuzzy title search.',
-    aboutP2: 'Play unlimited rounds for free with no account, save your custom score card, or send a spoiler-free challenge link with the exact same 5 tracks.'
+    aboutP2: 'Play unlimited rounds for free with no account, unlock achievements, or send a spoiler-free challenge link with the exact same 5 tracks.'
   },
   {
     slug: 'spotify',
@@ -171,7 +171,7 @@ const SEO_PAGES = [
     imageAlt: 'TuneUp Artist Detective — Guess the mystery artist from 6 clues across Top 530 roster',
     aboutHeading: 'About Artist Detective',
     aboutP1: 'Artist Detective is a free Spotle-style music deduction game spanning 530 global artists. Each guess reveals 6 color-coded clues: Debut Year, Solo/Group Type, Gender, Primary Genre, Country, and Global Rank (#1–#530).',
-    aboutP2: 'Unlock clue and name hints when stuck, play endless rounds without waiting, save purple score cards, or challenge friends to solve your exact mystery artist.'
+    aboutP2: 'Unlock clue and name hints when stuck, play Daily Artist or endless rounds, unlock achievements, and challenge friends to solve your exact mystery artist.'
   },
   {
     slug: 'id',
