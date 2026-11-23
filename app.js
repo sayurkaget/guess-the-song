@@ -3831,23 +3831,37 @@
       Math.sqrt(1200000 / Math.max(1, innerWidth * innerHeight)));
     const W = cv.width = Math.max(1, Math.floor(innerWidth * dpr));
     const H = cv.height = Math.max(1, Math.floor(innerHeight * dpr));
-    const cols = ['#25e07d', '#ffffff', '#12b862', '#8ef7bd', '#d8fbe8'];
+    const cols = ['#ff3b6b', '#ffbe0b', '#25e07d', '#00d4ff', '#a855f7', '#ff6b35', '#ff66c4', '#facc15', '#ffffff'];
     const bits = [];
 
     for (let i = 0; i < 120; i++) {
+      const cannon = i % 3; // 0: left popper, 1: right popper, 2: center fountain
+      const ribbon = i % 3 === 0;
+      const x = cannon === 0
+        ? W * (0.18 + Math.random() * 0.16)
+        : cannon === 1
+        ? W * (0.66 + Math.random() * 0.16)
+        : W * (0.36 + Math.random() * 0.28);
+      const vx = cannon === 0
+        ? (2.5 + Math.random() * 10.5) * dpr
+        : cannon === 1
+        ? (-2.5 - Math.random() * 10.5) * dpr
+        : (Math.random() - 0.5) * 14 * dpr;
       bits.push({
-        x: W * (0.34 + Math.random() * 0.32),
-        y: H * 0.44,
-        vx: (Math.random() - 0.5) * 11 * dpr,
-        vy: (-4 - Math.random() * 9) * dpr,
-        w: (4 + Math.random() * 5) * dpr,
-        h: (6 + Math.random() * 8) * dpr,
+        x,
+        y: H * (cannon === 2 ? 0.42 : 0.52),
+        vx,
+        vy: (-7.5 - Math.random() * 10.5) * dpr,
+        w: (ribbon ? (4 + Math.random() * 3) : (6 + Math.random() * 4)) * dpr,
+        h: (ribbon ? (12 + Math.random() * 7) : (6 + Math.random() * 5)) * dpr,
         rot: Math.random() * Math.PI * 2,
-        vr: (Math.random() - 0.5) * 0.32,
-        col: cols[(Math.random() * cols.length) | 0]
+        vr: (Math.random() - 0.5) * 0.26,
+        flip: Math.random() * Math.PI * 2,
+        vflip: 0.12 + Math.random() * 0.18,
+        col: cols[i % cols.length]
       });
     }
-    const grav = 0.28;
+    const grav = 0.24;
 
     let rafc = 0, prev = performance.now();
     confettiStop = () => { cancelAnimationFrame(rafc); ctx.clearRect(0, 0, W, H); };
@@ -3859,17 +3873,19 @@
       let alive = 0;
       for (const b of bits) {
         b.vy += grav * dpr * dt;
-        b.vx *= Math.pow(0.996, dt);
-        b.x += b.vx * dt;
+        b.vx *= Math.pow(0.988, dt);
+        b.flip += b.vflip * dt;
+        b.x += (b.vx + Math.sin(b.flip) * 0.9 * dpr) * dt;
         b.y += b.vy * dt;
         b.rot += b.vr * dt;
         if (b.y >= H + 50 * dpr) continue;
         alive++;
+        const fw = b.w * (0.28 + 0.72 * Math.abs(Math.cos(b.flip)));
         ctx.save();
         ctx.translate(b.x, b.y);
         ctx.rotate(b.rot);
         ctx.fillStyle = b.col;
-        ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+        ctx.fillRect(-fw / 2, -b.h / 2, fw, b.h);
         ctx.restore();
       }
       if (alive) rafc = requestAnimationFrame(frame);
