@@ -1,6 +1,6 @@
 # TuneUp
 
-**Play live in your browser:** **<https://tuneup.pages.dev/>**
+**Play live in your browser:** **<https://tuneup.my.id/>**
 
 **TuneUp** is a free browser-based music game suite with no sign-up required. Test your ear on split-second audio intros, compare Spotify streams and release years, or deduce iconic global artists from 6 clues.
 
@@ -84,7 +84,7 @@ node --test tests/*.test.cjs
 
 ### Build & Deploy (Cloudflare Pages)
 ```bash
-# Build production bundle into dist/ for https://tuneup.pages.dev
+# Build production bundle into dist/ for https://tuneup.my.id
 node tools/build-cloudflare.cjs
 
 # Deploy dist/ and Pages Functions (with FEEDBACK_DB D1 binding from wrangler.toml)

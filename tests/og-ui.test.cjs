@@ -13,11 +13,11 @@ test('og-image.png is a valid 1200x630 PNG wired into index.html and build scrip
   assert.equal(buf.readUInt32BE(20), 630);
 
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  assert.match(html, /property="og:image" content="https:\/\/tuneup\.pages\.dev\/og-image\.png"/);
+  assert.match(html, /property="og:image" content="https:\/\/tuneup\.my\.id\/og-image\.png"/);
   assert.match(html, /property="og:image:width" content="1200"/);
   assert.match(html, /property="og:image:height" content="630"/);
   assert.match(html, /name="twitter:card" content="summary_large_image"/);
-  assert.match(html, /name="twitter:image" content="https:\/\/tuneup\.pages\.dev\/og-image\.png"/);
+  assert.match(html, /name="twitter:image" content="https:\/\/tuneup\.my\.id\/og-image\.png"/);
   assert.doesNotMatch(html, /leaderboardModal|openLeaderboard|dailyLbBox|duelLbBox/);
 
   const buildScript = fs.readFileSync(path.join(ROOT, 'tools/build-cloudflare.cjs'), 'utf8');
@@ -135,7 +135,7 @@ test('Wave 53/54 Artist Detective Clue + Name Hints and SEO sitemap/JSON-LD are 
 
   const sitemap = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
   for (const route of ['/', '/daily', '/classic', '/artist', '/spotify', '/duel', '/artist-detective']) {
-    assert.ok(sitemap.includes(`https://tuneup.pages.dev${route}</loc>`), `sitemap.xml missing ${route}`);
+    assert.ok(sitemap.includes(`https://tuneup.my.id${route}</loc>`), `sitemap.xml missing ${route}`);
   }
 
   const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
@@ -283,7 +283,7 @@ test('Wave 69 compacts songs.js with dictionary tables under 2.6 MB and wires Da
     tries: 3,
     maxTries: 10,
     rows: [['exact', 'exact', 'exact', 'exact', 'exact', 'exact']],
-    url: 'https://tuneup.pages.dev/'
+    url: 'https://tuneup.my.id/'
   });
   assert.equal(dailyCard.kicker, 'DAILY ARTIST');
   assert.equal(dailyCard.filename, 'tuneup-daily-artist-2026-11-22.png');

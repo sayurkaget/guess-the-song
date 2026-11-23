@@ -4,7 +4,7 @@
 > Baca dulu sebelum mulai kerja, dan perbarui setelah selesai (tambahkan entri log di bawah).
 
 ## Ringkasan
-- Game musik **TuneUp**, tayang di https://tuneup.pages.dev/ (Cloudflare Pages project: `tuneup`; project lama `namethetrack` sudah dihapus).
+- Game musik **TuneUp**, tayang di https://tuneup.my.id/ (Cloudflare Pages project: `tuneup`, custom domain `tuneup.my.id`; project lama `namethetrack` sudah dihapus).
 - Audio: preview iTunes (sering mulai dari tengah lagu; Deezer sudah dites, sama saja).
 - Katalog: `songs.js` (~30.8k lagu Western). Tool: `node tools/expand-catalog.cjs`.
 - Aturan katalog: lagu **Western** untuk mode utama, **tanpa versi live**, **duplikat disaring**.
@@ -599,3 +599,6 @@
   - Localized all remaining English UI strings in Bahasa Indonesia (`i18n.js`, `app.js`): Music Duel summary modal (`#duelModal` verdicts, `terbaik N`, streams/year explanations, `Awal` / `Ronde N`, `Duel Teman · ...`), incoming challenge cards (`#challengeIntro` for `#artist=`, `#duel=`, `#run=`, `#c=`), Daily streak footer (`#dailyResult`), and audio loading/browser-pause status messages.
   - Updated stale SEO copy in `tools/build-cloudflare.cjs` (`/daily`, `/artist`, `/artist-detective`, and `/id` FAQ) and `i18n.js` (`faqA5`, `setBackupNote`) to reference **Achievements / Pencapaian** and spoiler-free challenge links instead of removed `score cards` / `badges` / `lencana`, and refreshed `sitemap.xml` `<lastmod>` to `2026-11-23`.
   - Verified `169/169` unit tests passing, Playwright verification of ID `#challengeIntro` (`#artist=` & `#duel=`), bumped SW caches (`gts-v128-wave82-full-id-seo` / `gts-cf-v108-wave82-full-id-seo`), built `dist/`, deployed live to `https://tuneup.pages.dev/`, and pushed to `origin/main`.
+- **2026-11-23 (Antigravity — Wave 83: Custom Domain Migration to `https://tuneup.my.id`)**:
+  - Migrated canonical site origin, SEO metadata (`index.html`, `sitemap.xml`, `robots.txt`), GA4 production host check (`analytics.js`), fallback URLs (`result-image.js`, `score-card.js`), Cloudflare Pages build defaults (`tools/build-cloudflare.cjs`), docs (`CLOUDFLARE.md`, `README.md`), and unit test fixtures/assertions to **`https://tuneup.my.id`**.
+  - Bumped SW caches (`gts-v129-wave83-custom-domain` / `gts-cf-v109-wave83-custom-domain`), verified `169/169` automated tests passing, built `dist/`, deployed to Cloudflare Pages (`tuneup`), verified live HTTPS `200 OK` + self-referencing canonicals + clean `robots.txt` on all 8 routes (`/`, `/id`, `/daily`, `/classic`, `/artist`, `/spotify`, `/duel`, `/artist-detective`) with Googlebot UA, and submitted all 8 URLs to IndexNow (`HTTP 202 Accepted`).

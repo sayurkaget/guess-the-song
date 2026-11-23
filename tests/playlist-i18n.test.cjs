@@ -180,12 +180,12 @@ test('TuneUpI18n maintains EN/ID dictionary parity, persists tl:set:lang through
   // Score card kickers for Apple Music & YouTube playlists
   const appleCard = TuneUpCard.buildCardData({
     kind: 'run', mode: 'custom', isSpotify: true, playlistSource: 'apple',
-    total: 5, stages: [], subtitle: "Today's Hits", url: 'https://tuneup.pages.dev/'
+    total: 5, stages: [], subtitle: "Today's Hits", url: 'https://tuneup.my.id/'
   });
   assert.equal(appleCard.kicker, 'APPLE MUSIC');
   const ytCard = TuneUpCard.buildCardData({
     kind: 'run', mode: 'custom', isSpotify: true, playlistSource: 'youtube',
-    total: 5, stages: [], subtitle: 'Pop Classics', url: 'https://tuneup.pages.dev/'
+    total: 5, stages: [], subtitle: 'Pop Classics', url: 'https://tuneup.my.id/'
   });
   assert.equal(ytCard.kicker, 'YOUTUBE PLAYLIST');
 

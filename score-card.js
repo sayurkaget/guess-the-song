@@ -49,7 +49,7 @@
 
   function buildCardData(input) {
     const kind = input && input.kind ? input.kind : 'run';
-    const host = String((input && input.url) || 'https://tuneup.pages.dev/')
+    const host = String((input && input.url) || 'https://tuneup.my.id/')
       .replace(/^https?:\/\//, '')
       .replace(/\/$/, '');
 

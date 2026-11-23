@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
 const output = process.env.OUT_DIR ? path.resolve(process.env.OUT_DIR) : path.join(root, 'dist');
-const site = new URL(process.env.SITE_URL || 'https://tuneup.pages.dev');
+const site = new URL(process.env.SITE_URL || 'https://tuneup.my.id');
 if (site.protocol !== 'https:' || site.pathname !== '/' || site.search || site.hash) {
   throw new Error('SITE_URL must be an HTTPS site origin');
 }
@@ -23,7 +23,8 @@ for (const file of files) {
     contents = contents.toString()
       .replaceAll('https://namethetrack.netlify.app', site.origin)
       .replaceAll('https://namethetrack.pages.dev', site.origin)
-      .replaceAll('https://tuneup.pages.dev', site.origin);
+      .replaceAll('https://tuneup.pages.dev', site.origin)
+      .replaceAll('https://tuneup.my.id', site.origin);
     if (file === 'index.html') {
       contents = contents
         .replace('action="/feedback-received.html" data-netlify="true"', 'action="/api/feedback" data-feedback-api="true"');
@@ -31,7 +32,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v108-wave82-full-id-seo'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v109-wave83-custom-domain'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }

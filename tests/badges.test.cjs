@@ -77,7 +77,7 @@ test('TuneUpCard builds spoiler-free purple score card model for Artist Detectiv
       ['exact', 'exact', 'exact', 'exact', 'exact', 'exact']
     ],
     verdict: 'Solved in 4 tries · 1 hint',
-    url: 'https://tuneup.pages.dev/'
+    url: 'https://tuneup.my.id/'
   });
   assert.equal(winCard.kind, 'artist');
   assert.equal(winCard.theme, 'purple');
@@ -94,7 +94,7 @@ test('TuneUpCard builds spoiler-free purple score card model for Artist Detectiv
     won: false,
     tries: 10,
     rows: [],
-    url: 'https://tuneup.pages.dev/'
+    url: 'https://tuneup.my.id/'
   });
   assert.equal(loseCard.scoreMain, 'X');
   assert.equal(loseCard.scoreSub, '/ 10');

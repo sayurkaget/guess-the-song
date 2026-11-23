@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const id = document.querySelector('meta[name="ga-measurement-id"]')?.content.trim() || '';
-  const enabled = /^G-[A-Z0-9]+$/.test(id) && location.hostname === 'tuneup.pages.dev';
+  const enabled = /^G-[A-Z0-9]+$/.test(id) && location.hostname === 'tuneup.my.id';
   const events = new Set([
     'game_start', 'custom_start', 'daily_complete', 'challenge_copy', 'result_copy',
     'duel_start', 'duel_challenge_start', 'duel_copy',

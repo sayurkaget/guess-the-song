@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://tuneup.pages.dev/sitemap.xml
+Sitemap: https://tuneup.my.id/sitemap.xml

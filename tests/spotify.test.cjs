@@ -99,7 +99,7 @@ test('extractEmbedPayload cleans NBSP artists, strips episodes, deduplicates, an
     total: 50,
     stages: Array.from({ length: 50 }, (_, i) => ({ done: true, won: i < 42, guesses: [{ t: i < 42 ? 'right' : 'skip' }] })),
     subtitle: "Today's Top Hits",
-    url: 'https://tuneup.pages.dev/'
+    url: 'https://tuneup.my.id/'
   });
   assert.equal(spCard.kind, 'playlist');
   assert.equal(spCard.kicker, 'SPOTIFY PLAYLIST');
@@ -144,7 +144,7 @@ test('extractTrackEmbedPayload extracts track title, multi-artists, year, 640px/
   assert.equal(track.preview, 'https://p.scdn.co/mp3-preview/abc123');
   assert.equal(track.spotifyUrl, 'https://open.spotify.com/track/2plbrEY59IikOBgBGLjaoe');
 
-  const badBatch = await onRequest({ request: new Request('https://tuneup.pages.dev/api/spotify?tracks=invalid,bad') });
+  const badBatch = await onRequest({ request: new Request('https://tuneup.my.id/api/spotify?tracks=invalid,bad') });
   assert.equal(badBatch.status, 400);
 });
 

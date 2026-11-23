@@ -77,16 +77,16 @@ test('ReleaseDuel formats plain-text shares for both year and streams modes', ()
   assert.equal(
     Duel.shareText({
       score: 2, best: 5, history: [{ won: true }, { won: true }, { won: false }],
-      url: 'https://tuneup.pages.dev/#daily', kind: 'year'
+      url: 'https://tuneup.my.id/#daily', kind: 'year'
     }),
-    'TuneUp · Release Duel · Score 2 (Best 5)\n🟩🟩🟥\nhttps://tuneup.pages.dev/'
+    'TuneUp · Release Duel · Score 2 (Best 5)\n🟩🟩🟥\nhttps://tuneup.my.id/'
   );
   assert.equal(
     Duel.shareText({
       score: 4, best: 4, history: [{ won: true }, { won: true }, { won: true }, { won: true }, { won: false }],
-      url: 'https://tuneup.pages.dev/', kind: 'streams'
+      url: 'https://tuneup.my.id/', kind: 'streams'
     }),
-    'TuneUp · Spotify Streams Duel · Score 4 (Best 4)\n🟩🟩🟩🟩🟥\nhttps://tuneup.pages.dev/'
+    'TuneUp · Spotify Streams Duel · Score 4 (Best 4)\n🟩🟩🟩🟩🟥\nhttps://tuneup.my.id/'
   );
 });
 
@@ -138,12 +138,12 @@ test('HTML and SW register Music Duel decks cleanly', () => {
   const DuelApi = require('../duel.js');
 
   test('createChallenge & parseChallenge round-trip streams and year #duel= links', () => {
-    const url = DuelApi.createChallenge('https://tuneup.pages.dev/', {
+    const url = DuelApi.createChallenge('https://tuneup.my.id/', {
       kind: 'streams',
       score: 4,
       ids: [1001, 1002, 1003, 1002]
     });
-    assert.equal(url, 'https://tuneup.pages.dev/#duel=1.s.4.1001-1002-1003');
+    assert.equal(url, 'https://tuneup.my.id/#duel=1.s.4.1001-1002-1003');
     assert.deepEqual(DuelApi.parseChallenge(url), {
       version: 1,
       kind: 'streams',
@@ -151,12 +151,12 @@ test('HTML and SW register Music Duel decks cleanly', () => {
       ids: [1001, 1002, 1003]
     });
 
-    const yearUrl = DuelApi.createChallenge('https://tuneup.pages.dev/#ignored', {
+    const yearUrl = DuelApi.createChallenge('https://tuneup.my.id/#ignored', {
       kind: 'year',
       score: 0,
       ids: [201, 202]
     });
-    assert.equal(yearUrl, 'https://tuneup.pages.dev/#duel=1.y.0.201-202');
+    assert.equal(yearUrl, 'https://tuneup.my.id/#duel=1.y.0.201-202');
     assert.deepEqual(DuelApi.parseChallenge('#duel=1.y.0.201-202'), {
       version: 1,
       kind: 'year',
@@ -174,7 +174,7 @@ test('HTML and SW register Music Duel decks cleanly', () => {
     assert.equal(DuelApi.parseChallenge('#duel=1.s.1.10'), null);
     assert.equal(DuelApi.parseChallenge('#duel=1.s.1.10-10'), null);
     assert.equal(DuelApi.parseChallenge('#duel=1.s.1.10-abc'), null);
-    assert.equal(DuelApi.createChallenge('https://tuneup.pages.dev/', { kind: 'year', score: 1, ids: [1001] }), '');
+    assert.equal(DuelApi.createChallenge('https://tuneup.my.id/', { kind: 'year', score: 1, ids: [1001] }), '');
   });
 
   test('compareChallenge & shareText with challengeUrl format friend comparison cleanly', () => {
@@ -188,13 +188,13 @@ test('HTML and SW register Music Duel decks cleanly', () => {
       score: 2,
       best: 5,
       history: [{ won: true }, { won: true }, { won: false }],
-      url: 'https://tuneup.pages.dev/',
+      url: 'https://tuneup.my.id/',
       kind: 'streams',
-      challengeUrl: 'https://tuneup.pages.dev/#duel=1.s.2.11-22-33'
+      challengeUrl: 'https://tuneup.my.id/#duel=1.s.2.11-22-33'
     });
     assert.equal(
       text,
-      'TuneUp · Spotify Streams Duel · Score 2 (Best 5)\n🟩🟩🟥\nhttps://tuneup.pages.dev/#duel=1.s.2.11-22-33'
+      'TuneUp · Spotify Streams Duel · Score 2 (Best 5)\n🟩🟩🟥\nhttps://tuneup.my.id/#duel=1.s.2.11-22-33'
     );
   });
 })();

@@ -84,7 +84,7 @@ function setupGame(options = {}) {
     requestAnimationFrame: () => 0,
     matchMedia: () => ({ matches: true }),
     history: { replaceState: () => {} },
-    location: { origin: 'https://tuneup.pages.dev', pathname: '/', search: '', hash: '' },
+    location: { origin: 'https://tuneup.my.id', pathname: '/', search: '', hash: '' },
     Audio: class extends EventTarget { pause() {} load() {} },
     localStorage: {
       getItem: (k) => (storage.has(k) ? storage.get(k) : null),
@@ -619,7 +619,7 @@ test('Wave 35: #agPlaySongBtn removed, Auto-Play on Skip + SFX, TuneUpCard score
     ],
     ladder: [0.1, 0.5, 2, 8, 15],
     subtitle: 'Pop · 2010s',
-    url: 'https://tuneup.pages.dev/'
+    url: 'https://tuneup.my.id/'
   });
   assert.equal(runModel.kicker, 'CLASSIC RUN');
   assert.equal(runModel.scoreMain, '1');
@@ -634,12 +634,12 @@ test('Wave 35: #agPlaySongBtn removed, Auto-Play on Skip + SFX, TuneUpCard score
     score: 7,
     best: 9,
     history: [{ won: true }, { won: true }, { won: false }],
-    url: 'https://tuneup.pages.dev/'
+    url: 'https://tuneup.my.id/'
   });
   assert.equal(duelModel.kicker, 'MUSIC DUEL · SPOTIFY STREAMS');
   assert.equal(duelModel.scoreMain, '7');
   assert.deepEqual(duelModel.history, [true, true, false]);
-  assert.equal(duelModel.host, 'tuneup.pages.dev');
+  assert.equal(duelModel.host, 'tuneup.my.id');
 });
 
 test('Wave 77 multi-select genre & era filters combine pools, format labels, collapse to all, and aggregate into All Classic stats', () => {

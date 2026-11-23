@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
-function setup(id='',hostname='tuneup.pages.dev') {
+function setup(id='',hostname='tuneup.my.id') {
   const scripts=[];
   const c=vm.createContext({window:{},location:{hostname,origin:'https://'+hostname,pathname:'/',hash:'#challenge=secret',search:'?email=secret'},
     document:{querySelector:()=>({content:id}),createElement:()=>({}),head:{appendChild:s=>scripts.push(s)}}});
@@ -27,7 +27,7 @@ test('configured events allow only activity fields and exclude query/hash',()=>{
   c.window.PlayerAnalytics.event('artist_free_start',{mode:'artist'});
   c.window.PlayerAnalytics.event('arbitrary_name',{email:'secret'});
   const entries=events();assert.equal(entries.length,5);
-  assert.equal(entries[1][2].page_location,'https://tuneup.pages.dev/');
+  assert.equal(entries[1][2].page_location,'https://tuneup.my.id/');
   assert.equal(JSON.stringify(entries[2]),JSON.stringify(['event','daily_complete',{game_mode:'daily',result:'won',attempts:2}]));
   assert.equal(JSON.stringify(entries[3]),JSON.stringify(['event','duel_start',{game_mode:'duel'}]));
   assert.equal(JSON.stringify(entries[4]),JSON.stringify(['event','artist_free_start',{game_mode:'artist'}]));

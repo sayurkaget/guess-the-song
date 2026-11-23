@@ -28,7 +28,7 @@
       title:daily ? 'Daily Challenge' : custom ? 'Artist challenge' : 'Classic',
       subtitle:daily ? String(data.day || '') : String(data.subtitle || 'All songs'),
       streak:daily ? Math.max(0, Number(data.streak) || 0) : 0,
-      url:String(data.url || 'https://tuneup.pages.dev/')
+      url:String(data.url || 'https://tuneup.my.id/')
     };
   }
 

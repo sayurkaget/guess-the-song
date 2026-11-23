@@ -52,17 +52,18 @@ test('Cloudflare bundle uses its own URLs, isolates APIs, and preserves the orig
   const tmpOut = fs.mkdtempSync(path.join(os.tmpdir(), 'tuneup-cf-'));
   try {
     execFileSync(process.execPath, [path.join(root, 'tools/build-cloudflare.cjs')], {
-      env: { ...process.env, SITE_URL: 'https://tuneup.pages.dev', OUT_DIR: tmpOut }
+      env: { ...process.env, SITE_URL: 'https://tuneup.my.id', OUT_DIR: tmpOut }
     });
     const html = fs.readFileSync(path.join(tmpOut, 'index.html'), 'utf8');
     assert.match(html, /action="\/api\/feedback" data-feedback-api="true"/);
     assert.ok(!html.includes('data-netlify='));
     assert.ok(!html.includes('namethetrack.netlify.app'));
     assert.ok(!html.includes('namethetrack.pages.dev'));
-    assert.ok(html.includes('https://tuneup.pages.dev/'));
-    assert.ok(fs.readFileSync(path.join(tmpOut, 'robots.txt'), 'utf8').includes('https://tuneup.pages.dev/sitemap.xml'));
-    assert.ok(fs.readFileSync(path.join(tmpOut, 'sitemap.xml'), 'utf8').includes('https://tuneup.pages.dev/'));
-    assert.ok(fs.readFileSync(path.join(tmpOut, 'analytics.js'), 'utf8').includes('location.hostname === "tuneup.pages.dev"'));
+    assert.ok(!html.includes('tuneup.pages.dev'));
+    assert.ok(html.includes('https://tuneup.my.id/'));
+    assert.ok(fs.readFileSync(path.join(tmpOut, 'robots.txt'), 'utf8').includes('https://tuneup.my.id/sitemap.xml'));
+    assert.ok(fs.readFileSync(path.join(tmpOut, 'sitemap.xml'), 'utf8').includes('https://tuneup.my.id/'));
+    assert.ok(fs.readFileSync(path.join(tmpOut, 'analytics.js'), 'utf8').includes('location.hostname === "tuneup.my.id"'));
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(tmpOut, '_routes.json'))).include, ['/api/*']);
     assert.equal(fs.readFileSync(path.join(root, 'index.html'), 'utf8'), original);
     assert.deepEqual(fs.readFileSync(path.join(tmpOut, 'songs.js')), fs.readFileSync(path.join(root, 'songs.js')));
@@ -78,7 +79,7 @@ test('Cloudflare bundle uses its own URLs, isolates APIs, and preserves the orig
     // Wave 68: verify 7 dedicated SEO landing pages + FAQPage JSON-LD + bidirectional hreflang + IndexNow key
     assert.ok(fs.readFileSync(path.join(tmpOut, '7b4e9c2a1f8d4e60b3c5a9d1e2f48076.txt'), 'utf8').trim() === '7b4e9c2a1f8d4e60b3c5a9d1e2f48076');
     const sitemap = fs.readFileSync(path.join(tmpOut, 'sitemap.xml'), 'utf8');
-    assert.ok(sitemap.includes('https://tuneup.pages.dev/id</loc>'), 'sitemap includes /id');
+    assert.ok(sitemap.includes('https://tuneup.my.id/id</loc>'), 'sitemap includes /id');
     assert.ok(sitemap.includes('hreflang="id"'), 'sitemap includes xhtml hreflang');
 
     const slugs = ['', 'daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'id'];
@@ -87,7 +88,7 @@ test('Cloudflare bundle uses its own URLs, isolates APIs, and preserves the orig
     for (const slug of slugs) {
       const fname = slug ? `${slug}.html` : 'index.html';
       const pageHtml = fs.readFileSync(path.join(tmpOut, fname), 'utf8');
-      const expectedUrl = slug ? `https://tuneup.pages.dev/${slug}` : 'https://tuneup.pages.dev/';
+      const expectedUrl = slug ? `https://tuneup.my.id/${slug}` : 'https://tuneup.my.id/';
       assert.ok(!/noindex/i.test(pageHtml), `${fname} must be indexable`);
       assert.ok(pageHtml.includes(`<link rel="canonical" href="${expectedUrl}">`), `${fname} must have self-canonical ${expectedUrl}`);
       assert.ok(pageHtml.includes(`<meta property="og:url" content="${expectedUrl}">`), `${fname} must have matching og:url`);
