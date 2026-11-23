@@ -32,7 +32,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v109-wave83-custom-domain'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v110-wave84-pages-redirect'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -286,5 +286,15 @@ for (const page of SEO_PAGES) {
 }
 
 fs.cpSync(path.join(root, 'fonts'), path.join(output, 'fonts'), { recursive: true });
-fs.writeFileSync(path.join(output, '_routes.json'), JSON.stringify({ version: 1, include: ['/api/*'], exclude: [] }));
+const staticAssetExcludes = [
+  '/fonts/*',
+  ...files
+    .filter((f) => /\.(css|js|png|webmanifest)$/.test(f))
+    .map((f) => `/${f}`)
+];
+fs.writeFileSync(path.join(output, '_routes.json'), JSON.stringify({
+  version: 1,
+  include: ['/*'],
+  exclude: staticAssetExcludes
+}));
 console.log(`Built Cloudflare Pages assets + ${SEO_PAGES.length} SEO landing pages for ${site.origin}`);

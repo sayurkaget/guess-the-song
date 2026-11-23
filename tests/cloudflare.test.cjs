@@ -64,7 +64,10 @@ test('Cloudflare bundle uses its own URLs, isolates APIs, and preserves the orig
     assert.ok(fs.readFileSync(path.join(tmpOut, 'robots.txt'), 'utf8').includes('https://tuneup.my.id/sitemap.xml'));
     assert.ok(fs.readFileSync(path.join(tmpOut, 'sitemap.xml'), 'utf8').includes('https://tuneup.my.id/'));
     assert.ok(fs.readFileSync(path.join(tmpOut, 'analytics.js'), 'utf8').includes('location.hostname === "tuneup.my.id"'));
-    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(tmpOut, '_routes.json'))).include, ['/api/*']);
+    const routes = JSON.parse(fs.readFileSync(path.join(tmpOut, '_routes.json')));
+    assert.deepEqual(routes.include, ['/*']);
+    assert.ok(Array.isArray(routes.exclude) && routes.exclude.includes('/fonts/*') && routes.exclude.includes('/songs.js') && routes.exclude.includes('/app.js'));
+    assert.ok(!routes.exclude.includes('/api/*') && !routes.exclude.includes('/index.html'));
     assert.equal(fs.readFileSync(path.join(root, 'index.html'), 'utf8'), original);
     assert.deepEqual(fs.readFileSync(path.join(tmpOut, 'songs.js')), fs.readFileSync(path.join(root, 'songs.js')));
     assert.deepEqual(fs.readFileSync(path.join(tmpOut, 'daily-pool-v1.js')), fs.readFileSync(path.join(root, 'daily-pool-v1.js')));
@@ -127,4 +130,26 @@ test('Cloudflare bundle uses its own URLs, isolates APIs, and preserves the orig
   } finally {
     fs.rmSync(tmpOut, { recursive: true, force: true });
   }
+});
+
+test('Cloudflare middleware permanently redirects tuneup.pages.dev and www to https://tuneup.my.id', async () => {
+  const mwSource = fs.readFileSync(path.join(root, 'functions/_middleware.js'), 'utf8');
+  const mw = await import('data:text/javascript;base64,' + Buffer.from(mwSource).toString('base64'));
+  let nextCalls = 0;
+  const next = async () => { nextCalls += 1; return new Response('ok', { status: 200 }); };
+
+  const resLegacy = await mw.onRequest({ request: new Request('https://tuneup.pages.dev/id?genre=pop'), next });
+  assert.equal(resLegacy.status, 301);
+  assert.equal(resLegacy.headers.get('location'), 'https://tuneup.my.id/id?genre=pop');
+
+  const resWww = await mw.onRequest({ request: new Request('https://www.tuneup.my.id/daily'), next });
+  assert.equal(resWww.status, 301);
+  assert.equal(resWww.headers.get('location'), 'https://tuneup.my.id/daily');
+  assert.equal(nextCalls, 0);
+
+  const resApex = await mw.onRequest({ request: new Request('https://tuneup.my.id/'), next });
+  assert.equal(resApex.status, 200);
+  const resPreview = await mw.onRequest({ request: new Request('https://abc123.tuneup.pages.dev/'), next });
+  assert.equal(resPreview.status, 200);
+  assert.equal(nextCalls, 2);
 });
