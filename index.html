@@ -169,46 +169,41 @@
       </div>
     </section>
 
-    <div class="arcade-row">
-      <button class="duel-card-wide" id="openDuel" type="button">
-        <div class="duel-card-copy">
-          <div class="duel-card-title">
-            <div class="title-with-ico">
-              <svg class="title-ico is-gold" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4.5 13.5H12L11 22l8.5-11.5H12L13 2Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>
-              <h2>Music Duel</h2>
-            </div>
-            <span class="mode-pill is-gold">Higher or lower</span>
-          </div>
-          <p id="duelLobbySub">Spotify streams &amp; release year</p>
-        </div>
-        <span class="duel-cta-pill">
-          Play duel
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
-      </button>
-
-      <button class="duel-card-wide artist-detective-card" id="openArtistGame" type="button">
-        <div class="duel-card-copy">
-          <div class="duel-card-title">
-            <div class="title-with-ico">
-              <svg class="title-ico is-purple" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="m15.9 15.9 4.9 4.9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
-              <h2>Artist Detective</h2>
-            </div>
-            <span class="mode-pill is-purple">Endless</span>
-          </div>
-          <p id="artistLobbySub">Deduce the mystery artist from 6 clues</p>
-        </div>
-        <span class="duel-cta-pill is-purple-cta">
-          Play artist
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
-      </button>
-    </div>
-
     <section class="more-games-card" id="moreGamesCard" aria-labelledby="moreGamesHeading">
       <div class="more-games-head">
         <h2 id="moreGamesHeading">More Music Games</h2>
-        <span class="more-games-sub" id="moreGamesSub">Free play anytime</span>
+        <span class="more-games-sub" id="moreGamesSub">7 free-play modes</span>
+      </div>
+      <div class="arcade-row">
+        <button class="duel-card-wide" id="openDuel" type="button">
+          <span class="arcade-ico is-gold" aria-hidden="true"><svg class="title-ico is-gold" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H12L11 22l8.5-11.5H12L13 2Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></span>
+          <div class="duel-card-copy">
+            <div class="duel-card-title">
+              <h2>Music Duel</h2>
+              <span class="mode-pill is-gold">Higher or lower</span>
+            </div>
+            <p id="duelLobbySub">Spotify streams &amp; release year</p>
+          </div>
+          <span class="duel-cta-pill">
+            Play duel
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </button>
+
+        <button class="duel-card-wide artist-detective-card" id="openArtistGame" type="button">
+          <span class="arcade-ico is-purple" aria-hidden="true"><svg class="title-ico is-purple" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="m15.9 15.9 4.9 4.9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+          <div class="duel-card-copy">
+            <div class="duel-card-title">
+              <h2>Artist Detective</h2>
+              <span class="mode-pill is-purple">Endless</span>
+            </div>
+            <p id="artistLobbySub">Deduce the mystery artist from 6 clues</p>
+          </div>
+          <span class="duel-cta-pill is-purple-cta">
+            Play artist
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </button>
       </div>
       <div class="more-games-grid">
         <button class="mg-tile" type="button" data-minigame="cover">

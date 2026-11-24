@@ -301,6 +301,7 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(lcss, /\.mg-hair-curtain\{[\s\S]*#06150e/);
   assert.match(lcss, /@keyframes mgCardWrong\{[^}]*rgba\(242,85,90/);
   assert.doesNotMatch(lcss, /@keyframes mgCardWrong\{[^}]*translateX/);
+  assert.match(html, /id="moreGamesCard"[\s\S]*class="arcade-row"[\s\S]*id="openDuel"[\s\S]*id="openArtistGame"[\s\S]*class="more-games-grid"/);
   assert.match(sw, /gts-v1[56]\d-wave/);
   assert.match(build, /gts-cf-v1[34]\d-wave/);
 });
