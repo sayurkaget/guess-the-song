@@ -3,7 +3,7 @@
    ke server (no-cache / ETag) agar update langsung masuk dan file besar seperti
    songs.js tetap hemat kuota via 304 Not Modified saat belum berubah. */
 
-const CACHE = 'gts-v148-wave102-artist-style-reveal';
+const CACHE = 'gts-v149-wave103-sleek-minigames-vol-gpu';
 const SHELL = [
   './',
   './index.html',

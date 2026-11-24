@@ -305,14 +305,20 @@
 
     <div class="mg-stage-card">
       <div class="mg-head">
-        <h2 class="mg-game-title" id="mgGameTitle"></h2>
-        <p class="mg-subtitle" id="mgSubtitle"></p>
+        <div class="mg-head-left">
+          <span class="mg-title-ico" id="mgTitleIco" aria-hidden="true"></span>
+          <div class="mg-head-copy">
+            <h2 class="mg-game-title" id="mgGameTitle"></h2>
+            <p class="mg-subtitle" id="mgSubtitle"></p>
+          </div>
+        </div>
+        <div class="mg-head-right" id="mgHeadRight"></div>
       </div>
-      <div class="mg-arena" id="mgArena" data-layout="split">
-        <div class="mg-left" id="mgBody"></div>
-        <div class="mg-right" id="mgSide">
+      <div class="mg-arena" id="mgArena" data-layout="centered">
+        <div class="mg-body" id="mgBody"></div>
+        <div class="mg-side" id="mgSide">
           <div class="mg-controls" id="mgControls"></div>
-          <ol class="mg-slots" id="mgHistory" hidden></ol>
+          <div class="mg-chips" id="mgHistory" hidden></div>
         </div>
       </div>
     </div>
@@ -554,9 +560,9 @@
           <p id="agTopSongLabel"></p>
           <p class="ag-challenge-note" id="agChallengeNote" hidden></p>
         </div>
+        <div class="vol-slot" id="agVolSlot"></div>
       </div>
       <p class="daily-community is-artist" id="agDailyCommunity" hidden></p>
-      <div class="vol-slot" id="agVolSlot"></div>
       <div class="spotle-result-actions">
         <button class="btn ghostbtn share-btn" id="agShareBtn" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.7" fill="none"/></svg>

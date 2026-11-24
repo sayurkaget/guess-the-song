@@ -248,7 +248,12 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(html, /id="miniGame"[\s\S]*id="mgArena"[\s\S]*id="dhStepModal"/);
   assert.match(mg, /function playSpinTick\(/);
   assert.match(mg, /function playSpinLock\(/);
-  assert.match(mg, /function renderAttemptSlots\(/);
+  const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
+  assert.match(mg, /function renderAttemptPipsAndChips\(/);
+  assert.match(mg, /mg-deck-card/);
+  assert.match(mg, /mg-cover-disc/);
+  assert.match(css, /\.glow\{[\s\S]*z-index:0;\s*isolation:isolate/);
+  assert.match(css, /\.wrap\{[\s\S]*position:relative;\s*z-index:1/);
   assert.match(mg, /function hslToHex\(/);
   assert.doesNotMatch(mg, /mg-album-tint/);
   assert.doesNotMatch(mg, /mgPlayPreview/);

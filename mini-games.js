@@ -842,7 +842,7 @@
     if (sec) sec.hidden = false;
 
     const arena = $('#mgArena');
-    if (arena) arena.dataset.layout = gameId === 'fact' ? 'single' : 'split';
+    if (arena) arena.dataset.layout = gameId === 'color' ? 'split' : 'centered';
 
     const backLbl = $('#mgBackLbl');
     if (backLbl) backLbl.textContent = dailySlot ? t('Back to Daily', 'Kembali ke Daily') : t('Change mode', 'Ganti mode');
@@ -853,7 +853,12 @@
     };
 
     renderDailyPillInMiniGame(dailySlot);
-    $('#mgGameTitle').innerHTML = `<span class="mg-title-ico">${ICONS[gameId] || ''}</span><span>${esc(gameLabel(gameId))}</span>`;
+    const icoEl = $('#mgTitleIco');
+    if (icoEl) icoEl.innerHTML = ICONS[gameId] || '';
+    const titleEl = $('#mgGameTitle');
+    if (titleEl) titleEl.textContent = gameLabel(gameId);
+    const rightEl = $('#mgHeadRight');
+    if (rightEl) rightEl.innerHTML = '';
 
     if (bridge && bridge.syncRoute) {
       if (dailySlot) {
@@ -975,33 +980,36 @@
     };
   }
 
-  /* Fixed 5-slot board (height never shifts from guess 1 to 5!) */
-  function renderAttemptSlots(guesses, maxTries) {
-    const el = $('#mgHistory');
-    if (!el) return;
-    if (!maxTries) { el.innerHTML = ''; el.hidden = true; return; }
-    el.hidden = false;
-    const rows = [];
-    for (let i = 0; i < maxTries; i++) {
-      const g = guesses[i];
-      if (g) {
-        const icon = g.kind === 'right' ? '✓' : (g.kind === 'near' ? '≈' : (g.kind === 'skip' ? '↷' : '✕'));
-        rows.push(
-          `<li class="mg-slot is-${g.kind}">` +
-            `<span class="mg-slot-num">${icon}</span>` +
-            `<span class="mg-slot-txt">${esc(g.label)}</span>` +
-          `</li>`
-        );
+  /* Compact 5-pip indicator in header + inline guess chips (zero empty 1..5 boxes!) */
+  function renderAttemptPipsAndChips(guesses, maxTries, done) {
+    const rightEl = $('#mgHeadRight');
+    if (rightEl) {
+      if (!maxTries) {
+        rightEl.innerHTML = '';
       } else {
-        rows.push(
-          `<li class="mg-slot is-empty${i === guesses.length ? ' is-now' : ''}">` +
-            `<span class="mg-slot-num">${i + 1}</span>` +
-            `<span class="mg-slot-txt"></span>` +
-          `</li>`
-        );
+        const pips = [];
+        for (let i = 0; i < maxTries; i++) {
+          const g = guesses[i];
+          let cls = 'mg-pip';
+          if (g) cls += ' is-' + g.kind;
+          else if (!done && i === guesses.length) cls += ' is-now';
+          pips.push(`<span class="${cls}"></span>`);
+        }
+        rightEl.innerHTML = `<div class="mg-pips" aria-label="${esc(t('Attempts', 'Percobaan'))}">${pips.join('')}</div>`;
       }
     }
-    el.innerHTML = rows.join('');
+    const el = $('#mgHistory');
+    if (!el) return;
+    if (!maxTries || !guesses.length) {
+      el.innerHTML = '';
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+    el.innerHTML = guesses.map((g) => {
+      const icon = g.kind === 'right' ? '✓' : (g.kind === 'near' ? '≈' : (g.kind === 'skip' ? '↷' : '✕'));
+      return `<span class="mg-chip is-${g.kind}"><span class="mg-chip-ico">${icon}</span><span class="mg-chip-lbl">${esc(g.label)}</span></span>`;
+    }).join('');
   }
 
   function renderMiniReveal({ won, score, title, subtitle, art, trackId, dailySlot, gameId, shortSummary, detail, freeKicker }) {
@@ -1035,8 +1043,8 @@
             `<div class="mg-rev-title">${esc(title)}</div>` +
             `<div class="mg-rev-sub">${esc(subtitle)}</div>` +
           `</div>` +
+          volHtml +
         `</div>` +
-        volHtml +
         `<div class="mg-rev-actions">${actionHtml}</div>` +
       `</div>`;
 
@@ -1089,14 +1097,17 @@
     if (!target) return;
 
     mgState = { gameId: 'cover', target, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false, imgEl: null };
-    $('#mgSubtitle').textContent = t('Guess the song from its pixelated album cover.', 'Tebak lagu dari cover album piksel yang makin tajam tiap percobaan.');
+    $('#mgSubtitle').textContent = t('Guess the song from its pixelated cover', 'Tebak lagu dari cover album piksel');
     $('#mgBody').innerHTML =
-      `<div class="mg-cover-wrap">` +
-        `<canvas id="mgPixelCanvas" width="210" height="210" class="mg-pixel-canvas"></canvas>` +
-        `<img id="mgPixelFallback" class="mg-pixel-fallback" alt="" hidden>` +
-        `<span id="mgPixelTag" class="mg-stage-tag">1/5 · 6×6 px</span>` +
+      `<div class="mg-cover-stage">` +
+        `<div class="mg-cover-disc" aria-hidden="true"></div>` +
+        `<div class="mg-cover-wrap">` +
+          `<canvas id="mgPixelCanvas" width="210" height="210" class="mg-pixel-canvas"></canvas>` +
+          `<img id="mgPixelFallback" class="mg-pixel-fallback" alt="" hidden>` +
+          `<span id="mgPixelTag" class="mg-stage-tag">6×6 px</span>` +
+        `</div>` +
       `</div>`;
-    renderAttemptSlots([], 5);
+    renderAttemptPipsAndChips([], 5, false);
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -1115,7 +1126,7 @@
     bindMiniSearch({
       placeholder: t('Type song title or artist…', 'Ketik judul lagu atau artis…'),
       mode: 'song',
-      skipLabel: t('Skip', 'Lewati'),
+      skipLabel: t('Sharpen', 'Perjelas'),
       isTried: (s) => mgState && mgState.tried.has(normStr(s.title) + '|' + normStr(s.artist)),
       onPick: (song) => submitCoverGuess(song, dailySlot),
       onSkip: () => skipCoverGuess(dailySlot)
@@ -1148,7 +1159,7 @@
       const blurs = [22, 15, 9, 4, 2];
       fb.style.filter = revealHd ? 'none' : `blur(${blurs[idx]}px)`;
     }
-    if (tag) tag.textContent = revealHd ? 'HD' : `${st.tries + 1}/5 · ${grid}×${grid} px`;
+    if (tag) tag.textContent = revealHd ? 'HD' : `${grid}×${grid} px`;
   }
 
   function submitCoverGuess(pick, dailySlot) {
@@ -1171,8 +1182,8 @@
     st.tries++;
     if (sameTrack) {
       st.done = true;
-      st.guesses.push({ kind: 'right', label: `${pick.title} — ${pick.artist}` });
-      renderAttemptSlots(st.guesses, 5);
+      st.guesses.push({ kind: 'right', label: pick.title });
+      renderAttemptPipsAndChips(st.guesses, 5, true);
       drawCoverPixel(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
@@ -1181,17 +1192,16 @@
     }
     st.guesses.push({
       kind: sameArt ? 'near' : 'wrong',
-      label: sameArt
-        ? `${pick.title} — ${pick.artist} (${t('Right artist!', 'Artis benar!')})`
-        : `${pick.title} — ${pick.artist}`
+      label: sameArt ? `${pick.title} (${t('Right artist', 'Artis benar')})` : pick.title
     });
-    renderAttemptSlots(st.guesses, 5);
     if (st.tries >= st.maxTries) {
       st.done = true;
+      renderAttemptPipsAndChips(st.guesses, 5, true);
       drawCoverPixel(true);
       const sum = t('Missed', 'Gagal');
       renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
+      renderAttemptPipsAndChips(st.guesses, 5, false);
       drawCoverPixel(false);
     }
   }
@@ -1200,15 +1210,16 @@
     const st = mgState;
     if (!st || st.done) return;
     st.tries++;
-    st.guesses.push({ kind: 'skip', label: t('Skipped · sharper pixels', 'Lewati · piksel lebih jelas') });
-    renderAttemptSlots(st.guesses, 5);
+    st.guesses.push({ kind: 'skip', label: t('Sharpened', 'Diperjelas') });
     if (st.tries >= st.maxTries) {
       st.done = true;
+      renderAttemptPipsAndChips(st.guesses, 5, true);
       drawCoverPixel(true);
       const tgt = st.target;
       const sum = t('Missed', 'Gagal');
       renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
+      renderAttemptPipsAndChips(st.guesses, 5, false);
       drawCoverPixel(false);
     }
   }
@@ -1225,7 +1236,7 @@
     mgState = { gameId: 'color', album, artist, artUrl, targetHsl, trackId, anchorTitle, year, done: false };
 
     $('#mgSubtitle').textContent = t('Mix the true signature color of this iconic album cover!', 'Racik warna khas asli dari cover album ikonik ini!');
-    renderAttemptSlots([], 0);
+    renderAttemptPipsAndChips([], 0, false);
 
     // Start slider at a neutral contrasting hue away from answer
     const initH = (targetHsl[0] + 150) % 360;
@@ -1302,7 +1313,7 @@
         score,
         title: `${album} (${score}%)`,
         subtitle: `${artist} · ${anchorTitle}`,
-        art: '',
+        art: artUrl,
         trackId,
         dailySlot,
         gameId: 'color',
@@ -1314,7 +1325,7 @@
   }
 
   /* ================= GAME 3: HAIRSPOT MUSIC ================= */
-  const HAIR_CURTAIN_PCTS = [70, 58, 44, 26, 0];
+  const HAIR_CURTAIN_PCTS = [76, 62, 48, 32, 0];
   function initHairSpot(seed, dailySlot) {
     const bank = Data.hairBank || [];
     const maxDiff = dailySlot ? dailySlot.diffTier : 3;
@@ -1328,14 +1339,14 @@
     const [artistId, artistName, imgUrl] = picked;
     mgState = { gameId: 'hair', artistId, artistName, imgUrl, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
 
-    $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle — skip reveals more!', 'Tebak musisi dari gaya rambutnya — lewati untuk membuka wajah lebih banyak!');
-    renderAttemptSlots([], 5);
+    $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle', 'Tebak musisi dari gaya rambutnya');
+    renderAttemptPipsAndChips([], 5, false);
 
     $('#mgBody').innerHTML =
       `<div class="mg-hair-frame">` +
         `<img class="mg-hair-img" src="${esc(imgUrl)}" alt="Mystery musician" referrerpolicy="no-referrer">` +
         `<div id="mgHairCurtain" class="mg-hair-curtain" style="height:${HAIR_CURTAIN_PCTS[0]}%">` +
-          `<span id="mgHairStage">${esc(t('1/5 · Hair only', '1/5 · Rambut saja'))}</span>` +
+          `<span id="mgHairStage">${esc(t('Hair only', 'Rambut saja'))}</span>` +
         `</div>` +
       `</div>`;
 
@@ -1356,10 +1367,10 @@
     const lbl = $('#mgHairStage');
     const idx = fullReveal ? 4 : Math.min(3, st.tries);
     const names = [
-      t('1/5 · Hair only', '1/5 · Rambut saja'),
-      t('2/5 · Hairline', '2/5 · Garis dahi'),
-      t('3/5 · Eyes', '3/5 · Mata'),
-      t('4/5 · Upper face', '4/5 · Wajah atas'),
+      t('Hair only', 'Rambut saja'),
+      t('Hairline', 'Garis dahi'),
+      t('Eyes', 'Mata'),
+      t('Upper face', 'Wajah atas'),
       st.artistName
     ];
     if (curtain) curtain.style.height = HAIR_CURTAIN_PCTS[idx] + '%';
@@ -1394,7 +1405,7 @@
     if (match) {
       st.done = true;
       st.guesses.push({ kind: 'right', label: artist.name });
-      renderAttemptSlots(st.guesses, 5);
+      renderAttemptPipsAndChips(st.guesses, 5, true);
       updateHairCurtain(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
@@ -1403,14 +1414,15 @@
       return;
     }
     st.guesses.push({ kind: 'wrong', label: artist.name });
-    renderAttemptSlots(st.guesses, 5);
     if (st.tries >= st.maxTries) {
       st.done = true;
+      renderAttemptPipsAndChips(st.guesses, 5, true);
       updateHairCurtain(true);
       const sum = t('Missed', 'Gagal');
       const hit = hairTopTrack(null, st.artistName);
       renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: hairRevealSub(hit, null), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
+      renderAttemptPipsAndChips(st.guesses, 5, false);
       updateHairCurtain(false);
     }
   }
@@ -1419,20 +1431,40 @@
     const st = mgState;
     if (!st || st.done) return;
     st.tries++;
-    st.guesses.push({ kind: 'skip', label: t('Skipped · revealed more', 'Lewati · tirai dibuka') });
-    renderAttemptSlots(st.guesses, 5);
+    st.guesses.push({ kind: 'skip', label: t('Revealed more', 'Tirai dibuka') });
     if (st.tries >= st.maxTries) {
       st.done = true;
+      renderAttemptPipsAndChips(st.guesses, 5, true);
       updateHairCurtain(true);
       const sum = t('Missed', 'Gagal');
       const hit = hairTopTrack(null, st.artistName);
       renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: hairRevealSub(hit, null), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
+      renderAttemptPipsAndChips(st.guesses, 5, false);
       updateHairCurtain(false);
     }
   }
 
   /* ================= GAME 4: MUSIC FACT OR CAP ================= */
+  function renderFactHeader() {
+    const st = mgState;
+    const rightEl = $('#mgHeadRight');
+    if (!st || st.gameId !== 'fact' || !rightEl) return;
+    const best = Number(LS.get(FACT_BEST_KEY, 0)) || 0;
+    if (st.isDaily) {
+      rightEl.innerHTML = `<div class="mg-fact-pill">${esc(`${t('Claim', 'Soal')} ${st.idx + 1}/5 · ${st.correct * 20} ${t('pts', 'poin')}`)}</div>`;
+      return;
+    }
+    const hearts = [0, 1, 2].map((i) =>
+      `<span class="mg-heart${i < st.lives ? ' is-on' : ''}" aria-hidden="true">♥</span>`
+    ).join('');
+    rightEl.innerHTML =
+      `<div class="mg-fact-meta">` +
+        `<div class="mg-fact-hearts" aria-label="${esc(`${Math.max(0, st.lives)} ${t('lives', 'nyawa')}`)}">${hearts}</div>` +
+        `<div class="mg-fact-pill">${st.correct} · ${esc(t('Best', 'Terbaik'))} ${best}</div>` +
+      `</div>`;
+  }
+
   function initFactOrCap(seed, dailySlot) {
     const bank = Data.factBank || [];
     const isDaily = !!dailySlot;
@@ -1452,9 +1484,9 @@
       done: false
     };
     $('#mgSubtitle').textContent = isDaily
-      ? t('5 quick music claims — 20 points each!', '5 pernyataan musik cepat — 20 poin tiap jawaban benar!')
-      : t('Endless music trivia — 3 lives!', 'Trivia musik tanpa batas — 3 nyawa!');
-    renderAttemptSlots([], 0);
+      ? t('5 quick music claims · 20 pts each', '5 pernyataan musik · 20 poin tiap benar')
+      : t('Music trivia · 3 lives', 'Trivia musik · 3 nyawa');
+    renderAttemptPipsAndChips([], 0, false);
     renderFactClaim();
   }
 
@@ -1464,21 +1496,21 @@
     const item = st.deck[st.idx];
     if (!item) return;
     const [, , claimEn, claimId] = item;
-    const best = Number(LS.get(FACT_BEST_KEY, 0)) || 0;
-
-    const statusLine = st.isDaily
-      ? `${t('Claim', 'Soal')} ${st.idx + 1}/5 · ${st.correct * 20} ${t('pts', 'poin')}`
-      : `${'♥'.repeat(st.lives)}${'♡'.repeat(Math.max(0, 3 - st.lives))} · ${t('Score', 'Skor')} ${st.correct} · ${t('Best', 'Terbaik')} ${best}`;
+    renderFactHeader();
 
     $('#mgBody').innerHTML =
-      `<div class="mg-fact-status">${esc(statusLine)}</div>` +
-      `<div class="mg-fact-card"><p class="mg-fact-claim">“${esc(isId() ? claimId : claimEn)}”</p></div>` +
-      `<div id="mgFactFeedback" class="mg-fact-fb" hidden></div>`;
+      `<div class="mg-deck-wrap">` +
+        `<div class="mg-deck-card">` +
+          `<span class="mg-deck-quote" aria-hidden="true">“</span>` +
+          `<p class="mg-fact-claim">${esc(isId() ? claimId : claimEn)}</p>` +
+          `<div id="mgFactFeedback" class="mg-fact-fb" hidden></div>` +
+        `</div>` +
+      `</div>`;
 
     $('#mgControls').innerHTML =
       `<div class="mg-fact-btns">` +
-        `<button id="mgBtnFact" class="btn ghostbtn mg-fact-btn is-fact" type="button">✓ ${esc(t('FACT', 'FAKTA'))}</button>` +
-        `<button id="mgBtnCap" class="btn ghostbtn mg-fact-btn is-cap" type="button">✕ ${esc(t('CAP', 'HOAX'))}</button>` +
+        `<button id="mgBtnFact" class="btn ghostbtn mg-fact-btn is-fact" type="button"><span class="mg-fact-badge" aria-hidden="true">✓</span><span>${esc(t('FACT', 'FAKTA'))}</span></button>` +
+        `<button id="mgBtnCap" class="btn ghostbtn mg-fact-btn is-cap" type="button"><span class="mg-fact-badge" aria-hidden="true">✕</span><span>${esc(t('CAP', 'HOAX'))}</span></button>` +
       `</div>`;
 
     $('#mgBtnFact').onclick = () => answerFact(1);
@@ -1501,13 +1533,7 @@
       st.lives--;
     }
 
-    const stEl = $('.mg-fact-status');
-    if (stEl) {
-      const best = Number(LS.get(FACT_BEST_KEY, 0)) || 0;
-      stEl.textContent = st.isDaily
-        ? `${t('Claim', 'Soal')} ${st.idx + 1}/5 · ${st.correct * 20} ${t('pts', 'poin')}`
-        : `${'♥'.repeat(Math.max(0, st.lives))}${'♡'.repeat(Math.max(0, 3 - st.lives))} · ${t('Score', 'Skor')} ${st.correct} · ${t('Best', 'Terbaik')} ${best}`;
-    }
+    renderFactHeader();
 
     const fb = $('#mgFactFeedback');
     if (fb) {
@@ -1560,8 +1586,7 @@
     const [trackId, title, artist, art, year, , lines] = targetRow;
     mgState = { gameId: 'lyric', dailySlot, trackId, title, artist, art, year, lines, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
 
-    $('#mgSubtitle').textContent = t('Guess the song from its lyrics — each skip reveals another line.', 'Tebak lagu dari liriknya — tiap lewati membuka 1 baris lagi.');
-    renderAttemptSlots([], 5);
+    renderAttemptPipsAndChips([], 5, false);
     renderLyricLines(false);
 
     bindMiniSearch({
@@ -1579,18 +1604,18 @@
     if (!st || st.gameId !== 'lyric') return;
     const count = showAll ? st.lines.length : Math.min(st.lines.length, st.tries + 1);
     const pts = Hub.scoreTries(true, st.tries + 1, 5);
-    const lineTag = t(`Line ${count}/5`, `Baris ${count}/5`);
-    const metaTxt = (st.dailySlot && !showAll)
-      ? `${lineTag} · +${pts} ${t('pts', 'poin')}`
-      : lineTag;
+    const lineTag = t(`Line ${count} of 5`, `Baris ${count} dari 5`);
+    const subEl = $('#mgSubtitle');
+    if (subEl) {
+      subEl.textContent = (st.dailySlot && !showAll)
+        ? `${lineTag} · +${pts} ${t('pts', 'poin')}`
+        : lineTag;
+    }
     $('#mgBody').innerHTML =
-      `<div class="mg-lyric-wrap">` +
-        `<div class="mg-lyric-meta">${esc(metaTxt)}</div>` +
-        `<div class="mg-lyric-card">` +
-          st.lines.slice(0, count).map((ln, idx) =>
-            `<p class="mg-lyric-line${idx === count - 1 && !showAll ? ' is-fresh' : ''}">“${esc(ln)}”</p>`
-          ).join('') +
-        `</div>` +
+      `<div class="mg-lyric-card">` +
+        st.lines.slice(0, count).map((ln, idx) =>
+          `<p class="mg-lyric-line${idx === count - 1 && !showAll ? ' is-fresh' : ''}">“${esc(ln)}”</p>`
+        ).join('') +
       `</div>`;
   }
 
@@ -1611,8 +1636,8 @@
 
     if (sameTrack) {
       st.done = true;
-      st.guesses.push({ kind: 'right', label: `${pick.title} — ${pick.artist}` });
-      renderAttemptSlots(st.guesses, 5);
+      st.guesses.push({ kind: 'right', label: pick.title });
+      renderAttemptPipsAndChips(st.guesses, 5, true);
       renderLyricLines(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
@@ -1621,15 +1646,16 @@
     }
     st.guesses.push({
       kind: sameArt ? 'near' : 'wrong',
-      label: sameArt ? `${pick.title} — ${pick.artist} (${t('Right artist!', 'Artis benar!')})` : `${pick.title} — ${pick.artist}`
+      label: sameArt ? `${pick.title} (${t('Right artist', 'Artis benar')})` : pick.title
     });
-    renderAttemptSlots(st.guesses, 5);
     if (st.tries >= st.maxTries) {
       st.done = true;
+      renderAttemptPipsAndChips(st.guesses, 5, true);
       renderLyricLines(true);
       const sum = t('Missed', 'Gagal');
       renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
+      renderAttemptPipsAndChips(st.guesses, 5, false);
       renderLyricLines(false);
     }
   }
@@ -1638,14 +1664,15 @@
     const st = mgState;
     if (!st || st.done) return;
     st.tries++;
-    st.guesses.push({ kind: 'skip', label: t('Skipped · revealed next line', 'Lewati · baris baru dibuka') });
-    renderAttemptSlots(st.guesses, 5);
+    st.guesses.push({ kind: 'skip', label: t('+1 line', '+1 baris') });
     if (st.tries >= st.maxTries) {
       st.done = true;
+      renderAttemptPipsAndChips(st.guesses, 5, true);
       renderLyricLines(true);
       const sum = t('Missed', 'Gagal');
       renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
+      renderAttemptPipsAndChips(st.guesses, 5, false);
       renderLyricLines(false);
     }
   }
