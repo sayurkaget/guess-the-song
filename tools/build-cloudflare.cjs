@@ -32,7 +32,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v131-wave105-all-modes-fx'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v132-wave106-mv-spot-hd'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -186,15 +186,15 @@ const SEO_PAGES = [
     aboutP2: 'Play unlimited free rounds anytime or spin Cover Pixel in the Daily Challenge.'
   },
   {
-    slug: 'album-color',
+    slug: 'mv-spot',
     lang: 'en',
     keepHreflang: false,
-    title: 'Album Color — Match the Iconic Album Cover Color | TuneUp',
-    description: 'Can you remember the true signature color of iconic albums like BRAT, IGOR, Nevermind, and SOUR? Mix Hue, Saturation, and Brightness and see your accuracy.',
-    imageAlt: 'TuneUp Album Color — Match the signature color of iconic album covers',
-    aboutHeading: 'About Album Color',
-    aboutP1: 'Album Color challenges you to mix the exact signature color of iconic albums using Hue, Saturation, and Brightness sliders, then compares your swatch directly beside the original cover.',
-    aboutP2: 'Play unlimited free rounds or compete for /100 accuracy points inside the Daily Challenge.'
+    title: 'MV Spot — Guess the Song from Music Video Frames | TuneUp',
+    description: 'Guess 215+ iconic songs from crisp 720p HD music video scenes across 5 tries, with release year & artist clues and instant audio previews. Free browser music game.',
+    imageAlt: 'TuneUp MV Spot — Guess the song from HD music video frames',
+    aboutHeading: 'About MV Spot',
+    aboutP1: 'MV Spot shows 3 real HD music video frames one scene at a time, followed by Release Year, Genre, and Artist clues across 5 attempts (just like Framed for music videos).',
+    aboutP2: 'Play unlimited free rounds anytime or spin MV Spot in the Daily Challenge.'
   },
   {
     slug: 'hairspot',
@@ -250,7 +250,8 @@ function localizeIdStaticHtml(html) {
     .replace('id="openDailyHub" type="button">Spin Daily</button>', 'id="openDailyHub" type="button">Spin Harian</button>')
     .replace('<h2 id="moreGamesHeading">More Music Games</h2>', '<h2 id="moreGamesHeading">Game Musik Lainnya</h2>')
     .replace('<span class="more-games-sub" id="moreGamesSub">Free play anytime</span>', '<span class="more-games-sub" id="moreGamesSub">Main bebas kapan saja</span>')
-    .replace('<b id="mgLblColor">Album Color</b>', '<b id="mgLblColor">Warnai Album</b>')
+    .replace('<b id="mgLblMv">MV Spot</b>', '<b id="mgLblMv">MV Spot</b>')
+    .replace('<span id="mgSubMv">Music video</span>', '<span id="mgSubMv">Video klip MV</span>')
     .replace('<b id="mgLblFact">Fact or Cap</b>', '<b id="mgLblFact">Fakta / Hoax</b>')
     .replace('<b id="mgLblLyric">Lyric Guess</b>', '<b id="mgLblLyric">Tebak Lirik</b>')
     .replace('<h2 id="dailyHeading">Daily Song</h2>', '<h2 id="dailyHeading">Lagu Harian</h2>')

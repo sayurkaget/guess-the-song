@@ -1,4 +1,4 @@
-/* TuneUp Daily Spin Hub & 5 Pure-Music Mini-Games (Cover Pixel, Album Color, HairSpot Music, Music Fact or Cap, Lyric Guess). */
+/* TuneUp Daily Spin Hub & 5 Pure-Music Mini-Games (Cover Pixel, MV Spot, HairSpot Music, Music Fact or Cap, Lyric Guess). */
 (function () {
   'use strict';
 
@@ -19,7 +19,7 @@
     song: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.8V5.2l11-2v12.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.2" cy="17.8" r="2.8" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="17.2" cy="15.8" r="2.8" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>',
     cover: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 9.5h17M3.5 15h17M9.5 3.5v17M15 3.5v17" fill="none" stroke="currentColor" stroke-width="1.35" opacity=".65"/></svg>',
     hair: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 11.5a5.5 5.5 0 0 1 11 0v1.5a5.5 5.5 0 0 1-11 0v-1.5Z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M6 10.5c.8-4.2 3.2-6.5 6-6.5 3.2 0 5.6 2.1 6.2 5.8-2.2-1.6-4.4-2.2-6.6-1.8-2.2.4-3.8 1.2-5.6 2.5Z" fill="currentColor" opacity=".32"/><path d="M4.5 20.5c1.5-2.7 4.2-4 7.5-4s6 1.3 7.5 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
-    color: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.8" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="9.2" cy="9.4" r="1.4" fill="currentColor"/><circle cx="14.8" cy="9.4" r="1.4" fill="currentColor"/><circle cx="8.6" cy="14" r="1.4" fill="currentColor"/><path d="M14.5 15.2a2 2 0 1 0 3.2-1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    mv: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="m10 9.5 5 2.5-5 2.5v-5Z" fill="currentColor"/></svg>',
     fact: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2.8 4.8 13.4h6.4L10.4 21.2 19.2 10.6h-6.4L13 2.8Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>',
     lyric: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 6.5h15M4.5 11.5h11M4.5 16.5h13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="18.5" cy="16.5" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
     artist: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.6 2.85 5.8 6.4.93-4.62 4.5 1.09 6.37L12 17.2 6.28 20.2l1.09-6.37-4.62-4.5 6.4-.93L12 2.6Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -845,13 +845,13 @@
 
   const GAME_ROUTES = {
     cover: { slug: 'cover-pixel', titleEn: 'Cover Pixel — TuneUp',       titleId: 'Cover Pixel — TuneUp' },
-    color: { slug: 'album-color', titleEn: 'Album Color — TuneUp',       titleId: 'Warnai Album — TuneUp' },
+    mv:    { slug: 'mv-spot',     titleEn: 'MV Spot — TuneUp',           titleId: 'MV Spot — TuneUp' },
     hair:  { slug: 'hairspot',    titleEn: 'HairSpot Music — TuneUp',    titleId: 'HairSpot Musik — TuneUp' },
     fact:  { slug: 'fact-or-cap', titleEn: 'Music Fact or Cap — TuneUp', titleId: 'Fakta / Hoax Musik — TuneUp' },
     lyric: { slug: 'lyric-guess', titleEn: 'Lyric Guess — TuneUp',       titleId: 'Tebak Lirik — TuneUp' }
   };
 
-  const recentFreeIds = { cover: [], color: [], hair: [], lyric: [] };
+  const recentFreeIds = { cover: [], mv: [], hair: [], lyric: [] };
   function pickFreeUnseen(pool, gameId, seed, idFn) {
     if (!pool || !pool.length) return null;
     const recent = recentFreeIds[gameId] || [];
@@ -914,26 +914,17 @@
     return scored.slice(0, limit || 10).map((x) => x.a);
   }
 
-  function hslToHex(h, s, l) {
-    const s1 = s / 100, l1 = l / 100;
-    const c = (1 - Math.abs(2 * l1 - 1)) * s1;
-    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-    const m = l1 - c / 2;
-    let r = 0, g = 0, b = 0;
-    if (h < 60) { r = c; g = x; }
-    else if (h < 120) { r = x; g = c; }
-    else if (h < 180) { g = c; b = x; }
-    else if (h < 240) { g = x; b = c; }
-    else if (h < 300) { r = x; b = c; }
-    else { r = c; b = x; }
-    const hex = (v) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
-    return ('#' + hex(r) + hex(g) + hex(b)).toUpperCase();
+  function formatMvGenre(g) {
+    const map = { pop: 'Pop', rock: 'Rock', hiphop: 'Hip-Hop', rnb: 'R&B', edm: 'Electronic', indie: 'Indie', latin: 'Latin', country: 'Country', kpop: 'K-Pop', metal: 'Metal' };
+    const k = String(g || '').toLowerCase();
+    return map[k] || (k ? k.charAt(0).toUpperCase() + k.slice(1) : 'Pop');
   }
 
   function startFreeMiniGame(gameId, opts) {
+    const normalizedId = gameId === 'color' ? 'mv' : gameId;
     activeDailySlot = null;
     document.body.dataset.diff = 'easy';
-    openMiniGame(gameId, null, opts);
+    openMiniGame(normalizedId, null, opts);
   }
 
   /* ================= Unified Mini-Game Stage (`#miniGame`) ================= */
@@ -955,7 +946,8 @@
     pill.hidden = false;
   }
 
-  function openMiniGame(gameId, dailySlot, opts) {
+  function openMiniGame(rawGameId, dailySlot, opts) {
+    const gameId = rawGameId === 'color' ? 'mv' : rawGameId;
     if (bridge && bridge.stopAudio) bridge.stopAudio();
     if (bridge && bridge.undockMiniVolume) bridge.undockMiniVolume();
     hideAllScreens();
@@ -963,7 +955,7 @@
     if (sec) sec.hidden = false;
 
     const arena = $('#mgArena');
-    if (arena) arena.dataset.layout = gameId === 'color' ? 'split' : 'centered';
+    if (arena) arena.dataset.layout = 'centered';
 
     const backLbl = $('#mgBackLbl');
     if (backLbl) backLbl.textContent = dailySlot ? t('Back to Daily', 'Kembali ke Daily') : t('Change mode', 'Ganti mode');
@@ -994,7 +986,7 @@
     const seed = isDaily ? dailySlot.seed : ('free:' + gameId + ':' + Date.now() + ':' + Math.random());
 
     if (gameId === 'cover') initCoverPixel(seed, dailySlot);
-    else if (gameId === 'color') initAlbumColor(seed, dailySlot);
+    else if (gameId === 'mv') initMvSpot(seed, dailySlot);
     else if (gameId === 'hair') initHairSpot(seed, dailySlot);
     else if (gameId === 'fact') initFactOrCap(seed, dailySlot);
     else if (gameId === 'lyric') initLyricGuess(seed, dailySlot);
@@ -1350,104 +1342,229 @@
     }
   }
 
-  /* ================= GAME 2: ALBUM COLOR (CLEAN VINYL SWATCH — ZERO WEIRD FACE TINT) ================= */
-  function initAlbumColor(seed, dailySlot) {
-    const bank = Data.albumColors || [];
+  /* ================= GAME 2: MV SPOT (CRISP 720p HD MUSIC VIDEO SCENES — FRAMED STYLE) ================= */
+  function mvFrameUrl(ytId, frameNum, variant) {
+    if (variant === 'hq720') return `https://i.ytimg.com/vi/${ytId}/hq720.jpg`;
+    return `https://i.ytimg.com/vi/${ytId}/maxres${frameNum}.jpg`;
+  }
+
+  function preloadMvFrames(ytId) {
+    if (typeof Image !== 'function') return;
+    [2, 3].forEach((n) => {
+      const pre = new Image();
+      pre.referrerPolicy = 'no-referrer';
+      pre.src = mvFrameUrl(ytId, n);
+    });
+  }
+
+  function initMvSpot(seed, dailySlot) {
+    const bank = Data.mvBank || [];
+    const maxDiff = dailySlot ? dailySlot.diffTier : 3;
+    const pool = bank.filter((r) => r[3] <= maxDiff);
+    const srcPool = pool.length ? pool : bank;
     const targetRow = dailySlot
-      ? Hub.pickDeterministic(bank, seed, 1)
-      : pickFreeUnseen(bank, 'color', seed, (r) => r[0] + '|' + r[1]);
+      ? Hub.pickDeterministic(srcPool, seed, 1)
+      : pickFreeUnseen(srcPool, 'mv', seed, (r) => r[2]);
     if (!targetRow) return;
-    // [album, artist, artUrl, [h,s,l], diff, trackId, anchorTitle, year]
-    const [album, artist, artUrl, targetHsl, , trackId, anchorTitle, year] = targetRow;
-    mgState = { gameId: 'color', album, artist, artUrl, targetHsl, trackId, anchorTitle, year, done: false };
-
-    $('#mgSubtitle').textContent = t('Mix the true signature color of this iconic album cover!', 'Racik warna khas asli dari cover album ikonik ini!');
-    renderAttemptPips([], 0, false, -1);
-
-    // Start slider at a neutral contrasting hue away from answer
-    const initH = (targetHsl[0] + 150) % 360;
-    const initS = 62, initL = 48;
-    const initHex = hslToHex(initH, initS, initL);
-
-    $('#mgBody').innerHTML =
-      `<div class="mg-swatch-stage" id="mgSwatchStage">` +
-        `<div class="mg-swatch-sleeve">` +
-          `<div class="mg-swatch-disc" aria-hidden="true"></div>` +
-          `<div class="mg-swatch-card" id="mgSwatchBox" style="background:hsl(${initH},${initS}%,${initL}%)">` +
-            `<span class="mg-swatch-hex" id="mgSwatchHex">${initHex}</span>` +
-            `<div class="mg-swatch-label"><b>${esc(album)}</b><span>${esc(artist)} · ${year}</span></div>` +
-          `</div>` +
-        `</div>` +
-      `</div>`;
-
-    $('#mgControls').innerHTML =
-      `<div class="mg-color-panel">` +
-        `<div class="mg-sliders" id="mgSlidersBox">` +
-          `<label class="mg-sl-row"><span>${esc(t('Hue', 'Warna'))}</span><b id="mgHVal">${initH}°</b>` +
-            `<input id="mgSlH" class="mg-slider is-hue" type="range" min="0" max="360" value="${initH}"></label>` +
-          `<label class="mg-sl-row"><span>${esc(t('Saturation', 'Saturasi'))}</span><b id="mgSVal">${initS}%</b>` +
-            `<input id="mgSlS" class="mg-slider" type="range" min="0" max="100" value="${initS}"></label>` +
-          `<label class="mg-sl-row"><span>${esc(t('Brightness', 'Kecerahan'))}</span><b id="mgLVal">${initL}%</b>` +
-            `<input id="mgSlL" class="mg-slider" type="range" min="12" max="88" value="${initL}"></label>` +
-        `</div>` +
-        `<button id="mgLockColor" class="btn solid mg-lock-btn" type="button">${esc(t('Lock color', 'Kunci warna'))}</button>` +
-      `</div>`;
-
-    const slH = $('#mgSlH'), slS = $('#mgSlS'), slL = $('#mgSlL');
-    function syncSwatch() {
-      const h = +slH.value, s = +slS.value, l = +slL.value;
-      $('#mgHVal').textContent = h + '°';
-      $('#mgSVal').textContent = s + '%';
-      $('#mgLVal').textContent = l + '%';
-      const box = $('#mgSwatchBox');
-      if (box) box.style.background = `hsl(${h}, ${s}%, ${l}%)`;
-      const hx = $('#mgSwatchHex');
-      if (hx) hx.textContent = hslToHex(h, s, l);
-      slS.style.background = `linear-gradient(90deg, hsl(${h},0%,${l}%), hsl(${h},100%,${l}%))`;
-      slL.style.background = `linear-gradient(90deg, #000, hsl(${h},${s}%,50%), #fff)`;
-    }
-    slH.oninput = slS.oninput = slL.oninput = syncSwatch;
-    syncSwatch();
-
-    $('#mgLockColor').onclick = () => {
-      if (mgState.done) return;
-      mgState.done = true;
-      const userHsl = [+slH.value, +slS.value, +slL.value];
-      const userHex = hslToHex(userHsl[0], userHsl[1], userHsl[2]);
-      const trueHex = hslToHex(targetHsl[0], targetHsl[1], targetHsl[2]);
-      const score = Hub.scoreColorMatch(userHsl, targetHsl);
-      const sum = `${score}% ${t('match', 'cocok')}`;
-
-      // Show Original Cover + Your Color Swatch vs Signature Color Swatch cleanly!
-      $('#mgBody').innerHTML =
-        `<div class="mg-color-reveal">` +
-          `<div class="mg-color-orig-wrap"><img src="${esc(artUrl)}" class="mg-color-orig-img" alt="${esc(album)}"></div>` +
-          `<div class="mg-swatch-pair">` +
-            `<div class="mg-swatch-chip">` +
-              `<span class="mg-chip-dot" style="background:${userHex}"></span>` +
-              `<div class="mg-chip-txt"><small>${esc(t('Your color', 'Warnamu'))}</small><b>${userHex}</b></div>` +
-            `</div>` +
-            `<div class="mg-swatch-chip is-true">` +
-              `<span class="mg-chip-dot" style="background:${trueHex}"></span>` +
-              `<div class="mg-chip-txt"><small>${esc(t('Signature', 'Warna asli'))}</small><b>${trueHex}</b></div>` +
-            `</div>` +
-          `</div>` +
-        `</div>`;
-
-      renderMiniReveal({
-        won: score >= 60,
-        score,
-        title: `${album} (${score}%)`,
-        subtitle: `${artist} · ${anchorTitle}`,
-        art: artUrl,
-        trackId,
-        dailySlot,
-        gameId: 'color',
-        shortSummary: sum,
-        detail: `${sum} · ${album}`,
-        freeKicker: sum
-      });
+    // [title, artist, yt, tier, year, genre, art, trackId]
+    const [title, artist, yt, tier, year, genre, art, trackId] = targetRow;
+    mgState = {
+      gameId: 'mv',
+      target: { title, artist, yt, tier, year, genre, art, trackId },
+      tries: 0,
+      maxTries: 5,
+      viewFrame: 1,
+      guesses: [],
+      tried: new Set(),
+      done: false
     };
+
+    $('#mgSubtitle').textContent = t('Guess the song from 3 HD music video frames', 'Tebak lagu dari 3 adegan video klip HD');
+    $('#mgBody').innerHTML =
+      `<div class="mg-mv-stage" id="mgMvStage">` +
+        `<div class="mg-mv-frame-wrap">` +
+          `<img id="mgMvImg" class="mg-mv-img" alt="${esc(t('Music video scene', 'Adegan video klip'))}" referrerpolicy="no-referrer" decoding="async">` +
+          `<div class="mg-mv-bar">` +
+            `<span class="mg-mv-badge" id="mgMvBadge">HD · 1/3</span>` +
+            `<div class="mg-mv-tabs" id="mgMvTabs" role="group" aria-label="${esc(t('Music video frames', 'Frame video klip'))}">` +
+              `<button type="button" class="mg-mv-tab is-active" data-mvf="1">1</button>` +
+              `<button type="button" class="mg-mv-tab" data-mvf="2" disabled>2</button>` +
+              `<button type="button" class="mg-mv-tab" data-mvf="3" disabled>3</button>` +
+            `</div>` +
+          `</div>` +
+        `</div>` +
+        `<div class="mg-mv-clues" id="mgMvClues" hidden></div>` +
+      `</div>`;
+
+    renderAttemptPips([], 5, false, -1);
+    bindMiniSearch({
+      placeholder: t('Type song or artist…', 'Ketik lagu atau artis…'),
+      mode: 'song',
+      skipLabel: t('Next frame', 'Frame berikut'),
+      isTried: (s) => mgState && mgState.tried.has(normStr(s.title) + '|' + normStr(s.artist)),
+      onPick: (song) => submitMvGuess(song, dailySlot),
+      onSkip: () => skipMvGuess(dailySlot)
+    });
+
+    const tabsHost = $('#mgMvTabs');
+    if (tabsHost) {
+      tabsHost.onclick = (e) => {
+        const btn = e.target.closest('button[data-mvf]');
+        if (!btn || btn.disabled || !mgState || mgState.gameId !== 'mv') return;
+        const f = Number(btn.dataset.mvf);
+        if (f >= 1 && f <= 3 && f !== mgState.viewFrame) {
+          mgState.viewFrame = f;
+          renderMvStage(false);
+        }
+      };
+    }
+
+    renderMvStage(false);
+    preloadMvFrames(yt);
+  }
+
+  function renderMvStage(revealAll) {
+    const st = mgState;
+    if (!st || st.gameId !== 'mv') return;
+    const tgt = st.target;
+    const unlockedFrames = revealAll ? 3 : Math.min(3, st.tries + 1);
+    if (st.viewFrame > unlockedFrames) st.viewFrame = unlockedFrames;
+
+    const img = $('#mgMvImg');
+    if (img) {
+      const nextSrc = mvFrameUrl(tgt.yt, st.viewFrame);
+      if (img.dataset.curSrc !== nextSrc) {
+        img.dataset.curSrc = nextSrc;
+        img.dataset.fallback = '';
+        img.classList.add('is-loading');
+        img.onload = () => img.classList.remove('is-loading');
+        img.onerror = () => {
+          img.classList.remove('is-loading');
+          if (!img.dataset.fallback) {
+            img.dataset.fallback = '1';
+            img.src = mvFrameUrl(tgt.yt, st.viewFrame, 'hq720');
+          }
+        };
+        img.src = nextSrc;
+      }
+    }
+
+    const badge = $('#mgMvBadge');
+    if (badge) {
+      badge.textContent = revealAll
+        ? `HD · ${t('Scene', 'Adegan')} ${st.viewFrame}/3`
+        : `HD · ${t('Frame', 'Frame')} ${st.viewFrame}/3`;
+    }
+
+    const tabsHost = $('#mgMvTabs');
+    if (tabsHost) {
+      tabsHost.querySelectorAll('button[data-mvf]').forEach((b) => {
+        const f = Number(b.dataset.mvf);
+        b.disabled = f > unlockedFrames;
+        b.classList.toggle('is-active', f === st.viewFrame);
+        b.classList.toggle('is-open', f <= unlockedFrames);
+      });
+    }
+
+    const cluesEl = $('#mgMvClues');
+    if (cluesEl) {
+      const chips = [];
+      if (revealAll || st.tries >= 3) {
+        chips.push(`<span class="mg-mv-clue"><small>${esc(t('Clue 1', 'Petunjuk 1'))}</small><b>${esc(tgt.year + ' · ' + formatMvGenre(tgt.genre))}</b></span>`);
+      }
+      if (revealAll || st.tries >= 4) {
+        chips.push(`<span class="mg-mv-clue"><small>${esc(t('Artist', 'Artis'))}</small><b>${esc(tgt.artist)}</b></span>`);
+      }
+      cluesEl.hidden = !chips.length;
+      cluesEl.innerHTML = chips.join('');
+    }
+
+    const skipBtn = $('#mgSkipBtn');
+    if (skipBtn && !st.done) {
+      skipBtn.textContent = st.tries < 2
+        ? t('Next frame', 'Frame berikut')
+        : st.tries === 2
+        ? t('Year clue', 'Petunjuk tahun')
+        : st.tries === 3
+        ? t('Artist clue', 'Petunjuk artis')
+        : t('Reveal song', 'Lihat lagu');
+    }
+  }
+
+  function advanceMvProgress() {
+    const st = mgState;
+    if (!st || st.gameId !== 'mv') return;
+    if (st.tries <= 2) st.viewFrame = Math.min(3, st.tries + 1);
+  }
+
+  function submitMvGuess(pick, dailySlot) {
+    const st = mgState;
+    if (!st || st.done) return;
+    const key = normStr(pick.title) + '|' + normStr(pick.artist);
+    if (st.tried.has(key)) {
+      if (bridge && bridge.toast) bridge.toast(t('Already tried that song.', 'Lagu ini sudah dicoba.'));
+      return;
+    }
+    st.tried.add(key);
+
+    st.tries++;
+    const idx = st.tries - 1;
+    const tgt = st.target;
+    const sameArt = normStr(pick.artist) === normStr(tgt.artist);
+    const sameTrack = (pick.trackId && String(pick.trackId) === String(tgt.trackId)) ||
+      (normStr(pick.title) === normStr(tgt.title) && sameArt);
+
+    if (sameTrack) {
+      st.done = true;
+      st.guesses.push({ kind: 'right' });
+      renderAttemptPips(st.guesses, 5, true, idx);
+      renderMvStage(true);
+      const score = Hub.scoreTries(true, st.tries, 5);
+      const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
+      renderMiniReveal({ won: true, score, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'mv', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: sum });
+      return;
+    }
+    st.guesses.push({ kind: sameArt ? 'near' : 'wrong' });
+    if (st.tries >= st.maxTries) {
+      st.done = true;
+      renderAttemptPips(st.guesses, 5, true, idx);
+      renderMvStage(true);
+      const sum = t('Missed', 'Gagal');
+      renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'mv', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+    } else {
+      advanceMvProgress();
+      renderAttemptPips(st.guesses, 5, false, idx);
+      renderMvStage(false);
+      if (sameArt) {
+        playFxNear();
+        triggerFxClass($('#mgInput'), 'is-fx-near', 520);
+        if (bridge && bridge.toast) bridge.toast(t('Right artist, wrong MV!', 'Artis benar, MV salah!'));
+      } else {
+        playFxWrong();
+        triggerFxClass($('.mg-search-row'), 'is-fx-wrong', 420);
+        triggerFxClass($('.mg-mv-stage'), 'is-fx-wrong', 420);
+      }
+    }
+  }
+
+  function skipMvGuess(dailySlot) {
+    const st = mgState;
+    if (!st || st.done) return;
+    st.tries++;
+    const idx = st.tries - 1;
+    st.guesses.push({ kind: 'skip' });
+    if (st.tries >= st.maxTries) {
+      st.done = true;
+      renderAttemptPips(st.guesses, 5, true, idx);
+      renderMvStage(true);
+      const tgt = st.target;
+      const sum = t('Missed', 'Gagal');
+      renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'mv', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+    } else {
+      advanceMvProgress();
+      renderAttemptPips(st.guesses, 5, false, idx);
+      renderMvStage(false);
+    }
   }
 
   /* ================= GAME 3: HAIRSPOT MUSIC ================= */

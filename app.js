@@ -4023,7 +4023,7 @@
   // domain sendiri -- apa pun), jadi tautan tantangan tak pernah usang.
   const ROUTE_SLUGS = new Set([
     'daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective', 'id',
-    'cover-pixel', 'album-color', 'hairspot', 'fact-or-cap', 'lyric-guess'
+    'cover-pixel', 'mv-spot', 'album-color', 'hairspot', 'fact-or-cap', 'lyric-guess'
   ]);
   const DEFAULT_TITLE = 'TuneUp — Free Guess the Song Game, Spotify Playlist Quiz & Music Duel';
   const DEFAULT_TITLE_ID = 'TuneUp — Game Tebak Lagu Online Gratis (Spotify, Harian & Duel)';
@@ -7190,7 +7190,8 @@
     }
     const MINI_ROUTE_MAP = {
       'cover-pixel': 'cover',
-      'album-color': 'color',
+      'mv-spot': 'mv',
+      'album-color': 'mv',
       'hairspot': 'hair',
       'fact-or-cap': 'fact',
       'lyric-guess': 'lyric'

@@ -16,8 +16,8 @@
       moreGamesSub: 'Free play anytime',
       mgLblCover: 'Cover Pixel',
       mgSubCover: 'Pixel album',
-      mgLblColor: 'Album Color',
-      mgSubColor: 'Paint cover',
+      mgLblMv: 'MV Spot',
+      mgSubMv: 'Music video',
       mgLblHair: 'HairSpot',
       mgSubHair: 'Musician hair',
       mgLblFact: 'Fact or Cap',
@@ -508,8 +508,8 @@
       moreGamesSub: 'Main bebas kapan saja',
       mgLblCover: 'Cover Pixel',
       mgSubCover: 'Album piksel',
-      mgLblColor: 'Warnai Album',
-      mgSubColor: 'Tebak warna',
+      mgLblMv: 'MV Spot',
+      mgSubMv: 'Video klip MV',
       mgLblHair: 'HairSpot',
       mgSubHair: 'Rambut musisi',
       mgLblFact: 'Fakta / Hoax',
@@ -1070,8 +1070,8 @@
     setText($('#moreGamesSub'), 'moreGamesSub');
     setText($('#mgLblCover'), 'mgLblCover');
     setText($('#mgSubCover'), 'mgSubCover');
-    setText($('#mgLblColor'), 'mgLblColor');
-    setText($('#mgSubColor'), 'mgSubColor');
+    setText($('#mgLblMv'), 'mgLblMv');
+    setText($('#mgSubMv'), 'mgSubMv');
     setText($('#mgLblHair'), 'mgLblHair');
     setText($('#mgSubHair'), 'mgSubHair');
     setText($('#mgLblFact'), 'mgLblFact');

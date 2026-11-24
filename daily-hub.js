@@ -6,7 +6,7 @@
     { id: 'song',   cat: 'audio',  nameEn: 'Song Guess',    nameId: 'Tebak Lagu',    descEn: 'Name the track from 0.1s',      descId: 'Tebak lagu dari klip 0,1 dtk' },
     { id: 'cover',  cat: 'visual', nameEn: 'Cover Pixel',   nameId: 'Cover Pixel',   descEn: 'Guess song from pixel cover',   descId: 'Tebak lagu dari cover piksel' },
     { id: 'hair',   cat: 'visual', nameEn: 'HairSpot',      nameId: 'HairSpot Musik',descEn: 'Guess musician from their hair', descId: 'Tebak musisi dari rambutnya' },
-    { id: 'color',  cat: 'visual', nameEn: 'Album Color',   nameId: 'Warnai Album',  descEn: 'Paint the iconic album cover',  descId: 'Warnai cover album ikonik' },
+    { id: 'mv',     cat: 'visual', nameEn: 'MV Spot',       nameId: 'MV Spot',       descEn: 'Guess song from 3 MV frames',   descId: 'Tebak lagu dari 3 frame MV' },
     { id: 'fact',   cat: 'trivia', nameEn: 'Fact or Cap',   nameId: 'Fakta / Hoax',  descEn: '5 music facts or myths',        descId: '5 fakta atau mitos musik' },
     { id: 'lyric',  cat: 'word',   nameEn: 'Lyric Guess',   nameId: 'Tebak Lirik',   descEn: 'Name the song from 5 lines',    descId: 'Tebak lagu dari 5 baris lirik' },
     { id: 'artist', cat: 'deduce', nameEn: 'Artist Guess',  nameId: 'Tebak Artis',   descEn: '6 clues to find the artist',    descId: '6 petunjuk cari artis misterius' },
@@ -124,37 +124,6 @@
     if (total <= 0) return 0;
     const c = Math.max(0, Math.min(total, Number(correct) || 0));
     return Math.round((c / total) * 100);
-  }
-
-  function hslToRgb(h, s, l) {
-    const H = ((h % 360) + 360) % 360;
-    const S = Math.max(0, Math.min(100, s)) / 100;
-    const L = Math.max(0, Math.min(100, l)) / 100;
-    const c = (1 - Math.abs(2 * L - 1)) * S;
-    const x = c * (1 - Math.abs(((H / 60) % 2) - 1));
-    const m = L - c / 2;
-    let r = 0, g = 0, b = 0;
-    if (H < 60) { r = c; g = x; }
-    else if (H < 120) { r = x; g = c; }
-    else if (H < 180) { g = c; b = x; }
-    else if (H < 240) { g = x; b = c; }
-    else if (H < 300) { r = x; b = c; }
-    else { r = c; b = x; }
-    return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
-  }
-
-  function scoreColorMatch(userHsl, targetHsl) {
-    const [uh, us, ul] = userHsl;
-    const [th, ts, tl] = targetHsl;
-    const [r1, g1, b1] = hslToRgb(uh, us, ul);
-    const [r2, g2, b2] = hslToRgb(th, ts, tl);
-    // Weighted perceptual RGB distance + gentle hue forgiveness
-    const rMean = (r1 + r2) / 2;
-    const dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
-    const dist = Math.sqrt((2 + rMean / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rMean) / 256) * db * db);
-    const maxDist = 765;
-    const raw = Math.max(0, 1 - (dist / (maxDist * 0.56)));
-    return Math.max(0, Math.min(100, Math.round(Math.pow(raw, 0.85) * 100)));
   }
 
   /* ===== 28-Day Streak & Activity Overview ===== */
@@ -312,8 +281,6 @@
     planDay,
     scoreTries,
     scorePairs,
-    scoreColorMatch,
-    hslToRgb,
     streakOverview,
     summarizeHistogram,
     shareText

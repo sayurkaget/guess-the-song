@@ -41,7 +41,7 @@ test('TuneUpDailyHub.planDay is deterministic, picks 3 distinct games from 8, an
   assert.ok(seenCombos.size >= 15, 'Daily combinations should stay varied across a month');
 });
 
-test('TuneUpDailyHub scoring helpers calculate exact 0..100 points across tries, pairs, and HSL color match', () => {
+test('TuneUpDailyHub scoring helpers calculate exact 0..100 points across tries and pairs', () => {
   assert.equal(Hub.scoreTries(true, 1, 5), 100);
   assert.equal(Hub.scoreTries(true, 2, 5), 80);
   assert.equal(Hub.scoreTries(true, 5, 5), 20);
@@ -52,10 +52,6 @@ test('TuneUpDailyHub scoring helpers calculate exact 0..100 points across tries,
   assert.equal(Hub.scorePairs(0, 5), 0);
   assert.equal(Hub.scorePairs(3, 5), 60);
   assert.equal(Hub.scorePairs(5, 5), 100);
-
-  assert.equal(Hub.scoreColorMatch([200, 80, 50], [200, 80, 50]), 100);
-  assert.ok(Hub.scoreColorMatch([358, 80, 50], [2, 80, 50]) >= 95, 'Hue wrap-around near 0/360 must stay accurate');
-  assert.ok(Hub.scoreColorMatch([20, 80, 50], [200, 80, 50]) < 45, 'Opposite hue should score low');
 });
 
 test('TuneUpDailyHub.streakOverview computes 28-day grid, current/best streak, and next milestone', () => {
@@ -99,7 +95,7 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
   const songs = loadBrowserGlobal('songs.js', 'SONGS');
   const duelStreams = loadBrowserGlobal('duel-streams-v1.js', 'DUEL_STREAMS_V1');
 
-  assert.ok(Data && Array.isArray(Data.albumColors) && Data.albumColors.length >= 40);
+  assert.ok(Data && Array.isArray(Data.mvBank) && Data.mvBank.length >= 200);
   assert.ok(Array.isArray(Data.hairBank) && Data.hairBank.length >= 100);
   assert.ok(Array.isArray(Data.lyricBank) && Data.lyricBank.length >= 70);
   assert.ok(Array.isArray(Data.albumBank) && Data.albumBank.length >= 200);
@@ -114,14 +110,17 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
     assert.ok(year >= 1950 && year <= 2030);
     assert.ok(trackIds.has(String(trackId)), `albumBank trackId ${trackId} (${album}) must exist in songs.js`);
   }
-  for (const row of Data.albumColors) {
-    const [album, artist, artUrl, hsl, diff, trackId] = row;
-    assert.ok(album && artist, 'albumColor must have album and artist');
+  const seenYt = new Set();
+  for (const row of Data.mvBank) {
+    const [title, artist, ytId, tier, year, genre, artUrl, trackId] = row;
+    assert.ok(title && artist && genre, 'mvBank row must have title, artist, and genre');
+    assert.match(ytId, /^[A-Za-z0-9_-]{11}$/, `invalid ytId ${ytId}`);
+    assert.ok(!seenYt.has(ytId), `duplicate ytId ${ytId}`);
+    seenYt.add(ytId);
+    assert.ok(tier >= 1 && tier <= 3);
+    assert.ok(year >= 1950 && year <= 2030);
     assert.match(artUrl, /^https:\/\//);
-    assert.equal(hsl.length, 3);
-    assert.ok(hsl[0] >= 0 && hsl[0] <= 360 && hsl[1] >= 0 && hsl[1] <= 100 && hsl[2] >= 0 && hsl[2] <= 100);
-    assert.ok(diff >= 1 && diff <= 3);
-    assert.ok(trackIds.has(String(trackId)), `albumColor trackId ${trackId} (${album}) must exist in songs.js`);
+    assert.ok(trackIds.has(String(trackId)), `mvBank trackId ${trackId} (${title}) must exist in songs.js`);
   }
 
   for (const row of Data.lyricBank) {
@@ -276,19 +275,20 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(app, /renderAgBoard\(true\)/);
   assert.match(css, /\.glow\{[\s\S]*z-index:0;\s*isolation:isolate/);
   assert.match(css, /\.wrap\{[\s\S]*position:relative;\s*z-index:1/);
-  assert.match(mg, /function hslToHex\(/);
+  assert.match(mg, /function initMvSpot\(/);
+  assert.match(mg, /maxres\$\{frameNum\}\.jpg/);
   assert.doesNotMatch(mg, /mg-album-tint/);
   assert.doesNotMatch(mg, /mgPlayPreview/);
   assert.match(mg, /id="mgRevArt"/);
   assert.match(mg, /id="mgVolSlot"/);
   assert.match(app, /dockMiniVolume/);
   assert.match(app, /undockMiniVolume/);
-  for (const slug of ['cover-pixel', 'album-color', 'hairspot', 'fact-or-cap', 'lyric-guess']) {
+  for (const slug of ['cover-pixel', 'mv-spot', 'hairspot', 'fact-or-cap', 'lyric-guess']) {
     assert.match(app, new RegExp(`'${slug}'`));
     assert.match(mg, new RegExp(`'${slug}'`));
     assert.match(build, new RegExp(`slug:\\s*'${slug}'`));
     assert.match(sitemap, new RegExp(`/${slug}<`));
   }
-  assert.match(sw, /gts-v1[45]\d-wave/);
-  assert.match(build, /gts-cf-v1[23]\d-wave/);
+  assert.match(sw, /gts-v1[56]\d-wave/);
+  assert.match(build, /gts-cf-v1[34]\d-wave/);
 });
