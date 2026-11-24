@@ -61,41 +61,31 @@
 
   <header class="head">
     <h1 class="logo">Tune<span>Up</span></h1>
+    <button class="streak-pill-btn" id="streakPillBtn" type="button" aria-label="Daily streak" data-active="0">
+      <span class="sp-ico" aria-hidden="true">🔥</span>
+      <span id="streakPillNum">0</span>
+    </button>
+    <div class="streak-popover" id="streakPopover" role="dialog" aria-label="Daily streak" hidden>
+      <div id="streakPopBody"></div>
+    </div>
   </header>
 
   <!-- ====== mode picker ====== -->
   <section class="lobby" id="lobby">
-    <div class="daily-row" aria-label="Daily challenges">
-      <section class="daily-card" id="dailySongCard" aria-labelledby="dailyHeading">
-        <div class="daily-heading">
-          <div class="daily-title-row">
-            <div class="title-with-ico">
-              <svg class="title-ico is-green" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.8V5.2l11-2v12.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.2" cy="17.8" r="2.8" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="17.2" cy="15.8" r="2.8" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>
-              <h2 id="dailyHeading">Daily Song</h2>
-            </div>
-            <span class="daily-done-badge" id="dailyDoneBadge" hidden></span>
+    <section class="daily-hub-card" id="dailyHubCard" aria-labelledby="dailyHubHeading">
+      <div class="daily-hub-copy">
+        <div class="daily-title-row">
+          <div class="title-with-ico">
+            <svg class="title-ico is-green" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M9 5v14M15 5v14" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".7"/></svg>
+            <h2 id="dailyHubHeading">Daily Challenge</h2>
           </div>
-          <span class="daily-meta" id="dailySub">1 song · 5 tries</span>
-          <p class="daily-note" id="dailyStatus" hidden></p>
+          <span class="daily-done-badge" id="dailyHubBadge">3 games · /300</span>
         </div>
-        <button class="btn solid" id="openDaily" type="button">Play daily</button>
-      </section>
-
-      <section class="daily-card is-artist" id="dailyArtistCard" aria-labelledby="dailyArtistHeading">
-        <div class="daily-heading">
-          <div class="daily-title-row">
-            <div class="title-with-ico">
-              <svg class="title-ico is-purple" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.6 2.85 5.8 6.4.93-4.62 4.5 1.09 6.37L12 17.2 6.28 20.2l1.09-6.37-4.62-4.5 6.4-.93L12 2.6Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <h2 id="dailyArtistHeading">Daily Artist</h2>
-            </div>
-            <span class="daily-done-badge is-purple" id="dailyArtistDoneBadge" hidden></span>
-          </div>
-          <span class="daily-meta" id="dailyArtistSub">1 artist · 10 tries</span>
-          <p class="daily-note" id="dailyArtistStatus" hidden></p>
-        </div>
-        <button class="btn solid is-purple-btn" id="openDailyArtist" type="button">Play daily</button>
-      </section>
-    </div>
+        <span class="daily-meta" id="dailyHubMeta">Spin 3 random music games · 300 pts max</span>
+        <p class="daily-note" id="dailyHubStatus" hidden></p>
+      </div>
+      <button class="btn solid daily-hub-cta" id="openDailyHub" type="button">Spin Daily</button>
+    </section>
 
     <section class="classic-section" aria-labelledby="classicHeading">
       <div class="classic-heading">
@@ -213,6 +203,112 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </span>
       </button>
+    </div>
+
+    <section class="more-games-card" id="moreGamesCard" aria-labelledby="moreGamesHeading">
+      <div class="more-games-head">
+        <h2 id="moreGamesHeading">More Music Games</h2>
+        <span class="more-games-sub" id="moreGamesSub">Free play anytime</span>
+      </div>
+      <div class="more-games-grid">
+        <button class="mg-tile" type="button" data-minigame="cover">
+          <span class="mg-tile-ico is-green" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 9.5h17M3.5 15h17M9.5 3.5v17M15 3.5v17" fill="none" stroke="currentColor" stroke-width="1.35" opacity=".65"/></svg></span>
+          <b id="mgLblCover">Cover Pixel</b>
+          <span id="mgSubCover">Pixel album</span>
+        </button>
+        <button class="mg-tile" type="button" data-minigame="color">
+          <span class="mg-tile-ico is-gold" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.8" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="9.2" cy="9.4" r="1.4" fill="currentColor"/><circle cx="14.8" cy="9.4" r="1.4" fill="currentColor"/><circle cx="8.6" cy="14" r="1.4" fill="currentColor"/><path d="M14.5 15.2a2 2 0 1 0 3.2-1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+          <b id="mgLblColor">Album Color</b>
+          <span id="mgSubColor">Paint cover</span>
+        </button>
+        <button class="mg-tile" type="button" data-minigame="hair">
+          <span class="mg-tile-ico is-purple" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 11.5a5.5 5.5 0 0 1 11 0v1.5a5.5 5.5 0 0 1-11 0v-1.5Z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M6 10.5c.8-4.2 3.2-6.5 6-6.5 3.2 0 5.6 2.1 6.2 5.8-2.2-1.6-4.4-2.2-6.6-1.8-2.2.4-3.8 1.2-5.6 2.5Z" fill="currentColor" opacity=".32"/><path d="M4.5 20.5c1.5-2.7 4.2-4 7.5-4s6 1.3 7.5 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+          <b id="mgLblHair">HairSpot</b>
+          <span id="mgSubHair">Musician hair</span>
+        </button>
+        <button class="mg-tile" type="button" data-minigame="fact">
+          <span class="mg-tile-ico is-orange" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2.8 4.8 13.4h6.4L10.4 21.2 19.2 10.6h-6.4L13 2.8Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></span>
+          <b id="mgLblFact">Fact or Cap</b>
+          <span id="mgSubFact">Music trivia</span>
+        </button>
+        <button class="mg-tile" type="button" data-minigame="lyric">
+          <span class="mg-tile-ico is-blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 6.5h15M4.5 11.5h11M4.5 16.5h13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="18.5" cy="16.5" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span>
+          <b id="mgLblLyric">Lyric Guess</b>
+          <span id="mgSubLyric">5 lyric lines</span>
+        </button>
+      </div>
+    </section>
+  </section>
+
+  <!-- ====== Daily Spin Hub & /300 Scorecard ====== -->
+  <section class="daily-hub" id="dailyHub" hidden>
+    <div class="gamebar">
+      <button class="backbtn" id="dhBack" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6 9 12l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="dhBackLbl">Change mode</span></button>
+      <span class="mode-pill dh-day-pill" id="dhDayPill">DAILY</span>
+      <button class="streak-pill-btn is-inline" id="dhStreakBtn" type="button" aria-label="Daily streak"><span class="sp-ico" aria-hidden="true">🔥</span><span id="dhStreakNum">0</span></button>
+    </div>
+
+    <div class="dh-panel" id="dhSpinPanel">
+      <span class="dh-kicker" id="dhKicker">DAILY CHALLENGE</span>
+      <h2 class="dh-title" id="dhTitle">Today's 3 Music Games</h2>
+      <p class="dh-sub" id="dhSub">Spin to reveal today's lineup — same 3 games for everyone.</p>
+
+      <div class="dh-reels">
+        <div class="dh-reel-col">
+          <div class="dh-reel-window"><div class="dh-reel-strip" id="dhReel0"></div></div>
+          <div class="dh-slot-meta"><span class="dh-diff-pill" id="dhBadge0">•••</span><span class="dh-slot-sub" id="dhSub0">Game 1</span></div>
+        </div>
+        <div class="dh-reel-col">
+          <div class="dh-reel-window"><div class="dh-reel-strip" id="dhReel1"></div></div>
+          <div class="dh-slot-meta"><span class="dh-diff-pill" id="dhBadge1">•••</span><span class="dh-slot-sub" id="dhSub1">Game 2</span></div>
+        </div>
+        <div class="dh-reel-col">
+          <div class="dh-reel-window"><div class="dh-reel-strip" id="dhReel2"></div></div>
+          <div class="dh-slot-meta"><span class="dh-diff-pill" id="dhBadge2">•••</span><span class="dh-slot-sub" id="dhSub2">Game 3</span></div>
+        </div>
+      </div>
+
+      <div class="dh-cta-wrap">
+        <button class="btn solid dh-main-btn" id="dhMainBtn" type="button">Spin Today's Games</button>
+        <p class="countdown dh-countdown"><span id="dhNextLbl">Next daily in</span> <b id="dhCountdown">--</b></p>
+      </div>
+    </div>
+
+    <div class="dh-panel dh-score-panel" id="dhScorePanel" hidden>
+      <div class="dh-score-hero">
+        <span class="dh-kicker" id="dhDoneKicker">DAILY COMPLETE</span>
+        <div class="dh-score-big"><b id="dhTotalScore">0</b><span>/ 300</span></div>
+        <p class="dh-score-meta" id="dhScoreMeta"></p>
+        <div class="dh-segs">
+          <div class="dh-seg-track"><div class="dh-seg-fill" id="dhSeg0"></div></div>
+          <div class="dh-seg-track"><div class="dh-seg-fill" id="dhSeg1"></div></div>
+          <div class="dh-seg-track"><div class="dh-seg-fill" id="dhSeg2"></div></div>
+        </div>
+      </div>
+
+      <div class="dh-community" id="dhCommunity"></div>
+      <ul class="dh-breakdown" id="dhBreakdown"></ul>
+
+      <div class="dh-score-actions">
+        <button class="btn solid" id="dhShareBtn" type="button">Share result</button>
+        <button class="btn ghostbtn" id="dhMenuBtn" type="button">Back to menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== Unified Mini-Game Stage (Cover Pixel, Album Color, HairSpot, Fact or Cap, Lyric Guess) ====== -->
+  <section class="mini-game" id="miniGame" hidden>
+    <div class="gamebar">
+      <button class="backbtn" id="mgBack" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6 9 12l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="mgBackLbl">Change mode</span></button>
+      <div class="mg-daily-pill" id="mgDailyPill" hidden></div>
+    </div>
+
+    <div class="mg-stage-card">
+      <h2 class="mg-game-title" id="mgGameTitle"></h2>
+      <p class="mg-subtitle" id="mgSubtitle"></p>
+      <div class="mg-body" id="mgBody"></div>
+      <ul class="mg-history" id="mgHistory" hidden></ul>
+      <div class="mg-controls" id="mgControls"></div>
     </div>
   </section>
 
@@ -852,6 +948,22 @@
   </div>
 </div>
 
+<!-- ====== Daily Hub Between-Game Modal (Game X of 3) ====== -->
+<div class="modal" id="dhStepModal" hidden>
+  <div class="sheet result run-sheet dh-step-sheet" role="dialog" aria-modal="true" aria-labelledby="dhStepVerdict">
+    <span class="run-kicker" id="dhStepKicker">DAILY · GAME 1 OF 3</span>
+    <h2 class="dh-step-verdict" id="dhStepVerdict">Awesome!</h2>
+    <div class="dh-step-pts" id="dhStepPoints">+100</div>
+    <p class="dim dh-step-detail" id="dhStepDetail"></p>
+    <div class="dh-step-strip" id="dhStepStrip"></div>
+    <p class="dh-step-total" id="dhStepTotal">Total so far: 100 / 300</p>
+    <div class="dh-step-actions">
+      <button class="btn solid" id="dhStepNextBtn" type="button">Next game →</button>
+      <button class="btn ghostbtn" id="dhStepBackBtn" type="button">Back to Daily</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" hidden></div>
 
 <button class="ach-toast" id="achToast" type="button" hidden aria-live="polite" aria-atomic="true">
@@ -874,6 +986,9 @@
 <script src="duel-streams-v1.js"></script>
 <script src="duel.js"></script>
 <script src="artist-game.js"></script>
+<script src="daily-hub-data.js"></script>
+<script src="daily-hub.js"></script>
+<script src="mini-games.js"></script>
 <script src="backup.js"></script>
 <script src="badges.js"></script>
 <script src="i18n.js"></script>

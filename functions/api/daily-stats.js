@@ -1,7 +1,7 @@
 /* Anonymous aggregate Daily Community Stats (zero cookies, zero IPs, zero PII).
    Tracks daily plays, wins, and win-try sums per (kind, day) in D1. */
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const KINDS = new Set(['song', 'artist']);
+const KINDS = new Set(['song', 'artist', 'hub']);
 
 const reply = (status, body, cache = 'no-store') => Response.json(body, {
   status,
@@ -16,7 +16,29 @@ function isPlausibleDay(day, nowMs = Date.now()) {
   return Math.abs(t - nowMs) <= 3 * 86400 * 1000;
 }
 
+function formatHubSummary(day, row) {
+  const plays = Number(row?.plays) || 0;
+  const scoreSum = Number(row?.score_sum) || 0;
+  const avgScore = plays > 0 ? Math.round(scoreSum / plays) : 0;
+  const bands = [];
+  for (let i = 0; i < 15; i++) bands.push(Number(row?.['b' + i]) || 0);
+  return {
+    ok: true,
+    kind: 'hub',
+    day,
+    plays,
+    avgScore,
+    bands
+  };
+}
+
+function hubBandIndex(score) {
+  const s = Math.max(0, Math.min(300, Math.round(Number(score) || 0)));
+  return Math.min(14, Math.floor(s / 20));
+}
+
 function formatSummary(kind, day, row) {
+  if (kind === 'hub') return formatHubSummary(day, row);
   const plays = Number(row?.plays) || 0;
   const wins = Number(row?.wins) || 0;
   const triesSum = Number(row?.tries_sum) || 0;
@@ -47,6 +69,8 @@ function bucketIndex(kind, won, tries) {
   return Math.min(5, Math.ceil(tries / 2));
 }
 
+const HUB_COLS = 'plays, score_sum, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14';
+
 export async function onRequest({ request, env }) {
   if (!env.FEEDBACK_DB) return reply(503, { ok: false });
 
@@ -58,6 +82,12 @@ export async function onRequest({ request, env }) {
       return reply(400, { ok: false });
     }
     try {
+      if (kind === 'hub') {
+        const row = await env.FEEDBACK_DB.prepare(
+          `SELECT ${HUB_COLS} FROM daily_hub_stats WHERE day = ?`
+        ).bind(day).first();
+        return reply(200, formatHubSummary(day, row), 'no-store');
+      }
       const row = await env.FEEDBACK_DB.prepare(
         'SELECT plays, wins, tries_sum, t1, t2, t3, t4, t5 FROM daily_stats WHERE kind = ? AND day = ?'
       ).bind(kind, day).first();
@@ -92,11 +122,40 @@ export async function onRequest({ request, env }) {
 
   const kind = typeof data?.kind === 'string' ? data.kind.trim() : '';
   const day = typeof data?.day === 'string' ? data.day.trim() : '';
+  if (!KINDS.has(kind) || !isPlausibleDay(day)) return reply(400, { ok: false });
+
+  if (kind === 'hub') {
+    const score = Number.isInteger(data?.score) ? data.score : -1;
+    if (score < 0 || score > 300) return reply(400, { ok: false });
+    const bi = hubBandIndex(score);
+    const bandVals = Array.from({ length: 15 }, (_, idx) => (idx === bi ? 1 : 0));
+    try {
+      const write = await env.FEEDBACK_DB.prepare(
+        `INSERT INTO daily_hub_stats (day, plays, score_sum, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14)
+         VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(day) DO UPDATE SET
+           plays = plays + 1,
+           score_sum = score_sum + excluded.score_sum,
+           b0 = b0 + excluded.b0, b1 = b1 + excluded.b1, b2 = b2 + excluded.b2,
+           b3 = b3 + excluded.b3, b4 = b4 + excluded.b4, b5 = b5 + excluded.b5,
+           b6 = b6 + excluded.b6, b7 = b7 + excluded.b7, b8 = b8 + excluded.b8,
+           b9 = b9 + excluded.b9, b10 = b10 + excluded.b10, b11 = b11 + excluded.b11,
+           b12 = b12 + excluded.b12, b13 = b13 + excluded.b13, b14 = b14 + excluded.b14`
+      ).bind(day, score, ...bandVals).run();
+      if (!write.success) throw new Error('Write failed');
+      const row = await env.FEEDBACK_DB.prepare(
+        `SELECT ${HUB_COLS} FROM daily_hub_stats WHERE day = ?`
+      ).bind(day).first();
+      return reply(200, formatHubSummary(day, row));
+    } catch {
+      return reply(503, { ok: false });
+    }
+  }
+
   const won = data?.won === true;
   const maxTries = kind === 'artist' ? 10 : 5;
   const tries = Number.isInteger(data?.tries) ? data.tries : -1;
 
-  if (!KINDS.has(kind) || !isPlausibleDay(day)) return reply(400, { ok: false });
   if (typeof data?.won !== 'boolean') return reply(400, { ok: false });
   if (won && (tries < 1 || tries > maxTries)) return reply(400, { ok: false });
   if (!won && (tries < 0 || tries > maxTries)) return reply(400, { ok: false });

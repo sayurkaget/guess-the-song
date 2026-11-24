@@ -9,8 +9,21 @@
     en: {
       // Lobby
       dailyHeading: 'Daily Challenge',
+      dailyHubHeading: 'Daily Challenge',
       dailySongHeading: 'Daily Song',
       dailySub: '1 song · 5 tries',
+      moreGamesHeading: 'More Music Games',
+      moreGamesSub: 'Free play anytime',
+      mgLblCover: 'Cover Pixel',
+      mgSubCover: 'Pixel album',
+      mgLblColor: 'Album Color',
+      mgSubColor: 'Paint cover',
+      mgLblHair: 'HairSpot',
+      mgSubHair: 'Musician hair',
+      mgLblFact: 'Fact or Cap',
+      mgSubFact: 'Music trivia',
+      mgLblLyric: 'Lyric Guess',
+      mgSubLyric: '5 lyric lines',
       dailyArtistHeading: 'Daily Artist',
       dailyArtistSub: '1 artist · 10 tries',
       dailyWinStreakLbl: '{n}-win streak',
@@ -488,8 +501,21 @@
     id: {
       // Lobby
       dailyHeading: 'Tantangan Harian',
+      dailyHubHeading: 'Tantangan Harian',
       dailySongHeading: 'Lagu Harian',
       dailySub: '1 lagu · 5 percobaan',
+      moreGamesHeading: 'Game Musik Lainnya',
+      moreGamesSub: 'Main bebas kapan saja',
+      mgLblCover: 'Cover Pixel',
+      mgSubCover: 'Album piksel',
+      mgLblColor: 'Warnai Album',
+      mgSubColor: 'Tebak warna',
+      mgLblHair: 'HairSpot',
+      mgSubHair: 'Rambut musisi',
+      mgLblFact: 'Fakta / Hoax',
+      mgSubFact: 'Trivia musik',
+      mgLblLyric: 'Tebak Lirik',
+      mgSubLyric: '5 baris lirik',
       dailyArtistHeading: 'Artis Harian',
       dailyArtistSub: '1 artis · 10 tebakan',
       dailyWinStreakLbl: 'Streak {n} menang',
@@ -1035,10 +1061,23 @@
     if (doc.documentElement) doc.documentElement.lang = currentLang;
 
     // Lobby
+    setText($('#dailyHubHeading'), 'dailyHubHeading');
     setText($('#dailyHeading'), 'dailySongHeading');
     setText($('#dailySub') || $('.daily-heading > span'), 'dailySub');
     setText($('#dailyArtistHeading'), 'dailyArtistHeading');
     setText($('#dailyArtistSub'), 'dailyArtistSub');
+    setText($('#moreGamesHeading'), 'moreGamesHeading');
+    setText($('#moreGamesSub'), 'moreGamesSub');
+    setText($('#mgLblCover'), 'mgLblCover');
+    setText($('#mgSubCover'), 'mgSubCover');
+    setText($('#mgLblColor'), 'mgLblColor');
+    setText($('#mgSubColor'), 'mgSubColor');
+    setText($('#mgLblHair'), 'mgLblHair');
+    setText($('#mgSubHair'), 'mgSubHair');
+    setText($('#mgLblFact'), 'mgLblFact');
+    setText($('#mgSubFact'), 'mgSubFact');
+    setText($('#mgLblLyric'), 'mgLblLyric');
+    setText($('#mgSubLyric'), 'mgSubLyric');
     setText($('#classicHeading'), 'classicHeading');
     if (!$('#classicSpotifyPanel') || $('#classicSpotifyPanel').hidden) {
       setText($('.classic-title-group .mode-pill'), 'stages5');

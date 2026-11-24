@@ -17,7 +17,8 @@
     const spotifyCta = document.querySelector('#classicSpotifyPanel:not([hidden]) #spotifyUrl');
     const customCta = document.querySelector('#classicArtistPanel:not([hidden]) #openCustom');
     const start = spotifyCta || customCta || document.querySelector('#start');
-    (start.disabled ? document.querySelector('#openDaily') : start).focus({preventScroll:true});
+    const dailyTarget = document.querySelector('#openDaily') || document.querySelector('#openDailyHub');
+    (start.disabled && dailyTarget ? dailyTarget : start).focus({preventScroll:true});
   };
   guide.addEventListener('click', event => {
     const button = event.target.closest('button[data-guide-top],button[data-guide-genre],button[data-guide-era]');

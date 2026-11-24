@@ -9,7 +9,7 @@ if (site.protocol !== 'https:' || site.pathname !== '/' || site.search || site.h
 }
 fs.mkdirSync(output, { recursive: true });
 const files = ['index.html', 'styles.css', 'layout.css', 'site-guide.css', 'site-guide.js', 'app.js', 'songs.js', 'recordings.js',
-  'daily.js', 'daily-pool-v1.js', 'presets.js', 'challenge.js', 'duel-streams-v1.js', 'duel.js', 'artist-game.js', 'backup.js', 'badges.js', 'i18n.js', 'feedback.js', 'analytics.js',
+  'daily.js', 'daily-pool-v1.js', 'presets.js', 'challenge.js', 'duel-streams-v1.js', 'duel.js', 'artist-game.js', 'daily-hub-data.js', 'daily-hub.js', 'mini-games.js', 'backup.js', 'badges.js', 'i18n.js', 'feedback.js', 'analytics.js',
   'app.webmanifest', 'sw.js', 'robots.txt', 'sitemap.xml',
   'googlebc29a838b567dfc0.html',
   '7b4e9c2a1f8d4e60b3c5a9d1e2f48076.txt',
@@ -32,7 +32,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v124-wave98-classic-popular-hits'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v125-wave99-daily-spin-minigames'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -189,6 +189,15 @@ const SEO_PAGES = [
 
 function localizeIdStaticHtml(html) {
   let out = html
+    .replace('<h2 id="dailyHubHeading">Daily Challenge</h2>', '<h2 id="dailyHubHeading">Tantangan Harian</h2>')
+    .replace('<span class="daily-done-badge" id="dailyHubBadge">3 games · /300</span>', '<span class="daily-done-badge" id="dailyHubBadge">3 game · /300</span>')
+    .replace('<span class="daily-meta" id="dailyHubMeta">Spin 3 random music games · 300 pts max</span>', '<span class="daily-meta" id="dailyHubMeta">Spin 3 game musik acak · maks 300 poin</span>')
+    .replace('id="openDailyHub" type="button">Spin Daily</button>', 'id="openDailyHub" type="button">Spin Harian</button>')
+    .replace('<h2 id="moreGamesHeading">More Music Games</h2>', '<h2 id="moreGamesHeading">Game Musik Lainnya</h2>')
+    .replace('<span class="more-games-sub" id="moreGamesSub">Free play anytime</span>', '<span class="more-games-sub" id="moreGamesSub">Main bebas kapan saja</span>')
+    .replace('<b id="mgLblColor">Album Color</b>', '<b id="mgLblColor">Warnai Album</b>')
+    .replace('<b id="mgLblFact">Fact or Cap</b>', '<b id="mgLblFact">Fakta / Hoax</b>')
+    .replace('<b id="mgLblLyric">Lyric Guess</b>', '<b id="mgLblLyric">Tebak Lirik</b>')
     .replace('<h2 id="dailyHeading">Daily Song</h2>', '<h2 id="dailyHeading">Lagu Harian</h2>')
     .replace('<span class="daily-meta" id="dailySub">1 song · 5 tries</span>', '<span class="daily-meta" id="dailySub">1 lagu · 5 percobaan</span>')
     .replace('<h2 id="dailyArtistHeading">Daily Artist</h2>', '<h2 id="dailyArtistHeading">Artis Harian</h2>')

@@ -306,26 +306,24 @@ test('Wave 69 compacts songs.js with dictionary tables under 2.6 MB and wires Da
   assert.ok(collected['tl:artist:daily:v1:2026-11-22']);
 });
 
-test('Wave 70 promotes Daily Artist onto the homepage alongside Daily Song with full EN/ID & Endless parity', () => {
+test('Wave 70/99 promotes Daily Hub onto the homepage alongside Daily Artist Endless mode with full EN/ID parity', () => {
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
   const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
   const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
   const build = fs.readFileSync(path.join(ROOT, 'tools/build-cloudflare.cjs'), 'utf8');
 
-  assert.match(html, /class="daily-row"[\s\S]*id="dailySongCard"[\s\S]*id="openDaily"[\s\S]*id="dailyArtistCard"[\s\S]*id="openDailyArtist"/);
-  assert.match(html, /id="dailyDoneBadge"[\s\S]*id="dailyArtistDoneBadge"/);
-  assert.match(css, /#lobby \.daily-row\{/);
-  assert.match(css, /#lobby \.daily-card\.is-artist\{/);
-  assert.match(css, /#lobby #openDailyArtist\{/);
+  assert.match(html, /id="dailyHubCard"[\s\S]*id="openDailyHub"[\s\S]*id="moreGamesCard"/);
+  assert.match(html, /id="streakPillBtn"[\s\S]*id="dailyHubBadge"/);
+  assert.match(css, /#lobby \.daily-hub-card\{/);
+  assert.match(css, /#lobby \.more-games-card\{/);
   assert.match(app, /function refreshDailyArtist\(\)/);
-  assert.match(app, /\$\('#openDailyArtist'\)\.onclick\s*=\s*\(\)\s*=>\s*startArtistGame\(null,\s*'daily'\)/);
   assert.match(app, /\$\('#openArtistGame'\)\.onclick\s*=\s*\(\)\s*=>\s*startArtistGame\(null,\s*'free'\)/);
-  assert.match(i18n, /dailySongHeading:\s*'Daily Song'/);
-  assert.match(i18n, /dailySongHeading:\s*'Lagu Harian'/);
+  assert.match(i18n, /dailyHubHeading:\s*'Daily Challenge'/);
+  assert.match(i18n, /dailyHubHeading:\s*'Tantangan Harian'/);
   assert.match(i18n, /dailyArtistHeading:\s*'Daily Artist'/);
   assert.match(i18n, /dailyArtistHeading:\s*'Artis Harian'/);
-  assert.match(build, /<h2 id="dailyArtistHeading">Artis Harian<\/h2>/);
+  assert.match(build, /<h2 id="dailyHubHeading">Tantangan Harian<\/h2>/);
 });
 
 test('Wave 71 removes Save score card in favor of link-only share buttons, hides mid-Classic shareStage, and redesigns Feedback modal', () => {
@@ -370,8 +368,8 @@ test('Wave 73 keeps #resultModal .reveal-foot on a single mobile row and adds co
   assert.match(css, /#resultModal \.reveal-foot\{gap:\.6rem;justify-content:space-between;flex-wrap:nowrap\}/);
   assert.match(css, /\.title-with-ico\{/);
   assert.match(css, /\.btn-ico\{/);
-  assert.match(html, /class="title-ico is-green"[\s\S]*id="dailyHeading"/);
-  assert.match(html, /class="title-ico is-purple"[\s\S]*id="dailyArtistHeading"/);
+  assert.match(html, /class="title-ico is-green"[\s\S]*id="dailyHubHeading"/);
+  assert.match(html, /class="title-ico is-purple"[\s\S]*<h2>Artist Detective<\/h2>/);
   assert.match(html, /class="title-ico is-gold"[\s\S]*<h2>Music Duel<\/h2>/);
   assert.match(html, /id="openStats"[^>]*><svg class="btn-ico"/);
   assert.match(html, /id="listen"[^>]*><svg class="btn-ico"/);
@@ -495,10 +493,9 @@ test('Wave 80 normalizes stroke style, viewBox centering, and optical sizing acr
   const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
   const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
 
-  // All 5 lobby title-ico SVGs use unified outline stroke-width="1.9" (no solid music blob)
+  // All lobby title-ico SVGs use unified outline stroke-width="1.9" (no solid music blob)
   assert.doesNotMatch(html, /class="title-ico[^"]*"[^>]*><path[^>]*fill="currentColor"/);
-  assert.match(html, /class="title-ico is-green"[^>]*><path d="M9 17\.8V5\.2l11-2v12\.6" fill="none"/);
-  assert.match(html, /class="title-ico is-purple"[^>]*><path d="m12 2\.6 2\.85 5\.8/);
+  assert.match(html, /class="title-ico is-green"[^>]*><rect x="3" y="5" width="18" height="14" rx="3" fill="none"/);
   assert.match(html, /class="title-ico is-purple"[^>]*><circle cx="10\.5" cy="10\.5" r="7\.2"/);
   // Broken zero-length dot on Genre & Era and open-arc playlist / gapped trophy stems are fixed
   assert.doesNotMatch(html, /m4 0h0/);
