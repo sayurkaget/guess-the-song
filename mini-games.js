@@ -318,10 +318,13 @@
     const doneCount = st.results.filter(Boolean).length;
 
     if (meta) {
-      meta.textContent = t(
-        'Spin 3 random music games · 300 pts max',
-        'Spin 3 game musik acak · maks 300 poin'
-      );
+      if (st.done) {
+        meta.textContent = rem ? t(`Next daily in ${rem}`, `Harian baru ${rem}`) : t('Completed today', 'Selesai hari ini');
+      } else if (doneCount > 0) {
+        meta.textContent = t(`${doneCount}/3 done · ${st.totalScore} pts`, `${doneCount}/3 selesai · ${st.totalScore} poin`);
+      } else {
+        meta.textContent = rem ? t(`3 random games · Resets in ${rem}`, `3 game acak · Reset ${rem}`) : t('3 random music games', '3 game musik acak');
+      }
     }
     if (card) {
       if (st.done) card.dataset.done = 'win';
@@ -340,13 +343,8 @@
       }
     }
     if (status) {
-      const parts = [];
-      if (ov.current > 0) parts.push(t(`${ov.current}-day streak`, `Streak ${ov.current} hari`));
-      if (st.done && rem) parts.push(t(`Next daily in ${rem}`, `Harian baru ${rem}`));
-      else if (doneCount > 0) parts.push(t(`${doneCount}/3 games done · ${st.totalScore} pts`, `${doneCount}/3 selesai · ${st.totalScore} poin`));
-      else if (rem) parts.push(t(`Resets in ${rem}`, `Reset ${rem}`));
-      status.textContent = parts.join(' · ');
-      status.hidden = !parts.length;
+      status.textContent = '';
+      status.hidden = true;
     }
     if (btn) {
       btn.textContent = st.done
