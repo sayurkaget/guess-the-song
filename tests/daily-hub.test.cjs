@@ -268,6 +268,12 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(mg, /mg-cover-disc/);
   assert.match(lcss, /@keyframes mgHeartBreak/);
   assert.match(lcss, /@keyframes mgSpark/);
+  assert.match(lcss, /@keyframes spTilePop/);
+  assert.match(lcss, /@keyframes spTileExact/);
+  assert.match(app, /function triggerUiFx\(/);
+  assert.match(app, /function spawnUiSparks\(/);
+  assert.match(app, /function popUiFloat\(/);
+  assert.match(app, /renderAgBoard\(true\)/);
   assert.match(css, /\.glow\{[\s\S]*z-index:0;\s*isolation:isolate/);
   assert.match(css, /\.wrap\{[\s\S]*position:relative;\s*z-index:1/);
   assert.match(mg, /function hslToHex\(/);

@@ -742,6 +742,13 @@
     if (hubState.done) {
       closeStepModal();
       showDailyHub();
+      if (hubState.totalScore > 0) {
+        playFxWin();
+        const scoreHero = $('#dhScorePanel .dh-score-big');
+        const scorePanel = $('#dhScorePanel');
+        triggerFxClass(scorePanel, 'is-fx-win', 660);
+        spawnWinSparks(scoreHero);
+      }
       return;
     }
 
@@ -787,6 +794,13 @@
       showDailyHub();
     };
     m.hidden = false;
+    const sheet = m.querySelector('.dh-step-sheet');
+    if (res.won || res.score >= 40) {
+      triggerFxClass(sheet, 'is-fx-win', 620);
+      spawnWinSparks(sheet);
+    } else {
+      triggerFxClass(sheet, 'is-fx-lose', 520);
+    }
   }
 
   function closeStepModal() {

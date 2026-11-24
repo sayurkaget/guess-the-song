@@ -355,6 +355,50 @@
     else schedule();
   }
 
+  /* Tactile Visual FX Helpers (honors settings.anim & body[data-anim="off"]) */
+  function uiAnimOn() {
+    return settings.anim !== false && !(document.body && document.body.dataset && document.body.dataset.anim === 'off');
+  }
+  function triggerUiFx(el, cls, ms = 560) {
+    if (!el || !el.classList || !uiAnimOn()) return;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    clearTimeout(el._fxTid);
+    el._fxTid = setTimeout(() => { if (el.classList) el.classList.remove(cls); }, ms);
+  }
+  function popUiFloat(anchor, text, kind) {
+    if (!anchor || !uiAnimOn() || typeof document.createElement !== 'function') return;
+    const tag = document.createElement('span');
+    tag.className = 'mg-float-pop is-' + (kind || 'win');
+    tag.textContent = text;
+    if (typeof anchor.appendChild === 'function') anchor.appendChild(tag);
+    setTimeout(() => { if (typeof tag.remove === 'function') tag.remove(); }, 820);
+  }
+  function spawnUiSparks(anchor, palette) {
+    if (!anchor || !uiAnimOn() || typeof document.createElement !== 'function') return;
+    const wrap = document.createElement('div');
+    wrap.className = 'mg-sparks';
+    wrap.setAttribute('aria-hidden', 'true');
+    const colors = palette || ['#25e07d', '#58ffad', '#ffd06b', '#41f596', '#fde047'];
+    const count = 14;
+    for (let i = 0; i < count; i++) {
+      const s = document.createElement('i');
+      s.className = 'mg-spark';
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.28;
+      const dist = 34 + Math.random() * 52;
+      if (s.style && typeof s.style.setProperty === 'function') {
+        s.style.setProperty('--dx', (Math.cos(angle) * dist).toFixed(1) + 'px');
+        s.style.setProperty('--dy', (Math.sin(angle) * dist).toFixed(1) + 'px');
+        s.style.setProperty('--c', colors[i % colors.length]);
+        s.style.animationDelay = (Math.random() * 60).toFixed(0) + 'ms';
+      }
+      wrap.appendChild(s);
+    }
+    if (typeof anchor.appendChild === 'function') anchor.appendChild(wrap);
+    setTimeout(() => { if (typeof wrap.remove === 'function') wrap.remove(); }, 820);
+  }
+
   /* ================= katalog & pencarian ================= */
 
   // Lazy getter untuk .nt, .na, .hay & .slug menunda panggilan norm() saat boot awal halaman.
@@ -1226,6 +1270,16 @@
     stopAudio();
     playSfx(near ? 'near' : 'wrong');
     saveRun(); UI.render();
+    const guessCard = $('#game .guess-card');
+    const lastSlot = $('#trySlots') && $('#trySlots').children && $('#trySlots').children[S.guesses.length - 1];
+    if (near) {
+      triggerUiFx($('#q'), 'is-fx-near', 540);
+      triggerUiFx(guessCard, 'is-fx-near', 540);
+    } else {
+      triggerUiFx(guessCard, 'is-fx-wrong', 480);
+      triggerUiFx($('#game .search'), 'is-fx-wrong', 420);
+    }
+    triggerUiFx(lastSlot, 'is-fx-slot', 480);
     UI.status(near
       ? (I18N ? tr('rightArtistUnlock', { len: fmt(limit()) }) : ('Right artist, wrong song. ' + fmt(limit()) + ' unlocked.'))
       : (I18N ? tr('wrongUnlock', { len: fmt(limit()) }) : ('Not it. ' + fmt(limit()) + ' unlocked now.')));
@@ -1238,6 +1292,8 @@
     S.guesses.push({ t: 'skip' });
     if (S.guesses.length >= TRIES) return finish(false);
     saveRun(); UI.render();
+    const lastSlot = $('#trySlots') && $('#trySlots').children && $('#trySlots').children[S.guesses.length - 1];
+    triggerUiFx(lastSlot, 'is-fx-slot', 440);
     UI.status(I18N ? tr('skippedUnlock', { len: fmt(limit()) }) : ('Skipped. ' + fmt(limit()) + ' unlocked now.'));
     UI.clearInput();
     // Kalau klip masih berputar, curBatas() langsung memanjangkannya mulus;
@@ -1352,6 +1408,18 @@
     if (S.runDone) { if (S.daily) completeDaily(); else recordStats(); }
     checkRunBadges(won);
     UI.render(); UI.streak(); UI.clearInput();
+    const vCard = $('#game .vinyl-card');
+    const gCard = $('#game .guess-card');
+    const lastSlot = $('#trySlots') && $('#trySlots').children && $('#trySlots').children[S.guesses.length - 1];
+    if (won) {
+      triggerUiFx(vCard, 'is-fx-win', 660);
+      triggerUiFx(gCard, 'is-fx-win', 660);
+      spawnUiSparks(vCard);
+    } else {
+      triggerUiFx(vCard, 'is-fx-lose', 540);
+      triggerUiFx(gCard, 'is-fx-lose', 540);
+    }
+    triggerUiFx(lastSlot, 'is-fx-slot', 500);
     if (UI.q && typeof UI.q.blur === 'function') UI.q.blur();
     UI.status('');
     S.heard = 0;      // saat terungkap, putar lagunya dari awal
@@ -3531,6 +3599,7 @@
           '; you ' + window.TrackChallenge.describe(S.won ? n : 0) + '.';
 
       open($('#resultModal'));
+      triggerUiFx($('#resultModal .reveal'), S.won ? 'is-fx-win' : 'is-fx-lose', S.won ? 620 : 520);
       confetti('#confetti', S.won ? 'win' : 'lose');
     },
 
@@ -5242,12 +5311,20 @@
         $('#duelBest').hidden = false;
         $('#duelBest').textContent = I18N ? tr('duelBest', { n: ds.best }) : ('Best ' + ds.best);
         syncDuelTarget();
+        triggerUiFx($('#duelB'), 'is-fx-win', 620);
+        triggerUiFx($('#duelYearB'), 'is-fx-pop', 480);
+        spawnUiSparks($('#duelB'), ['#25e07d', '#58ffad', '#ffd06b', '#fde047']);
+        triggerUiFx($('#duelScore'), 'is-bump', 500);
+        popUiFloat($('#duelScore'), ds.hubSlot ? '+20' : '+1', 'win');
         $('#duelStatus').textContent = ds.kind === 'streams'
           ? (I18N ? tr('duelCorrectStreams', { v: mB.sub }) : ('Correct! ' + mB.sub + '.'))
           : (I18N ? tr('duelCorrectYear', { y: ds.b.year }) : ('Correct! Released in ' + ds.b.year + '.'));
         $('#duelStatus').className = 'status duel-status';
       } else {
         playSfx('wrong');
+        triggerUiFx($('#duelB'), 'is-fx-wrong', 520);
+        triggerUiFx($('#duelYearB'), 'is-fx-wrong', 480);
+        triggerUiFx($('#duelScore'), 'is-fx-wrong', 480);
         $('#duelStatus').textContent = ds.kind === 'streams'
           ? (I18N ? tr('duelMissedStreams', { v: mB.sub }) : ('Missed — ' + mB.sub + '.'))
           : (I18N ? tr('duelMissedYear', { y: ds.b.year }) : ('Missed — released in ' + ds.b.year + '.'));
@@ -5649,6 +5726,8 @@
       if (typeof unlockSfx === 'function') unlockSfx();
       playSfx('near');
       syncAgHints();
+      const hintBox = $('#agHintBox');
+      if (hintBox && hintBox.lastElementChild) triggerUiFx(hintBox.lastElementChild, 'is-fx-pop', 480);
     }
 
     stopArtistAudio = () => {
@@ -5766,7 +5845,7 @@
       syncBadges(true);
     }
 
-    function renderAgBoard() {
+    function renderAgBoard(animateNewest = false) {
       const st = artistStats();
       const dailyMeta = $('#agDailyMeta');
       if (dailyMeta) {
@@ -5891,7 +5970,8 @@
         const num = ag.guesses.length - revIdx;
         const tiles = AD.compare(g, ag.target);
         const isWin = g.id === ag.target.id;
-        return '<article class="spotle-guess-card' + (isWin ? ' is-winner' : '') + '">' +
+        const isNew = animateNewest && revIdx === 0;
+        return '<article class="spotle-guess-card' + (isWin ? ' is-winner' : '') + (isNew ? ' is-new' : '') + '">' +
           '<div class="spotle-guess-head">' +
             '<div class="spotle-guess-who">' +
               '<img class="spotle-guess-avatar" src="' + esc(g.art || '') + '" alt="">' +
@@ -5900,8 +5980,8 @@
             '<span class="spotle-guess-num">' + esc(I18N ? tr('agGuessNum', { n: num }) : ('Guess #' + num)) + '</span>' +
           '</div>' +
           '<div class="spotle-tiles">' +
-            tiles.map((t) =>
-              '<div class="sp-tile ' + t.status + '">' +
+            tiles.map((t, ti) =>
+              '<div class="sp-tile ' + t.status + '"' + (isNew ? ' style="--ti:' + ti + '"' : '') + '>' +
                 '<small>' + esc(I18N ? tr('clue_' + t.key) : t.label) + '</small>' +
                 '<b>' + esc(t.value) + '</b>' +
               '</div>'
@@ -6016,7 +6096,11 @@
         playSfx('fanfare');
         recordArtistOutcome(true, ag.guesses.length);
         saveDailyArtistState();
-        renderAgBoard();
+        renderAgBoard(true);
+        const banner = $('#agResultBanner');
+        triggerUiFx(banner, 'is-fx-win', 660);
+        spawnUiSparks(banner, ['#a855f7', '#d8b4fe', '#25e07d', '#58ffad', '#fde047']);
+        triggerUiFx($('#agTriesPill'), 'is-bump', 520);
         if (ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit', true);
         return;
       }
@@ -6027,13 +6111,28 @@
         playSfx('wrong');
         recordArtistOutcome(false, ag.guesses.length);
         saveDailyArtistState();
-        renderAgBoard();
+        renderAgBoard(true);
+        triggerUiFx($('#agResultBanner'), 'is-fx-lose', 560);
+        triggerUiFx($('#agTriesPill'), 'is-fx-wrong', 460);
         if (ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit', true);
         return;
       }
       saveDailyArtistState();
-      playSfx('near');
-      renderAgBoard();
+      const clues = AD.compare(artist, ag.target);
+      const exactCount = clues.filter((c) => c.status === 'exact').length;
+      const closeCount = clues.filter((c) => c.status === 'close').length;
+      const allMiss = exactCount === 0 && closeCount === 0;
+      playSfx(allMiss ? 'wrong' : 'near');
+      renderAgBoard(true);
+      const newestCard = $('#agBoard') && $('#agBoard').firstElementChild;
+      if (allMiss) {
+        triggerUiFx($('#artistGame .spotle-top-card'), 'is-fx-wrong', 480);
+        triggerUiFx(newestCard, 'is-fx-wrong', 500);
+        triggerUiFx($('#agTriesPill'), 'is-fx-wrong', 460);
+      } else {
+        triggerUiFx(newestCard, exactCount > 0 ? 'is-fx-clue-exact' : 'is-fx-clue-close', 560);
+        triggerUiFx($('#agTriesPill'), 'is-bump', 440);
+      }
     }
 
     function giveUpArtist() {
@@ -6046,7 +6145,9 @@
       closeAgDD();
       recordArtistOutcome(false, ag.guesses.length);
       saveDailyArtistState();
-      renderAgBoard();
+      renderAgBoard(false);
+      triggerUiFx($('#agResultBanner'), 'is-fx-lose', 560);
+      triggerUiFx($('#agTriesPill'), 'is-fx-wrong', 460);
       if (ag.target.topSong) playArtistTrack(ag.target.topSong, 'hit', true);
     }
 

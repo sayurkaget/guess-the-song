@@ -369,6 +369,7 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
   display:grid;grid-template-columns:280px minmax(0,1fr);gap:1rem;align-items:stretch;width:100%;
 }
 .vinyl-card{
+  position:relative;
   padding:1.3rem 1.2rem;border-radius:20px;
   background:linear-gradient(160deg,rgba(var(--acc-rgb),.085),rgba(255,255,255,.025));
   border:1px solid rgba(var(--acc-rgb),.28);
@@ -471,6 +472,7 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
 }
 
 .guess-card{
+  position:relative;
   padding:1.2rem;border-radius:20px;background:var(--surf);border:1px solid var(--line);
   display:flex;flex-direction:column;gap:.75rem;min-width:0;
 }
@@ -894,7 +896,7 @@ body[data-anim="off"] .fan-disc::before{animation:none}
   grid-template-columns:repeat(2,minmax(0,1fr));
 }
 .runlist.run-shelf.duel-runlist:is([data-count="1"],[data-count="2"],[data-count="3"],[data-count="4"],[data-count="5"]){
-  max-height:none;overflow:visible;padding-right:0;
+  max-height:none;overflow-y:auto;padding-right:2px;
 }
 .runlist.run-shelf[data-odd="true"] li:last-child{
   grid-column:1 / -1;
@@ -1647,6 +1649,7 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 .spotle-legend .dot.miss{background:rgba(255,255,255,.28)}
 
 .spotle-result-banner{
+  position:relative;
   padding:1.15rem 1.25rem;border-radius:20px;
   background:linear-gradient(145deg,rgba(37,224,125,.12),rgba(168,85,247,.1));
   border:1px solid rgba(37,224,125,.38);
@@ -3781,6 +3784,94 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.1)}
 }
 
+/* Unified Tactile FX Across Primary Modes (Artist Detective, Music Duel, Classic/Daily, Daily Hub) */
+#duelScore,#agTriesPill,.dh-score-big,.dh-step-sheet{position:relative}
+.spotle-guess-card.is-new{animation:spCardEnter .28s cubic-bezier(.22,1,.36,1)}
+.spotle-guess-card.is-new .sp-tile{
+  animation:spTilePop .42s cubic-bezier(.22,1.28,.36,1) both;
+  animation-delay:calc(var(--ti,0) * 46ms);
+}
+.spotle-guess-card.is-new .sp-tile.exact{
+  animation:spTileExact .48s cubic-bezier(.22,1.28,.36,1) both;
+  animation-delay:calc(var(--ti,0) * 46ms);
+}
+.spotle-guess-card.is-new .sp-tile.close{
+  animation:spTileClose .48s cubic-bezier(.22,1.28,.36,1) both;
+  animation-delay:calc(var(--ti,0) * 46ms);
+}
+.spotle-guess-card.is-fx-clue-exact{animation:spCardExact .56s ease-out}
+.spotle-guess-card.is-fx-clue-close,
+.guess-card.is-fx-near{animation:spCardClose .52s ease-out}
+.spotle-top-card.is-fx-wrong,
+.spotle-guess-card.is-fx-wrong,
+.spotle-result-banner.is-fx-lose,
+#duel .duel-card.is-fx-wrong,
+.guess-card.is-fx-wrong,
+.vinyl-card.is-fx-lose,
+.guess-card.is-fx-lose,
+#resultModal .reveal.is-fx-lose,
+.dh-step-sheet.is-fx-lose{
+  animation:mgCardWrong .48s cubic-bezier(.36,.07,.19,.97);
+}
+.spotle-result-banner.is-fx-win,
+#resultModal .reveal.is-fx-win{
+  animation:mgWinPop .58s cubic-bezier(.22,1,.36,1);
+}
+#duel .duel-card.is-fx-win{
+  animation:mgCorrectPop .56s cubic-bezier(.22,1,.36,1);
+}
+.vinyl-card.is-fx-win,
+.guess-card.is-fx-win,
+.dh-step-sheet.is-fx-win,
+.dh-panel.is-fx-win{
+  animation:mgStageWin .64s cubic-bezier(.22,1,.36,1);
+}
+#game .search.is-fx-wrong,
+#duelYearB.is-fx-wrong,
+#duelScore.is-fx-wrong,
+#agTriesPill.is-fx-wrong{
+  animation:mgShake .42s cubic-bezier(.36,.07,.19,.97);
+}
+#q.is-fx-near{animation:mgNearFlash .52s ease-out}
+#duelScore.is-bump,
+#agTriesPill.is-bump{
+  animation:mgPillBump .46s cubic-bezier(.22,1,.36,1);
+}
+#duelYearB.is-fx-pop,
+.spotle-hint-chip.is-fx-pop,
+.slot.is-fx-slot{
+  animation:spTilePop .4s cubic-bezier(.22,1.28,.36,1);
+}
+@keyframes spCardEnter{
+  0%{opacity:0;transform:translateY(-8px) scale(.985)}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes spTilePop{
+  0%{opacity:.4;transform:scale(.82) translateY(4px)}
+  58%{opacity:1;transform:scale(1.06) translateY(-1px)}
+  100%{opacity:1;transform:scale(1) translateY(0)}
+}
+@keyframes spTileExact{
+  0%{opacity:.35;transform:scale(.8) translateY(4px);box-shadow:0 0 0 0 rgba(37,224,125,0)}
+  55%{opacity:1;transform:scale(1.07) translateY(-1px);box-shadow:0 0 20px -2px rgba(37,224,125,.58)}
+  100%{opacity:1;transform:scale(1) translateY(0);box-shadow:none}
+}
+@keyframes spTileClose{
+  0%{opacity:.35;transform:scale(.8) translateY(4px);box-shadow:0 0 0 0 rgba(245,177,61,0)}
+  55%{opacity:1;transform:scale(1.06) translateY(-1px);box-shadow:0 0 18px -2px rgba(245,177,61,.55)}
+  100%{opacity:1;transform:scale(1) translateY(0);box-shadow:none}
+}
+@keyframes spCardExact{
+  0%{border-color:rgba(255,255,255,.08)}
+  38%{border-color:rgba(37,224,125,.68);box-shadow:0 0 28px -6px rgba(37,224,125,.35)}
+  100%{border-color:rgba(255,255,255,.08)}
+}
+@keyframes spCardClose{
+  0%{border-color:rgba(255,255,255,.08)}
+  38%{border-color:rgba(245,177,61,.68);box-shadow:0 0 26px -6px rgba(245,177,61,.32)}
+  100%{border-color:rgba(255,255,255,.08)}
+}
+
 /* Search Controls & Overlay Dropdown */
 .mg-controls{width:100%;position:relative}
 .mg-search-row{
@@ -4027,8 +4118,15 @@ body[data-anim="off"] .mg-fact-pill.is-bump,
 body[data-anim="off"] .mg-pip.is-pulse,
 body[data-anim="off"] .mg-float-pop,
 body[data-anim="off"] .mg-spark,
+body[data-anim="off"] .spotle-guess-card.is-new,
+body[data-anim="off"] .spotle-guess-card.is-new .sp-tile,
+body[data-anim="off"] .is-bump,
+body[data-anim="off"] .is-fx-pop,
+body[data-anim="off"] .is-fx-slot,
+body[data-anim="off"] .is-fx-clue-exact,
+body[data-anim="off"] .is-fx-clue-close,
 body[data-anim="off"] .is-fx-win,
 body[data-anim="off"] .is-fx-lose,
 body[data-anim="off"] .is-fx-correct,
 body[data-anim="off"] .is-fx-wrong,
-body[data-anim="off"] .is-fx-near{animation:none}
+body[data-anim="off"] .is-fx-near{animation:none !important}
