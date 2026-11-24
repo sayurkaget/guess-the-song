@@ -2468,6 +2468,7 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   font-size:.72rem;
   font-weight:700;
   font-variant-numeric:tabular-nums;
+  white-space:nowrap;
   background:rgba(var(--acc-rgb),.12);
   border:1px solid rgba(var(--acc-rgb),.28);
   color:var(--acc-l);
@@ -2525,17 +2526,41 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   position:relative;
   overflow:hidden;
   border-radius:15px;
-  background:rgba(5,16,11,.68);
+  background:rgba(5,16,11,.74);
   border:1px solid rgba(255,255,255,.09);
   mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.38) 18%,#000 35%,#000 65%,rgba(0,0,0,.38) 82%,transparent 100%);
   -webkit-mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.38) 18%,#000 35%,#000 65%,rgba(0,0,0,.38) 82%,transparent 100%);
+  transition:border-color .22s,box-shadow .22s;
+}
+.dh-reel-window.is-spinning{
+  border-color:rgba(var(--acc-rgb),.36);
+  box-shadow:inset 0 0 24px rgba(var(--acc-rgb),.12);
+}
+.dh-reel-window.is-locked{
+  border-color:color-mix(in srgb,var(--rc,#25e07d) 55%,transparent);
+}
+.dh-reel-payline{
+  position:absolute;
+  left:6px;
+  right:6px;
+  top:54px;
+  height:52px;
+  border-radius:12px;
+  border:1.5px solid rgba(var(--acc-rgb),.26);
+  pointer-events:none;
+  z-index:3;
+  transition:border-color .2s,box-shadow .2s;
+}
+.dh-reel-window.is-flash .dh-reel-payline{
+  border-color:var(--rc,#41f596);
+  box-shadow:0 0 22px -2px var(--rc,#41f596),inset 0 0 12px color-mix(in srgb,var(--rc,#41f596) 32%,transparent);
 }
 .dh-reel-strip{
   display:flex;
   flex-direction:column;
   gap:6px;
   padding:0 6px;
-  will-change:transform;
+  will-change:transform,filter;
 }
 .dh-reel-item{
   height:52px;
@@ -2550,6 +2575,8 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   gap:2px;
   flex-shrink:0;
   color:var(--dim);
+  position:relative;
+  overflow:hidden;
   transition:border-color .25s,background .25s,box-shadow .25s,color .25s;
 }
 .dh-reel-ico svg{width:16px;height:16px;display:block}
@@ -2566,11 +2593,38 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 .dh-reel-item.is-hard{--rc:#f08a3c}
 .dh-reel-item.is-landed{
   color:#fff;
-  background:color-mix(in srgb,var(--rc,#25e07d) 16%,#08170f);
+  background:color-mix(in srgb,var(--rc,#25e07d) 19%,#08170f);
   border-color:var(--rc,#25e07d);
-  box-shadow:0 8px 24px -10px var(--rc,#25e07d);
+  box-shadow:0 8px 26px -8px var(--rc,#25e07d);
+  animation:dhLandPop .36s cubic-bezier(.18,1.45,.36,1);
+}
+.dh-reel-item.is-landed::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(108deg,transparent 22%,rgba(255,255,255,.35) 50%,transparent 78%);
+  transform:translateX(-120%);
+  animation:dhSheenSweep .56s ease-out forwards;
 }
 .dh-reel-item.is-landed .dh-reel-ico{color:var(--rc,#25e07d)}
+.dh-reel-col.is-recoil{animation:dhColRecoil .24s ease-out}
+.dh-reel-col.is-finale{animation:dhFinalePulse .42s cubic-bezier(.2,1.35,.4,1)}
+@keyframes dhLandPop{
+  0%{transform:scale(.93)}
+  55%{transform:scale(1.06)}
+  100%{transform:scale(1)}
+}
+@keyframes dhSheenSweep{to{transform:translateX(130%)}}
+@keyframes dhColRecoil{
+  0%{transform:translateY(0)}
+  40%{transform:translateY(4px)}
+  100%{transform:translateY(0)}
+}
+@keyframes dhFinalePulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.045)}
+  100%{transform:scale(1)}
+}
 .dh-slot-meta{
   display:flex;
   flex-direction:column;
@@ -3469,6 +3523,7 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   #lobby .daily-hub-copy .daily-meta{font-size:.78rem}
   #lobby .daily-hub-cta{width:100%;min-height:42px}
   #lobby .more-games-card{padding:.85rem .9rem .92rem}
+  .dh-day-pill{font-size:.66rem;padding:.2rem .54rem}
   .dh-panel{padding:1.15rem .92rem;border-radius:18px}
   .dh-reels{gap:.42rem}
   .dh-reel-item{padding:0 .25rem}
@@ -3487,3 +3542,7 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 body[data-anim="off"] .dh-reel-strip,
 body[data-anim="off"] .mg-hair-curtain,
 body[data-anim="off"] .dh-seg-fill{transition:none}
+body[data-anim="off"] .dh-reel-item.is-landed,
+body[data-anim="off"] .dh-reel-item.is-landed::after,
+body[data-anim="off"] .dh-reel-col.is-recoil,
+body[data-anim="off"] .dh-reel-col.is-finale{animation:none}

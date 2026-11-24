@@ -239,8 +239,11 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
     assert.match(sw, new RegExp(`'\\./${script}'`));
     assert.match(build, new RegExp(`'${script}'`));
   }
-  assert.match(html, /id="dailyHub"[\s\S]*id="dhSpinPanel"[\s\S]*id="dhScorePanel"/);
+  const mg = fs.readFileSync(path.join(ROOT, 'mini-games.js'), 'utf8');
+  assert.match(html, /id="dailyHub"[\s\S]*id="dhSpinPanel"[\s\S]*class="dh-reel-payline"[\s\S]*id="dhScorePanel"/);
   assert.match(html, /id="miniGame"[\s\S]*id="dhStepModal"/);
-  assert.match(sw, /wave99/);
-  assert.match(build, /wave99/);
+  assert.match(mg, /function playSpinTick\(/);
+  assert.match(mg, /function playSpinLock\(/);
+  assert.match(sw, /gts-v14[56]-wave/);
+  assert.match(build, /gts-cf-v12[56]-wave/);
 });

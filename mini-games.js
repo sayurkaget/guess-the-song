@@ -50,7 +50,63 @@
   let activeDailySlot = null;// null when Free Play, or { slot, gameId, diffKey, diffTier, seed }
   let spinAnimating = false;
   let spinTimers = [];
+  let spinRafs = [];
   let cachedCommunity = null;
+  let spinAudioCtx = null;
+
+  const DIFF_COLORS = { easy: '#25e07d', medium: '#e3c74a', hard: '#f08a3c' };
+
+  function getSpinAudio() {
+    if (bridge && bridge.isSfxOn && !bridge.isSfxOn()) return null;
+    const Ctx = (typeof window !== 'undefined') && (window.AudioContext || window.webkitAudioContext);
+    if (!Ctx) return null;
+    try {
+      if (!spinAudioCtx) spinAudioCtx = new Ctx();
+      if (spinAudioCtx.state === 'suspended') spinAudioCtx.resume().catch(() => {});
+      return spinAudioCtx;
+    } catch { return null; }
+  }
+  function playSpinTick(pitch) {
+    const ctx = getSpinAudio();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(pitch, now);
+      o.frequency.exponentialRampToValueAtTime(pitch * 0.45, now + 0.028);
+      g.gain.setValueAtTime(0.075, now);
+      g.gain.exponentialRampToValueAtTime(0.0008, now + 0.032);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(now); o.stop(now + 0.036);
+    } catch {}
+  }
+  function playSpinLock(idx) {
+    const ctx = getSpinAudio();
+    if (!ctx) return;
+    try {
+      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+      const f = notes[idx] || 659.25;
+      const now = ctx.currentTime;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f, now);
+      g.gain.setValueAtTime(0.15, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(now); o.stop(now + 0.3);
+      if (idx === 2) {
+        const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+        o2.type = 'triangle';
+        o2.frequency.setValueAtTime(1046.5, now + 0.08);
+        g2.gain.setValueAtTime(0.001, now);
+        g2.gain.setValueAtTime(0.13, now + 0.08);
+        g2.gain.exponentialRampToValueAtTime(0.001, now + 0.52);
+        o2.connect(g2); g2.connect(ctx.destination);
+        o2.start(now + 0.08); o2.stop(now + 0.54);
+      }
+    } catch {}
+  }
 
   function todayStr() {
     return (bridge && bridge.getDay) ? bridge.getDay() : (window.DailyGame ? window.DailyGame.day() : new Date().toISOString().slice(0, 10));
@@ -255,8 +311,16 @@
 
   function clearSpinTimers() {
     spinTimers.forEach((id) => clearTimeout(id));
+    spinRafs.forEach((id) => cancelAnimationFrame(id));
     spinTimers = [];
+    spinRafs = [];
     spinAnimating = false;
+    for (let i = 0; i < 3; i++) {
+      const s = $('#dhReel' + i);
+      if (s) s.style.filter = 'none';
+      const w = $('#dhWin' + i);
+      if (w) w.classList.remove('is-spinning');
+    }
   }
 
   function nextUnfinishedSlotIndex() {
@@ -311,8 +375,11 @@
   }
 
   const REEL_STEP = 58; // 52px card + 6px gap
+  const REEL_BASE_LOOPS = [3, 4, 5]; // escalating travel per reel for Option A physics
   function buildReelStrip(slotIdx, landed) {
     const strip = $('#dhReel' + slotIdx);
+    const win = $('#dhWin' + slotIdx);
+    const col = $('#dhCol' + slotIdx);
     const badge = $('#dhBadge' + slotIdx);
     const sub = $('#dhSub' + slotIdx);
     if (!strip || !hubState) return;
@@ -320,8 +387,14 @@
     const res = hubState.results[slotIdx];
     const nextIdx = nextUnfinishedSlotIndex();
 
+    if (col) col.classList.remove('is-recoil', 'is-finale');
+    if (win) {
+      win.className = 'dh-reel-window';
+      win.style.setProperty('--rc', DIFF_COLORS[slot.diffKey] || '#25e07d');
+    }
+
     const list = [];
-    for (let loop = 0; loop < 4; loop++) {
+    for (let loop = 0; loop < 7; loop++) {
       for (let i = 0; i < Hub.GAMES.length; i++) list.push(Hub.GAMES[i]);
     }
     strip.innerHTML = list.map((g, idx) =>
@@ -332,9 +405,10 @@
     ).join('');
 
     const targetGameIdx = Hub.GAMES.findIndex((g) => g.id === slot.gameId);
-    const targetRow = 16 + Math.max(0, targetGameIdx);
+    const targetRow = REEL_BASE_LOOPS[slotIdx] * Hub.GAMES.length + Math.max(0, targetGameIdx);
 
     strip.style.transition = 'none';
+    strip.style.filter = 'none';
     if (!landed) {
       const idleRow = 1 + slotIdx * 2;
       strip.style.transform = `translateY(${-(idleRow * REEL_STEP) + 54}px)`;
@@ -342,6 +416,7 @@
       if (sub) { sub.textContent = t('Game ' + (slotIdx + 1), 'Game ' + (slotIdx + 1)); sub.className = 'dh-slot-sub'; }
     } else {
       strip.style.transform = `translateY(${-(targetRow * REEL_STEP) + 54}px)`;
+      if (win) win.classList.add('is-locked', 'is-flash');
       const card = strip.querySelector(`[data-idx="${targetRow}"]`);
       if (card) {
         card.classList.add('is-landed', 'is-' + slot.diffKey);
@@ -382,43 +457,118 @@
       return;
     }
 
+    // Respect in-app Animations OFF setting
+    if (bridge && bridge.isAnimOn && !bridge.isAnimOn()) {
+      hubState.spun = true;
+      saveHubState();
+      renderDailyHub();
+      playSpinLock(2);
+      return;
+    }
+
+    clearSpinTimers();
     spinAnimating = true;
     const titleEl = $('#dhTitle');
     const ctaBtn = $('#dhMainBtn');
     if (titleEl) titleEl.textContent = t('Rolling today’s lineup…', 'Mengundi 3 game hari ini…');
     if (ctaBtn) ctaBtn.textContent = t('Tap to skip', 'Ketuk untuk lewati');
 
+    const durs = [1450, 2150, 2950];
     hubState.slots.forEach((slot, rIdx) => {
       const strip = $('#dhReel' + rIdx);
+      const win = $('#dhWin' + rIdx);
+      const col = $('#dhCol' + rIdx);
       if (!strip) return;
       const targetGameIdx = Hub.GAMES.findIndex((g) => g.id === slot.gameId);
-      const targetRow = 16 + Math.max(0, targetGameIdx);
-      strip.style.transition = 'none';
-      strip.style.transform = 'translateY(54px)';
-      void strip.offsetHeight;
-      const dur = 0.95 + rIdx * 0.42;
-      strip.style.transition = `transform ${dur}s cubic-bezier(0.14, 0.88, 0.24, 1)`;
-      strip.style.transform = `translateY(${-(targetRow * REEL_STEP) + 54}px)`;
+      const targetRow = REEL_BASE_LOOPS[rIdx] * Hub.GAMES.length + Math.max(0, targetGameIdx);
+      const startY = -((1 + rIdx * 2) * REEL_STEP) + 54;
+      const endY = -(targetRow * REEL_STEP) + 54;
+      const dist = endY - startY;
+      const dur = durs[rIdx];
+      const t0 = performance.now();
+      let lastRowPassed = -1;
 
-      const tid = setTimeout(() => {
-        const card = strip.querySelector(`[data-idx="${targetRow}"]`);
-        if (card) card.classList.add('is-landed', 'is-' + slot.diffKey);
-        const badge = $('#dhBadge' + rIdx);
-        const sub = $('#dhSub' + rIdx);
-        if (badge) { badge.textContent = diffLabel(slot.diffKey); badge.className = 'dh-diff-pill is-' + slot.diffKey; }
-        if (sub) {
-          sub.textContent = rIdx === 0 ? t('Up next', 'Berikutnya') : t('Game ' + (rIdx + 1), 'Game ' + (rIdx + 1));
-          sub.className = rIdx === 0 ? ('dh-slot-sub is-next is-' + slot.diffKey) : 'dh-slot-sub';
+      if (win) {
+        win.style.setProperty('--rc', DIFF_COLORS[slot.diffKey] || '#25e07d');
+        win.classList.remove('is-locked', 'is-flash');
+        win.classList.add('is-spinning');
+      }
+      if (col) col.classList.remove('is-recoil', 'is-finale');
+      strip.style.transition = 'none';
+
+      function frame(now) {
+        if (!spinAnimating) return;
+        const el = now - t0;
+        const p = Math.min(1, el / dur);
+        let y, vel;
+        if (p < 0.08) {
+          // Anticipation pull-back upward before launch
+          const k = p / 0.08;
+          y = startY + Math.sin(k * Math.PI) * 16;
+          vel = 0;
+        } else {
+          const u = (p - 0.08) / 0.92;
+          let eased;
+          if (u < 0.91) {
+            const s = u / 0.91;
+            eased = (1 - Math.pow(1 - s, 4.2)) * 1.018;
+          } else {
+            const s = (u - 0.91) / 0.09;
+            eased = 1.018 - 0.018 * (1 - Math.pow(1 - s, 2));
+          }
+          y = startY + dist * eased;
+          vel = u < 0.91 ? Math.pow(1 - u / 0.91, 3.2) : 0;
         }
-        if (rIdx === 2) {
-          spinAnimating = false;
-          hubState.spun = true;
-          saveHubState();
-          if (titleEl) titleEl.textContent = t("Today's 3 Music Games", '3 Game Musik Hari Ini');
-          if (ctaBtn) ctaBtn.textContent = t(`Play ${gameLabel(hubState.slots[0].gameId)} →`, `Main ${gameLabel(hubState.slots[0].gameId)} →`);
+        const blurPx = vel > 0.25 ? Math.min(2.1, (vel - 0.25) * 2.8) : 0;
+        strip.style.filter = blurPx > 0.15 ? `blur(${blurPx.toFixed(2)}px)` : 'none';
+        strip.style.transform = `translateY(${y.toFixed(1)}px)`;
+
+        // Per-item mechanical tick synced to active reel
+        const curRow = Math.floor((-y + 54) / REEL_STEP);
+        if (curRow !== lastRowPassed && p >= 0.08 && p < 0.97) {
+          lastRowPassed = curRow;
+          if (rIdx === 0 || el > durs[rIdx - 1] - 180) {
+            playSpinTick(540 + (1 - p) * 280);
+          }
         }
-      }, dur * 1000);
-      spinTimers.push(tid);
+
+        if (p < 1) {
+          spinRafs.push(requestAnimationFrame(frame));
+        } else {
+          strip.style.filter = 'none';
+          strip.style.transform = `translateY(${endY}px)`;
+          if (win) {
+            win.classList.remove('is-spinning');
+            win.classList.add('is-locked', 'is-flash');
+          }
+          if (col) col.classList.add('is-recoil');
+          const card = strip.querySelector(`[data-idx="${targetRow}"]`);
+          if (card) card.classList.add('is-landed', 'is-' + slot.diffKey);
+          const badge = $('#dhBadge' + rIdx);
+          const sub = $('#dhSub' + rIdx);
+          if (badge) { badge.textContent = diffLabel(slot.diffKey); badge.className = 'dh-diff-pill is-' + slot.diffKey; }
+          if (sub) {
+            sub.textContent = rIdx === 0 ? t('Up next', 'Berikutnya') : t('Game ' + (rIdx + 1), 'Game ' + (rIdx + 1));
+            sub.className = rIdx === 0 ? ('dh-slot-sub is-next is-' + slot.diffKey) : 'dh-slot-sub';
+          }
+          playSpinLock(rIdx);
+          if (rIdx === 2) {
+            spinAnimating = false;
+            hubState.spun = true;
+            saveHubState();
+            if (titleEl) titleEl.textContent = t("Today's 3 Music Games", '3 Game Musik Hari Ini');
+            if (ctaBtn) ctaBtn.textContent = t(`Play ${gameLabel(hubState.slots[0].gameId)} →`, `Main ${gameLabel(hubState.slots[0].gameId)} →`);
+            const finaleTid = setTimeout(() => {
+              for (let i = 0; i < 3; i++) {
+                const c = $('#dhCol' + i);
+                if (c) c.classList.add('is-finale');
+              }
+            }, 160);
+            spinTimers.push(finaleTid);
+          }
+        }
+      }
+      spinRafs.push(requestAnimationFrame(frame));
     });
   }
 

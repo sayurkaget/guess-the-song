@@ -7266,6 +7266,8 @@
         }
       },
       copyText: (txt, evName) => salin(txt, evName || 'daily_hub_copy'),
+      isSfxOn: () => settings.sfx !== false,
+      isAnimOn: () => settings.anim !== false,
       getLang: () => settings.lang || 'en',
       getDay: () => (window.DailyGame ? window.DailyGame.day() : new Date().toISOString().slice(0, 10)),
       getRemaining: () => (window.DailyGame ? window.DailyGame.remaining() : '')
