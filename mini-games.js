@@ -30,6 +30,7 @@
   const HUB_DONE_KEY = 'tl:dailyhub:completed';
   const HUB_POSTED_KEY = (day) => 'tl:dailyhub:posted:' + day;
   const FACT_BEST_KEY = 'tl:fact:best';
+  const MG_STATS_KEY = 'tl:mg:stats';
 
   let bridge = null;
   const isId = () => (bridge && bridge.getLang && bridge.getLang() === 'id');
@@ -39,10 +40,6 @@
     const g = Hub.GAME_MAP[id];
     if (!g) return id;
     return isId() ? g.nameId : g.nameEn;
-  }
-  function diffLabel(key) {
-    const d = Hub.DIFFS.find((x) => x.key === key) || Hub.DIFFS[0];
-    return isId() ? d.labelId : d.labelEn;
   }
 
   /* ================= Daily Hub State ================= */
@@ -54,7 +51,29 @@
   let cachedCommunity = null;
   let spinAudioCtx = null;
 
-  const DIFF_COLORS = { easy: '#25e07d', medium: '#e3c74a', hard: '#f08a3c' };
+  const GAME_COLORS = {
+    song:   '#25e07d',
+    cover:  '#25e07d',
+    mv:     '#f5b13d',
+    duel:   '#f5b13d',
+    artist: '#a855f7',
+    hair:   '#a855f7',
+    fact:   '#f08a3c',
+    lyric:  '#3db6f5'
+  };
+  function gameColor(id) {
+    return GAME_COLORS[id] || '#25e07d';
+  }
+  function recordMgStat(mutator) {
+    const cur = LS.get(MG_STATS_KEY, {}) || {};
+    mutator(cur);
+    LS.set(MG_STATS_KEY, cur);
+    return cur;
+  }
+  function awardMiniBadges(ids) {
+    if (!bridge || !ids || !ids.length) return;
+    if (typeof bridge.unlockBadges === 'function') bridge.unlockBadges(ids);
+  }
 
   function getSpinAudio() {
     if (bridge && bridge.isSfxOn && !bridge.isSfxOn()) return null;
@@ -211,6 +230,15 @@
         doneList.push(hubState.day);
         LS.set(HUB_DONE_KEY, doneList);
       }
+      recordMgStat((s) => {
+        s.hubPlayed = Math.max(Number(s.hubPlayed) || 0, Array.isArray(doneList) ? doneList.length : 1);
+        s.hubBestScore = Math.max(Number(s.hubBestScore) || 0, hubState.totalScore);
+      });
+      const earned = ['dailyhub1'];
+      if (hubState.totalScore >= 250) earned.push('daily250');
+      if (hubState.totalScore >= 300) earned.push('daily300');
+      awardMiniBadges(earned);
+      if (bridge && typeof bridge.syncBadges === 'function') bridge.syncBadges(true);
       postHubStats(hubState.day, hubState.totalScore);
     }
     refreshLobbyDailyUI();
@@ -466,10 +494,11 @@
     const res = hubState.results[slotIdx];
     const nextIdx = nextUnfinishedSlotIndex();
 
+    const rc = gameColor(slot.gameId);
     if (col) col.classList.remove('is-recoil', 'is-finale');
     if (win) {
       win.className = 'dh-reel-window';
-      win.style.setProperty('--rc', DIFF_COLORS[slot.diffKey] || '#25e07d');
+      win.style.setProperty('--rc', rc);
     }
 
     const list = [];
@@ -488,33 +517,33 @@
 
     strip.style.transition = 'none';
     strip.style.filter = 'none';
+    if (badge) badge.hidden = true;
     if (!landed) {
       const idleRow = 1 + slotIdx * 2;
       strip.style.transform = `translateY(${-(idleRow * REEL_STEP) + 54}px)`;
-      if (badge) { badge.textContent = '•••'; badge.className = 'dh-diff-pill'; }
-      if (sub) { sub.textContent = t('Game ' + (slotIdx + 1), 'Game ' + (slotIdx + 1)); sub.className = 'dh-slot-sub'; }
+      if (sub) { sub.textContent = t('Game ' + (slotIdx + 1), 'Game ' + (slotIdx + 1)); sub.className = 'dh-slot-sub'; sub.style.removeProperty('--rc'); }
     } else {
       strip.style.transform = `translateY(${-(targetRow * REEL_STEP) + 54}px)`;
       if (win) win.classList.add('is-locked', 'is-flash');
       const card = strip.querySelector(`[data-idx="${targetRow}"]`);
       if (card) {
-        card.classList.add('is-landed', 'is-' + slot.diffKey);
+        card.style.setProperty('--rc', rc);
+        card.classList.add('is-landed');
         if (res) card.classList.add('is-done');
-      }
-      if (badge) {
-        badge.textContent = diffLabel(slot.diffKey);
-        badge.className = 'dh-diff-pill is-' + slot.diffKey;
       }
       if (sub) {
         if (res) {
           sub.textContent = `+${res.score} · ${res.shortSummary || ''}`;
           sub.className = 'dh-slot-sub is-done';
+          sub.style.removeProperty('--rc');
         } else if (slotIdx === nextIdx) {
           sub.textContent = t('Up next', 'Berikutnya');
-          sub.className = 'dh-slot-sub is-next is-' + slot.diffKey;
+          sub.className = 'dh-slot-sub is-next';
+          sub.style.setProperty('--rc', rc);
         } else {
           sub.textContent = t('Game ' + (slotIdx + 1), 'Game ' + (slotIdx + 1));
           sub.className = 'dh-slot-sub';
+          sub.style.removeProperty('--rc');
         }
       }
     }
@@ -567,8 +596,9 @@
       const t0 = performance.now();
       let lastRowPassed = -1;
 
+      const rc = gameColor(slot.gameId);
       if (win) {
-        win.style.setProperty('--rc', DIFF_COLORS[slot.diffKey] || '#25e07d');
+        win.style.setProperty('--rc', rc);
         win.classList.remove('is-locked', 'is-flash');
         win.classList.add('is-spinning');
       }
@@ -622,13 +652,18 @@
           }
           if (col) col.classList.add('is-recoil');
           const card = strip.querySelector(`[data-idx="${targetRow}"]`);
-          if (card) card.classList.add('is-landed', 'is-' + slot.diffKey);
+          if (card) {
+            card.style.setProperty('--rc', rc);
+            card.classList.add('is-landed');
+          }
           const badge = $('#dhBadge' + rIdx);
           const sub = $('#dhSub' + rIdx);
-          if (badge) { badge.textContent = diffLabel(slot.diffKey); badge.className = 'dh-diff-pill is-' + slot.diffKey; }
+          if (badge) badge.hidden = true;
           if (sub) {
             sub.textContent = rIdx === 0 ? t('Up next', 'Berikutnya') : t('Game ' + (rIdx + 1), 'Game ' + (rIdx + 1));
-            sub.className = rIdx === 0 ? ('dh-slot-sub is-next is-' + slot.diffKey) : 'dh-slot-sub';
+            sub.className = rIdx === 0 ? 'dh-slot-sub is-next' : 'dh-slot-sub';
+            if (rIdx === 0) sub.style.setProperty('--rc', rc);
+            else sub.style.removeProperty('--rc');
           }
           playSpinLock(rIdx);
           if (rIdx === 2) {
@@ -674,7 +709,8 @@
       const slot = st.slots[i];
       if (bar) {
         bar.style.width = `${Math.max(0, Math.min(100, Number(r && r.score) || 0))}%`;
-        bar.className = 'dh-seg-fill is-' + slot.diffKey;
+        bar.style.setProperty('--rc', gameColor(slot.gameId));
+        bar.className = 'dh-seg-fill';
       }
     }
 
@@ -684,13 +720,14 @@
       list.innerHTML = st.slots.map((slot, i) => {
         const r = st.results[i] || { score: 0, shortSummary: '' };
         const winCls = r.score >= 60 ? ' win' : '';
-        return `<li class="dh-row${winCls}">` +
-          `<span class="dh-row-ico is-${slot.diffKey}">${ICONS[slot.gameId] || ''}</span>` +
+        const rc = gameColor(slot.gameId);
+        return `<li class="dh-row${winCls}" style="--rc:${rc}">` +
+          `<span class="dh-row-ico">${ICONS[slot.gameId] || ''}</span>` +
           `<div class="dh-row-copy">` +
-            `<div class="dh-row-head"><b>${esc(gameLabel(slot.gameId))}</b><span class="dh-row-diff is-${slot.diffKey}">${esc(diffLabel(slot.diffKey))}</span></div>` +
+            `<div class="dh-row-head"><b>${esc(gameLabel(slot.gameId))}</b></div>` +
             `<div class="dh-row-sub">${esc(r.detail || r.shortSummary || '')}</div>` +
           `</div>` +
-          `<div class="dh-row-score is-${slot.diffKey}"><b>${r.score}</b><span>/100</span></div>` +
+          `<div class="dh-row-score"><b>${r.score}</b><span>/100</span></div>` +
         `</li>`;
       }).join('');
     }
@@ -767,8 +804,12 @@
     $('#dhStepVerdict').textContent = res.score >= 80
       ? t('Awesome!', 'Keren!')
       : (res.score >= 40 ? t('Nice work!', 'Bagus!') : t('Tough one!', 'Lumayan susah!'));
-    $('#dhStepPoints').textContent = `+${res.score}`;
-    $('#dhStepPoints').className = 'dh-step-pts is-' + slot.diffKey;
+    const ptsEl = $('#dhStepPoints');
+    if (ptsEl) {
+      ptsEl.textContent = `+${res.score}`;
+      ptsEl.className = 'dh-step-pts';
+      ptsEl.style.setProperty('--rc', gameColor(slot.gameId));
+    }
     $('#dhStepDetail').textContent = res.detail || res.shortSummary || '';
     $('#dhStepTotal').textContent = t(`Total so far: ${hubState.totalScore} / 300`, `Total sementara: ${hubState.totalScore} / 300`);
 
@@ -776,7 +817,8 @@
     $('#dhStepStrip').innerHTML = hubState.slots.map((s, i) => {
       const r = hubState.results[i];
       const isNext = i === nextIdx;
-      return `<div class="dh-strip-card${r ? ' is-done' : ''}${isNext ? ' is-next is-' + s.diffKey : ''}">` +
+      const rc = gameColor(s.gameId);
+      return `<div class="dh-strip-card${r ? ' is-done' : ''}${isNext ? ' is-next' : ''}" style="--rc:${rc}">` +
         `<span class="dh-strip-ico">${ICONS[s.gameId] || ''}</span>` +
         `<span class="dh-strip-name">${esc(gameLabel(s.gameId))}</span>` +
         `<span class="dh-strip-val">${r ? (r.score + '') : (isNext ? t('NEXT', 'LANJUT') : '—')}</span>` +
@@ -814,7 +856,7 @@
     const slot = hubState.slots[slotIdx];
     if (!slot) return;
     activeDailySlot = slot;
-    document.body.dataset.diff = slot.diffKey;
+    document.body.dataset.diff = 'easy';
 
     if (slot.gameId === 'song' && bridge && bridge.startDailySongForHub) {
       hideAllScreens();
@@ -940,9 +982,11 @@
     const segs = hubState.slots.map((s, i) => {
       const done = !!hubState.results[i];
       const cur = i === slot.slot;
-      return `<span class="mg-dp-seg${done ? ' is-done' : ''}${cur ? ' is-cur is-' + s.diffKey : ''}"></span>`;
+      const rc = gameColor(s.gameId);
+      return `<span class="mg-dp-seg${done ? ' is-done' : ''}${cur ? ' is-cur' : ''}"${cur ? ` style="--rc:${rc}"` : ''}></span>`;
     }).join('');
-    pill.innerHTML = `<span class="mg-dp-tag">${esc(t('DAILY', 'HARIAN'))}</span>${segs}<span class="mg-dp-diff is-${slot.diffKey}">${esc(diffLabel(slot.diffKey))}</span>`;
+    const curRc = gameColor(slot.gameId);
+    pill.innerHTML = `<span class="mg-dp-tag">${esc(t('DAILY', 'HARIAN'))}</span>${segs}<span class="mg-dp-step" style="--rc:${curRc}">${esc(`Game ${slot.slot + 1}/3`)}</span>`;
     pill.hidden = false;
   }
 
@@ -1297,6 +1341,10 @@
       drawCoverPixel(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
+      if (st.tries === 1) {
+        recordMgStat((s) => { s.cover1 = (s.cover1 || 0) + 1; });
+        awardMiniBadges(['cover1']);
+      }
       renderMiniReveal({ won: true, score, title: tgt.album, subtitle: subTxt, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.album}`, freeKicker: sum });
       return;
     }
@@ -1521,6 +1569,10 @@
       renderMvStage(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
+      if (st.tries === 1) {
+        recordMgStat((s) => { s.mv1 = (s.mv1 || 0) + 1; });
+        awardMiniBadges(['mv1']);
+      }
       renderMiniReveal({ won: true, score, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'mv', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: sum });
       return;
     }
@@ -1587,7 +1639,7 @@
 
     $('#mgBody').innerHTML =
       `<div class="mg-hair-frame">` +
-        `<img class="mg-hair-img" src="${esc(imgUrl)}" alt="Mystery musician" referrerpolicy="no-referrer">` +
+        `<img id="mgHairImg" class="mg-hair-img" src="${esc(imgUrl)}" alt="Mystery musician" referrerpolicy="no-referrer" style="clip-path:inset(0 0 ${HAIR_CURTAIN_PCTS[0]}% 0)">` +
         `<div id="mgHairCurtain" class="mg-hair-curtain" style="height:${HAIR_CURTAIN_PCTS[0]}%">` +
           `<span id="mgHairStage">${esc(t('Hair only', 'Rambut saja'))}</span>` +
         `</div>` +
@@ -1617,8 +1669,13 @@
       t('Last clue', 'Kesempatan terakhir'),
       st.artistName
     ];
+    const pct = HAIR_CURTAIN_PCTS[idx];
+    const img = $('#mgHairImg');
+    if (img) {
+      img.style.clipPath = fullReveal ? 'inset(0 0 0 0)' : `inset(0 0 ${pct}% 0)`;
+    }
     if (curtain) {
-      curtain.style.height = HAIR_CURTAIN_PCTS[idx] + '%';
+      curtain.style.height = pct + '%';
       curtain.classList.toggle('is-open', Boolean(fullReveal));
     }
     if (lbl) lbl.textContent = names[idx];
@@ -1663,6 +1720,10 @@
       updateHairCurtain(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
+      if (st.tries === 1) {
+        recordMgStat((s) => { s.hair1 = (s.hair1 || 0) + 1; });
+        awardMiniBadges(['hair1']);
+      }
       const hit = hairTopTrack(artist, st.artistName);
       renderMiniReveal({ won: true, score, title: st.artistName, subtitle: hairRevealSub(hit, artist.genre), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: sum });
       return;
@@ -1792,6 +1853,7 @@
       if (!st.isDaily) {
         const best = Number(LS.get(FACT_BEST_KEY, 0)) || 0;
         if (st.correct > best) LS.set(FACT_BEST_KEY, st.correct);
+        if (st.correct >= 10) awardMiniBadges(['fact10']);
       }
     } else if (!st.isDaily) {
       st.lives--;
@@ -1917,6 +1979,10 @@
       renderLyricLines(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
+      if (st.tries === 1) {
+        recordMgStat((s) => { s.lyric1 = (s.lyric1 || 0) + 1; });
+        awardMiniBadges(['lyric1']);
+      }
       renderMiniReveal({ won: true, score, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: sum });
       return;
     }

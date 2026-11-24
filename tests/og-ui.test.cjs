@@ -388,12 +388,13 @@ test('Wave 75 upgrades Badges to 16 Steam-style Achievements with SFX, adds in-a
   const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
   const Badges = require('../badges.js');
 
-  assert.equal(Badges.CATALOG.length, 16);
+  assert.equal(Badges.CATALOG.length, 24);
   assert.match(html, /data-tab="badges"[^>]*>[\s\S]*Achievements/);
   assert.match(html, /id="achToast"[\s\S]*id="achToastTitle"[\s\S]*id="achToastDesc"/);
   assert.match(html, /id="setAnim"[^>]*role="switch"/);
   assert.match(css, /\.ach-toast\{/);
   assert.match(css, /\.badge-card\.is-earned\[data-theme="blue"\]\{/);
+  assert.match(css, /\.badge-card\.is-earned\[data-theme="orange"\]\{/);
   assert.doesNotMatch(styles, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
   assert.doesNotMatch(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
   assert.match(styles, /body\[data-anim="off"\]/);

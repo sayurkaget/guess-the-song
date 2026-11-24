@@ -290,7 +290,17 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
     assert.match(sitemap, new RegExp(`/${slug}<`));
   }
   assert.match(mg, /HAIR_CURTAIN_PCTS = \[77, 63, 49, 34, 18, 0\]/);
+  assert.match(mg, /clip-path:inset\(0 0 \$\{HAIR_CURTAIN_PCTS\[0\]\}% 0\)/);
+  assert.match(mg, /const GAME_COLORS = \{/);
+  assert.doesNotMatch(mg, /function diffLabel\(/);
+  assert.match(mg, /awardMiniBadges\(\['cover1'\]\)/);
+  assert.match(mg, /awardMiniBadges\(\['mv1'\]\)/);
+  assert.match(mg, /awardMiniBadges\(\['hair1'\]\)/);
+  assert.match(mg, /awardMiniBadges\(\['fact10'\]\)/);
+  assert.match(mg, /awardMiniBadges\(\['lyric1'\]\)/);
   assert.match(lcss, /\.mg-hair-curtain\{[\s\S]*#06150e/);
+  assert.match(lcss, /@keyframes mgCardWrong\{[^}]*rgba\(242,85,90/);
+  assert.doesNotMatch(lcss, /@keyframes mgCardWrong\{[^}]*translateX/);
   assert.match(sw, /gts-v1[56]\d-wave/);
   assert.match(build, /gts-cf-v1[34]\d-wave/);
 });

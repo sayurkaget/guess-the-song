@@ -2658,7 +2658,13 @@
     lens: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.9 15.9 4.9 4.9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
     star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17l-5.6 3 1.1-6.2L3 9.4l6.2-.9L12 2.8Z" fill="currentColor"/></svg>',
     ribbon: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.5 14-1.5 7 5-2.5 5 2.5-1.5-7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>',
-    grid: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8" fill="currentColor"/></svg>'
+    grid: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8" fill="currentColor"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8" fill="currentColor"/></svg>',
+    reel: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M9 4.5v15M15 4.5v15" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="18" cy="12" r="1.2" fill="currentColor"/></svg>',
+    pixel: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 3.5v17M14.5 3.5v17" stroke="currentColor" stroke-width="1.35" opacity=".75"/></svg>',
+    film: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="m10 9.2 5.2 2.8-5.2 2.8V9.2Z" fill="currentColor"/></svg>',
+    scissors: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 11.5a5.5 5.5 0 0 1 11 0v1.5a5.5 5.5 0 0 1-11 0v-1.5Z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M6 10.5c.8-4.2 3.2-6.5 6-6.5 3.2 0 5.6 2.1 6.2 5.8-2.2-1.6-4.4-2.2-6.6-1.8-2.2.4-3.8 1.2-5.6 2.5Z" fill="currentColor" opacity=".4"/><path d="M4.5 20.5c1.5-2.7 4.2-4 7.5-4s6 1.3 7.5 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+    check: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="m8.2 12.2 2.5 2.5 5.1-5.4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    lyric: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 6.5h15M4.5 11.5h11M4.5 16.5h12.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="18.5" cy="16.5" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>'
   };
 
   const achQueue = [];
@@ -2725,12 +2731,30 @@
   function syncBadges(notify = false) {
     const B = window.TuneUpBadges;
     if (!B) return [];
+    const hubDone = LS.get('tl:dailyhub:completed', []);
+    const mgStats = LS.get('tl:mg:stats', {}) || {};
+    const factBest = Number(LS.get('tl:fact:best', 0)) || 0;
+    const Hub = window.TuneUpDailyHub;
+    const today = window.DailyGame ? window.DailyGame.day() : new Date().toISOString().slice(0, 10);
+    const hubStreak = Hub && Array.isArray(hubDone) ? Hub.streakOverview(hubDone, today).best : 0;
     const added = B.syncFromStats(localStorage, {
       classic: allClassicStats(),
       songStreakBest: songStreak('classic').best,
       daily: dailyStats(),
+      dailyHub: {
+        played: Math.max(Array.isArray(hubDone) ? hubDone.length : 0, Number(mgStats.hubPlayed) || 0),
+        bestScore: Number(mgStats.hubBestScore) || 0,
+        bestStreak: hubStreak
+      },
       duel: duelStats(),
-      artist: artistStats()
+      artist: artistStats(),
+      mini: {
+        factBest,
+        cover1: Number(mgStats.cover1) || 0,
+        mv1: Number(mgStats.mv1) || 0,
+        hair1: Number(mgStats.hair1) || 0,
+        lyric1: Number(mgStats.lyric1) || 0
+      }
     });
     if (notify && added.length) announceBadges(added);
     return added;
@@ -7445,6 +7469,8 @@
         return best;
       },
       toast: (msg) => toast(msg),
+      unlockBadges: (ids) => unlockBadges(ids, true),
+      syncBadges: (notify) => syncBadges(!!notify),
       isSfxOn: () => settings.sfx !== false,
       isAnimOn: () => settings.anim !== false,
       getLang: () => settings.lang || 'en',

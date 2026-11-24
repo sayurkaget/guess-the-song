@@ -640,13 +640,12 @@ body[data-diff="impossible"]{--acc:#9b7bf5;--acc-l:#b49bff;--acc-d:#7355d6;--acc
 .report-song:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 
 .result{text-align:center;position:relative;z-index:2}
-/* kartu bergetar sebentar saat gagal — pasangan dari confetti saat menang */
-.result.lose{animation:rise .26s cubic-bezier(.2,.9,.3,1), shake .42s cubic-bezier(.36,.07,.19,.97) .2s}
+/* kartu muncul halus saat gagal — tanpa guncangan berlebih */
+.result.lose{animation:rise .26s cubic-bezier(.2,.9,.3,1)}
 @keyframes shake{
-  10%,90%{transform:translateX(-2px)}
-  20%,80%{transform:translateX(4px)}
-  30%,50%,70%{transform:translateX(-7px)}
-  40%,60%{transform:translateX(7px)}
+  0%,100%{transform:translateX(0)}
+  30%{transform:translateX(-2.5px)}
+  68%{transform:translateX(2px)}
 }
 .verdict{margin:0 0 1.2rem;font-size:1.25rem;font-weight:800;letter-spacing:-.02em}
 .verdict.win{color:var(--acc)}
