@@ -426,12 +426,13 @@
     return ALL.find((s) => s.slug === sl) || null;
   }
 
-  // Katalog berbahasa Spanyol/Hindi dipisahkan dari "All genres" agar Classic tetap fokus hits Western/internasional;
+  // Katalog regional (Spanyol/Hindi/US Country) dipisahkan dari "All genres" agar Classic tetap fokus hits global;
   // tetap bisa dimainkan lewat filter "Other" (lain), Custom Artist, Playlist, Music Duel, & Artist Detective.
   const CLASSIC_ALL_SKIP_ARTISTS = new Set([
     'Bad Bunny', 'Karol G', 'Feid', 'Peso Pluma', 'Fuerza Regida', 'Anuel AA', 'Myke Towers',
     'Rauw Alejandro', 'J Balvin', 'Ozuna', 'Maluma', 'Farruko', 'Don Omar', 'Bizarrap',
-    'Arijit Singh', 'Shreya Ghoshal', 'Pritam', 'A.R. Rahman'
+    'Arijit Singh', 'Shreya Ghoshal', 'Pritam', 'A.R. Rahman',
+    'Morgan Wallen', 'Luke Combs', 'Zach Bryan', 'Chris Stapleton', 'Luke Bryan'
   ]);
 
   // lagu yang lolos filter pemain, tanpa memandang tingkat kesulitan
@@ -941,16 +942,40 @@
   }
 
   let classicTopArtists = null;
-  let classicStreamedTids = null;
-  function getClassicStreamedTids() {
-    if (!classicStreamedTids) {
+  let classicStreamMap = null;
+  function getClassicStreamMap() {
+    if (!classicStreamMap) {
       const items = (typeof window !== 'undefined' && window.DUEL_STREAMS_V1 && window.DUEL_STREAMS_V1.items) || [];
-      classicStreamedTids = new Set();
+      classicStreamMap = new Map();
       for (let i = 0; i < items.length; i++) {
-        if (Array.isArray(items[i]) && items[i][0]) classicStreamedTids.add(String(items[i][0]));
+        if (Array.isArray(items[i]) && items[i][0]) {
+          classicStreamMap.set(String(items[i][0]), Number(items[i][1]) || 0);
+        }
       }
     }
-    return classicStreamedTids;
+    return classicStreamMap;
+  }
+  const CLASSIC_TIER_BASELINE_STREAMS = { 1: 2000000000, 2: 950000000, 3: 500000000, 4: 240000000, 5: 80000000 };
+  function pickWeightedClassic(list, stageIdx) {
+    if (list.length <= 1) return list[0];
+    const streamMap = getClassicStreamMap();
+    const exp = stageIdx <= 0 ? 1.4 : stageIdx === 1 ? 1.2 : stageIdx === 2 ? 1.05 : stageIdx === 3 ? 0.9 : 0.8;
+    let total = 0;
+    const weights = new Array(list.length);
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i];
+      const real = (s.trackId && streamMap.get(String(s.trackId))) || 0;
+      const eff = real > 0 ? real : (CLASSIC_TIER_BASELINE_STREAMS[s.tier] || 100000000);
+      const w = Math.pow(Math.max(0.5, eff / 100000000), exp);
+      weights[i] = w;
+      total += w;
+    }
+    let roll = Math.random() * total;
+    for (let i = 0; i < list.length; i++) {
+      roll -= weights[i];
+      if (roll <= 0) return list[i];
+    }
+    return list[list.length - 1];
   }
   function pickSongFrom(poolSrc, stageIdx, offset, excludeSlugs = null) {
     // jangan ulang lagu yang sudah keluar di tahap sebelumnya dalam sesi ini
@@ -980,13 +1005,14 @@
       const tiers = [...new Set(src.map((s) => s.tier).filter(Boolean))].sort((a, b) => a - b);
       let pickTier = tiers.length === 1 ? tiers[0] : 0;
       if (tiers.length > 1) {
-        // Bobot 75% tier utama tahap ini (T2 Medium, T3 Hard, T4 Expert, T5 Impossible) + 25% tier penyangga.
-        pickTier = Math.random() < 0.75 ? tiers[tiers.length - 1] : tiers[0];
+        // Bobot ramah populer: Medium 45/55 (T2/T1), Hard 50/50 (T3/T2), Expert 45/55 (T4/T3), Impossible 30% T5 streamed + 70% T4.
+        const upperChance = stageIdx >= 4 ? 0.30 : stageIdx === 2 ? 0.50 : 0.45;
+        pickTier = Math.random() < upperChance ? tiers[tiers.length - 1] : tiers[0];
       }
       if (pickTier) {
         let byTier = src.filter((s) => s.tier === pickTier);
         if (pickTier === 5) {
-          const streamedTids = getClassicStreamedTids();
+          const streamedTids = getClassicStreamMap();
           const streamed = streamedTids.size
             ? byTier.filter((s) => s.trackId && streamedTids.has(String(s.trackId)))
             : [];
@@ -1007,7 +1033,11 @@
             }
           }
         }
-        if (byTier.length) return byTier[Math.floor(Math.random() * byTier.length)];
+        if (used.length && byTier.length > 4) {
+          const diverse = byTier.filter((s) => used.every((u) => !sameArtist(s, u)));
+          if (diverse.length >= 4) byTier = diverse;
+        }
+        if (byTier.length) return pickWeightedClassic(byTier, stageIdx);
       }
     }
     return src[Math.floor(Math.random() * src.length)];

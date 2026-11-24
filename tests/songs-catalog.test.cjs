@@ -345,3 +345,39 @@ test('fetchArtistSongs filters vs-remixes, censored duplicates, short intros, an
     assert.ok(p.rank < 48, `picked deep tail rank ${p.rank} (${p.title})`);
   }
 });
+
+test('Wave 98 Classic catalog adds verified global mega-hits, rescues iconic classics, and expands Tier 1-2 pools', () => {
+  const SONGS = loadSongs();
+  const find = (artist, title) => SONGS.find((s) => s[1] === artist && s[0] === title);
+
+  assert.ok(SONGS.length >= 33700, `expected >= 33700 catalog rows, got ${SONGS.length}`);
+  assert.ok(SONGS.filter((s) => s[2] === 1).length >= 950, 'expected >= 950 Tier 1 mega-hits');
+  assert.ok(SONGS.filter((s) => s[2] <= 2).length >= 2000, 'expected >= 2000 Tier 1-2 popular hits');
+
+  for (const [artist, title, maxTier] of [
+    ['fun.', 'We Are Young (feat. Janelle Monáe)', 1],
+    ['Walk the Moon', 'Shut Up and Dance', 1],
+    ['Owl City', 'Fireflies', 1],
+    ['DNCE', 'Cake By the Ocean', 1],
+    ['FIFTY FIFTY', 'Cupid', 1],
+    ['yung kai', 'blue', 1],
+    ['wave to earth', 'seasons', 1],
+    ['YOASOBI', 'Idol', 1],
+    ['YOASOBI', 'Yoru ni kakeru', 1],
+    ['Fujii Kaze', 'Shinunoga E-Wa', 1],
+    ['R.E.M.', 'Losing My Religion', 1],
+    ['Scorpions', 'Wind of Change', 1],
+    ['Michael Learns to Rock', 'Paint My Love', 1],
+    ['Michael Learns to Rock', 'Take Me To Your Heart', 1],
+    ['Goo Goo Dolls', 'Iris', 1],
+    ['Kanye West', 'Ni**as in Paris', 1],
+    ['Celine Dion', 'My Heart Will Go On', 1],
+    ['PSY', 'Gangnam Style', 1],
+    ['NewJeans', 'OMG', 1]
+  ]) {
+    const row = find(artist, title);
+    assert.ok(row, `missing Wave 98 hit: ${artist} - ${title}`);
+    assert.ok(row[2] <= maxTier, `expected ${artist} - ${title} in Tier <= ${maxTier}, got Tier ${row[2]}`);
+    assert.ok(row[7] > 0, `missing trackId for ${artist} - ${title}`);
+  }
+});
