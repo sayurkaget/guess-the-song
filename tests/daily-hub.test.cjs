@@ -289,6 +289,8 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
     assert.match(build, new RegExp(`slug:\\s*'${slug}'`));
     assert.match(sitemap, new RegExp(`/${slug}<`));
   }
+  assert.match(mg, /HAIR_CURTAIN_PCTS = \[77, 63, 49, 34, 18, 0\]/);
+  assert.match(lcss, /\.mg-hair-curtain\{[\s\S]*#06150e/);
   assert.match(sw, /gts-v1[56]\d-wave/);
   assert.match(build, /gts-cf-v1[34]\d-wave/);
 });

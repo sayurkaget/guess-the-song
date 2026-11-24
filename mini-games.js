@@ -1568,7 +1568,7 @@
   }
 
   /* ================= GAME 3: HAIRSPOT MUSIC ================= */
-  const HAIR_CURTAIN_PCTS = [76, 62, 48, 32, 0];
+  const HAIR_CURTAIN_PCTS = [77, 63, 49, 34, 18, 0];
   function initHairSpot(seed, dailySlot) {
     const bank = Data.hairBank || [];
     const maxDiff = dailySlot ? dailySlot.diffTier : 3;
@@ -1608,16 +1608,26 @@
     if (!st || st.gameId !== 'hair') return;
     const curtain = $('#mgHairCurtain');
     const lbl = $('#mgHairStage');
-    const idx = fullReveal ? 4 : Math.min(3, st.tries);
+    const idx = fullReveal ? 5 : Math.min(4, st.tries);
     const names = [
       t('Hair only', 'Rambut saja'),
       t('Hairline', 'Garis dahi'),
       t('Eyes', 'Mata'),
       t('Upper face', 'Wajah atas'),
+      t('Last clue', 'Kesempatan terakhir'),
       st.artistName
     ];
-    if (curtain) curtain.style.height = HAIR_CURTAIN_PCTS[idx] + '%';
+    if (curtain) {
+      curtain.style.height = HAIR_CURTAIN_PCTS[idx] + '%';
+      curtain.classList.toggle('is-open', Boolean(fullReveal));
+    }
     if (lbl) lbl.textContent = names[idx];
+    const skipBtn = $('#mgSkipBtn');
+    if (skipBtn && !st.done) {
+      skipBtn.textContent = st.tries >= 4
+        ? t('Reveal artist', 'Lihat musisi')
+        : t('Reveal more', 'Buka lagi');
+    }
   }
 
   function hairTopTrack(artistObj, artistName) {

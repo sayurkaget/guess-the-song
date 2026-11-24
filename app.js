@@ -1270,16 +1270,12 @@
     stopAudio();
     playSfx(near ? 'near' : 'wrong');
     saveRun(); UI.render();
-    const guessCard = $('#game .guess-card');
     const lastSlot = $('#trySlots') && $('#trySlots').children && $('#trySlots').children[S.guesses.length - 1];
     if (near) {
-      triggerUiFx($('#q'), 'is-fx-near', 540);
-      triggerUiFx(guessCard, 'is-fx-near', 540);
+      triggerUiFx(lastSlot, 'is-fx-near', 480);
     } else {
-      triggerUiFx(guessCard, 'is-fx-wrong', 480);
-      triggerUiFx($('#game .search'), 'is-fx-wrong', 420);
+      triggerUiFx($('#game .search'), 'is-fx-wrong', 360);
     }
-    triggerUiFx(lastSlot, 'is-fx-slot', 480);
     UI.status(near
       ? (I18N ? tr('rightArtistUnlock', { len: fmt(limit()) }) : ('Right artist, wrong song. ' + fmt(limit()) + ' unlocked.'))
       : (I18N ? tr('wrongUnlock', { len: fmt(limit()) }) : ('Not it. ' + fmt(limit()) + ' unlocked now.')));
@@ -1292,8 +1288,6 @@
     S.guesses.push({ t: 'skip' });
     if (S.guesses.length >= TRIES) return finish(false);
     saveRun(); UI.render();
-    const lastSlot = $('#trySlots') && $('#trySlots').children && $('#trySlots').children[S.guesses.length - 1];
-    triggerUiFx(lastSlot, 'is-fx-slot', 440);
     UI.status(I18N ? tr('skippedUnlock', { len: fmt(limit()) }) : ('Skipped. ' + fmt(limit()) + ' unlocked now.'));
     UI.clearInput();
     // Kalau klip masih berputar, curBatas() langsung memanjangkannya mulus;
@@ -1408,18 +1402,6 @@
     if (S.runDone) { if (S.daily) completeDaily(); else recordStats(); }
     checkRunBadges(won);
     UI.render(); UI.streak(); UI.clearInput();
-    const vCard = $('#game .vinyl-card');
-    const gCard = $('#game .guess-card');
-    const lastSlot = $('#trySlots') && $('#trySlots').children && $('#trySlots').children[S.guesses.length - 1];
-    if (won) {
-      triggerUiFx(vCard, 'is-fx-win', 660);
-      triggerUiFx(gCard, 'is-fx-win', 660);
-      spawnUiSparks(vCard);
-    } else {
-      triggerUiFx(vCard, 'is-fx-lose', 540);
-      triggerUiFx(gCard, 'is-fx-lose', 540);
-    }
-    triggerUiFx(lastSlot, 'is-fx-slot', 500);
     if (UI.q && typeof UI.q.blur === 'function') UI.q.blur();
     UI.status('');
     S.heard = 0;      // saat terungkap, putar lagunya dari awal
@@ -3599,7 +3581,6 @@
           '; you ' + window.TrackChallenge.describe(S.won ? n : 0) + '.';
 
       open($('#resultModal'));
-      triggerUiFx($('#resultModal .reveal'), S.won ? 'is-fx-win' : 'is-fx-lose', S.won ? 620 : 520);
       confetti('#confetti', S.won ? 'win' : 'lose');
     },
 
