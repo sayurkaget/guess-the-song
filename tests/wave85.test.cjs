@@ -176,4 +176,11 @@ test('Wave 85/86 Quick Preset Playlists (12 curated & dynamic) and foreground co
   const layoutCss = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
   assert.match(layoutCss, /\.daily-community \.dc-badge\{/);
   assert.match(layoutCss, /\.daily-community \.dc-sub\{/);
+
+  // Wave 97: modal volume slots (#resultVolSlot, #runVolSlot, #duelModalVolSlot) & Daily Artist bucket pair labels
+  assert.match(html, /id="resultVolSlot"/);
+  assert.match(html, /id="runVolSlot"/);
+  assert.match(html, /id="duelModalVolSlot"/);
+  assert.match(app, /function restoreActiveVolSlot\(\)/);
+  assert.match(app, /\['1–2 tries', '3–4 tries', '5–6 tries', '7–8 tries', '9–10 tries'\]/);
 });

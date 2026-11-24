@@ -1985,8 +1985,10 @@
     const clipEn = ['0.1s', '0.5s', '2s', '8s', '15s'][uIdx] || '0.1s';
     const clipId = ['0,1d', '0,5d', '2d', '8d', '15d'][uIdx] || '0,1d';
     const ordEn = ['1st try', '2nd try', '3rd try', '4th try', '5th try'][uIdx] || (triesN + ' tries');
+    const artistBucketEn = ['1–2 tries', '3–4 tries', '5–6 tries', '7–8 tries', '9–10 tries'][uIdx] || (triesN + ' tries');
+    const artistBucketId = ['1–2 tebakan', '3–4 tebakan', '5–6 tebakan', '7–8 tebakan', '9–10 tebakan'][uIdx] || (triesN + ' tebakan');
     const tryLabel = kind === 'artist'
-      ? (isId ? ('tebakan ke-' + triesN) : (triesN === 1 ? '1st try' : (triesN + ' tries')))
+      ? (isId ? artistBucketId : artistBucketEn)
       : (isId ? ('tebakan ke-' + triesN + ' (' + clipId + ')') : (ordEn + ' (' + clipEn + ')'));
     const youLabel = isId
       ? (triesN + 'x')
@@ -4050,9 +4052,17 @@
 
   /* ================= modal & toast ================= */
 
+  function restoreActiveVolSlot() {
+    if ($('#duel') && !$('#duel').hidden) dockVolume('#duelVolSlot');
+    else if ($('#artistGame') && !$('#artistGame').hidden) dockVolume('#agVolSlot');
+    else dockVolume('#gameVolSlot');
+  }
   function open(m) {
     if (!m) return;
     setSearchingMode(false);
+    if (m.id === 'resultModal') dockVolume('#resultVolSlot');
+    else if (m.id === 'runModal') dockVolume('#runVolSlot');
+    else if (m.id === 'duelModal') dockVolume('#duelModalVolSlot');
     m.hidden = false;
     m.scrollTop = 0;
     const sh = typeof m.querySelector === 'function' ? m.querySelector('.sheet') : null;
@@ -4066,6 +4076,7 @@
     if (typeof stopSummaryPreview === 'function') stopSummaryPreview();
     if (confettiStop) { confettiStop(); confettiStop = null; }
     [].forEach.call(document.querySelectorAll('.modal'), (m) => m.hidden = true);
+    restoreActiveVolSlot();
   }
 
   function dismissModal() {

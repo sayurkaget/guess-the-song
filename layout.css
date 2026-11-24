@@ -250,32 +250,34 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
 .feedback-link{display:inline-flex;align-items:center;gap:.36rem}
 .wrap:has(#lobby:not([hidden])) .feedback-link{min-height:40px;padding:.4rem .2rem;font-size:.82rem}
 @media(max-width:560px){
-  .wrap:has(#lobby:not([hidden])){padding:1.45rem 1rem 1.45rem}
-  .wrap:has(#lobby:not([hidden])) .head{margin-bottom:1.35rem}
-  .wrap:has(#lobby:not([hidden])) .logo{font-size:clamp(2.1rem,8.5vw,2.85rem)}
-  #lobby{gap:.75rem}
-  #lobby .daily-row{grid-template-columns:minmax(0,1fr);gap:.6rem}
-  #lobby .daily-card{grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:.98rem 1.05rem;gap:.65rem}
-  #lobby .daily-title-row{justify-content:flex-start;flex-wrap:wrap;gap:.4rem;margin-bottom:.2rem}
+  .wrap:has(#lobby:not([hidden])){padding:1.05rem .95rem 1rem}
+  .wrap:has(#lobby:not([hidden])) .head{margin-bottom:.85rem}
+  .wrap:has(#lobby:not([hidden])) .logo{font-size:clamp(2rem,8vw,2.65rem)}
+  .wrap:has(#lobby:not([hidden])) .foot{margin-top:.3rem}
+  #lobby{gap:.58rem}
+  #lobby .daily-row{grid-template-columns:minmax(0,1fr);gap:.52rem}
+  #lobby .daily-card{grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:.78rem .95rem;gap:.6rem}
+  #lobby .daily-title-row{justify-content:flex-start;flex-wrap:wrap;gap:.4rem;margin-bottom:.16rem}
   .title-ico{width:18px;height:18px}
-  #lobby .daily-heading h2{font-size:1.1rem}
-  #lobby .daily-heading .daily-meta{font-size:.79rem}
-  #lobby .daily-note{font-size:.73rem;margin-top:.22rem}
+  #lobby .daily-heading h2{font-size:1.06rem}
+  #lobby .daily-heading .daily-meta{font-size:.77rem}
+  #lobby .daily-note{font-size:.72rem;margin-top:.18rem}
   #lobby #openDaily,
-  #lobby #openDailyArtist{width:auto;min-height:40px;padding:.52rem .82rem;font-size:.81rem;min-width:0;max-width:136px;white-space:normal}
-  #lobby .classic-section{padding:1.05rem}
-  #lobby .classic-heading{gap:.65rem}
+  #lobby #openDailyArtist{width:auto;min-height:38px;padding:.46rem .78rem;font-size:.8rem;min-width:0;max-width:136px;white-space:normal}
+  #lobby .classic-section{padding:.88rem .95rem}
+  #lobby .classic-heading{gap:.55rem}
   #lobby .classic-seg{width:100%;display:grid;grid-template-columns:minmax(0,1.16fr) minmax(0,.96fr) minmax(0,.88fr)}
-  #lobby .classic-seg button{min-height:36px;padding:.38rem .24rem;font-size:.73rem;gap:.24rem;white-space:nowrap}
+  #lobby .classic-seg button{min-height:34px;padding:.34rem .24rem;font-size:.73rem;gap:.24rem;white-space:nowrap}
   #lobby .classic-seg button .btn-ico{width:12px;height:12px}
-  #lobby .classic-controls{grid-template-columns:1fr;gap:.65rem}
-  #lobby .subcontrols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
+  #lobby .classic-controls{grid-template-columns:1fr;gap:.55rem}
+  #lobby .subcontrols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.52rem}
   #lobby .drop{max-width:none}
-  #lobby .start{width:100%}
-  #lobby .artist-panel{grid-template-columns:1fr;gap:.7rem}
-  #lobby .duel-card-wide{grid-template-columns:minmax(0,1fr);padding:1.05rem 1.1rem;gap:.75rem}
-  #lobby .duel-card-title h2{font-size:1.12rem}
-  #lobby .duel-cta-pill{width:100%}
+  #lobby .start{width:100%;min-height:42px}
+  #lobby .artist-panel{grid-template-columns:1fr;gap:.62rem}
+  #lobby .arcade-row{gap:.52rem}
+  #lobby .duel-card-wide{grid-template-columns:minmax(0,1fr);padding:.82rem .95rem;gap:.55rem}
+  #lobby .duel-card-title h2{font-size:1.06rem}
+  #lobby .duel-cta-pill{width:100%;min-height:38px}
 }
 @media(max-width:350px){
   #lobby .daily-card{grid-template-columns:minmax(0,1fr)}
@@ -453,6 +455,8 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
 .vinyl-foot .vol{margin-top:.15rem;justify-content:center}
 .vol-slot{display:inline-flex;align-items:center;justify-content:center}
 .vol-slot:empty{display:none}
+.modal-vol-slot{width:100%;display:flex;align-items:center;justify-content:center;margin:.1rem 0 .2rem}
+.modal-vol-slot:empty{display:none}
 #duel .duel-controls .vol{
   height:28px;padding:0 .15rem;border-radius:0;
   background:transparent;border:0;box-shadow:none;
