@@ -1954,27 +1954,95 @@
   function canUseCommunityApi() {
     return typeof fetch === 'function' && typeof location === 'object' && /^https?:$/.test(location.protocol || '');
   }
-  function formatDailyCommunity(data) {
-    if (!data || !data.ok || !(Number(data.plays) >= 1)) return '';
-    const plays = Number(data.plays) || 0;
-    const wins = Number(data.wins) || 0;
+  function formatDailyCommunity(data, kind = 'song', userWon = true, userTries = 1) {
+    if (!data || !data.ok || !(Number(data.plays) >= 1)) return null;
+    const plays = Math.max(1, Number(data.plays) || 0);
+    const wins = Math.max(0, Number(data.wins) || 0);
     const pct = Number.isFinite(Number(data.winRate)) ? Number(data.winRate) : Math.round((wins / plays) * 100);
-    if (wins <= 0) {
-      return I18N ? tr('dailyCommunityZero') : 'Today · 0% solved';
-    }
+    const isId = !!(I18N && settings.lang === 'id');
     const avgNum = Number(data.avgTries) || 0;
-    const avgStr = (I18N && settings.lang === 'id')
+    const avgStr = isId
       ? String(avgNum.toFixed(1)).replace('.', ',')
       : avgNum.toFixed(1);
-    return I18N
-      ? tr('dailyCommunityStat', { pct, avg: avgStr })
-      : ('Today · ' + pct + '% solved · avg ' + avgStr + ' tries');
+    const bArr = Array.isArray(data.buckets) ? data.buckets.map((n) => Math.max(0, Number(n) || 0)) : [0, 0, 0, 0, 0];
+    const triesN = userWon ? Math.max(1, Number(userTries) || 1) : 0;
+    const uIdx = userWon
+      ? (kind === 'artist' ? Math.min(4, Math.max(0, Math.ceil(triesN / 2) - 1)) : Math.min(4, Math.max(0, triesN - 1)))
+      : -1;
+    const losses = Math.max(0, plays - wins);
+    let slowerWins = 0;
+    if (userWon && uIdx >= 0) {
+      for (let i = uIdx + 1; i < 5; i++) slowerWins += (bArr[i] || 0);
+    }
+    const beatCount = userWon ? (slowerWins + losses) : 0;
+    let beatPct = userWon ? Math.min(99, Math.round((beatCount / plays) * 100)) : 0;
+    if (beatPct === 0 && userWon && avgNum > triesN + 0.05) {
+      beatPct = Math.min(95, Math.max(12, Math.round(((avgNum - triesN) / avgNum) * 100)));
+    }
+    const sameCount = (userWon && uIdx >= 0) ? Math.max(1, bArr[uIdx] || 1) : 0;
+    const samePct = userWon ? Math.min(100, Math.max(1, Math.round((sameCount / plays) * 100))) : 0;
+
+    const clipEn = ['0.1s', '0.5s', '2s', '8s', '15s'][uIdx] || '0.1s';
+    const clipId = ['0,1d', '0,5d', '2d', '8d', '15d'][uIdx] || '0,1d';
+    const ordEn = ['1st try', '2nd try', '3rd try', '4th try', '5th try'][uIdx] || (triesN + ' tries');
+    const tryLabel = kind === 'artist'
+      ? (isId ? ('tebakan ke-' + triesN) : (triesN === 1 ? '1st try' : (triesN + ' tries')))
+      : (isId ? ('percobaan ke-' + triesN + ' (' + clipId + ')') : (ordEn + ' (' + clipEn + ')'));
+    const youLabel = isId
+      ? (triesN + 'x')
+      : (triesN === 1 ? '1 try' : (triesN + ' tries'));
+
+    let head = '';
+    let badge = '';
+    let sub = '';
+
+    if (userWon) {
+      const clipSuffix = kind === 'artist' ? '' : (' (' + (isId ? clipId : clipEn) + ')');
+      if (beatPct > 0) {
+        head = I18N ? tr('dcFasterThan', { pct: beatPct }) : ('Faster than ' + beatPct + '% of players today');
+      } else if (triesN === 1) {
+        head = I18N ? tr('dcFastestFirst', { clip: clipSuffix }) : ('#1 fastest today · 1st try' + clipSuffix);
+      } else {
+        head = I18N ? tr('dcMatchedPace', { n: triesN }) : ("Matched today's pace · " + triesN + ' tries');
+      }
+      badge = I18N
+        ? tr('dcBadgeWin', { you: youLabel, avg: avgStr })
+        : ('You: ' + youLabel + ' vs ' + avgStr + ' avg');
+      sub = kind === 'artist'
+        ? (I18N ? tr('dcSubArtistWin', { pct, samePct, tryLabel }) : (pct + "% of players solved today's artist · " + samePct + '% solved in ' + tryLabel))
+        : (I18N ? tr('dcSubSongWin', { pct, samePct, tryLabel }) : (pct + "% of players solved today's song · " + samePct + '% guessed on ' + tryLabel));
+    } else {
+      const missPct = Math.max(1, 100 - pct);
+      head = I18N ? tr('dcToughMissed', { pct: missPct }) : ('Tough challenge today · ' + missPct + '% of players missed');
+      if (wins > 0) {
+        badge = I18N ? tr('dcBadgeLose', { avg: avgStr }) : ('You: X · Avg: ' + avgStr);
+        sub = kind === 'artist'
+          ? (I18N ? tr('dcSubArtistAvg', { pct, avg: avgStr }) : (pct + "% of players solved today's artist · winners averaged " + avgStr + ' tries'))
+          : (I18N ? tr('dcSubSongAvg', { pct, avg: avgStr }) : (pct + "% of players solved today's song · winners averaged " + avgStr + ' tries'));
+      } else {
+        badge = I18N ? tr('dcBadgeZero') : '0% solved so far';
+        sub = kind === 'artist'
+          ? (I18N ? tr('dcSubArtistZero') : "0% of players have solved today's artist so far")
+          : (I18N ? tr('dcSubSongZero') : "0% of players have solved today's song so far");
+      }
+    }
+    return { head, badge, sub };
   }
-  function paintDailyCommunity(el, data) {
+  function paintDailyCommunity(el, data, kind = 'song', userWon = true, userTries = 1) {
     if (!el) return;
-    const txt = formatDailyCommunity(data);
-    el.textContent = txt;
-    el.hidden = !txt;
+    const model = formatDailyCommunity(data, kind, userWon, userTries);
+    if (!model) {
+      el.hidden = true;
+      el.innerHTML = '';
+      return;
+    }
+    el.innerHTML =
+      '<span class="dc-row">' +
+        '<span class="dc-head"><span class="dc-dot" aria-hidden="true"></span><span>' + esc(model.head) + '</span></span>' +
+        '<span class="dc-badge">' + esc(model.badge) + '</span>' +
+      '</span>' +
+      '<span class="dc-sub">' + esc(model.sub) + '</span>';
+    el.hidden = false;
   }
   function submitDailyCommunity(kind, day, won, tries) {
     if (!canUseCommunityApi() || !day) return;
@@ -1982,34 +2050,36 @@
     const cacheKey = kind + ':' + day;
     if (LS.get(sentKey) || dailyCommunityInFlight.has(cacheKey)) return;
     dailyCommunityInFlight.add(cacheKey);
+    const normTries = won ? Math.max(1, Number(tries) || 1) : 0;
     const targetEl = () => (kind === 'artist' ? $('#agDailyCommunity') : $('#dailyCommunity'));
     fetch('/api/daily-stats', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind, day, won: !!won, tries: won ? Math.max(1, Number(tries) || 1) : 0 })
+      body: JSON.stringify({ kind, day, won: !!won, tries: normTries })
     }).then((r) => (r && r.ok ? r.json() : null)).then((data) => {
       if (!data || !data.ok) return;
       LS.set(sentKey, 1);
-      dailyCommunityCache.set(cacheKey, { data, userWon: !!won });
-      paintDailyCommunity(targetEl(), data);
+      dailyCommunityCache.set(cacheKey, { data, kind, userWon: !!won, userTries: normTries });
+      paintDailyCommunity(targetEl(), data, kind, !!won, normTries);
     }).catch(() => {}).finally(() => {
       dailyCommunityInFlight.delete(cacheKey);
     });
   }
   function ensureDailyCommunity(kind, day, el, won, tries) {
     if (!el) return;
+    const normTries = won ? Math.max(1, Number(tries) || 1) : 0;
     const cacheKey = kind + ':' + day;
     const cached = dailyCommunityCache.get(cacheKey);
     if (cached && cached.data && Number(cached.data.plays) >= 1) {
-      paintDailyCommunity(el, cached.data);
+      paintDailyCommunity(el, cached.data, kind, !!won, normTries);
     } else {
       el.hidden = true;
-      el.textContent = '';
+      el.innerHTML = '';
     }
     if (!canUseCommunityApi() || !day) return;
     const sentKey = 'tl:dailyStatSent:' + kind + ':' + day;
     if (!LS.get(sentKey)) {
-      submitDailyCommunity(kind, day, won, tries);
+      submitDailyCommunity(kind, day, won, normTries);
       return;
     }
     if (dailyCommunityInFlight.has(cacheKey)) return;
@@ -2019,19 +2089,19 @@
         if (!data || !data.ok || !(Number(data.plays) >= 1)) return;
         const cur = dailyCommunityCache.get(cacheKey);
         if (cur && cur.data && Number(cur.data.plays) > Number(data.plays)) return;
-        dailyCommunityCache.set(cacheKey, { data, userWon: !!won });
-        paintDailyCommunity(el, data);
+        dailyCommunityCache.set(cacheKey, { data, kind, userWon: !!won, userTries: normTries });
+        paintDailyCommunity(el, data, kind, !!won, normTries);
       }).catch(() => {});
   }
   function syncDailyCommunityLang() {
     if (S.daily && S.daily.day && $('#dailyCommunity') && !$('#dailyCommunity').hidden) {
       const c = dailyCommunityCache.get('song:' + S.daily.day);
-      if (c) paintDailyCommunity($('#dailyCommunity'), c.data);
+      if (c) paintDailyCommunity($('#dailyCommunity'), c.data, 'song', c.userWon, c.userTries);
     }
     if ($('#agDailyCommunity') && !$('#agDailyCommunity').hidden) {
       const day = window.DailyGame && typeof window.DailyGame.day === 'function' ? window.DailyGame.day() : '';
       const c = day && dailyCommunityCache.get('artist:' + day);
-      if (c) paintDailyCommunity($('#agDailyCommunity'), c.data);
+      if (c) paintDailyCommunity($('#agDailyCommunity'), c.data, 'artist', c.userWon, c.userTries);
     }
   }
 

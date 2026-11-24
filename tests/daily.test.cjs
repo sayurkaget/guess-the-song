@@ -21,7 +21,7 @@ function setup(hash='', initialSaved=new Map()) {
     '\nglobalThis.test={S,UI,acceptChallenge,showIncomingChallenge,shareStage,searchIndex,recordStats,submitGuess,skip,nextStage,load,startDaily,shareText,saveRun,completeDaily,dailyStreak,refreshDaily,dismissModal,stageCount};})();';
   vm.runInContext(source,context);
   for(const key of ['head','playState','readout','render','clearInput','buildControls','refreshLobby','autoplay','runResult'])context.test.UI[key]=()=>{};
-  context.fetch=async()=>{const s=context.test.S.daily.songs[context.test.S.stage];return {ok:true,text:async()=>JSON.stringify({results:[{...track,trackId:100+context.test.S.stage,trackName:s.title,artistName:s.artist}]})}};
+  context.fetch=async()=>{const s=context.test.S.daily.songs[context.test.S.stage];return {ok:true,text:async()=>JSON.stringify({results:[{...track,trackId:s.trackId||(100+context.test.S.stage),trackName:s.title,artistName:s.artist}]})}};
   return {context,t:context.test,C:context.window.TrackChallenge,nodes,saved};
 }
 

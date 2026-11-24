@@ -166,4 +166,14 @@ test('Wave 85/86 Quick Preset Playlists (12 curated & dynamic) and foreground co
   assert.match(app, /function animateMobileScrollTo\(targetY, durationMs, onDone\)/);
   assert.match(app, /animateMobileScrollTo\(0, 260, removeRunwayClass\)/);
   assert.match(app, /searchKeyboardOpen && fullH - curH < 60/);
+
+  // Wave 94: Option B 2-line Daily Community Comparison Card (.dc-row, .dc-head, .dc-badge, .dc-sub)
+  assert.match(app, /function formatDailyCommunity\(data, kind = 'song', userWon = true, userTries = 1\)/);
+  assert.match(app, /dcFasterThan/);
+  assert.match(app, /dcFastestFirst/);
+  assert.match(app, /dcBadgeWin/);
+  assert.match(app, /dcSubSongWin/);
+  const layoutCss = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  assert.match(layoutCss, /\.daily-community \.dc-badge\{/);
+  assert.match(layoutCss, /\.daily-community \.dc-sub\{/);
 });
