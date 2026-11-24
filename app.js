@@ -3952,7 +3952,10 @@
 
   // Alamat situs mengikuti domain tempat game dibuka (github.io, pages.dev,
   // domain sendiri -- apa pun), jadi tautan tantangan tak pernah usang.
-  const ROUTE_SLUGS = new Set(['daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective', 'id']);
+  const ROUTE_SLUGS = new Set([
+    'daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective', 'id',
+    'cover-pixel', 'album-color', 'hairspot', 'fact-or-cap', 'lyric-guess'
+  ]);
   const DEFAULT_TITLE = 'TuneUp — Free Guess the Song Game, Spotify Playlist Quiz & Music Duel';
   const DEFAULT_TITLE_ID = 'TuneUp — Game Tebak Lagu Online Gratis (Spotify, Harian & Duel)';
   const lobbyTitle = () => (settings.lang === 'id' ? DEFAULT_TITLE_ID : DEFAULT_TITLE);
@@ -4237,7 +4240,7 @@
         document.querySelector('#classicSpotifyPanel:not([hidden]) #spotifyUrl') ||
         document.querySelector('#classicArtistPanel:not([hidden]) #openCustom')
       )) ||
-      ($('#start') && !$('#start').disabled ? $('#start') : $('#openDaily'));
+      ($('#start') && !$('#start').disabled ? $('#start') : $('#openDailyHub'));
     if (focusEl && typeof focusEl.focus === 'function') focusEl.focus();
   };
 
@@ -4350,6 +4353,9 @@
     applyLanguage();
     UI.buildControls();
     UI.refreshLobby();
+    if (window.TuneUpDailyUI && typeof window.TuneUpDailyUI.refreshLobbyDailyUI === 'function') {
+      window.TuneUpDailyUI.refreshLobbyDailyUI();
+    }
   }
 
   function openSettings() {
@@ -5426,6 +5432,7 @@
       ds.hubPlayed = 0;
       if ($('#duelScore')) $('#duelScore').textContent = (settings.lang === 'id' ? 'Ronde 1/' : 'Round 1/') + ds.hubTotal + ' · 0 pts';
       if ($('#duelBest')) $('#duelBest').hidden = true;
+      syncRoute('daily', { title: 'Daily Challenge — TuneUp', replace: true });
       return true;
     };
 
@@ -6176,6 +6183,7 @@
         preloadTargetHit(ag.target);
       }
       renderAgBoard();
+      syncRoute('daily', { title: 'Daily Challenge — TuneUp', replace: true });
       return true;
     };
     syncArtistLang = () => {
@@ -7071,8 +7079,19 @@
       return true;
     }
     if (hash === '#daily' || slug === 'daily') {
-      if (window.TuneUpDailyUI && typeof window.TuneUpDailyUI.showDailyHub === 'function') window.TuneUpDailyUI.showDailyHub();
+      if (window.TuneUpDailyUI && typeof window.TuneUpDailyUI.showDailyHub === 'function') window.TuneUpDailyUI.showDailyHub({ skipRoute: true });
       else startDaily();
+      return true;
+    }
+    const MINI_ROUTE_MAP = {
+      'cover-pixel': 'cover',
+      'album-color': 'color',
+      'hairspot': 'hair',
+      'fact-or-cap': 'fact',
+      'lyric-guess': 'lyric'
+    };
+    if (MINI_ROUTE_MAP[slug] && window.TuneUpDailyUI && typeof window.TuneUpDailyUI.startFreeMiniGame === 'function') {
+      window.TuneUpDailyUI.startFreeMiniGame(MINI_ROUTE_MAP[slug], { skipRoute: true });
       return true;
     }
 
@@ -7243,9 +7262,11 @@
       playTrackPreview: async (trackId, btnEl) => {
         const song = ALL.find((s) => String(s.trackId) === String(trackId));
         if (!song) return;
+        const playTxt = settings.lang === 'id' ? 'Putar lagu' : 'Play preview';
+        const pauseTxt = settings.lang === 'id' ? 'Jeda' : 'Pause';
         if (miniAudio && !miniAudio.paused && miniAudio.datasetTrack === String(trackId)) {
           stopMiniPreview();
-          if (btnEl) btnEl.textContent = settings.lang === 'id' ? '▶ Putar lagu' : '▶ Play preview';
+          if (btnEl) btnEl.textContent = playTxt;
           return;
         }
         stopAudio();
@@ -7253,19 +7274,48 @@
         if (btnEl) btnEl.textContent = settings.lang === 'id' ? 'Memuat…' : 'Loading…';
         try {
           const meta = await resolve(song);
-          if (!meta || !meta.preview) { toast(I18N ? tr('toastAudioUnavailable') : 'Preview unavailable'); return; }
+          if (!meta || !meta.preview) {
+            if (btnEl) btnEl.textContent = playTxt;
+            toast(I18N ? tr('toastAudioUnavailable') : 'Preview unavailable');
+            return;
+          }
           if (!miniAudio) miniAudio = new Audio();
           miniAudio.datasetTrack = String(trackId);
           miniAudio.src = meta.preview;
           miniAudio.volume = S.muted ? 0 : S.vol;
-          miniAudio.onended = () => { if (btnEl) btnEl.textContent = settings.lang === 'id' ? '▶ Putar lagu' : '▶ Play preview'; };
+          miniAudio.onended = () => { if (btnEl) btnEl.textContent = playTxt; };
           await miniAudio.play();
-          if (btnEl) btnEl.textContent = settings.lang === 'id' ? '⏸ Jeda' : '⏸ Pause';
+          if (btnEl) btnEl.textContent = pauseTxt;
         } catch (e) {
-          if (btnEl) btnEl.textContent = settings.lang === 'id' ? '▶ Putar lagu' : '▶ Play preview';
+          if (btnEl) btnEl.textContent = playTxt;
         }
       },
-      copyText: (txt, evName) => salin(txt, evName || 'daily_hub_copy'),
+      copyText: async (txt, evName, customToast) => {
+        let copied = false;
+        try { await navigator.clipboard.writeText(txt); copied = true; } catch (e) { copied = copyTextSync(txt); }
+        toast(copied
+          ? (customToast || (settings.lang === 'id' ? 'Hasil harian tersalin!' : 'Daily result copied!'))
+          : (I18N ? tr('toastCopyFailed') : 'Copy failed'));
+        if (copied && evName) trackActivity(evName, { mode: 'daily' });
+        return copied;
+      },
+      syncRoute: (slug, title, replace) => syncRoute(slug || '', { title: title || lobbyTitle(), replace: !!replace }),
+      norm: (s) => norm(s),
+      findArtistTopTrack: (artistName) => {
+        const target = norm(artistName);
+        if (!target) return null;
+        let best = null;
+        for (let i = 0; i < ALL.length; i++) {
+          const s = ALL[i];
+          if (!s.trackId) continue;
+          if (norm(s.artist) === target || norm(s.artist).startsWith(target + ' ')) {
+            if (!best || (s.tier || 5) < (best.tier || 5)) best = s;
+            if (best.tier === 1) break;
+          }
+        }
+        return best;
+      },
+      toast: (msg) => toast(msg),
       isSfxOn: () => settings.sfx !== false,
       isAnimOn: () => settings.anim !== false,
       getLang: () => settings.lang || 'en',

@@ -297,7 +297,17 @@
     if (pop) pop.hidden = true;
   }
 
-  function showDailyHub() {
+  function scrollTopReset() {
+    if (typeof window === 'undefined') return;
+    try { window.scrollTo(0, 0); } catch {}
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => { try { window.scrollTo(0, 0); } catch {} });
+    }
+  }
+
+  function showDailyHub(opts) {
     if (bridge && bridge.stopAudio) bridge.stopAudio();
     activeDailySlot = null;
     hideAllScreens();
@@ -306,7 +316,10 @@
     if (hub) hub.hidden = false;
     loadHubState();
     renderDailyHub();
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    if ((!opts || !opts.skipRoute) && bridge && bridge.syncRoute) {
+      bridge.syncRoute('daily', t('Daily Challenge — TuneUp', 'Tantangan Harian — TuneUp'), !!(opts && opts.replace));
+    }
+    scrollTopReset();
   }
 
   function clearSpinTimers() {
@@ -631,7 +644,7 @@
       : t(`Rank #${sum.rank} of ${sum.plays} · Avg ${sum.avgScore}`, `Peringkat #${sum.rank}/${sum.plays} · Rata-rata ${sum.avgScore}`);
 
     const barsHtml = sum.bands.map((b) => {
-      const h = Math.max(6, Math.round(b.heightPct * 0.62));
+      const h = Math.max(6, Math.round(b.heightPct * 0.52));
       return `<div class="dh-bar-col${b.isUser ? ' is-you' : ''}">` +
         (b.isUser ? `<span class="dh-bar-you">${esc(t('You', 'Kamu'))}</span>` : '') +
         `<span class="dh-bar-pct">${b.pct > 0 || b.isUser ? (b.pct + '%') : ''}</span>` +
@@ -750,10 +763,55 @@
     openMiniGame(slot.gameId, slot);
   }
 
-  function startFreeMiniGame(gameId) {
+  const GAME_ROUTES = {
+    cover: { slug: 'cover-pixel', titleEn: 'Cover Pixel — TuneUp',       titleId: 'Cover Pixel — TuneUp' },
+    color: { slug: 'album-color', titleEn: 'Album Color — TuneUp',       titleId: 'Warnai Album — TuneUp' },
+    hair:  { slug: 'hairspot',    titleEn: 'HairSpot Music — TuneUp',    titleId: 'HairSpot Musik — TuneUp' },
+    fact:  { slug: 'fact-or-cap', titleEn: 'Music Fact or Cap — TuneUp', titleId: 'Fakta / Hoax Musik — TuneUp' },
+    lyric: { slug: 'lyric-guess', titleEn: 'Lyric Guess — TuneUp',       titleId: 'Tebak Lirik — TuneUp' }
+  };
+
+  const recentFreeIds = { cover: [], color: [], hair: [], lyric: [] };
+  function pickFreeUnseen(pool, gameId, seed, idFn) {
+    if (!pool || !pool.length) return null;
+    const recent = recentFreeIds[gameId] || [];
+    const fresh = pool.filter((x) => !recent.includes(String(idFn(x))));
+    const src = fresh.length ? fresh : pool;
+    const picked = Hub.pickDeterministic(src, seed, 1);
+    if (picked) {
+      const key = String(idFn(picked));
+      recent.push(key);
+      if (recent.length > Math.min(18, Math.floor(pool.length * 0.6))) recent.shift();
+      recentFreeIds[gameId] = recent;
+    }
+    return picked;
+  }
+
+  function normStr(s) {
+    if (bridge && bridge.norm) return bridge.norm(s);
+    return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+
+  function hslToHex(h, s, l) {
+    const s1 = s / 100, l1 = l / 100;
+    const c = (1 - Math.abs(2 * l1 - 1)) * s1;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = l1 - c / 2;
+    let r = 0, g = 0, b = 0;
+    if (h < 60) { r = c; g = x; }
+    else if (h < 120) { r = x; g = c; }
+    else if (h < 180) { g = c; b = x; }
+    else if (h < 240) { g = x; b = c; }
+    else if (h < 300) { r = x; b = c; }
+    else { r = c; b = x; }
+    const hex = (v) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+    return ('#' + hex(r) + hex(g) + hex(b)).toUpperCase();
+  }
+
+  function startFreeMiniGame(gameId, opts) {
     activeDailySlot = null;
     document.body.dataset.diff = 'easy';
-    openMiniGame(gameId, null);
+    openMiniGame(gameId, null, opts);
   }
 
   /* ================= Unified Mini-Game Stage (`#miniGame`) ================= */
@@ -775,11 +833,14 @@
     pill.hidden = false;
   }
 
-  function openMiniGame(gameId, dailySlot) {
+  function openMiniGame(gameId, dailySlot, opts) {
     if (bridge && bridge.stopAudio) bridge.stopAudio();
     hideAllScreens();
     const sec = $('#miniGame');
     if (sec) sec.hidden = false;
+
+    const arena = $('#mgArena');
+    if (arena) arena.dataset.layout = gameId === 'fact' ? 'single' : 'split';
 
     const backLbl = $('#mgBackLbl');
     if (backLbl) backLbl.textContent = dailySlot ? t('Back to Daily', 'Kembali ke Daily') : t('Change mode', 'Ganti mode');
@@ -792,6 +853,15 @@
     renderDailyPillInMiniGame(dailySlot);
     $('#mgGameTitle').innerHTML = `<span class="mg-title-ico">${ICONS[gameId] || ''}</span><span>${esc(gameLabel(gameId))}</span>`;
 
+    if (bridge && bridge.syncRoute) {
+      if (dailySlot) {
+        bridge.syncRoute('daily', t('Daily Challenge — TuneUp', 'Tantangan Harian — TuneUp'), true);
+      } else if (!opts || !opts.skipRoute) {
+        const r = GAME_ROUTES[gameId];
+        if (r) bridge.syncRoute(r.slug, isId() ? r.titleId : r.titleEn, !!(opts && opts.replace));
+      }
+    }
+
     const isDaily = !!dailySlot;
     const seed = isDaily ? dailySlot.seed : ('free:' + gameId + ':' + Date.now() + ':' + Math.random());
 
@@ -801,39 +871,65 @@
     else if (gameId === 'fact') initFactOrCap(seed, dailySlot);
     else if (gameId === 'lyric') initLyricGuess(seed, dailySlot);
 
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    scrollTopReset();
   }
 
-  /* ---------- Helper: Shared Autocomplete Search Bar for Cover / Lyric / HairSpot ---------- */
-  function bindMiniSearch({ placeholder, mode, onPick, onSkip, skipLabel }) {
+  /* ---------- Helper: Shared Autocomplete Search Bar (with keyboard nav & anti-duplicate) ---------- */
+  function bindMiniSearch({ placeholder, mode, onPick, onSkip, skipLabel, isTried }) {
     const host = $('#mgControls');
     if (!host) return;
     host.innerHTML =
       `<div class="mg-search-row">` +
         `<div class="mg-field">` +
-          `<input id="mgInput" type="text" placeholder="${esc(placeholder)}" autocomplete="off" spellcheck="false">` +
+          `<input id="mgInput" type="text" placeholder="${esc(placeholder)}" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="mgDD">` +
           `<button id="mgClear" class="clear" type="button" aria-label="Clear" hidden>&times;</button>` +
+          `<ul id="mgDD" class="dd mg-dd" role="listbox" hidden></ul>` +
         `</div>` +
         `<button id="mgSkipBtn" class="btn ghostbtn mg-skip-btn" type="button">${esc(skipLabel)}</button>` +
-      `</div>` +
-      `<ul id="mgDD" class="dd mg-dd" hidden></ul>`;
+      `</div>`;
 
     const input = $('#mgInput');
     const clearBtn = $('#mgClear');
     const skipBtn = $('#mgSkipBtn');
     const dd = $('#mgDD');
     let lastItems = [];
+    let selIdx = -1;
 
-    function closeDD() { dd.hidden = true; dd.innerHTML = ''; lastItems = []; }
+    function closeDD() {
+      dd.hidden = true;
+      dd.innerHTML = '';
+      lastItems = [];
+      selIdx = -1;
+      input.setAttribute('aria-expanded', 'false');
+    }
+    function syncSel() {
+      dd.querySelectorAll('button[data-i]').forEach((b) => {
+        b.classList.toggle('sel', Number(b.dataset.i) === selIdx);
+      });
+      const active = dd.querySelector('button.sel');
+      if (active && typeof active.scrollIntoView === 'function') active.scrollIntoView({ block: 'nearest' });
+    }
+    function pickIndex(idx) {
+      const item = lastItems[idx];
+      if (!item || item.tried) return;
+      input.value = '';
+      clearBtn.hidden = true;
+      closeDD();
+      onPick(item.raw);
+    }
     function renderDD(items) {
-      lastItems = items;
-      if (!items.length) { closeDD(); return; }
-      dd.innerHTML = items.map((it, idx) =>
-        `<li><button type="button" data-i="${idx}"><b>${esc(it.primary)}</b>` +
-        (it.secondary ? `<span>${esc(it.secondary)}</span>` : '') +
+      lastItems = items.map((it) => ({ ...it, tried: Boolean(isTried && isTried(it.raw)) }));
+      selIdx = lastItems.findIndex((it) => !it.tried);
+      if (!lastItems.length) { closeDD(); return; }
+      const triedTxt = t('Tried', 'Dicoba');
+      dd.innerHTML = lastItems.map((it, idx) =>
+        `<li><button type="button" data-i="${idx}" class="${idx === selIdx ? 'sel' : ''}${it.tried ? ' is-tried' : ''}" ${it.tried ? 'disabled' : ''}>` +
+          `<div class="mg-dd-copy"><b>${esc(it.primary)}</b>${it.secondary ? `<span>${esc(it.secondary)}</span>` : ''}</div>` +
+          (it.tried ? `<span class="dd-badge">${esc(triedTxt)}</span>` : '') +
         `</button></li>`
       ).join('');
       dd.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
     }
 
     input.oninput = () => {
@@ -848,16 +944,28 @@
         renderDD(res.map((a) => ({ primary: a.name, secondary: a.genre || '', raw: a })));
       }
     };
+    input.onkeydown = (e) => {
+      if (dd.hidden || !lastItems.length) return;
+      if (e.key === 'Escape') { e.preventDefault(); closeDD(); return; }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const dir = e.key === 'ArrowDown' ? 1 : -1;
+        for (let step = 0; step < lastItems.length; step++) {
+          const next = (selIdx + dir * (step + 1) + lastItems.length) % lastItems.length;
+          if (!lastItems[next].tried) { selIdx = next; syncSel(); break; }
+        }
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selIdx >= 0 && lastItems[selIdx] && !lastItems[selIdx].tried) pickIndex(selIdx);
+      }
+    };
     clearBtn.onclick = () => { input.value = ''; clearBtn.hidden = true; closeDD(); input.focus(); };
     dd.onclick = (e) => {
       const btn = e.target.closest('button[data-i]');
-      if (!btn) return;
-      const item = lastItems[Number(btn.dataset.i)];
-      if (!item) return;
-      input.value = '';
-      clearBtn.hidden = true;
-      closeDD();
-      onPick(item.raw);
+      if (!btn || btn.disabled) return;
+      pickIndex(Number(btn.dataset.i));
     };
     skipBtn.onclick = () => {
       closeDD();
@@ -865,35 +973,59 @@
     };
   }
 
-  function renderGuessHistory(guesses) {
+  /* Fixed 5-slot board (height never shifts from guess 1 to 5!) */
+  function renderAttemptSlots(guesses, maxTries) {
     const el = $('#mgHistory');
     if (!el) return;
-    if (!guesses.length) { el.innerHTML = ''; el.hidden = true; return; }
+    if (!maxTries) { el.innerHTML = ''; el.hidden = true; return; }
     el.hidden = false;
-    el.innerHTML = guesses.map((g) =>
-      `<li class="mg-g-row is-${g.kind}">` +
-        `<span class="mg-g-dot">${g.kind === 'right' ? '✓' : (g.kind === 'near' ? '≈' : (g.kind === 'skip' ? '↷' : '✕'))}</span>` +
-        `<span class="mg-g-txt">${esc(g.label)}</span>` +
-      `</li>`
-    ).join('');
+    const rows = [];
+    for (let i = 0; i < maxTries; i++) {
+      const g = guesses[i];
+      if (g) {
+        const icon = g.kind === 'right' ? '✓' : (g.kind === 'near' ? '≈' : (g.kind === 'skip' ? '↷' : '✕'));
+        rows.push(
+          `<li class="mg-slot is-${g.kind}">` +
+            `<span class="mg-slot-num">${icon}</span>` +
+            `<span class="mg-slot-txt">${esc(g.label)}</span>` +
+          `</li>`
+        );
+      } else {
+        rows.push(
+          `<li class="mg-slot is-empty${i === guesses.length ? ' is-now' : ''}">` +
+            `<span class="mg-slot-num">${i + 1}</span>` +
+            `<span class="mg-slot-txt"></span>` +
+          `</li>`
+        );
+      }
+    }
+    el.innerHTML = rows.join('');
   }
 
-  function renderMiniReveal({ won, score, title, subtitle, art, trackId, dailySlot, gameId, shortSummary, detail }) {
+  function renderMiniReveal({ won, score, title, subtitle, art, trackId, dailySlot, gameId, shortSummary, detail, freeKicker }) {
     const controls = $('#mgControls');
     if (!controls) return;
+    const playSvg = '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z" fill="currentColor"/></svg>';
+    const replaySvg = '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 1 2.4 5.7M4 12V7m0 5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const nextSvg = '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
     const playHtml = trackId
-      ? `<button id="mgPlayPreview" class="btn ghostbtn mg-rev-play" type="button">▶ ${esc(t('Play preview', 'Putar lagu'))}</button>`
+      ? `<button id="mgPlayPreview" class="btn ghostbtn icon-btn mg-rev-play" type="button">${playSvg}<span class="lbl">${esc(t('Play preview', 'Putar lagu'))}</span></button>`
       : '';
     const actionHtml = dailySlot
-      ? `<button id="mgContinueDaily" class="btn solid" type="button">${esc(t('Continue Daily →', 'Lanjut Daily →'))}</button>`
-      : `<button id="mgPlayAgain" class="btn solid" type="button">${esc(t('Next round', 'Ronde berikutnya'))}</button>`;
+      ? `<button id="mgContinueDaily" class="btn solid icon-btn" type="button"><span class="lbl">${esc(t('Continue Daily', 'Lanjut Daily'))}</span>${nextSvg}</button>`
+      : `<button id="mgPlayAgain" class="btn solid icon-btn" type="button">${replaySvg}<span class="lbl">${esc(t('Next round', 'Ronde berikutnya'))}</span></button>`;
+
+    const kickerTxt = dailySlot
+      ? `${won ? t('Solved!', 'Benar!') : t('Revealed', 'Jawabannya')} · ${score}/100`
+      : (freeKicker || (won ? t('Solved!', 'Benar!') : t('Out of tries', 'Kesempatan habis')));
 
     controls.innerHTML =
       `<div class="mg-reveal-card${won ? ' is-win' : ' is-lose'}">` +
         `<div class="mg-rev-top">` +
           (art ? `<img class="mg-rev-art" src="${esc(art)}" alt="">` : '') +
           `<div class="mg-rev-copy">` +
-            `<span class="mg-rev-kicker">${esc(won ? t('Solved!', 'Benar!') : t('Revealed', 'Jawabannya'))} · ${score}/100</span>` +
+            `<span class="mg-rev-kicker">${esc(kickerTxt)}</span>` +
             `<div class="mg-rev-title">${esc(title)}</div>` +
             `<div class="mg-rev-sub">${esc(subtitle)}</div>` +
           `</div>` +
@@ -903,7 +1035,7 @@
 
     const playBtn = $('#mgPlayPreview');
     if (playBtn && trackId && bridge && bridge.playTrackPreview) {
-      playBtn.onclick = () => bridge.playTrackPreview(trackId, playBtn);
+      playBtn.onclick = () => bridge.playTrackPreview(trackId, playBtn.querySelector('.lbl') || playBtn);
     }
     const contBtn = $('#mgContinueDaily');
     if (contBtn && dailySlot) {
@@ -916,7 +1048,7 @@
     if (againBtn) {
       againBtn.onclick = () => {
         if (bridge && bridge.stopAudio) bridge.stopAudio();
-        startFreeMiniGame(gameId);
+        startFreeMiniGame(gameId, { replace: true });
       };
     }
   }
@@ -933,18 +1065,21 @@
       seenArt.add(s.art);
       return true;
     });
-    const target = Hub.pickDeterministic(pool.length ? pool : all, seed, 1);
+    const srcPool = pool.length ? pool : all;
+    const target = dailySlot
+      ? Hub.pickDeterministic(srcPool, seed, 1)
+      : pickFreeUnseen(srcPool, 'cover', seed, (s) => s.trackId || s.slug);
     if (!target) return;
 
-    mgState = { gameId: 'cover', target, tries: 0, maxTries: 5, guesses: [], done: false, imgEl: null };
+    mgState = { gameId: 'cover', target, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false, imgEl: null };
     $('#mgSubtitle').textContent = t('Guess the song from its pixelated album cover.', 'Tebak lagu dari cover album piksel yang makin tajam tiap percobaan.');
     $('#mgBody').innerHTML =
       `<div class="mg-cover-wrap">` +
-        `<canvas id="mgPixelCanvas" width="240" height="240" class="mg-pixel-canvas"></canvas>` +
+        `<canvas id="mgPixelCanvas" width="210" height="210" class="mg-pixel-canvas"></canvas>` +
         `<img id="mgPixelFallback" class="mg-pixel-fallback" alt="" hidden>` +
         `<span id="mgPixelTag" class="mg-stage-tag">1/5 · 6×6 px</span>` +
       `</div>`;
-    renderGuessHistory([]);
+    renderAttemptSlots([], 5);
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -964,6 +1099,7 @@
       placeholder: t('Type song title or artist…', 'Ketik judul lagu atau artis…'),
       mode: 'song',
       skipLabel: t('Skip', 'Lewati'),
+      isTried: (s) => mgState && mgState.tried.has(normStr(s.title) + '|' + normStr(s.artist)),
       onPick: (song) => submitCoverGuess(song, dailySlot),
       onSkip: () => skipCoverGuess(dailySlot)
     });
@@ -1001,21 +1137,29 @@
   function submitCoverGuess(pick, dailySlot) {
     const st = mgState;
     if (!st || st.done) return;
+    const key = normStr(pick.title) + '|' + normStr(pick.artist);
+    if (st.tried.has(key)) {
+      if (bridge && bridge.toast) bridge.toast(t('Already tried that song.', 'Lagu ini sudah dicoba.'));
+      return;
+    }
+    st.tried.add(key);
+
     const tgt = st.target;
+    const sameArt = normStr(pick.artist) === normStr(tgt.artist);
     const sameTrack = (pick.trackId && tgt.trackId && String(pick.trackId) === String(tgt.trackId)) ||
       (pick.slug === tgt.slug) ||
-      (pick.art && tgt.art && pick.art === tgt.art && pick.artist === tgt.artist);
-    const sameArt = pick.artist && tgt.artist && pick.artist.toLowerCase() === tgt.artist.toLowerCase();
+      (pick.art && tgt.art && pick.art === tgt.art && sameArt) ||
+      (normStr(pick.title) === normStr(tgt.title) && sameArt);
 
     st.tries++;
     if (sameTrack) {
       st.done = true;
       st.guesses.push({ kind: 'right', label: `${pick.title} — ${pick.artist}` });
-      renderGuessHistory(st.guesses);
+      renderAttemptSlots(st.guesses, 5);
       drawCoverPixel(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
-      renderMiniReveal({ won: true, score, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.title}` });
+      renderMiniReveal({ won: true, score, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: sum });
       return;
     }
     st.guesses.push({
@@ -1024,12 +1168,12 @@
         ? `${pick.title} — ${pick.artist} (${t('Right artist!', 'Artis benar!')})`
         : `${pick.title} — ${pick.artist}`
     });
-    renderGuessHistory(st.guesses);
+    renderAttemptSlots(st.guesses, 5);
     if (st.tries >= st.maxTries) {
       st.done = true;
       drawCoverPixel(true);
       const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.title}` });
+      renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
       drawCoverPixel(false);
     }
@@ -1040,100 +1184,114 @@
     if (!st || st.done) return;
     st.tries++;
     st.guesses.push({ kind: 'skip', label: t('Skipped · sharper pixels', 'Lewati · piksel lebih jelas') });
-    renderGuessHistory(st.guesses);
+    renderAttemptSlots(st.guesses, 5);
     if (st.tries >= st.maxTries) {
       st.done = true;
       drawCoverPixel(true);
       const tgt = st.target;
       const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.title}` });
+      renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
       drawCoverPixel(false);
     }
   }
 
-  /* ================= GAME 2: ALBUM COLOR ("WARNAI ALBUM") ================= */
+  /* ================= GAME 2: ALBUM COLOR (CLEAN VINYL SWATCH — ZERO WEIRD FACE TINT) ================= */
   function initAlbumColor(seed, dailySlot) {
     const bank = Data.albumColors || [];
-    const targetRow = Hub.pickDeterministic(bank, seed, 1);
+    const targetRow = dailySlot
+      ? Hub.pickDeterministic(bank, seed, 1)
+      : pickFreeUnseen(bank, 'color', seed, (r) => r[0] + '|' + r[1]);
     if (!targetRow) return;
     // [album, artist, artUrl, [h,s,l], diff, trackId, anchorTitle, year]
     const [album, artist, artUrl, targetHsl, , trackId, anchorTitle, year] = targetRow;
     mgState = { gameId: 'color', album, artist, artUrl, targetHsl, trackId, anchorTitle, year, done: false };
 
-    $('#mgSubtitle').textContent = t('Remember this iconic album cover? Paint its true signature color!', 'Ingat warna asli cover album ikonik ini? Geser slider untuk mewarnainya!');
-    renderGuessHistory([]);
+    $('#mgSubtitle').textContent = t('Mix the true signature color of this iconic album cover!', 'Racik warna khas asli dari cover album ikonik ini!');
+    renderAttemptSlots([], 0);
 
     // Start slider at a neutral contrasting hue away from answer
     const initH = (targetHsl[0] + 150) % 360;
-    const initS = 60, initL = 50;
+    const initS = 62, initL = 48;
+    const initHex = hslToHex(initH, initS, initL);
 
     $('#mgBody').innerHTML =
-      `<div class="mg-album-meta"><b>${esc(album)}</b><span>${esc(artist)} · ${year}</span></div>` +
-      `<div class="mg-color-compare">` +
-        `<div class="mg-color-col">` +
-          `<div class="mg-album-stage" id="mgPaintBox">` +
-            `<img src="${esc(artUrl)}" class="mg-album-gray" alt="${esc(album)}">` +
-            `<div class="mg-album-tint" id="mgPaintTint"></div>` +
-            `<div class="mg-album-lit" id="mgPaintLit"></div>` +
+      `<div class="mg-swatch-stage" id="mgSwatchStage">` +
+        `<div class="mg-swatch-sleeve">` +
+          `<div class="mg-swatch-disc" aria-hidden="true"></div>` +
+          `<div class="mg-swatch-card" id="mgSwatchBox" style="background:hsl(${initH},${initS}%,${initL}%)">` +
+            `<span class="mg-swatch-hex" id="mgSwatchHex">${initHex}</span>` +
+            `<div class="mg-swatch-label"><b>${esc(album)}</b><span>${esc(artist)} · ${year}</span></div>` +
           `</div>` +
-          `<span class="mg-color-cap">${esc(t('Your color', 'Warnamu'))}</span>` +
         `</div>` +
-        `<div class="mg-color-col" id="mgRealCol" hidden>` +
-          `<div class="mg-album-stage is-real"><img src="${esc(artUrl)}" class="mg-album-orig" alt="${esc(album)}"></div>` +
-          `<span class="mg-color-cap is-acc">${esc(t('Original', 'Asli'))}</span>` +
+      `</div>`;
+
+    $('#mgControls').innerHTML =
+      `<div class="mg-color-panel">` +
+        `<div class="mg-sliders" id="mgSlidersBox">` +
+          `<label class="mg-sl-row"><span>${esc(t('Hue', 'Warna'))}</span><b id="mgHVal">${initH}°</b>` +
+            `<input id="mgSlH" class="mg-slider is-hue" type="range" min="0" max="360" value="${initH}"></label>` +
+          `<label class="mg-sl-row"><span>${esc(t('Saturation', 'Saturasi'))}</span><b id="mgSVal">${initS}%</b>` +
+            `<input id="mgSlS" class="mg-slider" type="range" min="0" max="100" value="${initS}"></label>` +
+          `<label class="mg-sl-row"><span>${esc(t('Brightness', 'Kecerahan'))}</span><b id="mgLVal">${initL}%</b>` +
+            `<input id="mgSlL" class="mg-slider" type="range" min="12" max="88" value="${initL}"></label>` +
         `</div>` +
-      `</div>` +
-      `<div class="mg-sliders">` +
-        `<label class="mg-sl-row"><span>${esc(t('Hue', 'Warna'))}</span><b id="mgHVal">${initH}°</b>` +
-          `<input id="mgSlH" class="mg-slider is-hue" type="range" min="0" max="360" value="${initH}"></label>` +
-        `<label class="mg-sl-row"><span>${esc(t('Saturation', 'Saturasi'))}</span><b id="mgSVal">${initS}%</b>` +
-          `<input id="mgSlS" class="mg-slider" type="range" min="0" max="100" value="${initS}"></label>` +
-        `<label class="mg-sl-row"><span>${esc(t('Brightness', 'Kecerahan'))}</span><b id="mgLVal">${initL}%</b>` +
-          `<input id="mgSlL" class="mg-slider" type="range" min="12" max="88" value="${initL}"></label>` +
+        `<button id="mgLockColor" class="btn solid mg-lock-btn" type="button">${esc(t('Lock color', 'Kunci warna'))}</button>` +
       `</div>`;
 
     const slH = $('#mgSlH'), slS = $('#mgSlS'), slL = $('#mgSlL');
-    function syncTint() {
+    function syncSwatch() {
       const h = +slH.value, s = +slS.value, l = +slL.value;
       $('#mgHVal').textContent = h + '°';
       $('#mgSVal').textContent = s + '%';
       $('#mgLVal').textContent = l + '%';
-      const tint = $('#mgPaintTint');
-      const lit = $('#mgPaintLit');
-      if (tint) tint.style.background = `hsl(${h}, ${s}%, ${l}%)`;
-      if (lit) {
-        const delta = (l - 50) / 50;
-        lit.style.background = delta >= 0
-          ? `rgba(255,255,255,${(delta * 0.34).toFixed(2)})`
-          : `rgba(0,0,0,${(-delta * 0.45).toFixed(2)})`;
-      }
+      const box = $('#mgSwatchBox');
+      if (box) box.style.background = `hsl(${h}, ${s}%, ${l}%)`;
+      const hx = $('#mgSwatchHex');
+      if (hx) hx.textContent = hslToHex(h, s, l);
       slS.style.background = `linear-gradient(90deg, hsl(${h},0%,${l}%), hsl(${h},100%,${l}%))`;
       slL.style.background = `linear-gradient(90deg, #000, hsl(${h},${s}%,50%), #fff)`;
     }
-    slH.oninput = slS.oninput = slL.oninput = syncTint;
-    syncTint();
+    slH.oninput = slS.oninput = slL.oninput = syncSwatch;
+    syncSwatch();
 
-    $('#mgControls').innerHTML = `<button id="mgLockColor" class="btn solid mg-lock-btn" type="button">${esc(t('Lock color', 'Kunci warna'))}</button>`;
     $('#mgLockColor').onclick = () => {
       if (mgState.done) return;
       mgState.done = true;
-      slH.disabled = slS.disabled = slL.disabled = true;
-      const score = Hub.scoreColorMatch([+slH.value, +slS.value, +slL.value], targetHsl);
-      const rc = $('#mgRealCol');
-      if (rc) rc.hidden = false;
+      const userHsl = [+slH.value, +slS.value, +slL.value];
+      const userHex = hslToHex(userHsl[0], userHsl[1], userHsl[2]);
+      const trueHex = hslToHex(targetHsl[0], targetHsl[1], targetHsl[2]);
+      const score = Hub.scoreColorMatch(userHsl, targetHsl);
       const sum = `${score}% ${t('match', 'cocok')}`;
+
+      // Show Original Cover + Your Color Swatch vs Signature Color Swatch cleanly!
+      $('#mgBody').innerHTML =
+        `<div class="mg-color-reveal">` +
+          `<div class="mg-color-orig-wrap"><img src="${esc(artUrl)}" class="mg-color-orig-img" alt="${esc(album)}"></div>` +
+          `<div class="mg-swatch-pair">` +
+            `<div class="mg-swatch-chip">` +
+              `<span class="mg-chip-dot" style="background:${userHex}"></span>` +
+              `<div class="mg-chip-txt"><small>${esc(t('Your color', 'Warnamu'))}</small><b>${userHex}</b></div>` +
+            `</div>` +
+            `<div class="mg-swatch-chip is-true">` +
+              `<span class="mg-chip-dot" style="background:${trueHex}"></span>` +
+              `<div class="mg-chip-txt"><small>${esc(t('Signature', 'Warna asli'))}</small><b>${trueHex}</b></div>` +
+            `</div>` +
+          `</div>` +
+        `</div>`;
+
       renderMiniReveal({
         won: score >= 60,
         score,
         title: `${album} (${score}%)`,
         subtitle: `${artist} · ${anchorTitle}`,
-        art: artUrl,
+        art: '',
         trackId,
         dailySlot,
         gameId: 'color',
         shortSummary: sum,
-        detail: `${sum} · ${album}`
+        detail: `${sum} · ${album}`,
+        freeKicker: sum
       });
     };
   }
@@ -1144,14 +1302,17 @@
     const bank = Data.hairBank || [];
     const maxDiff = dailySlot ? dailySlot.diffTier : 3;
     const pool = bank.filter((p) => p[3] <= maxDiff);
-    const picked = Hub.pickDeterministic(pool.length ? pool : bank, seed, 1);
+    const srcPool = pool.length ? pool : bank;
+    const picked = dailySlot
+      ? Hub.pickDeterministic(srcPool, seed, 1)
+      : pickFreeUnseen(srcPool, 'hair', seed, (p) => p[0]);
     if (!picked) return;
     // [artistId, artistName, imgUrl, diff]
     const [artistId, artistName, imgUrl] = picked;
-    mgState = { gameId: 'hair', artistId, artistName, imgUrl, tries: 0, maxTries: 5, guesses: [], done: false };
+    mgState = { gameId: 'hair', artistId, artistName, imgUrl, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
 
     $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle — skip reveals more!', 'Tebak musisi dari gaya rambutnya — lewati untuk membuka wajah lebih banyak!');
-    renderGuessHistory([]);
+    renderAttemptSlots([], 5);
 
     $('#mgBody').innerHTML =
       `<div class="mg-hair-frame">` +
@@ -1165,6 +1326,7 @@
       placeholder: t('Search musician name…', 'Cari nama musisi…'),
       mode: 'artist',
       skipLabel: t('Reveal more', 'Buka lagi'),
+      isTried: (a) => mgState && mgState.tried.has(normStr(a.name)),
       onPick: (artist) => submitHairGuess(artist, dailySlot),
       onSkip: () => skipHairGuess(dailySlot)
     });
@@ -1187,28 +1349,43 @@
     if (lbl) lbl.textContent = names[idx];
   }
 
+  function hairTopTrackId(artistObj, artistName) {
+    if (artistObj && artistObj.topSong && artistObj.topSong.trackId) return artistObj.topSong.trackId;
+    const hit = bridge && bridge.findArtistTopTrack ? bridge.findArtistTopTrack(artistName) : null;
+    return hit ? hit.trackId : null;
+  }
+
   function submitHairGuess(artist, dailySlot) {
     const st = mgState;
     if (!st || st.done) return;
+    const key = normStr(artist.name);
+    if (st.tried.has(key)) {
+      if (bridge && bridge.toast) bridge.toast(t('Already tried that musician.', 'Musisi ini sudah ditebak.'));
+      return;
+    }
+    st.tried.add(key);
+
     st.tries++;
-    const match = artist.id === st.artistId || artist.name.toLowerCase() === st.artistName.toLowerCase();
+    const match = artist.id === st.artistId || key === normStr(st.artistName);
     if (match) {
       st.done = true;
       st.guesses.push({ kind: 'right', label: artist.name });
-      renderGuessHistory(st.guesses);
+      renderAttemptSlots(st.guesses, 5);
       updateHairCurtain(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
-      renderMiniReveal({ won: true, score, title: st.artistName, subtitle: artist.genre || t('Musician', 'Musisi'), art: st.imgUrl, trackId: artist.topSong && artist.topSong.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}` });
+      const tid = hairTopTrackId(artist, st.artistName);
+      renderMiniReveal({ won: true, score, title: st.artistName, subtitle: artist.genre || t('Musician', 'Musisi'), art: st.imgUrl, trackId: tid, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: sum });
       return;
     }
     st.guesses.push({ kind: 'wrong', label: artist.name });
-    renderGuessHistory(st.guesses);
+    renderAttemptSlots(st.guesses, 5);
     if (st.tries >= st.maxTries) {
       st.done = true;
       updateHairCurtain(true);
       const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: t('Mystery musician', 'Musisi misterius'), art: st.imgUrl, trackId: null, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}` });
+      const tid = hairTopTrackId(null, st.artistName);
+      renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: t('Mystery musician', 'Musisi misterius'), art: st.imgUrl, trackId: tid, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
       updateHairCurtain(false);
     }
@@ -1219,12 +1396,13 @@
     if (!st || st.done) return;
     st.tries++;
     st.guesses.push({ kind: 'skip', label: t('Skipped · revealed more', 'Lewati · tirai dibuka') });
-    renderGuessHistory(st.guesses);
+    renderAttemptSlots(st.guesses, 5);
     if (st.tries >= st.maxTries) {
       st.done = true;
       updateHairCurtain(true);
       const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: t('Mystery musician', 'Musisi misterius'), art: st.imgUrl, trackId: null, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}` });
+      const tid = hairTopTrackId(null, st.artistName);
+      renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: t('Mystery musician', 'Musisi misterius'), art: st.imgUrl, trackId: tid, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
       updateHairCurtain(false);
     }
@@ -1252,7 +1430,7 @@
     $('#mgSubtitle').textContent = isDaily
       ? t('5 quick music claims — 20 points each!', '5 pernyataan musik cepat — 20 poin tiap jawaban benar!')
       : t('Endless music trivia — 3 lives!', 'Trivia musik tanpa batas — 3 nyawa!');
-    renderGuessHistory([]);
+    renderAttemptSlots([], 0);
     renderFactClaim();
   }
 
@@ -1261,7 +1439,7 @@
     if (!st || st.gameId !== 'fact') return;
     const item = st.deck[st.idx];
     if (!item) return;
-    const [isFact, , claimEn, claimId] = item;
+    const [, , claimEn, claimId] = item;
     const best = Number(LS.get(FACT_BEST_KEY, 0)) || 0;
 
     const statusLine = st.isDaily
@@ -1335,12 +1513,13 @@
         renderMiniReveal({
           won: st.correct >= 5,
           score: Math.min(100, st.correct * 10),
-          title: `${st.correct} ${t('correct in a row!', 'jawaban benar!')}`,
+          title: `${st.correct} ${t('correct!', 'jawaban benar!')}`,
           subtitle: `${t('Personal best', 'Skor terbaik')}: ${best}`,
           art: '',
           trackId: null,
           dailySlot: null,
-          gameId: 'fact'
+          gameId: 'fact',
+          freeKicker: `${t('Score', 'Skor')} ${st.correct} · ${t('Best', 'Terbaik')} ${best}`
         });
       }
     };
@@ -1349,20 +1528,23 @@
   /* ================= GAME 5: LYRIC GUESS ================= */
   function initLyricGuess(seed, dailySlot) {
     const bank = Data.lyricBank || [];
-    const targetRow = Hub.pickDeterministic(bank, seed, 1);
+    const targetRow = dailySlot
+      ? Hub.pickDeterministic(bank, seed, 1)
+      : pickFreeUnseen(bank, 'lyric', seed, (r) => r[0]);
     if (!targetRow) return;
     // [trackId, title, artist, art, year, diff, lines]
     const [trackId, title, artist, art, year, , lines] = targetRow;
-    mgState = { gameId: 'lyric', trackId, title, artist, art, year, lines, tries: 0, maxTries: 5, guesses: [], done: false };
+    mgState = { gameId: 'lyric', dailySlot, trackId, title, artist, art, year, lines, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
 
     $('#mgSubtitle').textContent = t('Guess the song from its lyrics — each skip reveals another line.', 'Tebak lagu dari liriknya — tiap lewati membuka 1 baris lagi.');
-    renderGuessHistory([]);
+    renderAttemptSlots([], 5);
     renderLyricLines(false);
 
     bindMiniSearch({
       placeholder: t('Type song title or artist…', 'Ketik judul lagu atau artis…'),
       mode: 'song',
       skipLabel: t('+1 line', '+1 baris'),
+      isTried: (s) => mgState && mgState.tried.has(normStr(s.title) + '|' + normStr(s.artist)),
       onPick: (song) => submitLyricGuess(song, dailySlot),
       onSkip: () => skipLyricGuess(dailySlot)
     });
@@ -1373,43 +1555,56 @@
     if (!st || st.gameId !== 'lyric') return;
     const count = showAll ? st.lines.length : Math.min(st.lines.length, st.tries + 1);
     const pts = Hub.scoreTries(true, st.tries + 1, 5);
+    const lineTag = t(`Line ${count}/5`, `Baris ${count}/5`);
+    const metaTxt = (st.dailySlot && !showAll)
+      ? `${lineTag} · +${pts} ${t('pts', 'poin')}`
+      : lineTag;
     $('#mgBody').innerHTML =
-      `<div class="mg-lyric-meta">${esc(t(`Line ${count}/5`, `Baris ${count}/5`))} · ${showAll ? '' : esc(`+${pts} ${t('pts if solved now', 'poin jika benar sekarang')}`)}</div>` +
-      `<div class="mg-lyric-card">` +
-        st.lines.slice(0, count).map((ln, idx) =>
-          `<p class="mg-lyric-line${idx === count - 1 && !showAll ? ' is-fresh' : ''}">“${esc(ln)}”</p>`
-        ).join('') +
+      `<div class="mg-lyric-wrap">` +
+        `<div class="mg-lyric-meta">${esc(metaTxt)}</div>` +
+        `<div class="mg-lyric-card">` +
+          st.lines.slice(0, count).map((ln, idx) =>
+            `<p class="mg-lyric-line${idx === count - 1 && !showAll ? ' is-fresh' : ''}">“${esc(ln)}”</p>`
+          ).join('') +
+        `</div>` +
       `</div>`;
   }
 
   function submitLyricGuess(pick, dailySlot) {
     const st = mgState;
     if (!st || st.done) return;
+    const key = normStr(pick.title) + '|' + normStr(pick.artist);
+    if (st.tried.has(key)) {
+      if (bridge && bridge.toast) bridge.toast(t('Already tried that song.', 'Lagu ini sudah dicoba.'));
+      return;
+    }
+    st.tried.add(key);
+
     st.tries++;
+    const sameArt = normStr(pick.artist) === normStr(st.artist);
     const sameTrack = (pick.trackId && String(pick.trackId) === String(st.trackId)) ||
-      (pick.title.toLowerCase() === st.title.toLowerCase() && pick.artist.toLowerCase() === st.artist.toLowerCase());
-    const sameArt = pick.artist && pick.artist.toLowerCase() === st.artist.toLowerCase();
+      (normStr(pick.title) === normStr(st.title) && sameArt);
 
     if (sameTrack) {
       st.done = true;
       st.guesses.push({ kind: 'right', label: `${pick.title} — ${pick.artist}` });
-      renderGuessHistory(st.guesses);
+      renderAttemptSlots(st.guesses, 5);
       renderLyricLines(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
-      renderMiniReveal({ won: true, score, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}` });
+      renderMiniReveal({ won: true, score, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: sum });
       return;
     }
     st.guesses.push({
       kind: sameArt ? 'near' : 'wrong',
       label: sameArt ? `${pick.title} — ${pick.artist} (${t('Right artist!', 'Artis benar!')})` : `${pick.title} — ${pick.artist}`
     });
-    renderGuessHistory(st.guesses);
+    renderAttemptSlots(st.guesses, 5);
     if (st.tries >= st.maxTries) {
       st.done = true;
       renderLyricLines(true);
       const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}` });
+      renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
       renderLyricLines(false);
     }
@@ -1420,12 +1615,12 @@
     if (!st || st.done) return;
     st.tries++;
     st.guesses.push({ kind: 'skip', label: t('Skipped · revealed next line', 'Lewati · baris baru dibuka') });
-    renderGuessHistory(st.guesses);
+    renderAttemptSlots(st.guesses, 5);
     if (st.tries >= st.maxTries) {
       st.done = true;
       renderLyricLines(true);
       const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}` });
+      renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
       renderLyricLines(false);
     }
@@ -1436,7 +1631,7 @@
     bridge = appBridge;
 
     const openBtn = $('#openDailyHub');
-    if (openBtn) openBtn.onclick = showDailyHub;
+    if (openBtn) openBtn.onclick = () => showDailyHub();
     const dhBack = $('#dhBack');
     if (dhBack) dhBack.onclick = () => {
       clearSpinTimers();
@@ -1448,20 +1643,20 @@
     const dhShare = $('#dhShareBtn');
     if (dhShare) dhShare.onclick = () => {
       if (!hubState) return;
-      const txt = Hub.shareText(hubState, hubState.day, location.origin + '/', isId() ? 'id' : 'en');
+      const txt = Hub.shareText(hubState, hubState.day, location.origin + '/daily', isId() ? 'id' : 'en');
       if (bridge && bridge.copyText) bridge.copyText(txt, 'daily_hub_share');
     };
     const dhMenuBtn = $('#dhMenuBtn');
     if (dhMenuBtn) dhMenuBtn.onclick = () => {
+      clearSpinTimers();
       if (bridge && bridge.showLobby) bridge.showLobby();
     };
 
     // Streak popovers (Lobby + Daily Hub)
-    function toggleStreakPop(anchorBtn) {
+    function toggleStreakPop() {
       const pop = $('#streakPopover');
       if (!pop) return;
-      const wasHidden = pop.hidden;
-      if (wasHidden) {
+      if (pop.hidden) {
         loadHubState();
         renderStreakPopover(Hub.streakOverview(combinedCompletedDays(), todayStr()));
         pop.hidden = false;
@@ -1470,14 +1665,24 @@
       }
     }
     const spBtn = $('#streakPillBtn');
-    if (spBtn) spBtn.onclick = (e) => { e.stopPropagation(); toggleStreakPop(spBtn); };
+    if (spBtn) spBtn.onclick = (e) => { e.stopPropagation(); toggleStreakPop(); };
     const dhSpBtn = $('#dhStreakBtn');
-    if (dhSpBtn) dhSpBtn.onclick = (e) => { e.stopPropagation(); toggleStreakPop(dhSpBtn); };
+    if (dhSpBtn) dhSpBtn.onclick = (e) => { e.stopPropagation(); toggleStreakPop(); };
     document.addEventListener('click', (e) => {
       const pop = $('#streakPopover');
       if (pop && !pop.hidden && !pop.contains(e.target) && e.target !== spBtn && e.target !== dhSpBtn) {
         pop.hidden = true;
       }
+      const mgDD = $('#mgDD');
+      const mgField = mgDD && mgDD.parentElement;
+      if (mgDD && !mgDD.hidden && mgField && !mgField.contains(e.target)) {
+        mgDD.hidden = true;
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const pop = $('#streakPopover');
+      if (pop && !pop.hidden) pop.hidden = true;
     });
 
     // Free-play More Music Games buttons in lobby
@@ -1487,6 +1692,12 @@
 
     syncLang();
     setInterval(refreshLobbyDailyUI, 30000);
+  }
+
+  function setBtnLbl(el, txt) {
+    if (!el) return;
+    const lbl = el.querySelector && el.querySelector('.lbl');
+    (lbl || el).textContent = txt;
   }
 
   function syncLang() {
@@ -1499,12 +1710,9 @@
     if (kicker) kicker.textContent = t('DAILY CHALLENGE', 'TANTANGAN HARIAN');
     const doneKicker = $('#dhDoneKicker');
     if (doneKicker) doneKicker.textContent = t('DAILY COMPLETE', 'HARIAN SELESAI');
-    const shareBtn = $('#dhShareBtn');
-    if (shareBtn) shareBtn.textContent = t('Share result', 'Bagikan hasil');
-    const menuBtn = $('#dhMenuBtn');
-    if (menuBtn) menuBtn.textContent = t('Back to menu', 'Kembali ke menu');
-    const stepBack = $('#dhStepBackBtn');
-    if (stepBack) stepBack.textContent = t('Back to Daily', 'Kembali ke Daily');
+    setBtnLbl($('#dhShareBtn'), t('Share result', 'Bagikan hasil'));
+    setBtnLbl($('#dhMenuBtn'), t('Back to menu', 'Kembali ke menu'));
+    setBtnLbl($('#dhStepBackBtn'), t('Back to Daily', 'Kembali ke Daily'));
     if ($('#dailyHub') && !$('#dailyHub').hidden) renderDailyHub();
   }
 

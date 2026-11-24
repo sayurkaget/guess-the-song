@@ -240,10 +240,23 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
     assert.match(build, new RegExp(`'${script}'`));
   }
   const mg = fs.readFileSync(path.join(ROOT, 'mini-games.js'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  const sitemap = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
   assert.match(html, /id="dailyHub"[\s\S]*id="dhSpinPanel"[\s\S]*class="dh-reel-payline"[\s\S]*id="dhScorePanel"/);
-  assert.match(html, /id="miniGame"[\s\S]*id="dhStepModal"/);
+  assert.match(html, /id="dhShareBtn"[^>]*><svg class="btn-ico"[\s\S]*<span class="lbl">Share result<\/span>/);
+  assert.match(html, /id="dhMenuBtn"[^>]*><svg class="btn-ico"[\s\S]*<span class="lbl">Back to menu<\/span>/);
+  assert.match(html, /id="miniGame"[\s\S]*id="mgArena"[\s\S]*id="dhStepModal"/);
   assert.match(mg, /function playSpinTick\(/);
   assert.match(mg, /function playSpinLock\(/);
-  assert.match(sw, /gts-v14[56]-wave/);
-  assert.match(build, /gts-cf-v12[56]-wave/);
+  assert.match(mg, /function renderAttemptSlots\(/);
+  assert.match(mg, /function hslToHex\(/);
+  assert.doesNotMatch(mg, /mg-album-tint/);
+  for (const slug of ['cover-pixel', 'album-color', 'hairspot', 'fact-or-cap', 'lyric-guess']) {
+    assert.match(app, new RegExp(`'${slug}'`));
+    assert.match(mg, new RegExp(`'${slug}'`));
+    assert.match(build, new RegExp(`slug:\\s*'${slug}'`));
+    assert.match(sitemap, new RegExp(`/${slug}<`));
+  }
+  assert.match(sw, /gts-v14\d-wave/);
+  assert.match(build, /gts-cf-v12\d-wave/);
 });

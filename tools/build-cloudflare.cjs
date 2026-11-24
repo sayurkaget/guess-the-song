@@ -32,7 +32,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v126-wave100-turbo-daily-spin'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v127-wave101-compact-ux-routes'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -173,6 +173,61 @@ const SEO_PAGES = [
     aboutHeading: 'About Artist Detective',
     aboutP1: 'Artist Detective is a free Spotle-style music deduction game spanning 530 global artists. Each guess reveals 6 color-coded clues: Debut Year, Solo/Group Type, Gender, Primary Genre, Country, and Global Rank (#1–#530).',
     aboutP2: 'Unlock clue and name hints when stuck, play Daily Artist or endless rounds, unlock achievements, and challenge friends to solve your exact mystery artist.'
+  },
+  {
+    slug: 'cover-pixel',
+    lang: 'en',
+    keepHreflang: false,
+    title: 'Cover Pixel — Guess the Song from Pixelated Album Art | TuneUp',
+    description: 'Guess iconic songs from pixelated album covers that sharpen across 5 tries (6×6 to 46×46 px). Free online browser music game with instant audio previews.',
+    imageAlt: 'TuneUp Cover Pixel — Guess the song from pixelated album cover art',
+    aboutHeading: 'About Cover Pixel',
+    aboutP1: 'Cover Pixel tests your visual music memory by starting with a 6×6 pixelated album cover and revealing sharper detail with every attempt across 5 tries.',
+    aboutP2: 'Play unlimited free rounds anytime or spin Cover Pixel in the Daily Challenge.'
+  },
+  {
+    slug: 'album-color',
+    lang: 'en',
+    keepHreflang: false,
+    title: 'Album Color — Match the Iconic Album Cover Color | TuneUp',
+    description: 'Can you remember the true signature color of iconic albums like BRAT, IGOR, Nevermind, and SOUR? Mix Hue, Saturation, and Brightness and see your accuracy.',
+    imageAlt: 'TuneUp Album Color — Match the signature color of iconic album covers',
+    aboutHeading: 'About Album Color',
+    aboutP1: 'Album Color challenges you to mix the exact signature color of iconic albums using Hue, Saturation, and Brightness sliders, then compares your swatch directly beside the original cover.',
+    aboutP2: 'Play unlimited free rounds or compete for /100 accuracy points inside the Daily Challenge.'
+  },
+  {
+    slug: 'hairspot',
+    lang: 'en',
+    keepHreflang: false,
+    title: 'HairSpot Music — Guess the Musician from Their Hairstyle | TuneUp',
+    description: 'Identify 100+ global musicians starting from just their hairstyle. Skip to lower the curtain step by step across 5 tries — free online music game.',
+    imageAlt: 'TuneUp HairSpot Music — Guess famous musicians from their hairstyle',
+    aboutHeading: 'About HairSpot Music',
+    aboutP1: 'HairSpot Music starts with only the musician’s hair visible above the curtain and reveals more of the portrait with each skip across 5 attempts.',
+    aboutP2: 'Features 100+ global music icons — play free rounds anytime or spin it in Daily Challenge.'
+  },
+  {
+    slug: 'fact-or-cap',
+    lang: 'en',
+    keepHreflang: false,
+    title: 'Music Fact or Cap — Music Trivia True or False Game | TuneUp',
+    description: 'Test your music history knowledge with quick Fact or Cap trivia claims. Survive 3 lives in Endless mode or beat 5 daily claims — free in your browser.',
+    imageAlt: 'TuneUp Music Fact or Cap — Music trivia game',
+    aboutHeading: 'About Music Fact or Cap',
+    aboutP1: 'Decide whether surprising music claims are real facts or total cap, with crisp explanations after every answer.',
+    aboutP2: 'Chase high scores with 3 lives in Endless free play or earn up to 100 points in the Daily Challenge.'
+  },
+  {
+    slug: 'lyric-guess',
+    lang: 'en',
+    keepHreflang: false,
+    title: 'Lyric Guess — Guess the Song from 5 Lyric Lines | TuneUp',
+    description: 'Identify hit songs starting from a single lyric line. Unlock up to 5 progressive lyric clues and listen to the track preview on reveal — free online.',
+    imageAlt: 'TuneUp Lyric Guess — Guess songs from progressive lyric clues',
+    aboutHeading: 'About Lyric Guess',
+    aboutP1: 'Lyric Guess gives you one famous lyric line at a time across 5 attempts — solve on line 1 or unlock more lyrics before listening to the audio preview on reveal.',
+    aboutP2: 'Play unlimited free rounds or spin Lyric Guess in TuneUp’s Daily Challenge.'
   },
   {
     slug: 'id',

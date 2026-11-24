@@ -290,8 +290,8 @@
       <ul class="dh-breakdown" id="dhBreakdown"></ul>
 
       <div class="dh-score-actions">
-        <button class="btn solid" id="dhShareBtn" type="button">Share result</button>
-        <button class="btn ghostbtn" id="dhMenuBtn" type="button">Back to menu</button>
+        <button class="btn solid icon-btn" id="dhShareBtn" type="button"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6" fill="currentColor"/><circle cx="6" cy="12" r="2.6" fill="currentColor"/><circle cx="18" cy="19" r="2.6" fill="currentColor"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.8" fill="none"/></svg><span class="lbl">Share result</span></button>
+        <button class="btn ghostbtn icon-btn dh-menu-btn" id="dhMenuBtn" type="button"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H5.5A1.5 1.5 0 0 1 4 19v-8.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="lbl">Back to menu</span></button>
       </div>
     </div>
   </section>
@@ -304,11 +304,17 @@
     </div>
 
     <div class="mg-stage-card">
-      <h2 class="mg-game-title" id="mgGameTitle"></h2>
-      <p class="mg-subtitle" id="mgSubtitle"></p>
-      <div class="mg-body" id="mgBody"></div>
-      <ul class="mg-history" id="mgHistory" hidden></ul>
-      <div class="mg-controls" id="mgControls"></div>
+      <div class="mg-head">
+        <h2 class="mg-game-title" id="mgGameTitle"></h2>
+        <p class="mg-subtitle" id="mgSubtitle"></p>
+      </div>
+      <div class="mg-arena" id="mgArena" data-layout="split">
+        <div class="mg-left" id="mgBody"></div>
+        <div class="mg-right" id="mgSide">
+          <div class="mg-controls" id="mgControls"></div>
+          <ol class="mg-slots" id="mgHistory" hidden></ol>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -624,6 +630,11 @@
     <a href="/spotify" data-mode-link="spotify">Playlist Quiz</a>
     <a href="/duel" data-mode-link="duel">Music Duel</a>
     <a href="/artist-detective" data-mode-link="detective">Artist Detective</a>
+    <a href="/cover-pixel" data-mode-link="cover">Cover Pixel</a>
+    <a href="/album-color" data-mode-link="color">Album Color</a>
+    <a href="/hairspot" data-mode-link="hair">HairSpot</a>
+    <a href="/fact-or-cap" data-mode-link="fact">Fact or Cap</a>
+    <a href="/lyric-guess" data-mode-link="lyric">Lyric Guess</a>
     <span class="guide-lang" aria-label="Language">
       <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a13.5 13.5 0 0 1 0 18M12 3a13.5 13.5 0 0 0 0 18" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
       <a href="/" hreflang="en" lang="en" data-mode-link="lang-en" aria-current="page">EN</a>
