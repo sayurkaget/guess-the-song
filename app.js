@@ -5317,7 +5317,6 @@
         $('#duelBest').textContent = I18N ? tr('duelBest', { n: ds.best }) : ('Best ' + ds.best);
         syncDuelTarget();
         triggerUiFx($('#duelB'), 'is-fx-win', 620);
-        triggerUiFx($('#duelYearB'), 'is-fx-pop', 480);
         spawnUiSparks($('#duelB'), ['#25e07d', '#58ffad', '#ffd06b', '#fde047']);
         triggerUiFx($('#duelScore'), 'is-bump', 500);
         popUiFloat($('#duelScore'), ds.hubSlot ? '+20' : '+1', 'win');
@@ -5328,7 +5327,6 @@
       } else {
         playSfx('wrong');
         triggerUiFx($('#duelB'), 'is-fx-wrong', 520);
-        triggerUiFx($('#duelYearB'), 'is-fx-wrong', 480);
         triggerUiFx($('#duelScore'), 'is-fx-wrong', 480);
         $('#duelStatus').textContent = ds.kind === 'streams'
           ? (I18N ? tr('duelMissedStreams', { v: mB.sub }) : ('Missed — ' + mB.sub + '.'))
@@ -5976,7 +5974,12 @@
         const tiles = AD.compare(g, ag.target);
         const isWin = g.id === ag.target.id;
         const isNew = animateNewest && revIdx === 0;
-        return '<article class="spotle-guess-card' + (isWin ? ' is-winner' : '') + (isNew ? ' is-new' : '') + '">' +
+        const fxCls = isNew
+          ? (isWin || tiles.some((t) => t.status === 'exact')
+            ? ' is-fx-clue-exact'
+            : (tiles.some((t) => t.status === 'close') ? ' is-fx-clue-close' : ' is-fx-wrong'))
+          : '';
+        return '<article class="spotle-guess-card' + (isWin ? ' is-winner' : '') + (isNew ? ' is-new' : '') + fxCls + '">' +
           '<div class="spotle-guess-head">' +
             '<div class="spotle-guess-who">' +
               '<img class="spotle-guess-avatar" src="' + esc(g.art || '') + '" alt="">' +
@@ -6129,13 +6132,10 @@
       const allMiss = exactCount === 0 && closeCount === 0;
       playSfx(allMiss ? 'wrong' : 'near');
       renderAgBoard(true);
-      const newestCard = $('#agBoard') && $('#agBoard').firstElementChild;
       if (allMiss) {
         triggerUiFx($('#artistGame .spotle-top-card'), 'is-fx-wrong', 480);
-        triggerUiFx(newestCard, 'is-fx-wrong', 500);
         triggerUiFx($('#agTriesPill'), 'is-fx-wrong', 460);
       } else {
-        triggerUiFx(newestCard, exactCount > 0 ? 'is-fx-clue-exact' : 'is-fx-clue-close', 560);
         triggerUiFx($('#agTriesPill'), 'is-bump', 440);
       }
     }

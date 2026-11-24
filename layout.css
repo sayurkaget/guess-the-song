@@ -3711,7 +3711,10 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 
 /* Unified Tactile FX Across Primary Modes (Artist Detective, Music Duel, Classic/Daily, Daily Hub) */
 #duelScore,#agTriesPill,.dh-score-big,.dh-step-sheet{position:relative}
-.spotle-guess-card.is-new{animation:spCardEnter .28s cubic-bezier(.22,1,.36,1)}
+.spotle-guess-card.is-new{animation:spCardEnter .28s cubic-bezier(.22,1,.36,1) both}
+.spotle-guess-card.is-new.is-fx-clue-exact{animation:spCardEnter .28s cubic-bezier(.22,1,.36,1) both,spCardExact .58s ease-out both}
+.spotle-guess-card.is-new.is-fx-clue-close{animation:spCardEnter .28s cubic-bezier(.22,1,.36,1) both,spCardClose .54s ease-out both}
+.spotle-guess-card.is-new.is-fx-wrong{animation:spCardEnter .28s cubic-bezier(.22,1,.36,1) both,mgCardWrong .46s ease-out both}
 .spotle-guess-card.is-new .sp-tile{
   animation:spTilePop .42s cubic-bezier(.22,1.28,.36,1) both;
   animation-delay:calc(var(--ti,0) * 46ms);
@@ -3724,14 +3727,13 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   animation:spTileClose .48s cubic-bezier(.22,1.28,.36,1) both;
   animation-delay:calc(var(--ti,0) * 46ms);
 }
-.spotle-guess-card.is-fx-clue-exact{animation:spCardExact .56s ease-out}
-.spotle-guess-card.is-fx-clue-close{animation:spCardClose .52s ease-out}
 .spotle-top-card.is-fx-wrong,
-.spotle-guess-card.is-fx-wrong,
 .spotle-result-banner.is-fx-lose,
-#duel .duel-card.is-fx-wrong,
-.dh-step-sheet.is-fx-lose{
+#duel .duel-card.is-fx-wrong{
   animation:mgCardWrong .44s ease-out;
+}
+.dh-step-sheet.is-fx-lose{
+  animation:rise .26s cubic-bezier(.2,.9,.3,1) both,mgCardWrong .44s ease-out both;
 }
 .spotle-result-banner.is-fx-win{
   animation:mgWinPop .54s cubic-bezier(.22,1,.36,1);
@@ -3739,7 +3741,9 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 #duel .duel-card.is-fx-win{
   animation:mgCorrectPop .52s cubic-bezier(.22,1,.36,1);
 }
-.dh-step-sheet.is-fx-win,
+.dh-step-sheet.is-fx-win{
+  animation:rise .26s cubic-bezier(.2,.9,.3,1) both,mgStageWin .6s cubic-bezier(.22,1,.36,1) both;
+}
 .dh-panel.is-fx-win{
   animation:mgStageWin .6s cubic-bezier(.22,1,.36,1);
 }

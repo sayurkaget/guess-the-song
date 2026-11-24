@@ -837,17 +837,26 @@
     };
     m.hidden = false;
     const sheet = m.querySelector('.dh-step-sheet');
-    if (res.won || res.score >= 40) {
-      triggerFxClass(sheet, 'is-fx-win', 620);
-      spawnWinSparks(sheet);
-    } else {
-      triggerFxClass(sheet, 'is-fx-lose', 520);
+    if (sheet) {
+      sheet.classList.remove('is-fx-win', 'is-fx-lose');
+      if (isAnimOn()) {
+        if (res.won || res.score >= 40) {
+          sheet.classList.add('is-fx-win');
+          spawnWinSparks(sheet);
+        } else {
+          sheet.classList.add('is-fx-lose');
+        }
+      }
     }
   }
 
   function closeStepModal() {
     const m = $('#dhStepModal');
-    if (m) m.hidden = true;
+    if (m) {
+      m.hidden = true;
+      const sheet = m.querySelector('.dh-step-sheet');
+      if (sheet) sheet.classList.remove('is-fx-win', 'is-fx-lose');
+    }
   }
 
   /* ================= Launching Games (Daily Slot OR Free Play!) ================= */
