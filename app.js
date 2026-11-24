@@ -1987,7 +1987,7 @@
     const ordEn = ['1st try', '2nd try', '3rd try', '4th try', '5th try'][uIdx] || (triesN + ' tries');
     const tryLabel = kind === 'artist'
       ? (isId ? ('tebakan ke-' + triesN) : (triesN === 1 ? '1st try' : (triesN + ' tries')))
-      : (isId ? ('percobaan ke-' + triesN + ' (' + clipId + ')') : (ordEn + ' (' + clipEn + ')'));
+      : (isId ? ('tebakan ke-' + triesN + ' (' + clipId + ')') : (ordEn + ' (' + clipEn + ')'));
     const youLabel = isId
       ? (triesN + 'x')
       : (triesN === 1 ? '1 try' : (triesN + ' tries'));
@@ -1999,7 +1999,7 @@
     if (userWon) {
       const clipSuffix = kind === 'artist' ? '' : (' (' + (isId ? clipId : clipEn) + ')');
       if (beatPct > 0) {
-        head = I18N ? tr('dcFasterThan', { pct: beatPct }) : ('Faster than ' + beatPct + '% of players today');
+        head = I18N ? tr('dcFasterThan', { pct: beatPct }) : ('Faster than ' + beatPct + '% of players');
       } else if (triesN === 1) {
         head = I18N ? tr('dcFastestFirst', { clip: clipSuffix }) : ('#1 fastest today · 1st try' + clipSuffix);
       } else {
@@ -2007,23 +2007,23 @@
       }
       badge = I18N
         ? tr('dcBadgeWin', { you: youLabel, avg: avgStr })
-        : ('You: ' + youLabel + ' vs ' + avgStr + ' avg');
+        : ('You: ' + youLabel + ' · ' + avgStr + ' avg');
       sub = kind === 'artist'
-        ? (I18N ? tr('dcSubArtistWin', { pct, samePct, tryLabel }) : (pct + "% of players solved today's artist · " + samePct + '% solved in ' + tryLabel))
-        : (I18N ? tr('dcSubSongWin', { pct, samePct, tryLabel }) : (pct + "% of players solved today's song · " + samePct + '% guessed on ' + tryLabel));
+        ? (I18N ? tr('dcSubArtistWin', { pct, samePct, tryLabel }) : (pct + '% of players solved · ' + samePct + '% in ' + tryLabel))
+        : (I18N ? tr('dcSubSongWin', { pct, samePct, tryLabel }) : (pct + '% of players solved · ' + samePct + '% on ' + tryLabel));
     } else {
       const missPct = Math.max(1, 100 - pct);
-      head = I18N ? tr('dcToughMissed', { pct: missPct }) : ('Tough challenge today · ' + missPct + '% of players missed');
+      head = I18N ? tr('dcToughMissed', { pct: missPct }) : ('Tough today · ' + missPct + '% of players missed');
       if (wins > 0) {
-        badge = I18N ? tr('dcBadgeLose', { avg: avgStr }) : ('You: X · Avg: ' + avgStr);
+        badge = I18N ? tr('dcBadgeLose', { avg: avgStr }) : ('You: X · ' + avgStr + ' avg');
         sub = kind === 'artist'
-          ? (I18N ? tr('dcSubArtistAvg', { pct, avg: avgStr }) : (pct + "% of players solved today's artist · winners averaged " + avgStr + ' tries'))
-          : (I18N ? tr('dcSubSongAvg', { pct, avg: avgStr }) : (pct + "% of players solved today's song · winners averaged " + avgStr + ' tries'));
+          ? (I18N ? tr('dcSubArtistAvg', { pct, avg: avgStr }) : (pct + '% of players solved · avg ' + avgStr + ' tries'))
+          : (I18N ? tr('dcSubSongAvg', { pct, avg: avgStr }) : (pct + '% of players solved · avg ' + avgStr + ' tries'));
       } else {
-        badge = I18N ? tr('dcBadgeZero') : '0% solved so far';
+        badge = I18N ? tr('dcBadgeZero') : '0% solved';
         sub = kind === 'artist'
-          ? (I18N ? tr('dcSubArtistZero') : "0% of players have solved today's artist so far")
-          : (I18N ? tr('dcSubSongZero') : "0% of players have solved today's song so far");
+          ? (I18N ? tr('dcSubArtistZero') : '0% of players solved today so far')
+          : (I18N ? tr('dcSubSongZero') : '0% of players solved today so far');
       }
     }
     return { head, badge, sub };
