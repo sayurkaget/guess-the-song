@@ -102,9 +102,18 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
   assert.ok(Data && Array.isArray(Data.albumColors) && Data.albumColors.length >= 40);
   assert.ok(Array.isArray(Data.hairBank) && Data.hairBank.length >= 100);
   assert.ok(Array.isArray(Data.lyricBank) && Data.lyricBank.length >= 70);
+  assert.ok(Array.isArray(Data.albumBank) && Data.albumBank.length >= 200);
   assert.ok(Array.isArray(Data.factBank) && Data.factBank.length >= 75);
 
   const trackIds = new Set(songs.map((s) => String(s[7] || '')));
+  for (const row of Data.albumBank) {
+    const [album, artist, artUrl, diff, trackId, anchorTitle, year] = row;
+    assert.ok(album && artist && anchorTitle, 'albumBank row must have album, artist, and anchorTitle');
+    assert.match(artUrl, /^https:\/\//);
+    assert.ok(diff >= 1 && diff <= 3);
+    assert.ok(year >= 1950 && year <= 2030);
+    assert.ok(trackIds.has(String(trackId)), `albumBank trackId ${trackId} (${album}) must exist in songs.js`);
+  }
   for (const row of Data.albumColors) {
     const [album, artist, artUrl, hsl, diff, trackId] = row;
     assert.ok(album && artist, 'albumColor must have album and artist');
@@ -249,9 +258,16 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(mg, /function playSpinTick\(/);
   assert.match(mg, /function playSpinLock\(/);
   const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
-  assert.match(mg, /function renderAttemptPipsAndChips\(/);
+  const lcss = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
+  assert.match(mg, /function renderAttemptPips\(/);
+  assert.match(mg, /function searchAlbums\(/);
+  assert.match(mg, /function spawnWinSparks\(/);
+  assert.match(mg, /function playFxWin\(/);
+  assert.doesNotMatch(html, /id="mgHistory"/);
   assert.match(mg, /mg-deck-card/);
   assert.match(mg, /mg-cover-disc/);
+  assert.match(lcss, /@keyframes mgHeartBreak/);
+  assert.match(lcss, /@keyframes mgSpark/);
   assert.match(css, /\.glow\{[\s\S]*z-index:0;\s*isolation:isolate/);
   assert.match(css, /\.wrap\{[\s\S]*position:relative;\s*z-index:1/);
   assert.match(mg, /function hslToHex\(/);
@@ -267,6 +283,6 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
     assert.match(build, new RegExp(`slug:\\s*'${slug}'`));
     assert.match(sitemap, new RegExp(`/${slug}<`));
   }
-  assert.match(sw, /gts-v14\d-wave/);
-  assert.match(build, /gts-cf-v12\d-wave/);
+  assert.match(sw, /gts-v1[45]\d-wave/);
+  assert.match(build, /gts-cf-v1[23]\d-wave/);
 });

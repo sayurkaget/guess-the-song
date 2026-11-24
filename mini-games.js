@@ -108,6 +108,71 @@
     } catch {}
   }
 
+  /* Tactile feedback SFX + visual juice helpers (respects settings.sfx & settings.anim) */
+  function playFxTone(freqs, dur, type, vol, step) {
+    const ctx = getSpinAudio();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      freqs.forEach((f, i) => {
+        const t0 = now + i * (step || 0.065);
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = type || 'triangle';
+        o.frequency.setValueAtTime(f, t0);
+        g.gain.setValueAtTime(vol || 0.09, t0);
+        g.gain.exponentialRampToValueAtTime(0.0008, t0 + (dur || 0.22));
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t0); o.stop(t0 + (dur || 0.22) + 0.02);
+      });
+    } catch {}
+  }
+  function playFxWin()     { playFxTone([523.25, 659.25, 783.99, 1046.5], 0.32, 'sine', 0.11, 0.068); }
+  function playFxCorrect() { playFxTone([523.25, 783.99], 0.22, 'sine', 0.1, 0.065); }
+  function playFxNear()    { playFxTone([440, 554.37], 0.18, 'triangle', 0.085, 0.06); }
+  function playFxWrong()   { playFxTone([220, 164.81], 0.17, 'triangle', 0.095, 0.075); }
+
+  function isAnimOn() {
+    return !(bridge && bridge.isAnimOn && !bridge.isAnimOn());
+  }
+  function triggerFxClass(el, cls, ms) {
+    if (!el || !isAnimOn()) return;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    clearTimeout(el._fxTid);
+    el._fxTid = setTimeout(() => el.classList.remove(cls), ms || 560);
+  }
+  function popFloatBadge(anchor, text, kind) {
+    if (!anchor || !isAnimOn()) return;
+    const b = document.createElement('span');
+    b.className = 'mg-float-pop is-' + (kind || 'win');
+    b.textContent = text;
+    anchor.appendChild(b);
+    setTimeout(() => { if (b.parentNode) b.parentNode.removeChild(b); }, 780);
+  }
+  function spawnWinSparks(anchor) {
+    if (!anchor || !isAnimOn()) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'mg-sparks';
+    wrap.setAttribute('aria-hidden', 'true');
+    const cols = ['#25e07d', '#58ffad', '#a7f3d0', '#fde047', '#38bdf8'];
+    for (let i = 0; i < 14; i++) {
+      const ang = (Math.PI * 2 * i) / 14 + (Math.random() - 0.5) * 0.28;
+      const dist = 42 + Math.random() * 68;
+      const dx = Math.round(Math.cos(ang) * dist);
+      const dy = Math.round(Math.sin(ang) * dist - 14);
+      const sp = document.createElement('span');
+      sp.className = 'mg-spark';
+      sp.style.setProperty('--dx', dx + 'px');
+      sp.style.setProperty('--dy', dy + 'px');
+      sp.style.setProperty('--c', cols[i % cols.length]);
+      sp.style.animationDelay = Math.round(Math.random() * 70) + 'ms';
+      wrap.appendChild(sp);
+    }
+    anchor.appendChild(wrap);
+    setTimeout(() => { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 820);
+  }
+
   function todayStr() {
     return (bridge && bridge.getDay) ? bridge.getDay() : (window.DailyGame ? window.DailyGame.day() : new Date().toISOString().slice(0, 10));
   }
@@ -793,6 +858,48 @@
     return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   }
 
+  let albumIndexCache = null;
+  function getAlbumIndex() {
+    if (albumIndexCache) return albumIndexCache;
+    const raw = (Data && Data.albumBank) || [];
+    // [album, artist, artUrl, diff, trackId, anchorTitle, year]
+    albumIndexCache = raw.map((r) => ({
+      album: r[0],
+      artist: r[1],
+      art: r[2],
+      diff: r[3],
+      trackId: r[4],
+      anchorTitle: r[5],
+      year: r[6],
+      nAlbum: normStr(r[0]),
+      nArtist: normStr(r[1]),
+      hay: normStr(r[0] + ' ' + r[1])
+    }));
+    return albumIndexCache;
+  }
+
+  function searchAlbums(query, limit) {
+    const q = normStr(query);
+    if (!q) return [];
+    const tokens = q.split(' ').filter(Boolean);
+    const scored = [];
+    const list = getAlbumIndex();
+    for (let i = 0; i < list.length; i++) {
+      const a = list[i];
+      if (!tokens.every((tk) => a.hay.includes(tk))) continue;
+      let sc = 0;
+      if (a.nAlbum === q) sc += 100;
+      else if (a.nAlbum.startsWith(q)) sc += 60;
+      else if (a.nArtist.startsWith(q)) sc += 40;
+      else if (a.nAlbum.includes(q)) sc += 25;
+      else sc += 10;
+      sc += (4 - (a.diff || 3)) * 2;
+      scored.push({ a, sc });
+    }
+    scored.sort((x, y) => y.sc - x.sc || x.a.album.localeCompare(y.a.album));
+    return scored.slice(0, limit || 10).map((x) => x.a);
+  }
+
   function hslToHex(h, s, l) {
     const s1 = s / 100, l1 = l / 100;
     const c = (1 - Math.abs(2 * l1 - 1)) * s1;
@@ -946,6 +1053,9 @@
       if (mode === 'song' && bridge && bridge.searchSongs) {
         const res = bridge.searchSongs(q, 10);
         renderDD(res.map((s) => ({ primary: s.title, secondary: s.artist, raw: s })));
+      } else if (mode === 'album') {
+        const res = searchAlbums(q, 10);
+        renderDD(res.map((a) => ({ primary: a.album, secondary: `${a.artist} · ${a.year}`, raw: a })));
       } else if (mode === 'artist' && bridge && bridge.searchArtists) {
         const res = bridge.searchArtists(q, 10);
         renderDD(res.map((a) => ({ primary: a.name, secondary: a.genre || '', raw: a })));
@@ -980,36 +1090,24 @@
     };
   }
 
-  /* Compact 5-pip indicator in header + inline guess chips (zero empty 1..5 boxes!) */
-  function renderAttemptPipsAndChips(guesses, maxTries, done) {
+  /* Compact 5-pip progress indicator in header (zero chips or empty 1..5 boxes!) */
+  function renderAttemptPips(guesses, maxTries, done, pulseIdx) {
     const rightEl = $('#mgHeadRight');
-    if (rightEl) {
-      if (!maxTries) {
-        rightEl.innerHTML = '';
-      } else {
-        const pips = [];
-        for (let i = 0; i < maxTries; i++) {
-          const g = guesses[i];
-          let cls = 'mg-pip';
-          if (g) cls += ' is-' + g.kind;
-          else if (!done && i === guesses.length) cls += ' is-now';
-          pips.push(`<span class="${cls}"></span>`);
-        }
-        rightEl.innerHTML = `<div class="mg-pips" aria-label="${esc(t('Attempts', 'Percobaan'))}">${pips.join('')}</div>`;
-      }
-    }
-    const el = $('#mgHistory');
-    if (!el) return;
-    if (!maxTries || !guesses.length) {
-      el.innerHTML = '';
-      el.hidden = true;
+    if (!rightEl) return;
+    if (!maxTries) {
+      rightEl.innerHTML = '';
       return;
     }
-    el.hidden = false;
-    el.innerHTML = guesses.map((g) => {
-      const icon = g.kind === 'right' ? '✓' : (g.kind === 'near' ? '≈' : (g.kind === 'skip' ? '↷' : '✕'));
-      return `<span class="mg-chip is-${g.kind}"><span class="mg-chip-ico">${icon}</span><span class="mg-chip-lbl">${esc(g.label)}</span></span>`;
-    }).join('');
+    const pips = [];
+    for (let i = 0; i < maxTries; i++) {
+      const g = guesses[i];
+      let cls = 'mg-pip';
+      if (g) cls += ' is-' + g.kind;
+      else if (!done && i === guesses.length) cls += ' is-now';
+      if (pulseIdx === i) cls += ' is-pulse';
+      pips.push(`<span class="${cls}"></span>`);
+    }
+    rightEl.innerHTML = `<div class="mg-pips" aria-label="${esc(t('Attempts', 'Percobaan'))}">${pips.join('')}</div>`;
   }
 
   function renderMiniReveal({ won, score, title, subtitle, art, trackId, dailySlot, gameId, shortSummary, detail, freeKicker }) {
@@ -1048,6 +1146,19 @@
         `<div class="mg-rev-actions">${actionHtml}</div>` +
       `</div>`;
 
+    const revCard = controls.querySelector('.mg-reveal-card');
+    const stageCard = $('.mg-stage-card');
+    if (won) {
+      playFxWin();
+      triggerFxClass(revCard, 'is-fx-win', 650);
+      triggerFxClass(stageCard, 'is-fx-win', 650);
+      spawnWinSparks(revCard);
+    } else {
+      playFxWrong();
+      triggerFxClass(revCard, 'is-fx-lose', 540);
+      triggerFxClass(stageCard, 'is-fx-lose', 540);
+    }
+
     const artEl = $('#mgRevArt');
     if (trackId && bridge) {
       if (bridge.dockMiniVolume) bridge.dockMiniVolume();
@@ -1078,26 +1189,20 @@
     }
   }
 
-  /* ================= GAME 1: COVER PIXEL ================= */
+  /* ================= GAME 1: COVER PIXEL (GUESS THE ALBUM NAME) ================= */
   const PIXEL_GRIDS = [6, 10, 16, 28, 46];
   function initCoverPixel(seed, dailySlot) {
-    const all = (bridge && bridge.getAllSongs) ? bridge.getAllSongs() : [];
-    const maxTier = dailySlot ? (dailySlot.diffTier === 1 ? 1 : 2) : 2;
-    const seenArt = new Set();
-    const pool = all.filter((s) => {
-      if (!s.art || s.tier > maxTier) return false;
-      if (seenArt.has(s.art)) return false;
-      seenArt.add(s.art);
-      return true;
-    });
-    const srcPool = pool.length ? pool : all;
+    const allAlbums = getAlbumIndex();
+    const maxDiff = dailySlot ? dailySlot.diffTier : 2;
+    const pool = allAlbums.filter((a) => a.art && a.diff <= maxDiff);
+    const srcPool = pool.length ? pool : allAlbums;
     const target = dailySlot
       ? Hub.pickDeterministic(srcPool, seed, 1)
-      : pickFreeUnseen(srcPool, 'cover', seed, (s) => s.trackId || s.slug);
+      : pickFreeUnseen(srcPool, 'cover', seed, (a) => a.nAlbum + '|' + a.nArtist);
     if (!target) return;
 
     mgState = { gameId: 'cover', target, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false, imgEl: null };
-    $('#mgSubtitle').textContent = t('Guess the song from its pixelated cover', 'Tebak lagu dari cover album piksel');
+    $('#mgSubtitle').textContent = t('Guess the album from its pixelated cover', 'Tebak nama album dari cover pikselnya');
     $('#mgBody').innerHTML =
       `<div class="mg-cover-stage">` +
         `<div class="mg-cover-disc" aria-hidden="true"></div>` +
@@ -1107,7 +1212,7 @@
           `<span id="mgPixelTag" class="mg-stage-tag">6×6 px</span>` +
         `</div>` +
       `</div>`;
-    renderAttemptPipsAndChips([], 5, false);
+    renderAttemptPips([], 5, false, -1);
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -1124,11 +1229,11 @@
     img.src = target.art;
 
     bindMiniSearch({
-      placeholder: t('Type song title or artist…', 'Ketik judul lagu atau artis…'),
-      mode: 'song',
+      placeholder: t('Type album name or artist…', 'Ketik nama album atau artis…'),
+      mode: 'album',
       skipLabel: t('Sharpen', 'Perjelas'),
-      isTried: (s) => mgState && mgState.tried.has(normStr(s.title) + '|' + normStr(s.artist)),
-      onPick: (song) => submitCoverGuess(song, dailySlot),
+      isTried: (a) => mgState && mgState.tried.has(a.nAlbum + '|' + a.nArtist),
+      onPick: (album) => submitCoverGuess(album, dailySlot),
       onSkip: () => skipCoverGuess(dailySlot)
     });
   }
@@ -1165,44 +1270,49 @@
   function submitCoverGuess(pick, dailySlot) {
     const st = mgState;
     if (!st || st.done) return;
-    const key = normStr(pick.title) + '|' + normStr(pick.artist);
+    const key = pick.nAlbum + '|' + pick.nArtist;
     if (st.tried.has(key)) {
-      if (bridge && bridge.toast) bridge.toast(t('Already tried that song.', 'Lagu ini sudah dicoba.'));
+      if (bridge && bridge.toast) bridge.toast(t('Already tried that album.', 'Album ini sudah dicoba.'));
       return;
     }
     st.tried.add(key);
 
     const tgt = st.target;
-    const sameArt = normStr(pick.artist) === normStr(tgt.artist);
-    const sameTrack = (pick.trackId && tgt.trackId && String(pick.trackId) === String(tgt.trackId)) ||
-      (pick.slug === tgt.slug) ||
-      (pick.art && tgt.art && pick.art === tgt.art && sameArt) ||
-      (normStr(pick.title) === normStr(tgt.title) && sameArt);
+    const sameArt = pick.nArtist === tgt.nArtist;
+    const sameAlbum = (pick.nAlbum === tgt.nAlbum && sameArt) || (pick.art && tgt.art && pick.art === tgt.art && sameArt);
 
     st.tries++;
-    if (sameTrack) {
+    const idx = st.tries - 1;
+    const subTxt = tgt.anchorTitle ? `${tgt.artist} · ${tgt.year} · ${tgt.anchorTitle}` : `${tgt.artist} · ${tgt.year}`;
+    if (sameAlbum) {
       st.done = true;
-      st.guesses.push({ kind: 'right', label: pick.title });
-      renderAttemptPipsAndChips(st.guesses, 5, true);
+      st.guesses.push({ kind: 'right' });
+      renderAttemptPips(st.guesses, 5, true, idx);
       drawCoverPixel(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
-      renderMiniReveal({ won: true, score, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: sum });
+      renderMiniReveal({ won: true, score, title: tgt.album, subtitle: subTxt, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.album}`, freeKicker: sum });
       return;
     }
-    st.guesses.push({
-      kind: sameArt ? 'near' : 'wrong',
-      label: sameArt ? `${pick.title} (${t('Right artist', 'Artis benar')})` : pick.title
-    });
+    st.guesses.push({ kind: sameArt ? 'near' : 'wrong' });
     if (st.tries >= st.maxTries) {
       st.done = true;
-      renderAttemptPipsAndChips(st.guesses, 5, true);
+      renderAttemptPips(st.guesses, 5, true, idx);
       drawCoverPixel(true);
       const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+      renderMiniReveal({ won: false, score: 0, title: tgt.album, subtitle: subTxt, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.album}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
-      renderAttemptPipsAndChips(st.guesses, 5, false);
+      renderAttemptPips(st.guesses, 5, false, idx);
       drawCoverPixel(false);
+      if (sameArt) {
+        playFxNear();
+        triggerFxClass($('#mgInput'), 'is-fx-near', 520);
+        if (bridge && bridge.toast) bridge.toast(t('Right artist, wrong album!', 'Artis benar, album salah!'));
+      } else {
+        playFxWrong();
+        triggerFxClass($('.mg-search-row'), 'is-fx-wrong', 420);
+        triggerFxClass($('.mg-cover-stage'), 'is-fx-wrong', 420);
+      }
     }
   }
 
@@ -1210,16 +1320,18 @@
     const st = mgState;
     if (!st || st.done) return;
     st.tries++;
-    st.guesses.push({ kind: 'skip', label: t('Sharpened', 'Diperjelas') });
+    const idx = st.tries - 1;
+    st.guesses.push({ kind: 'skip' });
     if (st.tries >= st.maxTries) {
       st.done = true;
-      renderAttemptPipsAndChips(st.guesses, 5, true);
+      renderAttemptPips(st.guesses, 5, true, idx);
       drawCoverPixel(true);
       const tgt = st.target;
+      const subTxt = tgt.anchorTitle ? `${tgt.artist} · ${tgt.year} · ${tgt.anchorTitle}` : `${tgt.artist} · ${tgt.year}`;
       const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+      renderMiniReveal({ won: false, score: 0, title: tgt.album, subtitle: subTxt, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.album}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
-      renderAttemptPipsAndChips(st.guesses, 5, false);
+      renderAttemptPips(st.guesses, 5, false, idx);
       drawCoverPixel(false);
     }
   }
@@ -1236,7 +1348,7 @@
     mgState = { gameId: 'color', album, artist, artUrl, targetHsl, trackId, anchorTitle, year, done: false };
 
     $('#mgSubtitle').textContent = t('Mix the true signature color of this iconic album cover!', 'Racik warna khas asli dari cover album ikonik ini!');
-    renderAttemptPipsAndChips([], 0, false);
+    renderAttemptPips([], 0, false, -1);
 
     // Start slider at a neutral contrasting hue away from answer
     const initH = (targetHsl[0] + 150) % 360;
@@ -1340,7 +1452,7 @@
     mgState = { gameId: 'hair', artistId, artistName, imgUrl, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
 
     $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle', 'Tebak musisi dari gaya rambutnya');
-    renderAttemptPipsAndChips([], 5, false);
+    renderAttemptPips([], 5, false, -1);
 
     $('#mgBody').innerHTML =
       `<div class="mg-hair-frame">` +
@@ -1401,11 +1513,12 @@
     st.tried.add(key);
 
     st.tries++;
+    const idx = st.tries - 1;
     const match = artist.id === st.artistId || key === normStr(st.artistName);
     if (match) {
       st.done = true;
-      st.guesses.push({ kind: 'right', label: artist.name });
-      renderAttemptPipsAndChips(st.guesses, 5, true);
+      st.guesses.push({ kind: 'right' });
+      renderAttemptPips(st.guesses, 5, true, idx);
       updateHairCurtain(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
@@ -1413,17 +1526,20 @@
       renderMiniReveal({ won: true, score, title: st.artistName, subtitle: hairRevealSub(hit, artist.genre), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: sum });
       return;
     }
-    st.guesses.push({ kind: 'wrong', label: artist.name });
+    st.guesses.push({ kind: 'wrong' });
     if (st.tries >= st.maxTries) {
       st.done = true;
-      renderAttemptPipsAndChips(st.guesses, 5, true);
+      renderAttemptPips(st.guesses, 5, true, idx);
       updateHairCurtain(true);
       const sum = t('Missed', 'Gagal');
       const hit = hairTopTrack(null, st.artistName);
       renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: hairRevealSub(hit, null), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
-      renderAttemptPipsAndChips(st.guesses, 5, false);
+      renderAttemptPips(st.guesses, 5, false, idx);
       updateHairCurtain(false);
+      playFxWrong();
+      triggerFxClass($('.mg-search-row'), 'is-fx-wrong', 420);
+      triggerFxClass($('.mg-hair-frame'), 'is-fx-wrong', 420);
     }
   }
 
@@ -1431,38 +1547,44 @@
     const st = mgState;
     if (!st || st.done) return;
     st.tries++;
-    st.guesses.push({ kind: 'skip', label: t('Revealed more', 'Tirai dibuka') });
+    const idx = st.tries - 1;
+    st.guesses.push({ kind: 'skip' });
     if (st.tries >= st.maxTries) {
       st.done = true;
-      renderAttemptPipsAndChips(st.guesses, 5, true);
+      renderAttemptPips(st.guesses, 5, true, idx);
       updateHairCurtain(true);
       const sum = t('Missed', 'Gagal');
       const hit = hairTopTrack(null, st.artistName);
       renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: hairRevealSub(hit, null), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
-      renderAttemptPipsAndChips(st.guesses, 5, false);
+      renderAttemptPips(st.guesses, 5, false, idx);
       updateHairCurtain(false);
     }
   }
 
   /* ================= GAME 4: MUSIC FACT OR CAP ================= */
-  function renderFactHeader() {
+  function renderFactHeader(lostHeartIdx, bumpScore) {
     const st = mgState;
     const rightEl = $('#mgHeadRight');
     if (!st || st.gameId !== 'fact' || !rightEl) return;
     const best = Number(LS.get(FACT_BEST_KEY, 0)) || 0;
     if (st.isDaily) {
-      rightEl.innerHTML = `<div class="mg-fact-pill">${esc(`${t('Claim', 'Soal')} ${st.idx + 1}/5 · ${st.correct * 20} ${t('pts', 'poin')}`)}</div>`;
+      rightEl.innerHTML = `<div class="mg-fact-pill${bumpScore ? ' is-bump' : ''}">${esc(`${t('Claim', 'Soal')} ${st.idx + 1}/5 · ${st.correct * 20} ${t('pts', 'poin')}`)}</div>`;
+      if (bumpScore) popFloatBadge(rightEl.querySelector('.mg-fact-pill'), '+20', 'win');
       return;
     }
-    const hearts = [0, 1, 2].map((i) =>
-      `<span class="mg-heart${i < st.lives ? ' is-on' : ''}" aria-hidden="true">♥</span>`
-    ).join('');
+    const hearts = [0, 1, 2].map((i) => {
+      const losing = lostHeartIdx === i;
+      const on = i < st.lives;
+      return `<span class="mg-heart${on ? ' is-on' : ''}${losing ? ' is-losing' : ''}" aria-hidden="true">♥</span>`;
+    }).join('');
     rightEl.innerHTML =
       `<div class="mg-fact-meta">` +
         `<div class="mg-fact-hearts" aria-label="${esc(`${Math.max(0, st.lives)} ${t('lives', 'nyawa')}`)}">${hearts}</div>` +
-        `<div class="mg-fact-pill">${st.correct} · ${esc(t('Best', 'Terbaik'))} ${best}</div>` +
+        `<div class="mg-fact-pill${bumpScore ? ' is-bump' : ''}">${st.correct} · ${esc(t('Best', 'Terbaik'))} ${best}</div>` +
       `</div>`;
+    if (lostHeartIdx >= 0) popFloatBadge(rightEl.querySelector('.mg-fact-hearts'), '-1 ♥', 'lose');
+    if (bumpScore) popFloatBadge(rightEl.querySelector('.mg-fact-pill'), '+1', 'win');
   }
 
   function initFactOrCap(seed, dailySlot) {
@@ -1486,7 +1608,7 @@
     $('#mgSubtitle').textContent = isDaily
       ? t('5 quick music claims · 20 pts each', '5 pernyataan musik · 20 poin tiap benar')
       : t('Music trivia · 3 lives', 'Trivia musik · 3 nyawa');
-    renderAttemptPipsAndChips([], 0, false);
+    renderAttemptPips([], 0, false, -1);
     renderFactClaim();
   }
 
@@ -1496,7 +1618,7 @@
     const item = st.deck[st.idx];
     if (!item) return;
     const [, , claimEn, claimId] = item;
-    renderFactHeader();
+    renderFactHeader(-1, false);
 
     $('#mgBody').innerHTML =
       `<div class="mg-deck-wrap">` +
@@ -1523,6 +1645,7 @@
     st.locked = true;
     const [isFact, , , , expEn, expId] = st.deck[st.idx];
     const ok = choice === isFact;
+    let lostHeartIdx = -1;
     if (ok) {
       st.correct++;
       if (!st.isDaily) {
@@ -1531,9 +1654,20 @@
       }
     } else if (!st.isDaily) {
       st.lives--;
+      lostHeartIdx = Math.max(0, st.lives);
     }
 
-    renderFactHeader();
+    renderFactHeader(lostHeartIdx, ok);
+
+    const deckCard = $('.mg-deck-card');
+    if (ok) {
+      playFxCorrect();
+      triggerFxClass(deckCard, 'is-fx-correct', 560);
+      spawnWinSparks(deckCard);
+    } else {
+      playFxWrong();
+      triggerFxClass(deckCard, 'is-fx-wrong', 480);
+    }
 
     const fb = $('#mgFactFeedback');
     if (fb) {
@@ -1586,7 +1720,7 @@
     const [trackId, title, artist, art, year, , lines] = targetRow;
     mgState = { gameId: 'lyric', dailySlot, trackId, title, artist, art, year, lines, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
 
-    renderAttemptPipsAndChips([], 5, false);
+    renderAttemptPips([], 5, false, -1);
     renderLyricLines(false);
 
     bindMiniSearch({
@@ -1630,33 +1764,40 @@
     st.tried.add(key);
 
     st.tries++;
+    const idx = st.tries - 1;
     const sameArt = normStr(pick.artist) === normStr(st.artist);
     const sameTrack = (pick.trackId && String(pick.trackId) === String(st.trackId)) ||
       (normStr(pick.title) === normStr(st.title) && sameArt);
 
     if (sameTrack) {
       st.done = true;
-      st.guesses.push({ kind: 'right', label: pick.title });
-      renderAttemptPipsAndChips(st.guesses, 5, true);
+      st.guesses.push({ kind: 'right' });
+      renderAttemptPips(st.guesses, 5, true, idx);
       renderLyricLines(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
       renderMiniReveal({ won: true, score, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: sum });
       return;
     }
-    st.guesses.push({
-      kind: sameArt ? 'near' : 'wrong',
-      label: sameArt ? `${pick.title} (${t('Right artist', 'Artis benar')})` : pick.title
-    });
+    st.guesses.push({ kind: sameArt ? 'near' : 'wrong' });
     if (st.tries >= st.maxTries) {
       st.done = true;
-      renderAttemptPipsAndChips(st.guesses, 5, true);
+      renderAttemptPips(st.guesses, 5, true, idx);
       renderLyricLines(true);
       const sum = t('Missed', 'Gagal');
       renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
-      renderAttemptPipsAndChips(st.guesses, 5, false);
+      renderAttemptPips(st.guesses, 5, false, idx);
       renderLyricLines(false);
+      if (sameArt) {
+        playFxNear();
+        triggerFxClass($('#mgInput'), 'is-fx-near', 520);
+        if (bridge && bridge.toast) bridge.toast(t('Right artist, wrong song!', 'Artis benar, lagu salah!'));
+      } else {
+        playFxWrong();
+        triggerFxClass($('.mg-search-row'), 'is-fx-wrong', 420);
+        triggerFxClass($('.mg-lyric-card'), 'is-fx-wrong', 420);
+      }
     }
   }
 
@@ -1664,15 +1805,16 @@
     const st = mgState;
     if (!st || st.done) return;
     st.tries++;
-    st.guesses.push({ kind: 'skip', label: t('+1 line', '+1 baris') });
+    const idx = st.tries - 1;
+    st.guesses.push({ kind: 'skip' });
     if (st.tries >= st.maxTries) {
       st.done = true;
-      renderAttemptPipsAndChips(st.guesses, 5, true);
+      renderAttemptPips(st.guesses, 5, true, idx);
       renderLyricLines(true);
       const sum = t('Missed', 'Gagal');
       renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
-      renderAttemptPipsAndChips(st.guesses, 5, false);
+      renderAttemptPips(st.guesses, 5, false, idx);
       renderLyricLines(false);
     }
   }

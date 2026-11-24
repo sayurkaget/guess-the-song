@@ -32,7 +32,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v129-wave103-sleek-minigames-vol-gpu'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v130-wave104-album-coverpixel-fx'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -178,9 +178,9 @@ const SEO_PAGES = [
     slug: 'cover-pixel',
     lang: 'en',
     keepHreflang: false,
-    title: 'Cover Pixel — Guess the Song from Pixelated Album Art | TuneUp',
-    description: 'Guess iconic songs from pixelated album covers that sharpen across 5 tries (6×6 to 46×46 px). Free online browser music game with instant audio previews.',
-    imageAlt: 'TuneUp Cover Pixel — Guess the song from pixelated album cover art',
+    title: 'Cover Pixel — Guess the Album from Pixelated Cover Art | TuneUp',
+    description: 'Guess 260+ iconic albums from pixelated cover art that sharpens across 5 tries (6×6 to 46×46 px). Free online browser music game with instant audio previews.',
+    imageAlt: 'TuneUp Cover Pixel — Guess the album from pixelated album cover art',
     aboutHeading: 'About Cover Pixel',
     aboutP1: 'Cover Pixel tests your visual music memory by starting with a 6×6 pixelated album cover and revealing sharper detail with every attempt across 5 tries.',
     aboutP2: 'Play unlimited free rounds anytime or spin Cover Pixel in the Daily Challenge.'

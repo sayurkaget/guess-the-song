@@ -3450,6 +3450,7 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   gap:.45rem;
 }
 .mg-fact-hearts{
+  position:relative;
   display:inline-flex;
   align-items:center;
   gap:3px;
@@ -3459,6 +3460,7 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   border:1px solid rgba(255,255,255,.1);
 }
 .mg-heart{
+  display:inline-block;
   font-size:.86rem;
   line-height:1;
   color:rgba(255,255,255,.16);
@@ -3468,7 +3470,11 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   color:#ff5e6c;
   text-shadow:0 0 8px rgba(255,94,108,.65);
 }
+.mg-heart.is-losing{
+  animation:mgHeartBreak .58s cubic-bezier(.22,1,.36,1) both;
+}
 .mg-fact-pill{
+  position:relative;
   font-size:.73rem;
   font-weight:700;
   color:#7af5b2;
@@ -3477,6 +3483,9 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   background:rgba(37,224,125,.11);
   border:1px solid rgba(37,224,125,.3);
   font-variant-numeric:tabular-nums;
+}
+.mg-fact-pill.is-bump{
+  animation:mgPillBump .38s cubic-bezier(.22,1,.36,1);
 }
 .mg-deck-wrap{
   position:relative;
@@ -3635,33 +3644,142 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   font-size:1rem;
 }
 
-/* Compact Horizontal Guess Chips (only shown after user guesses/skips!) */
-.mg-chips{
-  width:100%;
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:center;
-  gap:.38rem;
+/* Tactile Mini-Game Feedback Effects (Win glow, Heartbreak, Shake, Sparks, Float Pop) */
+.mg-pip.is-pulse{
+  animation:mgPipPop .42s cubic-bezier(.22,1,.36,1);
 }
-.mg-chip{
-  display:inline-flex;
-  align-items:center;
-  gap:.3rem;
-  max-width:100%;
-  padding:.22rem .62rem;
-  border-radius:999px;
-  font-size:.73rem;
-  font-weight:600;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.12);
-  color:var(--dim);
+.mg-stage-card.is-fx-win{
+  animation:mgStageWin .64s cubic-bezier(.22,1,.36,1);
 }
-.mg-chip.is-right{background:rgba(37,224,125,.16);border-color:rgba(37,224,125,.48);color:#7af5b2}
-.mg-chip.is-near{background:rgba(245,177,61,.15);border-color:rgba(245,177,61,.42);color:#ffd98a}
-.mg-chip.is-wrong{background:rgba(242,85,90,.13);border-color:rgba(242,85,90,.35);color:#ffb3b6}
-.mg-chip-ico{font-weight:800;flex:none}
-.mg-chip-lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.mg-stage-card.is-fx-lose{
+  animation:mgStageLose .5s ease-out;
+}
+.mg-reveal-card.is-fx-win{
+  animation:mgWinPop .52s cubic-bezier(.22,1,.36,1);
+}
+.mg-reveal-card.is-fx-lose{
+  animation:mgShake .44s cubic-bezier(.36,.07,.19,.97);
+}
+.mg-deck-card.is-fx-correct{
+  animation:mgCorrectPop .52s cubic-bezier(.22,1,.36,1);
+}
+.mg-deck-card.is-fx-wrong{
+  animation:mgCardWrong .46s cubic-bezier(.36,.07,.19,.97);
+}
+.mg-search-row.is-fx-wrong,
+.mg-cover-stage.is-fx-wrong,
+.mg-hair-frame.is-fx-wrong,
+.mg-lyric-card.is-fx-wrong{
+  animation:mgShake .4s cubic-bezier(.36,.07,.19,.97);
+}
+.mg-field input.is-fx-near{
+  animation:mgNearFlash .52s ease-out;
+}
+.mg-float-pop{
+  position:absolute;
+  top:-4px;
+  left:50%;
+  transform:translateX(-50%);
+  pointer-events:none;
+  white-space:nowrap;
+  font-size:.76rem;
+  font-weight:900;
+  letter-spacing:.02em;
+  z-index:20;
+  animation:mgFloatPop .76s cubic-bezier(.22,1,.36,1) forwards;
+}
+.mg-float-pop.is-lose{
+  color:#ff6b78;
+  text-shadow:0 2px 10px rgba(255,94,108,.75);
+}
+.mg-float-pop.is-win{
+  color:#58ffad;
+  text-shadow:0 2px 10px rgba(37,224,125,.75);
+}
+.mg-sparks{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:15;
+  overflow:visible;
+}
+.mg-spark{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--c,#25e07d);
+  box-shadow:0 0 10px var(--c,#25e07d);
+  opacity:0;
+  animation:mgSpark .72s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes mgHeartBreak{
+  0%{color:#ff5e6c;transform:scale(1.38);text-shadow:0 0 14px rgba(255,94,108,.95)}
+  24%{color:#ff3b4e;transform:scale(1.22) rotate(-18deg)}
+  48%{color:#ff3b4e;transform:scale(1.1) rotate(14deg)}
+  76%{color:rgba(255,94,108,.45);transform:scale(.68) translateY(5px)}
+  100%{color:rgba(255,255,255,.16);transform:scale(1) translateY(0);text-shadow:none}
+}
+@keyframes mgPillBump{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.16);box-shadow:0 0 16px rgba(37,224,125,.55)}
+  100%{transform:scale(1)}
+}
+@keyframes mgFloatPop{
+  0%{opacity:0;transform:translate(-50%,2px) scale(.8)}
+  20%{opacity:1;transform:translate(-50%,-10px) scale(1.08)}
+  100%{opacity:0;transform:translate(-50%,-28px) scale(.95)}
+}
+@keyframes mgPipPop{
+  0%{transform:scale(1)}
+  42%{transform:scaleY(1.8) scaleX(1.18)}
+  100%{transform:scale(1)}
+}
+@keyframes mgShake{
+  0%,100%{transform:translateX(0)}
+  18%{transform:translateX(-7px)}
+  38%{transform:translateX(6px)}
+  58%{transform:translateX(-4px)}
+  78%{transform:translateX(3px)}
+}
+@keyframes mgCardWrong{
+  0%,100%{transform:translateX(0);border-color:rgba(255,255,255,.12)}
+  18%{transform:translateX(-7px);border-color:rgba(242,85,90,.75);box-shadow:0 0 28px -4px rgba(242,85,90,.42)}
+  40%{transform:translateX(6px);border-color:rgba(242,85,90,.65)}
+  64%{transform:translateX(-4px)}
+  82%{transform:translateX(3px)}
+}
+@keyframes mgCorrectPop{
+  0%{transform:scale(1);border-color:rgba(255,255,255,.12)}
+  35%{transform:scale(1.018);border-color:rgba(37,224,125,.78);box-shadow:0 0 34px -4px rgba(37,224,125,.42)}
+  100%{transform:scale(1);border-color:rgba(37,224,125,.32)}
+}
+@keyframes mgWinPop{
+  0%{transform:scale(.96);box-shadow:0 0 0 0 rgba(37,224,125,.55)}
+  45%{transform:scale(1.02);box-shadow:0 0 36px -2px rgba(37,224,125,.45)}
+  100%{transform:scale(1);box-shadow:none}
+}
+@keyframes mgStageWin{
+  0%{border-color:rgba(var(--acc-rgb),.22)}
+  38%{border-color:rgba(37,224,125,.82);box-shadow:0 24px 64px -14px rgba(37,224,125,.32)}
+  100%{border-color:rgba(var(--acc-rgb),.22)}
+}
+@keyframes mgStageLose{
+  0%{border-color:rgba(var(--acc-rgb),.22)}
+  35%{border-color:rgba(242,85,90,.68);box-shadow:0 24px 60px -16px rgba(242,85,90,.28)}
+  100%{border-color:rgba(var(--acc-rgb),.22)}
+}
+@keyframes mgNearFlash{
+  0%,100%{border-color:rgba(255,255,255,.15)}
+  40%{border-color:rgba(245,177,61,.85);box-shadow:0 0 0 3px rgba(245,177,61,.24)}
+}
+@keyframes mgSpark{
+  0%{opacity:1;transform:translate(-50%,-50%) scale(.4)}
+  60%{opacity:1}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.1)}
+}
 
 /* Search Controls & Overlay Dropdown */
 .mg-controls{width:100%;position:relative}
@@ -3759,6 +3877,7 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 }
 
 .mg-reveal-card{
+  position:relative;
   width:100%;
   padding:.85rem .92rem;
   border-radius:15px;
@@ -3902,4 +4021,14 @@ body[data-anim="off"] .dh-seg-fill{transition:none}
 body[data-anim="off"] .dh-reel-item.is-landed,
 body[data-anim="off"] .dh-reel-item.is-landed::after,
 body[data-anim="off"] .dh-reel-col.is-recoil,
-body[data-anim="off"] .dh-reel-col.is-finale{animation:none}
+body[data-anim="off"] .dh-reel-col.is-finale,
+body[data-anim="off"] .mg-heart.is-losing,
+body[data-anim="off"] .mg-fact-pill.is-bump,
+body[data-anim="off"] .mg-pip.is-pulse,
+body[data-anim="off"] .mg-float-pop,
+body[data-anim="off"] .mg-spark,
+body[data-anim="off"] .is-fx-win,
+body[data-anim="off"] .is-fx-lose,
+body[data-anim="off"] .is-fx-correct,
+body[data-anim="off"] .is-fx-wrong,
+body[data-anim="off"] .is-fx-near{animation:none}
