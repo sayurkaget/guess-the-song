@@ -2013,7 +2013,7 @@
         : (I18N ? tr('dcSubSongWin', { pct, samePct, tryLabel }) : (pct + '% of players solved · ' + samePct + '% on ' + tryLabel));
     } else {
       const missPct = Math.max(1, 100 - pct);
-      head = I18N ? tr('dcToughMissed', { pct: missPct }) : ('Tough today · ' + missPct + '% of players missed');
+      head = I18N ? tr('dcToughMissed', { pct: missPct }) : (missPct + '% of players also missed');
       if (wins > 0) {
         badge = I18N ? tr('dcBadgeLose', { avg: avgStr }) : ('You: X · ' + avgStr + ' avg');
         sub = kind === 'artist'
@@ -5682,9 +5682,13 @@
               agComm.textContent = '';
             }
           }
-          $('#agNextBtn').textContent = ag.mode === 'daily'
-            ? (I18N ? tr('agPlayEndless') : 'Play Endless')
-            : (I18N ? tr('nextArtist') : 'Next artist');
+          const nextBtn = $('#agNextBtn');
+          if (nextBtn) {
+            const nextLbl = (nextBtn.querySelector && nextBtn.querySelector('.lbl')) || nextBtn;
+            nextLbl.textContent = ag.mode === 'daily'
+              ? (I18N ? tr('agPlayEndless') : 'Play Endless')
+              : (I18N ? tr('nextArtist') : 'Next artist');
+          }
         }
       }
 

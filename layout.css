@@ -451,13 +451,13 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
 .vinyl-foot .status{margin:0;min-height:1.25em;font-size:.78rem;color:var(--dim)}
 .vinyl-foot #retrySong{margin-top:.25rem}
 .vinyl-foot .vol{margin-top:.15rem;justify-content:center}
-.vol-slot{display:inline-flex;align-items:center}
+.vol-slot{display:inline-flex;align-items:center;justify-content:center}
 .vol-slot:empty{display:none}
 #duel .duel-controls .vol{
-  height:34px;padding:0 .72rem 0 .26rem;border-radius:999px;
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.11);
+  height:28px;padding:0 .15rem;border-radius:0;
+  background:transparent;border:0;box-shadow:none;
 }
-#agVolSlot{display:flex;align-items:center;justify-content:flex-start}
+#agVolSlot{display:flex;align-items:center;justify-content:center;width:100%}
 #agVolSlot:empty{display:none}
 
 .guess-card{
@@ -803,6 +803,7 @@ body[data-anim="off"] .fan-disc::before{animation:none}
   background:rgba(245,177,61,.13);border-color:rgba(245,177,61,.32);color:#ffd06b;
 }
 .run-scoreline{grid-column:2;grid-row:2;display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap;margin-top:0}
+.run-hero:has(.run-fan[hidden]) .run-scoreline{grid-column:1 / -1}
 .sheet.run-sheet .verdict{
   margin:0;font-family:'Cabinet Grotesk',var(--fs);
   font-size:clamp(1.26rem,3vw,1.58rem);font-weight:800;letter-spacing:-.025em;color:var(--ink);
@@ -1651,7 +1652,8 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
   border:2px solid rgba(37,224,125,.65);box-shadow:0 10px 24px rgba(0,0,0,.55);
 }
 .spotle-result-banner[data-won="0"] .spotle-result-art{border-color:rgba(242,85,90,.6)}
-.spotle-result-copy{min-width:0;display:flex;flex-direction:column;gap:.2rem;text-align:left}
+.spotle-result-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:.2rem;text-align:left}
+.spotle-result-banner .run-kicker{max-width:100%}
 .spotle-result-copy h3{
   margin:0;font-family:'Cabinet Grotesk',var(--fs);font-size:1.38rem;font-weight:800;color:var(--ink);
 }
@@ -1780,11 +1782,12 @@ body[data-diff="artist"]{--acc:#a855f7;--acc-l:#d8b4fe;--acc-rgb:168,85,247}
 .recent-pl-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
 .recent-pl-lbl{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dimmer)}
 .recent-pl-clear{
-  padding:.18rem .52rem;border-radius:999px;font-size:.72rem;font-weight:600;
-  color:var(--dim);background:transparent;border:1px solid transparent;cursor:pointer;
-  transition:color .15s,background .15s,border-color .15s;
+  display:inline-flex;align-items:center;gap:.3rem;
+  min-height:28px;padding:.2rem .62rem;border-radius:999px;font-size:.72rem;font-weight:600;
+  color:var(--ink);background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);cursor:pointer;
+  transition:color .15s,background .15s,border-color .15s;white-space:nowrap;
 }
-.recent-pl-clear:hover{color:var(--text);background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1)}
+.recent-pl-clear:hover{color:#fff;background:rgba(37,224,125,.12);border-color:rgba(37,224,125,.38)}
 .recent-pl-list{display:flex;flex-wrap:wrap;gap:.4rem}
 .recent-pl-chip{
   display:inline-flex;align-items:center;gap:.42rem;max-width:100%;min-height:34px;
@@ -1977,6 +1980,7 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   .sheet.run-sheet .run-fan.single .f2{width:58px;height:58px;top:2px}
   .sheet.run-sheet .fan-disc{width:48px;height:48px;top:6px}
   .sheet.run-sheet .run-scoreline{grid-column:2;grid-row:2;gap:.45rem;margin-top:0}
+  .sheet.run-sheet .run-hero:has(.run-fan[hidden]) .run-scoreline{grid-column:1 / -1}
   .sheet.run-sheet #dailyResult,
   .sheet.run-sheet .challenge-comparison{
     grid-column:1 / -1;grid-row:3;margin:.12rem 0 0;font-size:.8rem;line-height:1.45;
@@ -1987,14 +1991,11 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   #duelModal .sheet.run-sheet .r-actions{
     grid-template-columns:minmax(0,.84fr) minmax(0,1.42fr);gap:.48rem;width:100%;
   }
-  .sheet.run-sheet[data-mode="daily"] .r-actions{
-    grid-template-columns:1fr;
-  }
   .sheet.run-sheet .run-foot-links{
     grid-template-columns:1fr;gap:.48rem;width:100%;
   }
   .sheet.run-sheet .r-actions .btn,
-  .sheet.run-sheet .customlink{font-size:.77rem;padding:.52rem .48rem}
+  .sheet.run-sheet .customlink{font-size:.77rem;min-height:42px;padding:.52rem .48rem}
 
   /* Custom Artist modal: single-row header with matched pill actions */
   #customModal .custom-quick-head{flex-wrap:nowrap;align-items:center;gap:.45rem}
@@ -2027,6 +2028,7 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   #duel .duel-grid{gap:.55rem}
 
   /* Artist Detective: uniform 6-tile height (no 2-line GLOBAL RANK) + crisp stacked result buttons */
+  .spotle-result-banner{padding:.95rem .92rem;gap:.72rem}
   .spotle-tiles{gap:.38rem}
   .sp-tile{padding:.48rem .28rem;min-height:54px}
   .sp-tile small{font-size:.57rem;letter-spacing:.035em;white-space:nowrap}
