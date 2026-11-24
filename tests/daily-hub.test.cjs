@@ -251,6 +251,11 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(mg, /function renderAttemptSlots\(/);
   assert.match(mg, /function hslToHex\(/);
   assert.doesNotMatch(mg, /mg-album-tint/);
+  assert.doesNotMatch(mg, /mgPlayPreview/);
+  assert.match(mg, /id="mgRevArt"/);
+  assert.match(mg, /id="mgVolSlot"/);
+  assert.match(app, /dockMiniVolume/);
+  assert.match(app, /undockMiniVolume/);
   for (const slug of ['cover-pixel', 'album-color', 'hairspot', 'fact-or-cap', 'lyric-guess']) {
     assert.match(app, new RegExp(`'${slug}'`));
     assert.match(mg, new RegExp(`'${slug}'`));

@@ -3644,13 +3644,37 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 .mg-reveal-card.is-lose{background:rgba(242,85,90,.08);border-color:rgba(242,85,90,.3)}
 .mg-rev-top{display:flex;align-items:center;gap:.75rem;text-align:left}
 .mg-rev-art{
-  width:52px;
-  height:52px;
+  width:56px;
+  height:56px;
   border-radius:10px;
   object-fit:cover;
   flex:none;
   box-shadow:0 6px 18px rgba(0,0,0,.6);
 }
+.mg-rev-art.is-portrait{
+  border-radius:50%;
+  object-position:center top;
+}
+.mg-rev-art.is-playable{
+  cursor:pointer;
+  border:1.5px solid rgba(255,255,255,.18);
+  transition:transform .18s ease,box-shadow .22s ease,border-color .22s ease;
+}
+.mg-rev-art.is-playable:hover{
+  transform:scale(1.05);
+  border-color:rgba(var(--acc-rgb),.55);
+}
+.mg-rev-art.is-playable[data-playing="1"]{
+  border-color:var(--acc);
+  box-shadow:0 0 0 3px rgba(var(--acc-rgb),.42),0 0 22px rgba(var(--acc-rgb),.45);
+}
+.mg-vol-slot{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+}
+.mg-vol-slot:empty{display:none}
 .mg-rev-copy{min-width:0;flex:1}
 .mg-rev-kicker{
   font-size:.68rem;
@@ -3663,7 +3687,7 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 .mg-rev-title{font-size:.98rem;font-weight:800;color:#fff;line-height:1.25;margin-top:1px}
 .mg-rev-sub{font-size:.78rem;color:var(--dim);margin-top:2px}
 .mg-rev-actions{display:flex;gap:.5rem;flex-wrap:wrap}
-.mg-rev-actions .btn{flex:1 1 124px;min-height:42px;padding:.52rem .75rem;font-size:.84rem}
+.mg-rev-actions .btn{width:100%;min-height:42px;padding:.52rem .75rem;font-size:.84rem}
 
 @media(max-width:739px){
   .mg-arena,

@@ -288,6 +288,7 @@
 
   /* ================= Daily Spin Hub View ================= */
   function hideAllScreens() {
+    if (bridge && bridge.undockMiniVolume) bridge.undockMiniVolume();
     if (bridge && bridge.hidePrimaryScreens) bridge.hidePrimaryScreens();
     const hub = $('#dailyHub');
     const mg = $('#miniGame');
@@ -835,6 +836,7 @@
 
   function openMiniGame(gameId, dailySlot, opts) {
     if (bridge && bridge.stopAudio) bridge.stopAudio();
+    if (bridge && bridge.undockMiniVolume) bridge.undockMiniVolume();
     hideAllScreens();
     const sec = $('#miniGame');
     if (sec) sec.hidden = false;
@@ -1005,13 +1007,10 @@
   function renderMiniReveal({ won, score, title, subtitle, art, trackId, dailySlot, gameId, shortSummary, detail, freeKicker }) {
     const controls = $('#mgControls');
     if (!controls) return;
-    const playSvg = '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z" fill="currentColor"/></svg>';
+    if (bridge && bridge.undockMiniVolume) bridge.undockMiniVolume();
     const replaySvg = '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 1 2.4 5.7M4 12V7m0 5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const nextSvg = '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
-    const playHtml = trackId
-      ? `<button id="mgPlayPreview" class="btn ghostbtn icon-btn mg-rev-play" type="button">${playSvg}<span class="lbl">${esc(t('Play preview', 'Putar lagu'))}</span></button>`
-      : '';
     const actionHtml = dailySlot
       ? `<button id="mgContinueDaily" class="btn solid icon-btn" type="button"><span class="lbl">${esc(t('Continue Daily', 'Lanjut Daily'))}</span>${nextSvg}</button>`
       : `<button id="mgPlayAgain" class="btn solid icon-btn" type="button">${replaySvg}<span class="lbl">${esc(t('Next round', 'Ronde berikutnya'))}</span></button>`;
@@ -1020,27 +1019,44 @@
       ? `${won ? t('Solved!', 'Benar!') : t('Revealed', 'Jawabannya')} · ${score}/100`
       : (freeKicker || (won ? t('Solved!', 'Benar!') : t('Out of tries', 'Kesempatan habis')));
 
+    const playable = Boolean(trackId && art);
+    const portraitCls = gameId === 'hair' ? ' is-portrait' : '';
+    const artHtml = art
+      ? `<img id="mgRevArt" class="mg-rev-art${portraitCls}${playable ? ' is-playable' : ''}" src="${esc(art)}" alt="${esc(title)}"${playable ? ` role="button" tabindex="0" data-playing="0" title="${esc(t('Tap to pause or resume preview', 'Ketuk untuk jeda atau putar pratinjau'))}"` : ''}${gameId === 'hair' ? ' referrerpolicy="no-referrer"' : ''}>`
+      : '';
+    const volHtml = trackId ? '<div class="vol-slot mg-vol-slot" id="mgVolSlot"></div>' : '';
+
     controls.innerHTML =
       `<div class="mg-reveal-card${won ? ' is-win' : ' is-lose'}">` +
         `<div class="mg-rev-top">` +
-          (art ? `<img class="mg-rev-art" src="${esc(art)}" alt="">` : '') +
+          artHtml +
           `<div class="mg-rev-copy">` +
             `<span class="mg-rev-kicker">${esc(kickerTxt)}</span>` +
             `<div class="mg-rev-title">${esc(title)}</div>` +
             `<div class="mg-rev-sub">${esc(subtitle)}</div>` +
           `</div>` +
         `</div>` +
-        `<div class="mg-rev-actions">${playHtml}${actionHtml}</div>` +
+        volHtml +
+        `<div class="mg-rev-actions">${actionHtml}</div>` +
       `</div>`;
 
-    const playBtn = $('#mgPlayPreview');
-    if (playBtn && trackId && bridge && bridge.playTrackPreview) {
-      playBtn.onclick = () => bridge.playTrackPreview(trackId, playBtn.querySelector('.lbl') || playBtn);
+    const artEl = $('#mgRevArt');
+    if (trackId && bridge) {
+      if (bridge.dockMiniVolume) bridge.dockMiniVolume();
+      if (artEl && bridge.playTrackPreview) {
+        const toggle = () => bridge.playTrackPreview(trackId, artEl, { auto: false });
+        artEl.onclick = toggle;
+        artEl.onkeydown = (e) => {
+          if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); toggle(); }
+        };
+        bridge.playTrackPreview(trackId, artEl, { auto: true });
+      }
     }
     const contBtn = $('#mgContinueDaily');
     if (contBtn && dailySlot) {
       contBtn.onclick = () => {
         if (bridge && bridge.stopAudio) bridge.stopAudio();
+        if (bridge && bridge.undockMiniVolume) bridge.undockMiniVolume();
         finishDailySlot(dailySlot.slot, { score, won, shortSummary, detail });
       };
     }
@@ -1048,6 +1064,7 @@
     if (againBtn) {
       againBtn.onclick = () => {
         if (bridge && bridge.stopAudio) bridge.stopAudio();
+        if (bridge && bridge.undockMiniVolume) bridge.undockMiniVolume();
         startFreeMiniGame(gameId, { replace: true });
       };
     }
@@ -1349,10 +1366,17 @@
     if (lbl) lbl.textContent = names[idx];
   }
 
-  function hairTopTrackId(artistObj, artistName) {
-    if (artistObj && artistObj.topSong && artistObj.topSong.trackId) return artistObj.topSong.trackId;
+  function hairTopTrack(artistObj, artistName) {
+    if (artistObj && artistObj.topSong && artistObj.topSong.trackId) {
+      return { trackId: artistObj.topSong.trackId, title: artistObj.topSong.title || '' };
+    }
     const hit = bridge && bridge.findArtistTopTrack ? bridge.findArtistTopTrack(artistName) : null;
-    return hit ? hit.trackId : null;
+    return hit ? { trackId: hit.trackId, title: hit.title || '' } : { trackId: null, title: '' };
+  }
+
+  function hairRevealSub(hit, fallbackGenre) {
+    if (hit && hit.title) return t('Top Hit: ' + hit.title, 'Lagu Hit: ' + hit.title);
+    return fallbackGenre || t('Mystery musician', 'Musisi misterius');
   }
 
   function submitHairGuess(artist, dailySlot) {
@@ -1374,8 +1398,8 @@
       updateHairCurtain(true);
       const score = Hub.scoreTries(true, st.tries, 5);
       const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
-      const tid = hairTopTrackId(artist, st.artistName);
-      renderMiniReveal({ won: true, score, title: st.artistName, subtitle: artist.genre || t('Musician', 'Musisi'), art: st.imgUrl, trackId: tid, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: sum });
+      const hit = hairTopTrack(artist, st.artistName);
+      renderMiniReveal({ won: true, score, title: st.artistName, subtitle: hairRevealSub(hit, artist.genre), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: sum });
       return;
     }
     st.guesses.push({ kind: 'wrong', label: artist.name });
@@ -1384,8 +1408,8 @@
       st.done = true;
       updateHairCurtain(true);
       const sum = t('Missed', 'Gagal');
-      const tid = hairTopTrackId(null, st.artistName);
-      renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: t('Mystery musician', 'Musisi misterius'), art: st.imgUrl, trackId: tid, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+      const hit = hairTopTrack(null, st.artistName);
+      renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: hairRevealSub(hit, null), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
       updateHairCurtain(false);
     }
@@ -1401,8 +1425,8 @@
       st.done = true;
       updateHairCurtain(true);
       const sum = t('Missed', 'Gagal');
-      const tid = hairTopTrackId(null, st.artistName);
-      renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: t('Mystery musician', 'Musisi misterius'), art: st.imgUrl, trackId: tid, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+      const hit = hairTopTrack(null, st.artistName);
+      renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: hairRevealSub(hit, null), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
     } else {
       updateHairCurtain(false);
     }
@@ -1680,9 +1704,22 @@
       }
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key !== 'Escape') return;
-      const pop = $('#streakPopover');
-      if (pop && !pop.hidden) pop.hidden = true;
+      if (e.key === 'Escape') {
+        const pop = $('#streakPopover');
+        if (pop && !pop.hidden) pop.hidden = true;
+        return;
+      }
+      const mg = $('#miniGame');
+      if (!mg || mg.hidden || !mgState || !mgState.done) return;
+      const tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable)) return;
+      if (e.code === 'Space') {
+        const art = $('#mgRevArt');
+        if (art && art.classList.contains('is-playable')) { e.preventDefault(); art.click(); }
+      } else if (e.key === 'Enter') {
+        const nextBtn = $('#mgContinueDaily') || $('#mgPlayAgain');
+        if (nextBtn) { e.preventDefault(); nextBtn.click(); }
+      }
     });
 
     // Free-play More Music Games buttons in lobby

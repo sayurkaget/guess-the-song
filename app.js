@@ -4119,6 +4119,7 @@
   function restoreActiveVolSlot() {
     if ($('#duel') && !$('#duel').hidden) dockVolume('#duelVolSlot');
     else if ($('#artistGame') && !$('#artistGame').hidden) dockVolume('#agVolSlot');
+    else if ($('#miniGame') && !$('#miniGame').hidden && $('#mgVolSlot')) dockVolume('#mgVolSlot');
     else dockVolume('#gameVolSlot');
   }
   function open(m) {
@@ -4344,6 +4345,7 @@
     if (syncDuelVolume) syncDuelVolume();
     if (syncArtistVolume) syncArtistVolume();
     syncSummaryVolume();
+    syncMiniVolume();
     if (syncDuelHover) syncDuelHover();
     if (typeof reloadSpotifyRounds === 'function') reloadSpotifyRounds();
     if (typeof renderRecentPlaylists === 'function') renderRecentPlaylists();
@@ -4785,6 +4787,7 @@
     if (syncDuelVolume) syncDuelVolume();
     if (syncArtistVolume) syncArtistVolume();
     syncSummaryVolume();
+    syncMiniVolume();
     syncVolumeUI();
   };
   $('#mute').onclick = () => {
@@ -4795,6 +4798,7 @@
     if (syncDuelVolume) syncDuelVolume();
     if (syncArtistVolume) syncArtistVolume();
     syncSummaryVolume();
+    syncMiniVolume();
     syncVolumeUI();
   };
   syncVolumeUI();
@@ -7209,9 +7213,29 @@
     });
   }
 
-  let miniAudio = null;
+  let miniAudio = null, miniAudioEpoch = 0, miniArtEl = null;
+  function syncMiniVolume() {
+    if (miniAudio) miniAudio.volume = S.muted ? 0 : S.vol;
+  }
   function stopMiniPreview() {
-    if (miniAudio) { try { miniAudio.pause(); miniAudio.currentTime = 0; } catch (e) {} }
+    miniAudioEpoch++;
+    if (miniAudio) {
+      try { miniAudio.pause(); miniAudio.currentTime = 0; } catch (e) {}
+      miniAudio.datasetTrack = '';
+    }
+    if (miniArtEl) { miniArtEl.dataset.playing = '0'; miniArtEl = null; }
+  }
+  function undockMiniVolume() {
+    const slot = $('#mgVolSlot');
+    if (slot && slot.querySelector && slot.querySelector('.vol')) dockVolume('#gameVolSlot');
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && miniAudio && !miniAudio.paused) {
+        try { miniAudio.pause(); } catch (e) {}
+        if (miniArtEl) miniArtEl.dataset.playing = '0';
+      }
+    });
   }
   async function startDailySongForHub(slot, onDone) {
     closeAll();
@@ -7241,9 +7265,10 @@
 
   if (typeof window !== 'undefined' && window.TuneUpDailyUI && typeof window.TuneUpDailyUI.init === 'function') {
     window.TuneUpDailyUI.init({
-      showLobby: () => { stopMiniPreview(); UI.lobby(); },
+      showLobby: () => { stopMiniPreview(); undockMiniVolume(); UI.lobby(); },
       hidePrimaryScreens: () => {
         stopMiniPreview();
+        undockMiniVolume();
         if (stopDuel) stopDuel();
         if (stopArtistGame) stopArtistGame();
         $('#lobby').hidden = true;
@@ -7259,35 +7284,56 @@
       searchArtists: (q, limit = 10) => (searchArtistRoster ? searchArtistRoster(q, limit) : []),
       getAllSongs: () => ALL,
       stopAudio: () => { stopAudio(); stopMiniPreview(); },
-      playTrackPreview: async (trackId, btnEl) => {
+      dockMiniVolume: () => dockVolume('#mgVolSlot'),
+      undockMiniVolume,
+      playTrackPreview: async (trackId, artEl, opts) => {
         const song = ALL.find((s) => String(s.trackId) === String(trackId));
         if (!song) return;
-        const playTxt = settings.lang === 'id' ? 'Putar lagu' : 'Play preview';
-        const pauseTxt = settings.lang === 'id' ? 'Jeda' : 'Pause';
-        if (miniAudio && !miniAudio.paused && miniAudio.datasetTrack === String(trackId)) {
-          stopMiniPreview();
-          if (btnEl) btnEl.textContent = playTxt;
+        const auto = !!(opts && opts.auto);
+        const tid = String(trackId);
+        // Toggle pause/resume seamlessly when tapping the art thumbnail (matching Artist Detective!)
+        if (!auto && miniAudio && miniAudio.datasetTrack === tid && miniAudio.src) {
+          if (!miniAudio.paused) {
+            try { miniAudio.pause(); } catch (e) {}
+            if (artEl) artEl.dataset.playing = '0';
+            return;
+          }
+          stopAudio();
+          miniArtEl = artEl || null;
+          miniAudio.volume = S.muted ? 0 : S.vol;
+          try {
+            await miniAudio.play();
+            if (artEl) artEl.dataset.playing = '1';
+          } catch (e) {
+            if (artEl) artEl.dataset.playing = '0';
+          }
           return;
         }
         stopAudio();
         stopMiniPreview();
-        if (btnEl) btnEl.textContent = settings.lang === 'id' ? 'Memuat…' : 'Loading…';
+        const myEpoch = miniAudioEpoch;
+        miniArtEl = artEl || null;
         try {
           const meta = await resolve(song);
+          if (myEpoch !== miniAudioEpoch || !$('#miniGame') || $('#miniGame').hidden) return;
           if (!meta || !meta.preview) {
-            if (btnEl) btnEl.textContent = playTxt;
-            toast(I18N ? tr('toastAudioUnavailable') : 'Preview unavailable');
+            if (artEl) artEl.dataset.playing = '0';
+            if (!auto) toast(I18N ? tr('toastAudioUnavailable') : 'Preview unavailable');
             return;
           }
           if (!miniAudio) miniAudio = new Audio();
-          miniAudio.datasetTrack = String(trackId);
+          miniAudio.datasetTrack = tid;
           miniAudio.src = meta.preview;
+          miniAudio.currentTime = 0;
           miniAudio.volume = S.muted ? 0 : S.vol;
-          miniAudio.onended = () => { if (btnEl) btnEl.textContent = playTxt; };
+          miniAudio.onended = () => {
+            try { miniAudio.currentTime = 0; } catch (e) {}
+            if (miniArtEl) miniArtEl.dataset.playing = '0';
+          };
           await miniAudio.play();
-          if (btnEl) btnEl.textContent = pauseTxt;
+          if (myEpoch === miniAudioEpoch && artEl) artEl.dataset.playing = '1';
         } catch (e) {
-          if (btnEl) btnEl.textContent = playTxt;
+          if (artEl) artEl.dataset.playing = '0';
         }
       },
       copyText: async (txt, evName, customToast) => {
