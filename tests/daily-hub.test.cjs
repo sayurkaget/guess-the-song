@@ -334,6 +334,67 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.doesNotMatch(fs.readFileSync(path.join(ROOT, 'songs.js'), 'utf8'), /200x200bb\.jpg/);
   assert.match(lcss, /\.dh-breakdown\{[\s\S]*grid-template-columns:minmax\(0,1fr\)/);
   assert.match(lcss, /\.dh-row\{[\s\S]*min-width:0/);
+  assert.match(app, /function dailyHubStats\(/);
+  assert.doesNotMatch(app, /tl:hub:v1:/);
+  assert.match(app, /navigator\.vibrate/);
+  assert.match(mg, /function encodeMiniChallenge\(/);
+  assert.match(mg, /function parseMiniChallenge\(/);
+  assert.match(mg, /function renderMiniStreakPill\(/);
+  assert.match(mg, /navigator\.vibrate/);
+  assert.match(mg, /ArrowLeft/);
+  assert.match(html, /id="mgStreakPill"/);
+  assert.match(html, /id="mgChallengeBar"/);
+  assert.match(build, /3 Game Musik Hari Ini/);
   assert.match(sw, /gts-v1[56]\d-wave/);
   assert.match(build, /gts-cf-v1[34]\d-wave/);
+});
+
+test('Wave 119 mini-game challenge links round-trip spoiler-free and badge backfill reads tl:mg:stats', () => {
+  const Badges = require('../badges.js');
+  const mem = new Map();
+  const storage = {
+    get length() { return mem.size; },
+    key: (i) => [...mem.keys()][i] ?? null,
+    getItem: (k) => (mem.has(k) ? mem.get(k) : null),
+    setItem: (k, v) => mem.set(k, String(v)),
+    removeItem: (k) => mem.delete(k)
+  };
+  const added = Badges.syncFromStats(storage, {
+    dailyHub: { played: 3, bestScore: 265, bestStreak: 3 },
+    mini: { games: { fact: { played: 12, won: 10, best: 11 } }, cover1: 1, mv1: 1, hair1: 1, lyric1: 1 }
+  });
+  const ids = added.map((b) => b.id);
+  for (const need of ['dailyhub1', 'daily250', 'daily3', 'fact10', 'cover1', 'mv1', 'hair1', 'lyric1']) {
+    assert.ok(ids.includes(need), 'expected badge backfill to unlock ' + need);
+  }
+  assert.ok(!ids.includes('daily300'));
+
+  // Run mini-games.js inside minimal DOM sandbox to test encode/parse/compare round-trip
+  const ctx = {
+    window: {},
+    document: { querySelector: () => null, querySelectorAll: () => [], addEventListener: () => {}, body: { dataset: {} } },
+    localStorage: storage,
+    navigator: {},
+    location: { origin: 'https://tuneup.my.id', protocol: 'https:', hash: '', pathname: '/' },
+    Buffer
+  };
+  ctx.window = ctx;
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'daily-hub-data.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'daily-hub.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'mini-games.js'), 'utf8'), ctx);
+  const UI = ctx.window.TuneUpDailyUI;
+  const tok = UI.encodeMiniChallenge({ gameId: 'mv', index: 7, key: 'dQw4w9WgXcQ', won: true, tries: 2 });
+  assert.ok(tok && tok.length > 10);
+  assert.ok(!tok.includes('dQw4w9WgXcQ'), 'challenge token must not leak raw answer key');
+  const parsed = UI.parseMiniChallenge('#mg=' + tok);
+  assert.equal(parsed.gameId, 'mv');
+  assert.equal(parsed.index, 7);
+  assert.equal(parsed.won, true);
+  assert.equal(parsed.tries, 2);
+  assert.equal(UI.parseMiniChallenge('#mg=invalid!!!'), null);
+  assert.equal(UI.compareMiniChallenge(parsed, true, 1).cls, 'is-win');
+  assert.equal(UI.compareMiniChallenge(parsed, true, 2).cls, 'is-tie');
+  assert.equal(UI.compareMiniChallenge(parsed, true, 4).cls, 'is-lose');
+  assert.equal(UI.compareMiniChallenge(parsed, false, 5).cls, 'is-lose');
 });

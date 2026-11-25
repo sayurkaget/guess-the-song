@@ -312,8 +312,19 @@
       return null;
     }
   }
+  function haptic(pattern) {
+    if (!settings.sfx || S.muted) return;
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(pattern);
+      }
+    } catch (e) {}
+  }
   function playSfx(kind) {
     if (!settings.sfx || S.muted || !(S.vol > 0)) return;
+    if (kind === 'win' || kind === 'fanfare' || kind === 'achievement') haptic([16, 26, 22]);
+    else if (kind === 'near') haptic([10, 22, 10]);
+    else haptic([28, 22, 28]);
     const ctx = unlockSfx();
     if (!ctx) return;
     const schedule = () => {
@@ -2003,6 +2014,56 @@
     if (lostToday) streak.current = 0;
     return { ...streak, played, won: wins.length, dist };
   }
+  function dailyHubStats() {
+    const today = window.DailyGame && window.DailyGame.day ? window.DailyGame.day() : new Date().toISOString().slice(0, 10);
+    const Hub = window.TuneUpDailyHub;
+    const completedRaw = LS.get('tl:dailyhub:completed', []);
+    const daySet = new Set(Array.isArray(completedRaw) ? completedRaw.filter((d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && d <= today) : []);
+    const byDay = new Map();
+    try {
+      const len = typeof localStorage !== 'undefined' && Number.isFinite(localStorage.length) ? localStorage.length : 0;
+      for (let i = 0; i < len; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('tl:dailyhub:v1:')) continue;
+        const day = k.slice('tl:dailyhub:v1:'.length);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day > today) continue;
+        const st = LS.get(k, null);
+        if (!st || !st.done) continue;
+        daySet.add(day);
+        const sc = Math.max(0, Math.min(300, Number(st.totalScore) || 0));
+        byDay.set(day, sc);
+      }
+    } catch (e) {}
+    const days = [...daySet].sort();
+    const played = days.length;
+    const bands = [0, 0, 0, 0, 0]; // 0-99, 100-179, 180-239, 240-279, 280-300
+    let sumScore = 0, scoredCount = 0, bestScore = 0;
+    for (const day of days) {
+      if (!byDay.has(day)) continue;
+      const sc = byDay.get(day);
+      sumScore += sc;
+      scoredCount++;
+      if (sc > bestScore) bestScore = sc;
+      const bi = sc >= 280 ? 4 : sc >= 240 ? 3 : sc >= 180 ? 2 : sc >= 100 ? 1 : 0;
+      bands[bi]++;
+    }
+    const avg = scoredCount ? Math.round(sumScore / scoredCount) : 0;
+    let current = 0, best = 0;
+    if (Hub && typeof Hub.streakOverview === 'function') {
+      const ov = Hub.streakOverview(days, today);
+      current = Number(ov.current) || 0;
+      best = Number(ov.best) || 0;
+    } else if (window.DailyGame && typeof window.DailyGame.streak === 'function') {
+      const st = window.DailyGame.streak(days, today);
+      current = Number(st.current) || 0;
+      best = Number(st.best) || 0;
+    }
+    const recent = [...byDay.entries()]
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .slice(0, 5)
+      .map(([day, score]) => ({ day, score }));
+    return { played, avg, bestScore, current, best, bands, recent };
+  }
   const dailyStreak = dailyStats;
   function refreshDailyArtist() {
     const btn = $('#openDailyArtist');
@@ -2783,25 +2844,24 @@
   function syncBadges(notify = false) {
     const B = window.TuneUpBadges;
     if (!B) return [];
-    const hubDone = LS.get('tl:dailyhub:completed', []);
+    const hub = dailyHubStats();
     const mgStats = LS.get('tl:mg:stats', {}) || {};
-    const factBest = Number(LS.get('tl:fact:best', 0)) || 0;
-    const Hub = window.TuneUpDailyHub;
-    const today = window.DailyGame ? window.DailyGame.day() : new Date().toISOString().slice(0, 10);
-    const hubStreak = Hub && Array.isArray(hubDone) ? Hub.streakOverview(hubDone, today).best : 0;
+    const mgGames = (mgStats && mgStats.games && typeof mgStats.games === 'object') ? mgStats.games : {};
+    const factBest = Math.max(Number(LS.get('tl:fact:best', 0)) || 0, Number(mgGames.fact && mgGames.fact.best) || 0);
     const added = B.syncFromStats(localStorage, {
       classic: allClassicStats(),
       songStreakBest: songStreak('classic').best,
       daily: dailyStats(),
       dailyHub: {
-        played: Math.max(Array.isArray(hubDone) ? hubDone.length : 0, Number(mgStats.hubPlayed) || 0),
-        bestScore: Number(mgStats.hubBestScore) || 0,
-        bestStreak: hubStreak
+        played: Math.max(hub.played, Number(mgStats.hubPlayed) || 0),
+        bestScore: Math.max(hub.bestScore, Number(mgStats.hubBestScore) || 0),
+        bestStreak: hub.best
       },
       duel: duelStats(),
       artist: artistStats(),
       mini: {
         factBest,
+        games: mgGames,
         cover1: Number(mgStats.cover1) || 0,
         mv1: Number(mgStats.mv1) || 0,
         hair1: Number(mgStats.hair1) || 0,
@@ -3888,18 +3948,41 @@
         }
         if (rt) rt.hidden = true;
       } else if (statsTab === 'daily') {
+        const hub = dailyHubStats();
         const d = dailyStats();
-        $('#statScope').textContent = I18N ? tr('statScopeDaily') : 'Daily Challenge · all saved days';
-        $('#statgrid').innerHTML =
-          cell(d.played, I18N ? tr('statPlayed') : 'played') + cell(d.won, I18N ? tr('statWins') : 'wins') +
-          cell(d.current, I18N ? tr('statStreak') : 'streak') + cell(d.best, I18N ? tr('statBest') : 'best');
-        if (dh) dh.textContent = I18N ? tr('attemptSpread') : 'Attempt spread';
-        const labels = ['0.1s', '0.5s', '2s', '8s', '15s', 'Miss'];
-        const top = Math.max.apply(null, d.dist.concat([1]));
-        $('#dist').innerHTML = d.dist.map((c, i) =>
-          '<div class="row"><span class="n wide">' + labels[i] + '</span>' +
-          '<div class="bar' + (c && c === top ? ' hot' : '') + '" style="width:' +
-          Math.max(8, c / top * 100) + '%">' + c + '</div></div>').join('');
+        if (hub.played > 0 || d.played === 0) {
+          $('#statScope').textContent = I18N ? tr('statScopeDailyHub') : 'Daily Challenge · 3-game /300';
+          $('#statgrid').innerHTML =
+            cell(hub.played, I18N ? tr('statPlayed') : 'played') +
+            cell(hub.avg, I18N ? tr('statAvg300') : 'avg /300') +
+            cell(hub.current, I18N ? tr('statStreak') : 'streak') +
+            cell(hub.bestScore, I18N ? tr('statBest300') : 'best /300');
+          if (dh) dh.textContent = I18N ? tr('dailyHubSpread') : 'Score spread (/300)';
+          const labels = ['0–99', '100–179', '180–239', '240–279', '280–300'];
+          const top = Math.max.apply(null, hub.bands.concat([1]));
+          const barsHtml = hub.bands.map((c, i) =>
+            '<div class="row"><span class="n wide dh-band">' + labels[i] + '</span>' +
+            '<div class="bar' + (c && c === top ? ' hot' : '') + '" style="width:' +
+            Math.max(8, c / top * 100) + '%">' + c + '</div></div>').join('');
+          const recentHtml = hub.recent.length
+            ? '<div class="dh-stat-recent">' + hub.recent.map((r) =>
+                '<span class="dh-stat-chip"><b>' + esc(r.day.slice(5)) + '</b> ' + r.score + '/300</span>'
+              ).join('') + '</div>'
+            : '';
+          $('#dist').innerHTML = barsHtml + recentHtml;
+        } else {
+          $('#statScope').textContent = I18N ? tr('statScopeDaily') : 'Daily Challenge · all saved days';
+          $('#statgrid').innerHTML =
+            cell(d.played, I18N ? tr('statPlayed') : 'played') + cell(d.won, I18N ? tr('statWins') : 'wins') +
+            cell(d.current, I18N ? tr('statStreak') : 'streak') + cell(d.best, I18N ? tr('statBest') : 'best');
+          if (dh) dh.textContent = I18N ? tr('attemptSpread') : 'Attempt spread';
+          const labels = ['0.1s', '0.5s', '2s', '8s', '15s', 'Miss'];
+          const top = Math.max.apply(null, d.dist.concat([1]));
+          $('#dist').innerHTML = d.dist.map((c, i) =>
+            '<div class="row"><span class="n wide">' + labels[i] + '</span>' +
+            '<div class="bar' + (c && c === top ? ' hot' : '') + '" style="width:' +
+            Math.max(8, c / top * 100) + '%">' + c + '</div></div>').join('');
+        }
         if (rt) rt.hidden = true;
       } else if (statsTab === 'duel') {
         const d = duelStats();
@@ -3939,7 +4022,7 @@
           if (b > topStreak) topStreak = b;
         });
         const winPct = totPlayed ? Math.round((totWon / totPlayed) * 100) + '%' : '0%';
-        const hubDays = Object.keys(localStorage).filter((k) => k.startsWith('tl:hub:v1:') && (LS.get(k, null) || {}).done).length;
+        const hubDays = dailyHubStats().played;
         const baseScope = I18N ? tr('statScopeMini') : '5 free-play & Daily Hub mini-games';
         $('#statScope').textContent = hubDays > 0
           ? baseScope + ' · ' + hubDays + (settings.lang === 'id' ? ' Daily selesai' : (hubDays === 1 ? ' Daily completed' : ' Dailies completed'))
@@ -4360,6 +4443,10 @@
     });
   };
   window.addEventListener('hashchange', () => {
+    if (location.hash.startsWith('#mg=') && window.TuneUpDailyUI && typeof window.TuneUpDailyUI.openMiniChallenge === 'function') {
+      window.TuneUpDailyUI.openMiniChallenge(location.hash);
+      return;
+    }
     if (location.hash.startsWith('#challenge=') || location.hash.startsWith('#run=') || location.hash.startsWith('#duel=') || location.hash.startsWith('#artist=') || location.hash === '#daily') location.reload();
   });
   if ($('#openDaily')) $('#openDaily').onclick = startDaily;
@@ -7279,6 +7366,9 @@
   function applyDeepLink() {
     const hash = location.hash || '';
     const slug = currentRouteSlug();
+    if (hash.startsWith('#mg=') && window.TuneUpDailyUI && typeof window.TuneUpDailyUI.openMiniChallenge === 'function') {
+      if (window.TuneUpDailyUI.openMiniChallenge(hash)) return true;
+    }
     if (slug === 'id') {
       if (I18N && settings.lang !== 'id') {
         settings.lang = I18N.set('id', localStorage);

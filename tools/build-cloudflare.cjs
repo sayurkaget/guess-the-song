@@ -33,7 +33,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v144-wave118-mobile-daily-breakdown-fix'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v145-wave119-daily-stats-streaks-challenges-haptics'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -249,6 +249,16 @@ function localizeIdStaticHtml(html) {
     .replace('<span class="daily-done-badge" id="dailyHubBadge">3 games · /300</span>', '<span class="daily-done-badge" id="dailyHubBadge">3 game · /300</span>')
     .replace('<span class="daily-meta" id="dailyHubMeta">Spin 3 random music games · 300 pts max</span>', '<span class="daily-meta" id="dailyHubMeta">Spin 3 game musik acak · maks 300 poin</span>')
     .replace('id="openDailyHub" type="button">Spin Daily</button>', 'id="openDailyHub" type="button">Spin Harian</button>')
+    .replace('<span class="dh-kicker" id="dhKicker">DAILY CHALLENGE</span>', '<span class="dh-kicker" id="dhKicker">TANTANGAN HARIAN</span>')
+    .replace('<h2 class="dh-title" id="dhTitle">Today\'s 3 Music Games</h2>', '<h2 class="dh-title" id="dhTitle">3 Game Musik Hari Ini</h2>')
+    .replace('<p class="dh-sub" id="dhSub">Spin to reveal today\'s lineup — same 3 games for everyone.</p>', '<p class="dh-sub" id="dhSub">Spin untuk buka 3 game acak hari ini — sama untuk semua pemain.</p>')
+    .replace('<span class="lbl">Spin Today\'s Games</span>', '<span class="lbl">Spin Game Hari Ini</span>')
+    .replace('<span id="dhNextLbl">Next daily in</span>', '<span id="dhNextLbl">Harian berikutnya dalam</span>')
+    .replace('<span class="dh-kicker" id="dhDoneKicker">DAILY COMPLETE</span>', '<span class="dh-kicker" id="dhDoneKicker">HARIAN SELESAI</span>')
+    .replace('<span class="lbl">Share result</span>', '<span class="lbl">Bagikan hasil</span>')
+    .replace('<span class="lbl">Back to menu</span>', '<span class="lbl">Kembali ke menu</span>')
+    .replace('<span id="dhBackLbl">Change mode</span>', '<span id="dhBackLbl">Ganti mode</span>')
+    .replace('<span id="mgBackLbl">Change mode</span>', '<span id="mgBackLbl">Ganti mode</span>')
     .replace('<h2 id="moreGamesHeading">More Music Games</h2>', '<h2 id="moreGamesHeading">Game Musik Lainnya</h2>')
     .replace('<span class="more-games-sub" id="moreGamesSub">Free play anytime</span>', '<span class="more-games-sub" id="moreGamesSub">Main bebas kapan saja</span>')
     .replace('<b id="mgLblMv">MV Spot</b>', '<b id="mgLblMv">MV Spot</b>')

@@ -258,13 +258,15 @@
       (Number(artist.played) || 0) > 0;
     if (playedAll) earned.push('explorer');
 
+    const mgGames = (mini.games && typeof mini.games === 'object') ? mini.games : {};
+    const factBest = Math.max(Number(mini.factBest) || 0, Number(mgGames.fact && mgGames.fact.best) || 0);
     if ((Number(dailyHub.played) || 0) >= 1) earned.push('dailyhub1');
     if ((Number(dailyHub.bestScore) || 0) >= 250) earned.push('daily250');
     if ((Number(dailyHub.bestScore) || 0) >= 300) earned.push('daily300');
     if ((Number(mini.cover1) || 0) >= 1) earned.push('cover1');
     if ((Number(mini.mv1) || 0) >= 1) earned.push('mv1');
     if ((Number(mini.hair1) || 0) >= 1) earned.push('hair1');
-    if ((Number(mini.factBest) || 0) >= 10) earned.push('fact10');
+    if (factBest >= 10) earned.push('fact10');
     if ((Number(mini.lyric1) || 0) >= 1) earned.push('lyric1');
 
     return earned.length ? unlock(storage, earned) : [];

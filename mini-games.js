@@ -85,7 +85,16 @@
       return spinAudioCtx;
     } catch { return null; }
   }
+  function haptic(pattern) {
+    if (bridge && bridge.isSfxOn && !bridge.isSfxOn()) return;
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(pattern);
+      }
+    } catch {}
+  }
   function playSpinTick(pitch) {
+    haptic(6);
     const ctx = getSpinAudio();
     if (!ctx) return;
     try {
@@ -101,6 +110,7 @@
     } catch {}
   }
   function playSpinLock(idx) {
+    haptic(idx === 2 ? [16, 28, 24] : 14);
     const ctx = getSpinAudio();
     if (!ctx) return;
     try {
@@ -145,10 +155,10 @@
       });
     } catch {}
   }
-  function playFxWin()     { playFxTone([523.25, 659.25, 783.99, 1046.5], 0.32, 'sine', 0.11, 0.068); }
-  function playFxCorrect() { playFxTone([523.25, 783.99], 0.22, 'sine', 0.1, 0.065); }
-  function playFxNear()    { playFxTone([440, 554.37], 0.18, 'triangle', 0.085, 0.06); }
-  function playFxWrong()   { playFxTone([220, 164.81], 0.17, 'triangle', 0.095, 0.075); }
+  function playFxWin()     { haptic([16, 26, 22]); playFxTone([523.25, 659.25, 783.99, 1046.5], 0.32, 'sine', 0.11, 0.068); }
+  function playFxCorrect() { haptic(14); playFxTone([523.25, 783.99], 0.22, 'sine', 0.1, 0.065); }
+  function playFxNear()    { haptic([10, 22, 10]); playFxTone([440, 554.37], 0.18, 'triangle', 0.085, 0.06); }
+  function playFxWrong()   { haptic([28, 22, 28]); playFxTone([220, 164.81], 0.17, 'triangle', 0.095, 0.075); }
 
   function isAnimOn() {
     return !(bridge && bridge.isAnimOn && !bridge.isAnimOn());
@@ -969,6 +979,141 @@
     return map[k] || (k ? k.charAt(0).toUpperCase() + k.slice(1) : 'Pop');
   }
 
+  /* ================= Spoiler-Free Mini-Game Friend Challenges (#mg=...) ================= */
+  const CHALLENGEABLE_GAMES = new Set(['cover', 'mv', 'hair', 'lyric']);
+  function fnvHex(str) {
+    let h = 2166136261;
+    const s = String(str || '');
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0).toString(16).padStart(8, '0');
+  }
+  function b64UrlEnc(str) {
+    if (typeof btoa === 'function') {
+      return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+    return Buffer.from(str, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function b64UrlDec(tok) {
+    const pad = tok.replace(/-/g, '+').replace(/_/g, '/');
+    const full = pad + '='.repeat((4 - (pad.length % 4)) % 4);
+    if (typeof atob === 'function') return atob(full);
+    return Buffer.from(full, 'base64').toString('utf8');
+  }
+  function encodeMiniChallenge({ gameId, index, key, won, tries }) {
+    if (!CHALLENGEABLE_GAMES.has(gameId) || !Number.isInteger(index) || index < 0) return '';
+    const payload = {
+      v: 1,
+      g: gameId,
+      x: index,
+      h: fnvHex(key),
+      w: won ? 1 : 0,
+      t: Math.max(1, Math.min(5, Number(tries) || 5))
+    };
+    try { return b64UrlEnc(JSON.stringify(payload)); } catch { return ''; }
+  }
+  function parseMiniChallenge(raw) {
+    if (!raw || typeof raw !== 'string') return null;
+    const tok = raw.startsWith('#mg=') ? raw.slice(4) : raw.startsWith('mg=') ? raw.slice(3) : raw;
+    if (!tok || tok.length > 200 || !/^[A-Za-z0-9_-]+$/.test(tok)) return null;
+    try {
+      const obj = JSON.parse(b64UrlDec(tok));
+      if (!obj || obj.v !== 1 || !CHALLENGEABLE_GAMES.has(obj.g)) return null;
+      if (!Number.isInteger(obj.x) || obj.x < 0) return null;
+      if (typeof obj.h !== 'string' || !/^[0-9a-f]{8}$/.test(obj.h)) return null;
+      if (obj.w !== 0 && obj.w !== 1) return null;
+      if (!Number.isInteger(obj.t) || obj.t < 1 || obj.t > 5) return null;
+      return { gameId: obj.g, index: obj.x, hash: obj.h, won: obj.w === 1, tries: obj.t };
+    } catch { return null; }
+  }
+  function resolveMiniChallengeTarget(ch) {
+    if (!ch || !CHALLENGEABLE_GAMES.has(ch.gameId)) return null;
+    let list = null, keyOf = null;
+    if (ch.gameId === 'cover') { list = getAlbumIndex(); keyOf = (a) => a.nAlbum + '|' + a.nArtist; }
+    else if (ch.gameId === 'mv') { list = Data.mvBank || []; keyOf = (r) => r[2]; }
+    else if (ch.gameId === 'hair') { list = Data.hairBank || []; keyOf = (p) => p[0]; }
+    else if (ch.gameId === 'lyric') { list = Data.lyricBank || []; keyOf = (r) => String(r[0]); }
+    if (!list || !list.length) return null;
+    if (ch.index < list.length && fnvHex(keyOf(list[ch.index])) === ch.hash) {
+      return { item: list[ch.index], index: ch.index };
+    }
+    for (let i = 0; i < list.length; i++) {
+      if (fnvHex(keyOf(list[i])) === ch.hash) return { item: list[i], index: i };
+    }
+    return null;
+  }
+  function compareMiniChallenge(ch, myWon, myTries) {
+    if (!ch) return null;
+    if (myWon && !ch.won) {
+      return { cls: 'is-win', text: t(`You beat your friend! (${myTries}/5 vs Miss)`, `Kamu mengalahkan temanmu! (${myTries}/5 vs Gagal)`) };
+    }
+    if (!myWon && ch.won) {
+      return { cls: 'is-lose', text: t(`Friend won (${ch.tries}/5 vs Miss)`, `Temanmu menang (${ch.tries}/5 vs Gagal)`) };
+    }
+    if (!myWon && !ch.won) {
+      return { cls: 'is-tie', text: t('Both stumped — tough one!', 'Sama-sama gagal — soal ini susah!') };
+    }
+    if (myTries < ch.tries) {
+      return { cls: 'is-win', text: t(`You beat your friend! (${myTries}/5 vs ${ch.tries}/5)`, `Kamu menang! (${myTries}/5 vs ${ch.tries}/5)`) };
+    }
+    if (myTries > ch.tries) {
+      return { cls: 'is-lose', text: t(`Friend edged you out (${ch.tries}/5 vs ${myTries}/5)`, `Temanmu lebih cepat (${ch.tries}/5 vs ${myTries}/5)`) };
+    }
+    return { cls: 'is-tie', text: t(`Tied with your friend! (${myTries}/5)`, `Seri dengan temanmu! (${myTries}/5)`) };
+  }
+  function openMiniChallenge(rawHash) {
+    const ch = parseMiniChallenge(rawHash);
+    if (!ch) return false;
+    const resolved = resolveMiniChallengeTarget(ch);
+    if (!resolved) {
+      if (bridge && bridge.toast) bridge.toast(t('Challenge link is no longer valid.', 'Link tantangan tidak valid lagi.'));
+      return false;
+    }
+    activeDailySlot = null;
+    document.body.dataset.diff = 'easy';
+    openMiniGame(ch.gameId, null, { skipRoute: true, challenge: { ...ch, item: resolved.item, resolvedIndex: resolved.index } });
+    return true;
+  }
+
+  function renderMiniStreakPill(gameId, dailySlot, bump) {
+    const pill = $('#mgStreakPill');
+    if (!pill) return;
+    if (dailySlot || !gameId || gameId === 'fact') {
+      pill.hidden = true;
+      return;
+    }
+    const raw = LS.get(MG_STATS_KEY, {}) || {};
+    const g = (raw && raw.games && raw.games[gameId]) || {};
+    const streak = Number(g.streak) || 0;
+    const best = Number(g.best) || 0;
+    const flameSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.3 2.7c.4 3.4-1.6 5.2-3 6.9-1.4 1.7-2.3 3.2-2.3 5.2a5 5 0 0 0 10 0c0-2.7-1.6-4.7-2.6-6.2-.5 1.3-1.4 2.1-2.5 2.4.7-2.2 1.3-4.6.4-8.3Z" fill="currentColor"/></svg>';
+    pill.style.setProperty('--rc', gameColor(gameId));
+    pill.classList.toggle('is-hot', streak > 0);
+    pill.innerHTML = `${flameSvg}<b>${streak}</b><span>· ${esc(t('Best', 'Rekor'))} ${best}</span>`;
+    pill.hidden = false;
+    if (bump === 'win') {
+      triggerFxClass(pill, 'is-bump', 420);
+      popFloatBadge(pill, '+1', 'win');
+    }
+  }
+
+  function renderMiniChallengeBar(challenge) {
+    const bar = $('#mgChallengeBar');
+    if (!bar) return;
+    if (!challenge) {
+      bar.hidden = true;
+      bar.innerHTML = '';
+      return;
+    }
+    const msg = challenge.won
+      ? t(`Friend challenge · Beat ${challenge.tries}/5!`, `Tantangan teman · Kalahkan ${challenge.tries}/5!`)
+      : t('Friend challenge · Stumped your friend — can you get it?', 'Tantangan teman · Mereka gagal — kamu bisa nebak?');
+    bar.innerHTML = `${ICONS.duel}<span>${esc(msg)}</span>`;
+    bar.hidden = false;
+  }
+
   function startFreeMiniGame(gameId, opts) {
     const normalizedId = gameId === 'color' ? 'mv' : gameId;
     activeDailySlot = null;
@@ -999,6 +1144,7 @@
 
   function openMiniGame(rawGameId, dailySlot, opts) {
     const gameId = rawGameId === 'color' ? 'mv' : rawGameId;
+    const challenge = (!dailySlot && opts && opts.challenge) ? opts.challenge : null;
     if (bridge && bridge.stopAudio) bridge.stopAudio();
     if (bridge && bridge.undockMiniVolume) bridge.undockMiniVolume();
     hideAllScreens();
@@ -1012,11 +1158,16 @@
     if (backLbl) backLbl.textContent = dailySlot ? t('Back to Daily', 'Kembali ke Daily') : t('Change mode', 'Ganti mode');
     $('#mgBack').onclick = () => {
       if (bridge && bridge.stopAudio) bridge.stopAudio();
+      if (typeof location !== 'undefined' && location.hash.startsWith('#mg=') && typeof history !== 'undefined' && history.replaceState) {
+        history.replaceState(null, '', '/');
+      }
       if (dailySlot) showDailyHub();
       else if (bridge && bridge.showLobby) bridge.showLobby();
     };
 
     renderDailyPillInMiniGame(dailySlot);
+    renderMiniStreakPill(gameId, dailySlot, null);
+    renderMiniChallengeBar(challenge);
     const icoEl = $('#mgTitleIco');
     if (icoEl) icoEl.innerHTML = ICONS[gameId] || '';
     const titleEl = $('#mgGameTitle');
@@ -1036,11 +1187,11 @@
     const isDaily = !!dailySlot;
     const seed = isDaily ? dailySlot.seed : ('free:' + gameId + ':' + Date.now() + ':' + Math.random());
 
-    if (gameId === 'cover') initCoverPixel(seed, dailySlot);
-    else if (gameId === 'mv') initMvSpot(seed, dailySlot);
-    else if (gameId === 'hair') initHairSpot(seed, dailySlot);
+    if (gameId === 'cover') initCoverPixel(seed, dailySlot, challenge);
+    else if (gameId === 'mv') initMvSpot(seed, dailySlot, challenge);
+    else if (gameId === 'hair') initHairSpot(seed, dailySlot, challenge);
     else if (gameId === 'fact') initFactOrCap(seed, dailySlot);
-    else if (gameId === 'lyric') initLyricGuess(seed, dailySlot);
+    else if (gameId === 'lyric') initLyricGuess(seed, dailySlot, challenge);
 
     scrollTopReset();
   }
@@ -1188,15 +1339,25 @@
         }
         s.games[gameId] = g;
       });
+      renderMiniStreakPill(gameId, dailySlot, won ? 'win' : 'lose');
     }
     const controls = $('#mgControls');
     if (!controls) return;
     if (bridge && bridge.undockMiniVolume) bridge.undockMiniVolume();
     const replaySvg = '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 1 2.4 5.7M4 12V7m0 5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const nextSvg = '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const shareSvg = '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6" fill="currentColor"/><circle cx="6" cy="12" r="2.6" fill="currentColor"/><circle cx="18" cy="19" r="2.6" fill="currentColor"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>';
+
+    const st = mgState;
+    const canChallenge = !dailySlot && CHALLENGEABLE_GAMES.has(gameId) && st && Number.isInteger(st.challengeIndex) && st.challengeIndex >= 0 && st.challengeKey;
+    const verdict = (!dailySlot && st && st.challenge) ? compareMiniChallenge(st.challenge, won, st.tries || 5) : null;
+    const verdictHtml = verdict ? `<div class="mg-ch-verdict ${verdict.cls}">${esc(verdict.text)}</div>` : '';
 
     const actionHtml = dailySlot
       ? `<button id="mgContinueDaily" class="btn solid icon-btn" type="button"><span class="lbl">${esc(t('Continue Daily', 'Lanjut Daily'))}</span>${nextSvg}</button>`
+      : canChallenge
+      ? `<button id="mgChallengeBtn" class="btn ghostbtn icon-btn share-btn" type="button">${shareSvg}<span class="lbl">${esc(t('Challenge friend', 'Tantang teman'))}</span></button>` +
+        `<button id="mgPlayAgain" class="btn solid icon-btn" type="button">${replaySvg}<span class="lbl">${esc(t('Next round', 'Ronde berikutnya'))}</span></button>`
       : `<button id="mgPlayAgain" class="btn solid icon-btn" type="button">${replaySvg}<span class="lbl">${esc(t('Next round', 'Ronde berikutnya'))}</span></button>`;
 
     const kickerTxt = dailySlot
@@ -1212,6 +1373,7 @@
 
     controls.innerHTML =
       `<div class="mg-reveal-card${won ? ' is-win' : ' is-lose'}">` +
+        verdictHtml +
         `<div class="mg-rev-top">` +
           artHtml +
           `<div class="mg-rev-copy">` +
@@ -1221,7 +1383,7 @@
           `</div>` +
           volHtml +
         `</div>` +
-        `<div class="mg-rev-actions">${actionHtml}</div>` +
+        `<div class="mg-rev-actions${canChallenge ? ' is-pair' : ''}">${actionHtml}</div>` +
       `</div>`;
 
     const revCard = controls.querySelector('.mg-reveal-card');
@@ -1272,11 +1434,30 @@
         finishDailySlot(dailySlot.slot, { score, won, shortSummary, detail });
       };
     }
+    const chBtn = $('#mgChallengeBtn');
+    if (chBtn && canChallenge) {
+      chBtn.onclick = () => {
+        const tok = encodeMiniChallenge({ gameId, index: st.challengeIndex, key: st.challengeKey, won, tries: st.tries || 5 });
+        if (!tok) return;
+        const r = GAME_ROUTES[gameId];
+        const url = `${location.origin}/${r ? r.slug : ''}#mg=${tok}`;
+        const gName = gameLabel(gameId);
+        const triesN = st.tries || 5;
+        const msg = won
+          ? (isId() ? `Bisa kalahkan ${triesN}/5 aku di TuneUp ${gName}?\n${url}` : `Can you beat my ${triesN}/5 in TuneUp ${gName}?\n${url}`)
+          : (isId() ? `Aku gagal di TuneUp ${gName} ini — kamu bisa nebak?\n${url}` : `This TuneUp ${gName} stumped me — can you get it?\n${url}`);
+        if (bridge && bridge.copyText) bridge.copyText(msg, 'mini_challenge_copy', t('Challenge link copied!', 'Link tantangan tersalin!'));
+      };
+    }
     const againBtn = $('#mgPlayAgain');
     if (againBtn) {
       againBtn.onclick = () => {
         if (bridge && bridge.stopAudio) bridge.stopAudio();
         if (bridge && bridge.undockMiniVolume) bridge.undockMiniVolume();
+        if (typeof location !== 'undefined' && location.hash.startsWith('#mg=') && typeof history !== 'undefined' && history.replaceState) {
+          const r = GAME_ROUTES[gameId];
+          history.replaceState(null, '', r ? ('/' + r.slug) : location.pathname);
+        }
         startFreeMiniGame(gameId, { replace: true });
       };
     }
@@ -1284,17 +1465,23 @@
 
   /* ================= GAME 1: COVER PIXEL (GUESS THE ALBUM NAME) ================= */
   const PIXEL_GRIDS = [6, 10, 16, 28, 46];
-  function initCoverPixel(seed, dailySlot) {
+  function initCoverPixel(seed, dailySlot, challenge) {
     const allAlbums = getAlbumIndex();
     const maxDiff = dailySlot ? dailySlot.diffTier : 2;
     const pool = allAlbums.filter((a) => a.art && a.diff <= maxDiff);
     const srcPool = pool.length ? pool : allAlbums;
-    const target = dailySlot
+    const target = (challenge && challenge.item)
+      ? challenge.item
+      : dailySlot
       ? Hub.pickDeterministic(srcPool, seed, 1)
       : pickFreeUnseen(srcPool, 'cover', seed, (a) => a.nAlbum + '|' + a.nArtist);
     if (!target) return;
+    const challengeKey = target.nAlbum + '|' + target.nArtist;
+    const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
+      ? challenge.resolvedIndex
+      : allAlbums.indexOf(target);
 
-    mgState = { gameId: 'cover', target, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false, imgEl: null };
+    mgState = { gameId: 'cover', target, challenge, challengeKey, challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false, imgEl: null };
     $('#mgSubtitle').textContent = t('Guess the album from its pixelated cover', 'Tebak nama album dari cover pikselnya');
     $('#mgBody').innerHTML =
       `<div class="mg-cover-stage">` +
@@ -1449,20 +1636,28 @@
     });
   }
 
-  function initMvSpot(seed, dailySlot) {
+  function initMvSpot(seed, dailySlot, challenge) {
     const bank = Data.mvBank || [];
     const maxDiff = dailySlot ? dailySlot.diffTier : 3;
     const pool = bank.filter((r) => r[3] <= maxDiff);
     const srcPool = pool.length ? pool : bank;
-    const targetRow = dailySlot
+    const targetRow = (challenge && challenge.item)
+      ? challenge.item
+      : dailySlot
       ? Hub.pickDeterministic(srcPool, seed, 1)
       : pickFreeUnseen(srcPool, 'mv', seed, (r) => r[2]);
     if (!targetRow) return;
     // [title, artist, yt, tier, year, genre, art, trackId]
     const [title, artist, yt, tier, year, genre, art, trackId] = targetRow;
+    const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
+      ? challenge.resolvedIndex
+      : bank.indexOf(targetRow);
     mgState = {
       gameId: 'mv',
       target: { title, artist, yt, tier, year, genre, art, trackId },
+      challenge,
+      challengeKey: yt,
+      challengeIndex,
       tries: 0,
       maxTries: 5,
       viewFrame: 1,
@@ -1670,12 +1865,14 @@
 
   /* ================= GAME 3: HAIRSPOT MUSIC ================= */
   const HAIR_CURTAIN_PCTS = [77, 63, 49, 34, 18, 0];
-  function initHairSpot(seed, dailySlot) {
+  function initHairSpot(seed, dailySlot, challenge) {
     const bank = Data.hairBank || [];
     const maxDiff = dailySlot ? dailySlot.diffTier : 3;
     const pool = bank.filter((p) => p[3] <= maxDiff);
     const srcPool = pool.length ? pool : bank;
-    const picked = dailySlot
+    const picked = (challenge && challenge.item)
+      ? challenge.item
+      : dailySlot
       ? Hub.pickDeterministic(srcPool, seed, 1)
       : pickFreeUnseen(srcPool, 'hair', seed, (p) => p[0]);
     if (!picked) return;
@@ -1684,7 +1881,10 @@
     const hasCrop = Array.isArray(crop) && crop.length >= 8;
     const curtains = hasCrop ? [crop[3], crop[4], crop[5], crop[6], crop[7], 0] : HAIR_CURTAIN_PCTS;
     const imgStyle = hasCrop ? `left:${crop[0]}%;top:${crop[1]}%;width:${crop[2]}%` : '';
-    mgState = { gameId: 'hair', artistId, artistName, imgUrl, curtains, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
+    const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
+      ? challenge.resolvedIndex
+      : bank.indexOf(picked);
+    mgState = { gameId: 'hair', artistId, artistName, imgUrl, curtains, challenge, challengeKey: artistId, challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
 
     $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle', 'Tebak musisi dari gaya rambutnya');
     renderAttemptPips([], 5, false, -1);
@@ -1888,8 +2088,8 @@
 
     $('#mgControls').innerHTML =
       `<div class="mg-fact-btns">` +
-        `<button id="mgBtnFact" class="btn ghostbtn mg-fact-btn is-fact" type="button"><span class="mg-fact-badge" aria-hidden="true">✓</span><span>${esc(t('FACT', 'FAKTA'))}</span></button>` +
-        `<button id="mgBtnCap" class="btn ghostbtn mg-fact-btn is-cap" type="button"><span class="mg-fact-badge" aria-hidden="true">✕</span><span>${esc(t('CAP', 'HOAX'))}</span></button>` +
+        `<button id="mgBtnFact" class="btn ghostbtn mg-fact-btn is-fact" type="button"><span class="mg-fact-badge" aria-hidden="true">✓</span><span>${esc(t('FACT', 'FAKTA'))}</span><kbd class="mg-kbd" aria-hidden="true">F</kbd></button>` +
+        `<button id="mgBtnCap" class="btn ghostbtn mg-fact-btn is-cap" type="button"><span class="mg-fact-badge" aria-hidden="true">✕</span><span>${esc(t('CAP', 'HOAX'))}</span><kbd class="mg-kbd" aria-hidden="true">C</kbd></button>` +
       `</div>`;
 
     $('#mgBtnFact').onclick = () => answerFact(1);
@@ -1968,15 +2168,20 @@
   }
 
   /* ================= GAME 5: LYRIC GUESS ================= */
-  function initLyricGuess(seed, dailySlot) {
+  function initLyricGuess(seed, dailySlot, challenge) {
     const bank = Data.lyricBank || [];
-    const targetRow = dailySlot
+    const targetRow = (challenge && challenge.item)
+      ? challenge.item
+      : dailySlot
       ? Hub.pickDeterministic(bank, seed, 1)
       : pickFreeUnseen(bank, 'lyric', seed, (r) => r[0]);
     if (!targetRow) return;
     // [trackId, title, artist, art, year, diff, lines]
     const [trackId, title, artist, art, year, , lines] = targetRow;
-    mgState = { gameId: 'lyric', dailySlot, trackId, title, artist, art, year, lines, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
+    const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
+      ? challenge.resolvedIndex
+      : bank.indexOf(targetRow);
+    mgState = { gameId: 'lyric', dailySlot, trackId, title, artist, art, year, lines, challenge, challengeKey: String(trackId), challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
 
     renderAttemptPips([], 5, false, -1);
     renderLyricLines(false);
@@ -2140,10 +2345,37 @@
         if (pop && !pop.hidden) pop.hidden = true;
         return;
       }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       const mg = $('#miniGame');
-      if (!mg || mg.hidden || !mgState || !mgState.done) return;
+      if (!mg || mg.hidden || !mgState) return;
       const tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
       if (tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable)) return;
+
+      // MV Spot: press 1 / 2 / 3 to jump between unlocked video frames
+      if (mgState.gameId === 'mv' && (e.key === '1' || e.key === '2' || e.key === '3')) {
+        const f = Number(e.key);
+        const unlocked = mgState.done ? 3 : Math.min(3, mgState.tries + 1);
+        if (f <= unlocked && f !== mgState.viewFrame) {
+          e.preventDefault();
+          mgState.viewFrame = f;
+          renderMvStage(Boolean(mgState.done));
+        }
+        return;
+      }
+
+      // Fact or Cap: F / ArrowLeft = FACT, C / ArrowRight = CAP, Enter / Space = Next claim
+      if (mgState.gameId === 'fact' && !mgState.done) {
+        if (!mgState.locked) {
+          if (e.key === 'f' || e.key === 'F' || e.key === 'ArrowLeft') { e.preventDefault(); answerFact(1); return; }
+          if (e.key === 'c' || e.key === 'C' || e.key === 'ArrowRight') { e.preventDefault(); answerFact(0); return; }
+        } else if (e.key === 'Enter' || e.code === 'Space') {
+          const nxt = $('#mgFactNext');
+          if (nxt) { e.preventDefault(); nxt.click(); return; }
+        }
+        return;
+      }
+
+      if (!mgState.done) return;
       if (e.code === 'Space') {
         const art = $('#mgRevArt');
         if (art && art.classList.contains('is-playable')) { e.preventDefault(); art.click(); }
@@ -2190,6 +2422,10 @@
     refreshLobbyDailyUI,
     syncLang,
     startFreeMiniGame,
+    openMiniChallenge,
+    encodeMiniChallenge,
+    parseMiniChallenge,
+    compareMiniChallenge,
     getActiveDailySlot: () => activeDailySlot,
     onExternalGameFinished(slotIdx, result) {
       activeDailySlot = null;
