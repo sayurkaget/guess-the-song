@@ -111,8 +111,9 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
     assert.ok(trackIds.has(String(trackId)), `albumBank trackId ${trackId} (${album}) must exist in songs.js`);
   }
   const seenYt = new Set();
+  const mvFramesDir = path.join(ROOT, 'mv-frames');
   for (const row of Data.mvBank) {
-    const [title, artist, ytId, tier, year, genre, artUrl, trackId, order, masks] = row;
+    const [title, artist, ytId, tier, year, genre, artUrl, trackId] = row;
     assert.ok(title && artist && genre, 'mvBank row must have title, artist, and genre');
     assert.match(ytId, /^[A-Za-z0-9_-]{11}$/, `invalid ytId ${ytId}`);
     assert.ok(!seenYt.has(ytId), `duplicate ytId ${ytId}`);
@@ -121,8 +122,10 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
     assert.ok(year >= 1950 && year <= 2030);
     assert.match(artUrl, /^https:\/\//);
     assert.ok(trackIds.has(String(trackId)), `mvBank trackId ${trackId} (${title}) must exist in songs.js`);
-    assert.ok(Array.isArray(order) && order.length === 3 && new Set(order).size === 3, `mvBank ${title} must have 3-frame order`);
-    assert.ok(Array.isArray(masks) && masks.length === 3, `mvBank ${title} must have 3-frame face masks`);
+    for (let f = 1; f <= 3; f++) {
+      const fp = path.join(mvFramesDir, `${ytId}_${f}.webp`);
+      assert.ok(fs.existsSync(fp) && fs.statSync(fp).size > 2000, `missing local scene still ${ytId}_${f}.webp`);
+    }
   }
 
   for (const row of Data.lyricBank) {
@@ -282,10 +285,11 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(css, /\.glow\{[\s\S]*z-index:0;\s*isolation:isolate/);
   assert.match(css, /\.wrap\{[\s\S]*position:relative;\s*z-index:1/);
   assert.match(mg, /function initMvSpot\(/);
-  assert.match(mg, /maxres\$\{frameNum\}\.jpg/);
-  assert.match(mg, /id="mgMvFaceMask"/);
+  assert.match(mg, /\/mv-frames\//);
+  assert.doesNotMatch(mg, /mgMvFaceMask|mgMvBlurFx/);
   assert.match(mg, /const showAll = Boolean\(revealAll \|\| st\.done\)/);
   assert.doesNotMatch(mg, /HD ·/);
+  assert.match(build, /'\/mv-frames\/\*'/);
   assert.doesNotMatch(mg, /mg-album-tint/);
   assert.doesNotMatch(mg, /mgPlayPreview/);
   assert.match(mg, /id="mgRevArt"/);

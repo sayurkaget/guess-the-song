@@ -3241,27 +3241,6 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   transition:opacity .22s ease;
 }
 .mg-mv-img.is-loading{opacity:.38}
-.mg-mv-mask-layer{
-  position:absolute;
-  inset:0;
-  z-index:2;
-  pointer-events:none;
-  overflow:hidden;
-  mask:url(#mgMvFaceMask);
-  -webkit-mask:url(#mgMvFaceMask);
-  transition:opacity .28s ease;
-}
-.mg-mv-mask-layer[hidden]{display:none}
-.mg-mv-mask-layer.is-revealed{opacity:0}
-.mg-mv-svg-defs{position:absolute;width:0;height:0;pointer-events:none}
-.mg-mv-blur-img{
-  width:100%;
-  height:100%;
-  display:block;
-  object-fit:cover;
-  object-position:center;
-  filter:url(#mgMvBlurFx) brightness(.88) saturate(.92);
-}
 .mg-mv-bar{
   position:absolute;
   inset:auto 0 0 0;
@@ -4059,7 +4038,6 @@ body[data-anim="off"] .dh-reel-strip,
 body[data-anim="off"] .mg-hair-clip,
 body[data-anim="off"] .mg-hair-curtain,
 body[data-anim="off"] .mg-mv-img,
-body[data-anim="off"] .mg-mv-mask-layer,
 body[data-anim="off"] .dh-seg-fill{transition:none}
 body[data-anim="off"] .mg-mv-clue,
 body[data-anim="off"] .dh-reel-item.is-landed::after,

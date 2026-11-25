@@ -32,7 +32,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v140-wave114-remove-top-hit-label'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v141-wave115-mv-spot-real-scenes'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -351,8 +351,12 @@ for (const page of SEO_PAGES) {
 }
 
 fs.cpSync(path.join(root, 'fonts'), path.join(output, 'fonts'), { recursive: true });
+if (fs.existsSync(path.join(root, 'mv-frames'))) {
+  fs.cpSync(path.join(root, 'mv-frames'), path.join(output, 'mv-frames'), { recursive: true });
+}
 const staticAssetExcludes = [
   '/fonts/*',
+  '/mv-frames/*',
   ...files
     .filter((f) => /\.(css|js|png|ico|webmanifest)$/.test(f))
     .map((f) => `/${f}`)
