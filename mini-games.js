@@ -1637,17 +1637,22 @@
       ? Hub.pickDeterministic(srcPool, seed, 1)
       : pickFreeUnseen(srcPool, 'hair', seed, (p) => p[0]);
     if (!picked) return;
-    // [artistId, artistName, imgUrl, diff]
-    const [artistId, artistName, imgUrl] = picked;
-    mgState = { gameId: 'hair', artistId, artistName, imgUrl, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
+    // [artistId, artistName, imgUrl, diff, crop?]
+    const [artistId, artistName, imgUrl, , crop] = picked;
+    const hasCrop = Array.isArray(crop) && crop.length >= 8;
+    const curtains = hasCrop ? [crop[3], crop[4], crop[5], crop[6], crop[7], 0] : HAIR_CURTAIN_PCTS;
+    const imgStyle = hasCrop ? `left:${crop[0]}%;top:${crop[1]}%;width:${crop[2]}%` : '';
+    mgState = { gameId: 'hair', artistId, artistName, imgUrl, curtains, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
 
     $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle', 'Tebak musisi dari gaya rambutnya');
     renderAttemptPips([], 5, false, -1);
 
     $('#mgBody').innerHTML =
       `<div class="mg-hair-frame">` +
-        `<img id="mgHairImg" class="mg-hair-img" src="${esc(imgUrl)}" alt="Mystery musician" referrerpolicy="no-referrer" style="clip-path:inset(0 0 ${HAIR_CURTAIN_PCTS[0]}% 0)">` +
-        `<div id="mgHairCurtain" class="mg-hair-curtain" style="height:${HAIR_CURTAIN_PCTS[0]}%">` +
+        `<div id="mgHairClip" class="mg-hair-clip" style="clip-path:inset(0 0 ${curtains[0]}% 0)">` +
+          `<img id="mgHairImg" class="mg-hair-img${hasCrop ? ' is-framed' : ''}" src="${esc(imgUrl)}" alt="Mystery musician" referrerpolicy="no-referrer"${imgStyle ? ` style="${imgStyle}"` : ''}>` +
+        `</div>` +
+        `<div id="mgHairCurtain" class="mg-hair-curtain" style="height:${curtains[0]}%">` +
           `<span id="mgHairStage">${esc(t('Hair only', 'Rambut saja'))}</span>` +
         `</div>` +
       `</div>`;
@@ -1676,10 +1681,11 @@
       t('Last clue', 'Kesempatan terakhir'),
       st.artistName
     ];
-    const pct = HAIR_CURTAIN_PCTS[idx];
-    const img = $('#mgHairImg');
-    if (img) {
-      img.style.clipPath = fullReveal ? 'inset(0 0 0 0)' : `inset(0 0 ${pct}% 0)`;
+    const list = (st.curtains && st.curtains.length === 6) ? st.curtains : HAIR_CURTAIN_PCTS;
+    const pct = list[idx];
+    const clip = $('#mgHairClip');
+    if (clip) {
+      clip.style.clipPath = fullReveal ? 'inset(0 0 0 0)' : `inset(0 0 ${pct}% 0)`;
     }
     if (curtain) {
       curtain.style.height = pct + '%';

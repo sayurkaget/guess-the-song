@@ -134,10 +134,14 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
   const roster = ArtistDetective.buildRoster(songs, duelStreams);
   const artistIds = new Set(roster.map((a) => a.id));
   for (const row of Data.hairBank) {
-    const [artistId, name, imgUrl, diff] = row;
+    const [artistId, name, imgUrl, diff, crop] = row;
     assert.ok(artistIds.has(artistId), `hairBank artistId ${artistId} (${name}) must exist in ArtistDetective roster`);
     assert.match(imgUrl, /^https:\/\//);
     assert.ok(diff >= 1 && diff <= 3);
+    assert.ok(Array.isArray(crop) && crop.length === 8, `hairBank ${name} must have 8-element YuNet framing/curtain crop`);
+    const [lx, ty, wp, c0, c1, c2, c3, c4] = crop;
+    assert.ok(lx <= 0 && ty <= 0 && wp >= 100 && lx + wp >= 100, `hairBank ${name} framing must cover card cleanly`);
+    assert.ok(c0 > c1 && c1 > c2 && c2 > c3 && c3 > c4 && c4 > 0, `hairBank ${name} curtains must decrease strictly`);
   }
 
   let facts = 0, caps = 0;
@@ -290,7 +294,7 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
     assert.match(sitemap, new RegExp(`/${slug}<`));
   }
   assert.match(mg, /HAIR_CURTAIN_PCTS = \[77, 63, 49, 34, 18, 0\]/);
-  assert.match(mg, /clip-path:inset\(0 0 \$\{HAIR_CURTAIN_PCTS\[0\]\}% 0\)/);
+  assert.match(mg, /id="mgHairClip"[\s\S]*clip-path:inset\(0 0 \$\{curtains\[0\]\}% 0\)/);
   assert.match(mg, /const GAME_COLORS = \{/);
   assert.doesNotMatch(mg, /function diffLabel\(/);
   assert.match(mg, /awardMiniBadges\(\['cover1'\]\)/);
