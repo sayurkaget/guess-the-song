@@ -337,6 +337,11 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(app, /function dailyHubStats\(/);
   assert.match(app, /\$\('#duelTabs'\)\.hidden = Boolean\(ds\.hubSlot\)/);
   assert.match(app, /if \(!ds\.challenge \|\| ds\.hubSlot\)/);
+  assert.match(app, /const duelFreeRuns = \{ streams: null, year: null \}/);
+  assert.match(app, /function saveDuelFreeRun\(/);
+  assert.match(app, /function syncArtistFreeRun\(/);
+  assert.match(mg, /const freeMiniSessions = Object\.create\(null\)/);
+  assert.match(mg, /function clearFreeSessions\(/);
   assert.doesNotMatch(app, /tl:hub:v1:/);
   assert.match(app, /navigator\.vibrate/);
   assert.match(mg, /function encodeMiniChallenge\(/);

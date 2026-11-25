@@ -1253,6 +1253,12 @@
 
   /* ================= Unified Mini-Game Stage (`#miniGame`) ================= */
   let mgState = null; // current active mini-game runtime state
+  // Park unfinished free-play rounds in memory (matching Classic RUNS): switching modes/tabs
+  // or returning via Change mode resumes the exact same puzzle & progress; page reload starts fresh.
+  const freeMiniSessions = Object.create(null);
+  function clearFreeSessions() {
+    for (const k in freeMiniSessions) delete freeMiniSessions[k];
+  }
 
   function renderDailyPillInMiniGame(slot) {
     const pill = $('#mgDailyPill');
@@ -1344,13 +1350,19 @@
     }
 
     const isDaily = !!dailySlot;
+    if (!isDaily && !challenge && opts && opts.forceNew) {
+      delete freeMiniSessions[gameId];
+    }
+    const saved = (!isDaily && !challenge && freeMiniSessions[gameId] && !freeMiniSessions[gameId].done)
+      ? freeMiniSessions[gameId]
+      : null;
     const seed = isDaily ? dailySlot.seed : ('free:' + gameId + ':' + Date.now() + ':' + Math.random());
 
-    if (gameId === 'cover') initCoverPixel(seed, dailySlot, challenge);
-    else if (gameId === 'mv') initMvSpot(seed, dailySlot, challenge);
-    else if (gameId === 'hair') initHairSpot(seed, dailySlot, challenge);
-    else if (gameId === 'fact') initFactOrCap(seed, dailySlot);
-    else if (gameId === 'lyric') initLyricGuess(seed, dailySlot, challenge);
+    if (gameId === 'cover') initCoverPixel(seed, dailySlot, challenge, saved);
+    else if (gameId === 'mv') initMvSpot(seed, dailySlot, challenge, saved);
+    else if (gameId === 'hair') initHairSpot(seed, dailySlot, challenge, saved);
+    else if (gameId === 'fact') initFactOrCap(seed, dailySlot, saved);
+    else if (gameId === 'lyric') initLyricGuess(seed, dailySlot, challenge, saved);
 
     scrollTopReset();
   }
@@ -1508,6 +1520,9 @@
     const shareSvg = '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6" fill="currentColor"/><circle cx="6" cy="12" r="2.6" fill="currentColor"/><circle cx="18" cy="19" r="2.6" fill="currentColor"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>';
 
     const st = mgState;
+    if (!dailySlot && gameId && st && !st.challenge && freeMiniSessions[gameId] === st) {
+      delete freeMiniSessions[gameId];
+    }
     const canChallenge = !dailySlot && CHALLENGEABLE_GAMES.has(gameId) && st && Number.isInteger(st.challengeIndex) && st.challengeIndex >= 0 && st.challengeKey;
     const verdict = (!dailySlot && st && st.challenge) ? compareMiniChallenge(st.challenge, won, st.tries || 5) : null;
     const verdictHtml = verdict ? `<div class="mg-ch-verdict ${verdict.cls}">${esc(verdict.text)}</div>` : '';
@@ -1617,30 +1632,36 @@
           const r = GAME_ROUTES[gameId];
           history.replaceState(null, '', r ? ('/' + r.slug) : location.pathname);
         }
-        startFreeMiniGame(gameId, { replace: true });
+        startFreeMiniGame(gameId, { replace: true, forceNew: true });
       };
     }
   }
 
   /* ================= GAME 1: COVER PIXEL (GUESS THE ALBUM NAME) ================= */
   const PIXEL_GRIDS = [6, 10, 16, 28, 46];
-  function initCoverPixel(seed, dailySlot, challenge) {
-    const allAlbums = getAlbumIndex();
-    const maxDiff = dailySlot ? dailySlot.diffTier : 2;
-    const pool = allAlbums.filter((a) => a.art && a.diff <= maxDiff);
-    const srcPool = pool.length ? pool : allAlbums;
-    const target = (challenge && challenge.item)
-      ? challenge.item
-      : dailySlot
-      ? Hub.pickDeterministic(srcPool, seed, 1)
-      : pickFreeUnseen(srcPool, 'cover', seed, (a) => a.nAlbum + '|' + a.nArtist);
-    if (!target) return;
-    const challengeKey = target.nAlbum + '|' + target.nArtist;
-    const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
-      ? challenge.resolvedIndex
-      : allAlbums.indexOf(target);
-
-    mgState = { gameId: 'cover', target, challenge, challengeKey, challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false, imgEl: null };
+  function initCoverPixel(seed, dailySlot, challenge, saved) {
+    let st = saved && saved.gameId === 'cover' ? saved : null;
+    if (!st) {
+      const allAlbums = getAlbumIndex();
+      const maxDiff = dailySlot ? dailySlot.diffTier : 2;
+      const pool = allAlbums.filter((a) => a.art && a.diff <= maxDiff);
+      const srcPool = pool.length ? pool : allAlbums;
+      const target = (challenge && challenge.item)
+        ? challenge.item
+        : dailySlot
+        ? Hub.pickDeterministic(srcPool, seed, 1)
+        : pickFreeUnseen(srcPool, 'cover', seed, (a) => a.nAlbum + '|' + a.nArtist);
+      if (!target) return;
+      const challengeKey = target.nAlbum + '|' + target.nArtist;
+      const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
+        ? challenge.resolvedIndex
+        : allAlbums.indexOf(target);
+      st = { gameId: 'cover', target, challenge, challengeKey, challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false, imgEl: null };
+      if (!dailySlot && !challenge) freeMiniSessions.cover = st;
+    }
+    mgState = st;
+    const target = st.target;
+    const initGrid = PIXEL_GRIDS[Math.min(PIXEL_GRIDS.length - 1, st.tries)];
     $('#mgSubtitle').textContent = t('Guess the album from its pixelated cover', 'Tebak nama album dari cover pikselnya');
     $('#mgBody').innerHTML =
       `<div class="mg-cover-stage">` +
@@ -1648,24 +1669,32 @@
         `<div class="mg-cover-wrap">` +
           `<canvas id="mgPixelCanvas" width="210" height="210" class="mg-pixel-canvas"></canvas>` +
           `<img id="mgPixelFallback" class="mg-pixel-fallback" alt="" hidden>` +
-          `<span id="mgPixelTag" class="mg-stage-tag">6×6 px</span>` +
+          `<span id="mgPixelTag" class="mg-stage-tag">${initGrid}×${initGrid} px</span>` +
         `</div>` +
       `</div>`;
-    renderAttemptPips([], 5, false, -1);
+    renderAttemptPips(st.guesses, st.maxTries, false, -1);
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => { mgState.imgEl = img; drawCoverPixel(false); };
-    img.onerror = () => {
-      const fb = $('#mgPixelFallback');
-      const cv = $('#mgPixelCanvas');
-      if (fb && cv) {
-        cv.hidden = true; fb.hidden = false;
-        fb.src = target.art;
-        drawCoverPixel(false);
-      }
-    };
-    img.src = target.art;
+    if (st.imgEl && st.imgEl.complete && st.imgEl.naturalWidth > 0) {
+      drawCoverPixel(false);
+    } else {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        st.imgEl = img;
+        if (mgState === st) drawCoverPixel(false);
+      };
+      img.onerror = () => {
+        if (mgState !== st) return;
+        const fb = $('#mgPixelFallback');
+        const cv = $('#mgPixelCanvas');
+        if (fb && cv) {
+          cv.hidden = true; fb.hidden = false;
+          fb.src = target.art;
+          drawCoverPixel(false);
+        }
+      };
+      img.src = target.art;
+    }
 
     bindMiniSearch({
       placeholder: t('Type album name or artist…', 'Ketik nama album atau artis…'),
@@ -1795,35 +1824,40 @@
     });
   }
 
-  function initMvSpot(seed, dailySlot, challenge) {
-    const bank = Data.mvBank || [];
-    const maxDiff = dailySlot ? dailySlot.diffTier : 3;
-    const pool = bank.filter((r) => r[3] <= maxDiff);
-    const srcPool = pool.length ? pool : bank;
-    const targetRow = (challenge && challenge.item)
-      ? challenge.item
-      : dailySlot
-      ? Hub.pickDeterministic(srcPool, seed, 1)
-      : pickFreeUnseen(srcPool, 'mv', seed, (r) => r[2]);
-    if (!targetRow) return;
-    // [title, artist, yt, tier, year, genre, art, trackId]
-    const [title, artist, yt, tier, year, genre, art, trackId] = targetRow;
-    const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
-      ? challenge.resolvedIndex
-      : bank.indexOf(targetRow);
-    mgState = {
-      gameId: 'mv',
-      target: { title, artist, yt, tier, year, genre, art, trackId },
-      challenge,
-      challengeKey: yt,
-      challengeIndex,
-      tries: 0,
-      maxTries: 5,
-      viewFrame: 1,
-      guesses: [],
-      tried: new Set(),
-      done: false
-    };
+  function initMvSpot(seed, dailySlot, challenge, saved) {
+    let st = saved && saved.gameId === 'mv' ? saved : null;
+    if (!st) {
+      const bank = Data.mvBank || [];
+      const maxDiff = dailySlot ? dailySlot.diffTier : 3;
+      const pool = bank.filter((r) => r[3] <= maxDiff);
+      const srcPool = pool.length ? pool : bank;
+      const targetRow = (challenge && challenge.item)
+        ? challenge.item
+        : dailySlot
+        ? Hub.pickDeterministic(srcPool, seed, 1)
+        : pickFreeUnseen(srcPool, 'mv', seed, (r) => r[2]);
+      if (!targetRow) return;
+      // [title, artist, yt, tier, year, genre, art, trackId]
+      const [title, artist, yt, tier, year, genre, art, trackId] = targetRow;
+      const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
+        ? challenge.resolvedIndex
+        : bank.indexOf(targetRow);
+      st = {
+        gameId: 'mv',
+        target: { title, artist, yt, tier, year, genre, art, trackId },
+        challenge,
+        challengeKey: yt,
+        challengeIndex,
+        tries: 0,
+        maxTries: 5,
+        viewFrame: 1,
+        guesses: [],
+        tried: new Set(),
+        done: false
+      };
+      if (!dailySlot && !challenge) freeMiniSessions.mv = st;
+    }
+    mgState = st;
 
     $('#mgSubtitle').textContent = t('Guess the song from 3 music video frames', 'Tebak lagu dari 3 adegan video klip');
     $('#mgBody').innerHTML =
@@ -1842,7 +1876,7 @@
         `<div class="mg-mv-clues" id="mgMvClues" hidden></div>` +
       `</div>`;
 
-    renderAttemptPips([], 5, false, -1);
+    renderAttemptPips(st.guesses, st.maxTries, false, -1);
     bindMiniSearch({
       placeholder: t('Type song or artist…', 'Ketik lagu atau artis…'),
       mode: 'song',
@@ -1866,7 +1900,7 @@
     }
 
     renderMvStage(false);
-    preloadMvFrames(yt);
+    preloadMvFrames(st.target.yt);
   }
 
   function renderMvStage(revealAll) {
@@ -2024,29 +2058,35 @@
 
   /* ================= GAME 3: HAIRSPOT MUSIC ================= */
   const HAIR_CURTAIN_PCTS = [77, 63, 49, 34, 18, 0];
-  function initHairSpot(seed, dailySlot, challenge) {
-    const bank = Data.hairBank || [];
-    const maxDiff = dailySlot ? dailySlot.diffTier : 3;
-    const pool = bank.filter((p) => p[3] <= maxDiff);
-    const srcPool = pool.length ? pool : bank;
-    const picked = (challenge && challenge.item)
-      ? challenge.item
-      : dailySlot
-      ? Hub.pickDeterministic(srcPool, seed, 1)
-      : pickFreeUnseen(srcPool, 'hair', seed, (p) => p[0]);
-    if (!picked) return;
-    // [artistId, artistName, imgUrl, diff, crop?]
-    const [artistId, artistName, imgUrl, , crop] = picked;
-    const hasCrop = Array.isArray(crop) && crop.length >= 8;
-    const curtains = hasCrop ? [crop[3], crop[4], crop[5], crop[6], crop[7], 0] : HAIR_CURTAIN_PCTS;
-    const imgStyle = hasCrop ? `left:${crop[0]}%;top:${crop[1]}%;width:${crop[2]}%` : '';
-    const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
-      ? challenge.resolvedIndex
-      : bank.indexOf(picked);
-    mgState = { gameId: 'hair', artistId, artistName, imgUrl, curtains, challenge, challengeKey: artistId, challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
+  function initHairSpot(seed, dailySlot, challenge, saved) {
+    let st = saved && saved.gameId === 'hair' ? saved : null;
+    if (!st) {
+      const bank = Data.hairBank || [];
+      const maxDiff = dailySlot ? dailySlot.diffTier : 3;
+      const pool = bank.filter((p) => p[3] <= maxDiff);
+      const srcPool = pool.length ? pool : bank;
+      const picked = (challenge && challenge.item)
+        ? challenge.item
+        : dailySlot
+        ? Hub.pickDeterministic(srcPool, seed, 1)
+        : pickFreeUnseen(srcPool, 'hair', seed, (p) => p[0]);
+      if (!picked) return;
+      // [artistId, artistName, imgUrl, diff, crop?]
+      const [artistId, artistName, imgUrl, , crop] = picked;
+      const hasCrop = Array.isArray(crop) && crop.length >= 8;
+      const curtains = hasCrop ? [crop[3], crop[4], crop[5], crop[6], crop[7], 0] : HAIR_CURTAIN_PCTS;
+      const imgStyle = hasCrop ? `left:${crop[0]}%;top:${crop[1]}%;width:${crop[2]}%` : '';
+      const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
+        ? challenge.resolvedIndex
+        : bank.indexOf(picked);
+      st = { gameId: 'hair', artistId, artistName, imgUrl, curtains, hasCrop, imgStyle, challenge, challengeKey: artistId, challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
+      if (!dailySlot && !challenge) freeMiniSessions.hair = st;
+    }
+    mgState = st;
+    const { imgUrl, curtains, hasCrop, imgStyle } = st;
 
     $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle', 'Tebak musisi dari gaya rambutnya');
-    renderAttemptPips([], 5, false, -1);
+    renderAttemptPips(st.guesses, st.maxTries, false, -1);
 
     $('#mgBody').innerHTML =
       `<div class="mg-hair-frame">` +
@@ -2066,6 +2106,7 @@
       onPick: (artist) => submitHairGuess(artist, dailySlot),
       onSkip: () => skipHairGuess(dailySlot)
     });
+    if (st.tries > 0) updateHairCurtain(false);
   }
 
   function updateHairCurtain(fullReveal) {
@@ -2203,29 +2244,77 @@
     if (bumpScore) popFloatBadge(rightEl.querySelector('.mg-fact-pill'), '+1', 'win');
   }
 
-  function initFactOrCap(seed, dailySlot) {
-    const bank = Data.factBank || [];
+  function initFactOrCap(seed, dailySlot, saved) {
     const isDaily = !!dailySlot;
-    const deck = isDaily
-      ? Hub.pickDeterministic(bank, seed, 5)
-      : bank.slice().sort(() => Math.random() - 0.5);
-
-    mgState = {
-      gameId: 'fact',
-      isDaily,
-      dailySlot,
-      deck,
-      idx: 0,
-      correct: 0,
-      lives: 3,
-      locked: false,
-      done: false
-    };
+    let st = (!isDaily && saved && saved.gameId === 'fact') ? saved : null;
+    if (!st) {
+      const bank = Data.factBank || [];
+      const deck = isDaily
+        ? Hub.pickDeterministic(bank, seed, 5)
+        : bank.slice().sort(() => Math.random() - 0.5);
+      st = {
+        gameId: 'fact',
+        isDaily,
+        dailySlot,
+        deck,
+        idx: 0,
+        correct: 0,
+        lives: 3,
+        locked: false,
+        lastAnswer: null,
+        done: false
+      };
+      if (!isDaily) freeMiniSessions.fact = st;
+    }
+    mgState = st;
     $('#mgSubtitle').textContent = isDaily
       ? t('5 quick music claims · 20 pts each', '5 pernyataan musik · 20 poin tiap benar')
       : t('Music trivia · 3 lives', 'Trivia musik · 3 nyawa');
     renderAttemptPips([], 0, false, -1);
     renderFactClaim();
+  }
+
+  function renderFactAnswered(ans) {
+    const st = mgState;
+    if (!st || st.gameId !== 'fact' || !ans) return;
+    const { ok, finished, isFact, expEn, expId } = ans;
+    const fb = $('#mgFactFeedback');
+    if (fb) {
+      fb.hidden = false;
+      fb.className = 'mg-fact-fb ' + (ok ? 'is-win' : 'is-lose');
+      const tag = isFact ? t('FACT', 'FAKTA') : t('CAP', 'HOAX');
+      fb.innerHTML = `<b>${ok ? '✓ ' + t('Correct!', 'Benar!') : '✕ ' + t('Wrong!', 'Salah!')} (${tag})</b> — ${esc(isId() ? expId : expEn)}`;
+    }
+    $('#mgControls').innerHTML =
+      `<button id="mgFactNext" class="btn solid mg-lock-btn" type="button">${esc(finished ? t('See result →', 'Lihat hasil →') : t('Next claim →', 'Soal berikutnya →'))}</button>`;
+    $('#mgFactNext').onclick = () => {
+      st.locked = false;
+      st.lastAnswer = null;
+      if (!finished) {
+        st.idx++;
+        renderFactClaim();
+        return;
+      }
+      st.done = true;
+      if (st.isDaily) {
+        const score = Hub.scorePairs(st.correct, 5);
+        const sum = `${st.correct}/5 ${t('correct', 'benar')}`;
+        finishDailySlot(st.dailySlot.slot, { score, won: st.correct >= 3, shortSummary: sum, detail: sum });
+      } else {
+        const best = Number(LS.get(FACT_BEST_KEY, 0)) || 0;
+        renderMiniReveal({
+          won: st.correct >= 5,
+          score: Math.min(100, st.correct * 10),
+          title: `${st.correct} ${t('correct!', 'jawaban benar!')}`,
+          subtitle: `${t('Personal best', 'Skor terbaik')}: ${best}`,
+          art: '',
+          trackId: null,
+          dailySlot: null,
+          gameId: 'fact',
+          freeKicker: `${t('Score', 'Skor')} ${st.correct} · ${t('Best', 'Terbaik')} ${best}`
+        });
+      }
+    };
   }
 
   function renderFactClaim() {
@@ -2244,6 +2333,11 @@
           `<div id="mgFactFeedback" class="mg-fact-fb" hidden></div>` +
         `</div>` +
       `</div>`;
+
+    if (st.locked && st.lastAnswer) {
+      renderFactAnswered(st.lastAnswer);
+      return;
+    }
 
     $('#mgControls').innerHTML =
       `<div class="mg-fact-btns">` +
@@ -2286,63 +2380,33 @@
       triggerFxClass(deckCard, 'is-fx-wrong', 480);
     }
 
-    const fb = $('#mgFactFeedback');
-    if (fb) {
-      fb.hidden = false;
-      fb.className = 'mg-fact-fb ' + (ok ? 'is-win' : 'is-lose');
-      const tag = isFact ? t('FACT', 'FAKTA') : t('CAP', 'HOAX');
-      fb.innerHTML = `<b>${ok ? '✓ ' + t('Correct!', 'Benar!') : '✕ ' + t('Wrong!', 'Salah!')} (${tag})</b> — ${esc(isId() ? expId : expEn)}`;
-    }
-
     const finished = st.isDaily ? (st.idx + 1 >= st.deck.length) : (st.lives <= 0 || st.idx + 1 >= st.deck.length);
-    $('#mgControls').innerHTML =
-      `<button id="mgFactNext" class="btn solid mg-lock-btn" type="button">${esc(finished ? t('See result →', 'Lihat hasil →') : t('Next claim →', 'Soal berikutnya →'))}</button>`;
-    $('#mgFactNext').onclick = () => {
-      st.locked = false;
-      if (!finished) {
-        st.idx++;
-        renderFactClaim();
-        return;
-      }
-      st.done = true;
-      if (st.isDaily) {
-        const score = Hub.scorePairs(st.correct, 5);
-        const sum = `${st.correct}/5 ${t('correct', 'benar')}`;
-        finishDailySlot(st.dailySlot.slot, { score, won: st.correct >= 3, shortSummary: sum, detail: sum });
-      } else {
-        const best = Number(LS.get(FACT_BEST_KEY, 0)) || 0;
-        renderMiniReveal({
-          won: st.correct >= 5,
-          score: Math.min(100, st.correct * 10),
-          title: `${st.correct} ${t('correct!', 'jawaban benar!')}`,
-          subtitle: `${t('Personal best', 'Skor terbaik')}: ${best}`,
-          art: '',
-          trackId: null,
-          dailySlot: null,
-          gameId: 'fact',
-          freeKicker: `${t('Score', 'Skor')} ${st.correct} · ${t('Best', 'Terbaik')} ${best}`
-        });
-      }
-    };
+    st.lastAnswer = { ok, finished, isFact, expEn, expId };
+    renderFactAnswered(st.lastAnswer);
   }
 
   /* ================= GAME 5: LYRIC GUESS ================= */
-  function initLyricGuess(seed, dailySlot, challenge) {
-    const bank = Data.lyricBank || [];
-    const targetRow = (challenge && challenge.item)
-      ? challenge.item
-      : dailySlot
-      ? Hub.pickDeterministic(bank, seed, 1)
-      : pickFreeUnseen(bank, 'lyric', seed, (r) => r[0]);
-    if (!targetRow) return;
-    // [trackId, title, artist, art, year, diff, lines]
-    const [trackId, title, artist, art, year, , lines] = targetRow;
-    const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
-      ? challenge.resolvedIndex
-      : bank.indexOf(targetRow);
-    mgState = { gameId: 'lyric', dailySlot, trackId, title, artist, art, year, lines, challenge, challengeKey: String(trackId), challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
+  function initLyricGuess(seed, dailySlot, challenge, saved) {
+    let st = saved && saved.gameId === 'lyric' ? saved : null;
+    if (!st) {
+      const bank = Data.lyricBank || [];
+      const targetRow = (challenge && challenge.item)
+        ? challenge.item
+        : dailySlot
+        ? Hub.pickDeterministic(bank, seed, 1)
+        : pickFreeUnseen(bank, 'lyric', seed, (r) => r[0]);
+      if (!targetRow) return;
+      // [trackId, title, artist, art, year, diff, lines]
+      const [trackId, title, artist, art, year, , lines] = targetRow;
+      const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
+        ? challenge.resolvedIndex
+        : bank.indexOf(targetRow);
+      st = { gameId: 'lyric', dailySlot, trackId, title, artist, art, year, lines, challenge, challengeKey: String(trackId), challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
+      if (!dailySlot && !challenge) freeMiniSessions.lyric = st;
+    }
+    mgState = st;
 
-    renderAttemptPips([], 5, false, -1);
+    renderAttemptPips(st.guesses, st.maxTries, false, -1);
     renderLyricLines(false);
 
     bindMiniSearch({
@@ -2594,6 +2658,7 @@
     refreshLobbyDailyUI,
     syncLang,
     startFreeMiniGame,
+    clearFreeSessions,
     openMiniChallenge,
     encodeMiniChallenge,
     parseMiniChallenge,
