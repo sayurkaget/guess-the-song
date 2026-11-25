@@ -242,6 +242,7 @@
     <div class="gamebar">
       <button class="backbtn" id="dhBack" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6 9 12l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="dhBackLbl">Change mode</span></button>
       <span class="mode-pill dh-day-pill" id="dhDayPill">DAILY</span>
+      <button class="dh-today-btn" id="dhTodayBtn" type="button" hidden>Today</button>
       <button class="streak-pill-btn is-inline" id="dhStreakBtn" type="button" aria-label="Daily streak"><span class="sp-ico" aria-hidden="true">🔥</span><span id="dhStreakNum">0</span></button>
     </div>
 
@@ -250,19 +251,34 @@
       <h2 class="dh-title" id="dhTitle">Today's 3 Music Games</h2>
       <p class="dh-sub" id="dhSub">Spin to reveal today's lineup — same 3 games for everyone.</p>
 
-      <div class="dh-reels">
-        <div class="dh-reel-col" id="dhCol0">
-          <div class="dh-reel-window" id="dhWin0"><div class="dh-reel-payline" aria-hidden="true"></div><div class="dh-reel-strip" id="dhReel0"></div></div>
-          <div class="dh-slot-meta"><span class="dh-diff-pill" id="dhBadge0" hidden></span><span class="dh-slot-sub" id="dhSub0">Game 1</span></div>
+      <div class="dh-slot-machine" id="dhSlotMachine">
+        <div class="dh-slot-cabinet">
+          <div class="dh-slot-top" aria-hidden="true">
+            <span class="dh-beacon b1"></span>
+            <span class="dh-beacon b2"></span>
+            <span class="dh-beacon b3"></span>
+          </div>
+          <div class="dh-slot-frame">
+            <div class="dh-reels">
+              <div class="dh-reel-col" id="dhCol0">
+                <div class="dh-reel-window" id="dhWin0"><div class="dh-reel-payline" aria-hidden="true"></div><div class="dh-reel-strip" id="dhReel0"></div></div>
+                <div class="dh-slot-meta"><span class="dh-diff-pill" id="dhBadge0" hidden></span><span class="dh-slot-sub" id="dhSub0">Game 1</span></div>
+              </div>
+              <div class="dh-reel-col" id="dhCol1">
+                <div class="dh-reel-window" id="dhWin1"><div class="dh-reel-payline" aria-hidden="true"></div><div class="dh-reel-strip" id="dhReel1"></div></div>
+                <div class="dh-slot-meta"><span class="dh-diff-pill" id="dhBadge1" hidden></span><span class="dh-slot-sub" id="dhSub1">Game 2</span></div>
+              </div>
+              <div class="dh-reel-col" id="dhCol2">
+                <div class="dh-reel-window" id="dhWin2"><div class="dh-reel-payline" aria-hidden="true"></div><div class="dh-reel-strip" id="dhReel2"></div></div>
+                <div class="dh-slot-meta"><span class="dh-diff-pill" id="dhBadge2" hidden></span><span class="dh-slot-sub" id="dhSub2">Game 3</span></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="dh-reel-col" id="dhCol1">
-          <div class="dh-reel-window" id="dhWin1"><div class="dh-reel-payline" aria-hidden="true"></div><div class="dh-reel-strip" id="dhReel1"></div></div>
-          <div class="dh-slot-meta"><span class="dh-diff-pill" id="dhBadge1" hidden></span><span class="dh-slot-sub" id="dhSub1">Game 2</span></div>
-        </div>
-        <div class="dh-reel-col" id="dhCol2">
-          <div class="dh-reel-window" id="dhWin2"><div class="dh-reel-payline" aria-hidden="true"></div><div class="dh-reel-strip" id="dhReel2"></div></div>
-          <div class="dh-slot-meta"><span class="dh-diff-pill" id="dhBadge2" hidden></span><span class="dh-slot-sub" id="dhSub2">Game 3</span></div>
-        </div>
+        <button class="dh-lever" id="dhLever" type="button" aria-label="Pull lever to spin" title="Pull to spin">
+          <span class="dh-lever-mount" aria-hidden="true"></span>
+          <span class="dh-lever-arm" aria-hidden="true"><span class="dh-lever-knob"></span></span>
+        </button>
       </div>
 
       <div class="dh-cta-wrap">
@@ -300,6 +316,7 @@
       <div class="mg-daily-pill" id="mgDailyPill" hidden></div>
       <div class="mg-streak-pill" id="mgStreakPill" hidden></div>
     </div>
+    <nav class="mg-switcher" id="mgSwitcher" aria-label="Switch mini-game" hidden></nav>
 
     <div class="mg-stage-card">
       <div class="mg-head">

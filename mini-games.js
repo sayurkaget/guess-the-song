@@ -27,6 +27,7 @@
   };
 
   const HUB_KEY = (day) => 'tl:dailyhub:v1:' + day;
+  const HUB_ARCHIVE_KEY = (day) => 'tl:dailyhub:archive:v1:' + day;
   const HUB_DONE_KEY = 'tl:dailyhub:completed';
   const HUB_POSTED_KEY = (day) => 'tl:dailyhub:posted:' + day;
   const FACT_BEST_KEY = 'tl:fact:best';
@@ -43,8 +44,9 @@
   }
 
   /* ================= Daily Hub State ================= */
-  let hubState = null;       // { day, slots, spun, results: [null, null, null], done, totalScore }
-  let activeDailySlot = null;// null when Free Play, or { slot, gameId, diffKey, diffTier, seed }
+  let hubState = null;       // { day, slots, spun, results: [null, null, null], done, totalScore, isArchive }
+  let activeHubDay = null;   // null = today (live), 'YYYY-MM-DD' = past Archive practice day
+  let activeDailySlot = null;// null when Free Play, or { slot, gameId, diffKey, diffTier, seed, day, isArchive }
   let spinAnimating = false;
   let spinTimers = [];
   let spinRafs = [];
@@ -91,6 +93,25 @@
       if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
         navigator.vibrate(pattern);
       }
+    } catch {}
+  }
+  function playLeverPull() {
+    haptic([20, 22, 12]);
+    const ctx = getSpinAudio();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      // Mechanical ratchet pull + spring click
+      [[190, 0, 0.08, 0.14], [130, 0.06, 0.09, 0.16], [420, 0.14, 0.05, 0.08]].forEach(([f, d, dur, v]) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(f, now + d);
+        o.frequency.exponentialRampToValueAtTime(f * 0.55, now + d + dur);
+        g.gain.setValueAtTime(v, now + d);
+        g.gain.exponentialRampToValueAtTime(0.0008, now + d + dur);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now + d); o.stop(now + d + dur + 0.01);
+      });
     } catch {}
   }
   function playSpinTick(pitch) {
@@ -205,23 +226,48 @@
   function todayStr() {
     return (bridge && bridge.getDay) ? bridge.getDay() : (window.DailyGame ? window.DailyGame.day() : new Date().toISOString().slice(0, 10));
   }
-
-  function loadHubState() {
-    const day = todayStr();
+  function isArchiveDay(day) {
+    return Boolean(day && /^\d{4}-\d{2}-\d{2}$/.test(day) && day < todayStr());
+  }
+  function readHubStateForDay(day) {
+    const archive = isArchiveDay(day);
     const slots = Hub.planDay(day);
-    const saved = LS.get(HUB_KEY(day), null);
-    if (saved && saved.day === day && Array.isArray(saved.results) && saved.results.length === 3) {
-      hubState = {
+    const liveSaved = LS.get(HUB_KEY(day), null);
+    const archSaved = archive ? LS.get(HUB_ARCHIVE_KEY(day), null) : null;
+    const saved = (liveSaved && liveSaved.day === day && Array.isArray(liveSaved.results) && liveSaved.results.length === 3)
+      ? liveSaved
+      : (archSaved && archSaved.day === day && Array.isArray(archSaved.results) && archSaved.results.length === 3 ? archSaved : null);
+    if (saved) {
+      return {
         day,
         slots,
         spun: !!saved.spun,
         results: saved.results,
         done: saved.results.every(Boolean),
-        totalScore: saved.results.reduce((s, r) => s + (r ? Number(r.score) || 0 : 0), 0)
+        totalScore: saved.results.reduce((s, r) => s + (r ? Number(r.score) || 0 : 0), 0),
+        isArchive: archive,
+        wasLiveDone: Boolean(liveSaved && Array.isArray(liveSaved.results) && liveSaved.results.every(Boolean))
       };
-    } else {
-      hubState = { day, slots, spun: false, results: [null, null, null], done: false, totalScore: 0 };
     }
+    return { day, slots, spun: false, results: [null, null, null], done: false, totalScore: 0, isArchive: archive, wasLiveDone: false };
+  }
+  function archivedCompletedDays() {
+    const out = new Set();
+    try {
+      const len = typeof localStorage !== 'undefined' && Number.isFinite(localStorage.length) ? localStorage.length : 0;
+      for (let i = 0; i < len; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('tl:dailyhub:archive:v1:')) continue;
+        const st = LS.get(k, null);
+        if (st && st.day && Array.isArray(st.results) && st.results.every(Boolean)) out.add(st.day);
+      }
+    } catch {}
+    return out;
+  }
+
+  function loadHubState(dayOverride) {
+    const day = dayOverride || activeHubDay || todayStr();
+    hubState = readHubStateForDay(day);
     return hubState;
   }
 
@@ -229,6 +275,15 @@
     if (!hubState) return;
     hubState.done = hubState.results.every(Boolean);
     hubState.totalScore = hubState.results.reduce((s, r) => s + (r ? Number(r.score) || 0 : 0), 0);
+    if (hubState.isArchive) {
+      LS.set(HUB_ARCHIVE_KEY(hubState.day), {
+        day: hubState.day,
+        spun: hubState.spun,
+        results: hubState.results
+      });
+      refreshLobbyDailyUI();
+      return;
+    }
     LS.set(HUB_KEY(hubState.day), {
       day: hubState.day,
       spun: hubState.spun,
@@ -303,7 +358,8 @@
 
   /* ================= Lobby & Streak Popover UI ================= */
   function refreshLobbyDailyUI() {
-    const st = loadHubState();
+    const st = readHubStateForDay(todayStr());
+    if (!activeHubDay && (!hubState || hubState.day === st.day)) hubState = st;
     const ov = Hub.streakOverview(combinedCompletedDays(), st.day);
     const rem = (bridge && bridge.getRemaining) ? bridge.getRemaining() : '';
 
@@ -370,15 +426,21 @@
   function renderStreakPopover(ov) {
     const body = $('#streakPopBody');
     if (!body) return;
+    const archDays = archivedCompletedDays();
     const sinceTxt = ov.since ? t('Since ' + ov.since, 'Sejak ' + ov.since) : t('Finish today’s Daily to start', 'Selesaikan Daily hari ini');
-    const daysHtml = ov.days28.map((d) =>
-      `<span class="sp-day${d.played ? ' is-on' : ''}${d.isToday ? ' is-today' : ''}" title="${esc(d.day)}">${d.dom}</span>`
-    ).join('');
+    const daysHtml = ov.days28.map((d) => {
+      const isArch = !d.played && archDays.has(d.day);
+      const label = d.isToday
+        ? `${d.day} (${t('Today', 'Hari ini')})`
+        : `${d.day} (${t('Tap to play archive', 'Ketuk untuk main arsip')})`;
+      return `<button type="button" class="sp-day${d.played ? ' is-on' : ''}${isArch ? ' is-arch' : ''}${d.isToday ? ' is-today' : ''}" data-day="${esc(d.day)}" title="${esc(label)}">${d.dom}</button>`;
+    }).join('');
     const wds = ov.days28.slice(0, 7).map((d) => `<span class="sp-wd">${d.wd}</span>`).join('');
     body.innerHTML =
       `<div class="sp-kicker">${esc(t('DAILY STREAK', 'STREAK HARIAN'))}</div>` +
       `<div class="sp-hero"><span class="sp-flame" aria-hidden="true">🔥</span><div><div class="sp-val"><b>${ov.current}</b> ${esc(t(ov.current === 1 ? 'day' : 'days', 'hari'))}</div><div class="sp-since">${esc(sinceTxt)}</div></div></div>` +
       `<div class="sp-cal-lbl">${esc(t('Last 28 days', '28 hari terakhir'))}</div>` +
+      `<div class="sp-cal-tip">${esc(t('Tap any date to practice past Dailies', 'Ketuk tanggal mana saja untuk latihan Daily lalu'))}</div>` +
       `<div class="sp-grid">${wds}${daysHtml}</div>` +
       `<div class="sp-rows">` +
         `<div><span>${esc(t('Longest', 'Terpanjang'))}</span><b>${ov.best} ${esc(t('days', 'hari'))}</b></div>` +
@@ -412,16 +474,24 @@
   function showDailyHub(opts) {
     if (bridge && bridge.stopAudio) bridge.stopAudio();
     activeDailySlot = null;
+    if (!opts || !opts.keepDay) activeHubDay = null;
     hideAllScreens();
     document.body.dataset.diff = 'easy';
     const hub = $('#dailyHub');
     if (hub) hub.hidden = false;
-    loadHubState();
+    loadHubState(activeHubDay || undefined);
     renderDailyHub();
     if ((!opts || !opts.skipRoute) && bridge && bridge.syncRoute) {
       bridge.syncRoute('daily', t('Daily Challenge — TuneUp', 'Tantangan Harian — TuneUp'), !!(opts && opts.replace));
     }
     scrollTopReset();
+  }
+
+  function openDailyArchive(day) {
+    if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return false;
+    activeHubDay = isArchiveDay(day) ? day : null;
+    showDailyHub({ keepDay: true });
+    return true;
   }
 
   function clearSpinTimers() {
@@ -430,11 +500,15 @@
     spinTimers = [];
     spinRafs = [];
     spinAnimating = false;
+    const mach = $('#dhSlotMachine');
+    if (mach) mach.classList.remove('is-spinning', 'is-jackpot');
+    const lever = $('#dhLever');
+    if (lever) lever.classList.remove('is-pulled');
     for (let i = 0; i < 3; i++) {
       const s = $('#dhReel' + i);
       if (s) s.style.filter = 'none';
       const w = $('#dhWin' + i);
-      if (w) w.classList.remove('is-spinning');
+      if (w) w.classList.remove('is-spinning', 'is-suspense');
     }
   }
 
@@ -446,8 +520,21 @@
   function renderDailyHub() {
     const st = hubState || loadHubState();
     refreshLobbyDailyUI();
+    const isArch = !!st.isArchive;
     const dayPill = $('#dhDayPill');
-    if (dayPill) dayPill.textContent = `${t('DAILY', 'HARIAN')} · ${st.day}`;
+    if (dayPill) {
+      dayPill.textContent = `${isArch ? t('ARCHIVE', 'ARSIP') : t('DAILY', 'HARIAN')} · ${st.day}`;
+      dayPill.classList.toggle('is-archive', isArch);
+    }
+    const todayBtn = $('#dhTodayBtn');
+    if (todayBtn) {
+      todayBtn.hidden = !isArch;
+      todayBtn.textContent = t('Today', 'Hari Ini');
+    }
+    const kicker = $('#dhKicker');
+    if (kicker) kicker.textContent = isArch ? t('DAILY ARCHIVE', 'ARSIP HARIAN') : t('DAILY CHALLENGE', 'TANTANGAN HARIAN');
+    const doneKicker = $('#dhDoneKicker');
+    if (doneKicker) doneKicker.textContent = isArch ? t('ARCHIVE COMPLETE', 'ARSIP SELESAI') : t('DAILY COMPLETE', 'HARIAN SELESAI');
 
     const spinPanel = $('#dhSpinPanel');
     const scorePanel = $('#dhScorePanel');
@@ -457,7 +544,7 @@
       spinPanel.hidden = true;
       scorePanel.hidden = false;
       renderHubScorecard();
-      if (!cachedCommunity || cachedCommunity.day !== st.day) fetchHubStats(st.day);
+      if (!isArch && (!cachedCommunity || cachedCommunity.day !== st.day)) fetchHubStats(st.day);
       return;
     }
 
@@ -467,20 +554,34 @@
     const titleEl = $('#dhTitle');
     const subEl = $('#dhSub');
     const ctaBtn = $('#dhMainBtn');
+    const lever = $('#dhLever');
+    const mach = $('#dhSlotMachine');
     const nextIdx = nextUnfinishedSlotIndex();
 
+    if (mach) mach.classList.remove('is-spinning', 'is-jackpot');
+    if (lever) {
+      lever.classList.remove('is-pulled');
+      lever.classList.toggle('is-used', !!st.spun);
+      lever.disabled = !!st.spun;
+      lever.title = st.spun ? t('Lineup locked', 'Game sudah terbuka') : t('Pull lever to spin', 'Tarik tuas untuk spin');
+    }
+
     if (!st.spun) {
-      if (titleEl) titleEl.textContent = t("Today's 3 Music Games", '3 Game Musik Hari Ini');
-      if (subEl) subEl.textContent = t('Spin to reveal today’s lineup — same 3 games for everyone.', 'Spin untuk buka 3 game acak hari ini — sama untuk semua pemain.');
+      if (titleEl) titleEl.textContent = isArch ? t(`Archive · ${st.day}`, `Arsip · ${st.day}`) : t("Today's 3 Music Games", '3 Game Musik Hari Ini');
+      if (subEl) subEl.textContent = isArch
+        ? t('Practice past Daily — won’t affect today’s streak.', 'Latihan Daily lalu — tidak mengubah streak hari ini.')
+        : t('Pull the lever or spin to reveal today’s 3 games.', 'Tarik tuas atau spin untuk undi 3 game hari ini.');
       if (ctaBtn) {
-        ctaBtn.textContent = t("Spin Today's Games", 'Spin Game Hari Ini');
+        ctaBtn.textContent = isArch ? t('Spin Archive Games', 'Spin Game Arsip') : t("Spin Today's Games", 'Spin Game Hari Ini');
         ctaBtn.disabled = false;
       }
       for (let i = 0; i < 3; i++) buildReelStrip(i, false);
     } else {
       const nextSlot = st.slots[nextIdx >= 0 ? nextIdx : 0];
-      if (titleEl) titleEl.textContent = t("Today's 3 Music Games", '3 Game Musik Hari Ini');
-      if (subEl) subEl.textContent = t('Finish all 3 games for your daily /300 score.', 'Selesaikan 3 game untuk skor harian /300.');
+      if (titleEl) titleEl.textContent = isArch ? t(`Archive · ${st.day}`, `Arsip · ${st.day}`) : t("Today's 3 Music Games", '3 Game Musik Hari Ini');
+      if (subEl) subEl.textContent = isArch
+        ? t('Finish all 3 archive games for your practice /300 score.', 'Selesaikan 3 game arsip untuk skor latihan /300.')
+        : t('Finish all 3 games for your daily /300 score.', 'Selesaikan 3 game untuk skor harian /300.');
       if (ctaBtn) {
         ctaBtn.textContent = t(`Play ${gameLabel(nextSlot.gameId)} →`, `Main ${gameLabel(nextSlot.gameId)} →`);
         ctaBtn.disabled = false;
@@ -586,112 +687,140 @@
     spinAnimating = true;
     const titleEl = $('#dhTitle');
     const ctaBtn = $('#dhMainBtn');
-    if (titleEl) titleEl.textContent = t('Rolling today’s lineup…', 'Mengundi 3 game hari ini…');
+    const mach = $('#dhSlotMachine');
+    const lever = $('#dhLever');
+    if (titleEl) titleEl.textContent = t('Spinning the reels…', 'Memutar slot game…');
     if (ctaBtn) ctaBtn.textContent = t('Tap to skip', 'Ketuk untuk lewati');
 
-    const durs = [1450, 2150, 2950];
-    hubState.slots.forEach((slot, rIdx) => {
-      const strip = $('#dhReel' + rIdx);
-      const win = $('#dhWin' + rIdx);
-      const col = $('#dhCol' + rIdx);
-      if (!strip) return;
-      const targetGameIdx = Hub.GAMES.findIndex((g) => g.id === slot.gameId);
-      const targetRow = REEL_BASE_LOOPS[rIdx] * Hub.GAMES.length + Math.max(0, targetGameIdx);
-      const startY = -((1 + rIdx * 2) * REEL_STEP) + 54;
-      const endY = -(targetRow * REEL_STEP) + 54;
-      const dist = endY - startY;
-      const dur = durs[rIdx];
-      const t0 = performance.now();
-      let lastRowPassed = -1;
+    // Pull the slot-machine lever down with ratchet clunk, then spring back up!
+    playLeverPull();
+    if (lever) lever.classList.add('is-pulled');
+    if (mach) {
+      mach.classList.remove('is-jackpot');
+      mach.classList.add('is-spinning');
+    }
+    const leverReleaseTid = setTimeout(() => {
+      if (lever) lever.classList.remove('is-pulled');
+    }, 240);
+    spinTimers.push(leverReleaseTid);
 
-      const rc = gameColor(slot.gameId);
-      if (win) {
-        win.style.setProperty('--rc', rc);
-        win.classList.remove('is-locked', 'is-flash');
-        win.classList.add('is-spinning');
-      }
-      if (col) col.classList.remove('is-recoil', 'is-finale');
-      strip.style.transition = 'none';
+    const durs = [1550, 2350, 3350];
+    const launchTid = setTimeout(() => {
+      if (!spinAnimating) return;
+      hubState.slots.forEach((slot, rIdx) => {
+        const strip = $('#dhReel' + rIdx);
+        const win = $('#dhWin' + rIdx);
+        const col = $('#dhCol' + rIdx);
+        if (!strip) return;
+        const targetGameIdx = Hub.GAMES.findIndex((g) => g.id === slot.gameId);
+        const targetRow = REEL_BASE_LOOPS[rIdx] * Hub.GAMES.length + Math.max(0, targetGameIdx);
+        const startY = -((1 + rIdx * 2) * REEL_STEP) + 54;
+        const endY = -(targetRow * REEL_STEP) + 54;
+        const dist = endY - startY;
+        const dur = durs[rIdx];
+        const t0 = performance.now();
+        let lastRowPassed = -1;
 
-      function frame(now) {
-        if (!spinAnimating) return;
-        const el = now - t0;
-        const p = Math.min(1, el / dur);
-        let y, vel;
-        if (p < 0.08) {
-          // Anticipation pull-back upward before launch
-          const k = p / 0.08;
-          y = startY + Math.sin(k * Math.PI) * 16;
-          vel = 0;
-        } else {
-          const u = (p - 0.08) / 0.92;
-          let eased;
-          if (u < 0.91) {
-            const s = u / 0.91;
-            eased = (1 - Math.pow(1 - s, 4.2)) * 1.018;
+        const rc = gameColor(slot.gameId);
+        if (win) {
+          win.style.setProperty('--rc', rc);
+          win.classList.remove('is-locked', 'is-flash', 'is-suspense');
+          win.classList.add('is-spinning');
+        }
+        if (col) col.classList.remove('is-recoil', 'is-finale');
+        strip.style.transition = 'none';
+
+        function frame(now) {
+          if (!spinAnimating) return;
+          const el = now - t0;
+          const p = Math.min(1, el / dur);
+          let y, vel;
+          if (p < 0.07) {
+            // Anticipation pull-back upward before launch
+            const k = p / 0.07;
+            y = startY + Math.sin(k * Math.PI) * 18;
+            vel = 0;
           } else {
-            const s = (u - 0.91) / 0.09;
-            eased = 1.018 - 0.018 * (1 - Math.pow(1 - s, 2));
+            const u = (p - 0.07) / 0.93;
+            const pow = rIdx === 2 ? 4.8 : 4.2; // extra dramatic slow crawl on Reel 3!
+            let eased;
+            if (u < 0.90) {
+              const s = u / 0.90;
+              eased = (1 - Math.pow(1 - s, pow)) * 1.024;
+            } else {
+              const s = (u - 0.90) / 0.10;
+              eased = 1.024 - 0.024 * (1 - Math.pow(1 - s, 2));
+            }
+            y = startY + dist * eased;
+            vel = u < 0.90 ? Math.pow(1 - u / 0.90, pow - 1) : 0;
+            if (rIdx === 2 && el > durs[1] && p < 0.98 && win) {
+              win.classList.add('is-suspense');
+            }
           }
-          y = startY + dist * eased;
-          vel = u < 0.91 ? Math.pow(1 - u / 0.91, 3.2) : 0;
-        }
-        const blurPx = vel > 0.25 ? Math.min(2.1, (vel - 0.25) * 2.8) : 0;
-        strip.style.filter = blurPx > 0.15 ? `blur(${blurPx.toFixed(2)}px)` : 'none';
-        strip.style.transform = `translateY(${y.toFixed(1)}px)`;
+          const blurPx = vel > 0.22 ? Math.min(2.6, (vel - 0.22) * 3.4) : 0;
+          strip.style.filter = blurPx > 0.15 ? `blur(${blurPx.toFixed(2)}px)` : 'none';
+          strip.style.transform = `translateY(${y.toFixed(1)}px)`;
 
-        // Per-item mechanical tick synced to active reel
-        const curRow = Math.floor((-y + 54) / REEL_STEP);
-        if (curRow !== lastRowPassed && p >= 0.08 && p < 0.97) {
-          lastRowPassed = curRow;
-          if (rIdx === 0 || el > durs[rIdx - 1] - 180) {
-            playSpinTick(540 + (1 - p) * 280);
+          // Per-item mechanical tick synced to active reel
+          const curRow = Math.floor((-y + 54) / REEL_STEP);
+          if (curRow !== lastRowPassed && p >= 0.07 && p < 0.97) {
+            lastRowPassed = curRow;
+            if (rIdx === 0 || el > durs[rIdx - 1] - 180) {
+              playSpinTick(520 + (1 - p) * 320);
+            }
           }
-        }
 
-        if (p < 1) {
-          spinRafs.push(requestAnimationFrame(frame));
-        } else {
-          strip.style.filter = 'none';
-          strip.style.transform = `translateY(${endY}px)`;
-          if (win) {
-            win.classList.remove('is-spinning');
-            win.classList.add('is-locked', 'is-flash');
-          }
-          if (col) col.classList.add('is-recoil');
-          const card = strip.querySelector(`[data-idx="${targetRow}"]`);
-          if (card) {
-            card.style.setProperty('--rc', rc);
-            card.classList.add('is-landed');
-          }
-          const badge = $('#dhBadge' + rIdx);
-          const sub = $('#dhSub' + rIdx);
-          if (badge) badge.hidden = true;
-          if (sub) {
-            sub.textContent = rIdx === 0 ? t('Up next', 'Berikutnya') : t('Game ' + (rIdx + 1), 'Game ' + (rIdx + 1));
-            sub.className = rIdx === 0 ? 'dh-slot-sub is-next' : 'dh-slot-sub';
-            if (rIdx === 0) sub.style.setProperty('--rc', rc);
-            else sub.style.removeProperty('--rc');
-          }
-          playSpinLock(rIdx);
-          if (rIdx === 2) {
-            spinAnimating = false;
-            hubState.spun = true;
-            saveHubState();
-            if (titleEl) titleEl.textContent = t("Today's 3 Music Games", '3 Game Musik Hari Ini');
-            if (ctaBtn) ctaBtn.textContent = t(`Play ${gameLabel(hubState.slots[0].gameId)} →`, `Main ${gameLabel(hubState.slots[0].gameId)} →`);
-            const finaleTid = setTimeout(() => {
-              for (let i = 0; i < 3; i++) {
-                const c = $('#dhCol' + i);
-                if (c) c.classList.add('is-finale');
+          if (p < 1) {
+            spinRafs.push(requestAnimationFrame(frame));
+          } else {
+            strip.style.filter = 'none';
+            strip.style.transform = `translateY(${endY}px)`;
+            if (win) {
+              win.classList.remove('is-spinning', 'is-suspense');
+              win.classList.add('is-locked', 'is-flash');
+            }
+            if (col) col.classList.add('is-recoil');
+            const card = strip.querySelector(`[data-idx="${targetRow}"]`);
+            if (card) {
+              card.style.setProperty('--rc', rc);
+              card.classList.add('is-landed');
+            }
+            const badge = $('#dhBadge' + rIdx);
+            const sub = $('#dhSub' + rIdx);
+            if (badge) badge.hidden = true;
+            if (sub) {
+              sub.textContent = rIdx === 0 ? t('Up next', 'Berikutnya') : t('Game ' + (rIdx + 1), 'Game ' + (rIdx + 1));
+              sub.className = rIdx === 0 ? 'dh-slot-sub is-next' : 'dh-slot-sub';
+              if (rIdx === 0) sub.style.setProperty('--rc', rc);
+              else sub.style.removeProperty('--rc');
+            }
+            playSpinLock(rIdx);
+            if (rIdx === 2) {
+              spinAnimating = false;
+              hubState.spun = true;
+              saveHubState();
+              if (mach) {
+                mach.classList.remove('is-spinning');
+                mach.classList.add('is-jackpot');
+                spawnWinSparks(mach);
               }
-            }, 160);
-            spinTimers.push(finaleTid);
+              if (lever) { lever.classList.add('is-used'); lever.disabled = true; }
+              if (titleEl) titleEl.textContent = hubState.isArchive ? t(`Archive · ${hubState.day}`, `Arsip · ${hubState.day}`) : t("Today's 3 Music Games", '3 Game Musik Hari Ini');
+              if (ctaBtn) ctaBtn.textContent = t(`Play ${gameLabel(hubState.slots[0].gameId)} →`, `Main ${gameLabel(hubState.slots[0].gameId)} →`);
+              const finaleTid = setTimeout(() => {
+                for (let i = 0; i < 3; i++) {
+                  const c = $('#dhCol' + i);
+                  if (c) c.classList.add('is-finale');
+                }
+              }, 140);
+              spinTimers.push(finaleTid);
+            }
           }
         }
-      }
-      spinRafs.push(requestAnimationFrame(frame));
-    });
+        spinRafs.push(requestAnimationFrame(frame));
+      });
+    }, 140);
+    spinTimers.push(launchTid);
   }
 
   /* ================= Completed Scorecard (/300 + 15-band D1 Histogram) ================= */
@@ -704,10 +833,16 @@
     const ov = Hub.streakOverview(combinedCompletedDays(), st.day);
     const rem = (bridge && bridge.getRemaining) ? bridge.getRemaining() : '';
     if (metaEl) {
-      const parts = [];
-      if (ov.current > 0) parts.push(t(`${ov.current}-day streak`, `Streak ${ov.current} hari`));
-      if (rem) parts.push(t(`Next daily in ${rem}`, `Harian baru ${rem}`));
-      metaEl.textContent = parts.join(' · ');
+      if (st.isArchive) {
+        metaEl.textContent = st.wasLiveDone
+          ? t(`Saved Daily · ${st.day}`, `Daily tersimpan · ${st.day}`)
+          : t(`Archive practice · ${st.day}`, `Latihan arsip · ${st.day}`);
+      } else {
+        const parts = [];
+        if (ov.current > 0) parts.push(t(`${ov.current}-day streak`, `Streak ${ov.current} hari`));
+        if (rem) parts.push(t(`Next daily in ${rem}`, `Harian baru ${rem}`));
+        metaEl.textContent = parts.join(' · ');
+      }
     }
 
     // 3-segment progress bar
@@ -746,6 +881,10 @@
   function renderHubScorecardCommunity() {
     const box = $('#dhCommunity');
     if (!box || !hubState || !hubState.done) return;
+    if (hubState.isArchive) {
+      box.innerHTML = `<p class="dh-arch-note">${esc(t('Practice archive · does not affect today’s Daily streak or live rankings.', 'Mode latihan arsip · tidak mengubah streak Daily atau peringkat hari ini.'))}</p>`;
+      return;
+    }
     const sum = Hub.summarizeHistogram(cachedCommunity, hubState.totalScore);
     const headline = sum.plays <= 1
       ? t('First finisher today!', 'Pemain pertama yang selesai hari ini!')
@@ -786,7 +925,7 @@
     // If all 3 games done -> go straight to the Final /300 Scorecard!
     if (hubState.done) {
       closeStepModal();
-      showDailyHub();
+      showDailyHub({ keepDay: true });
       if (hubState.totalScore > 0) {
         playFxWin();
         const scoreHero = $('#dhScorePanel .dh-score-big');
@@ -841,7 +980,7 @@
     };
     $('#dhStepBackBtn').onclick = () => {
       closeStepModal();
-      showDailyHub();
+      showDailyHub({ keepDay: true });
     };
     m.hidden = false;
     const sheet = m.querySelector('.dh-step-sheet');
@@ -870,8 +1009,9 @@
   /* ================= Launching Games (Daily Slot OR Free Play!) ================= */
   function launchDailySlot(slotIdx) {
     if (!hubState) loadHubState();
-    const slot = hubState.slots[slotIdx];
-    if (!slot) return;
+    const baseSlot = hubState.slots[slotIdx];
+    if (!baseSlot) return;
+    const slot = { ...baseSlot, day: hubState.day, isArchive: !!hubState.isArchive };
     activeDailySlot = slot;
     document.body.dataset.diff = 'easy';
 
@@ -1142,6 +1282,34 @@
     pill.hidden = false;
   }
 
+  const SWITCHER_IDS = ['cover', 'mv', 'hair', 'fact', 'lyric'];
+  function renderMiniSwitcher(activeId, dailySlot) {
+    const nav = $('#mgSwitcher');
+    if (!nav) return;
+    if (dailySlot) {
+      nav.hidden = true;
+      return;
+    }
+    nav.innerHTML = SWITCHER_IDS.map((gid) => {
+      const act = gid === activeId;
+      return `<button type="button" class="mg-sw-pill${act ? ' is-active' : ''}" data-sw="${gid}" style="--rc:${gameColor(gid)}"${act ? ' aria-current="page"' : ''}>` +
+        `${ICONS[gid] || ''}<span>${esc(gameLabel(gid))}</span>` +
+      `</button>`;
+    }).join('');
+    nav.hidden = false;
+    nav.onclick = (e) => {
+      const b = e.target.closest('button[data-sw]');
+      if (!b) return;
+      const gid = b.dataset.sw;
+      if (!gid || gid === activeId) return;
+      if (typeof location !== 'undefined' && location.hash.startsWith('#mg=') && typeof history !== 'undefined' && history.replaceState) {
+        const r = GAME_ROUTES[gid];
+        history.replaceState(null, '', r ? ('/' + r.slug) : location.pathname);
+      }
+      startFreeMiniGame(gid, { replace: true });
+    };
+  }
+
   function openMiniGame(rawGameId, dailySlot, opts) {
     const gameId = rawGameId === 'color' ? 'mv' : rawGameId;
     const challenge = (!dailySlot && opts && opts.challenge) ? opts.challenge : null;
@@ -1161,12 +1329,13 @@
       if (typeof location !== 'undefined' && location.hash.startsWith('#mg=') && typeof history !== 'undefined' && history.replaceState) {
         history.replaceState(null, '', '/');
       }
-      if (dailySlot) showDailyHub();
+      if (dailySlot) showDailyHub({ keepDay: true });
       else if (bridge && bridge.showLobby) bridge.showLobby();
     };
 
     renderDailyPillInMiniGame(dailySlot);
     renderMiniStreakPill(gameId, dailySlot, null);
+    renderMiniSwitcher(gameId, dailySlot);
     renderMiniChallengeBar(challenge);
     const icoEl = $('#mgTitleIco');
     if (icoEl) icoEl.innerHTML = ICONS[gameId] || '';
@@ -2299,6 +2468,23 @@
     };
     const dhMainBtn = $('#dhMainBtn');
     if (dhMainBtn) dhMainBtn.onclick = startDailySpin;
+    const dhLever = $('#dhLever');
+    if (dhLever) dhLever.onclick = () => {
+      if (!hubState) loadHubState();
+      if (!hubState.spun || spinAnimating) startDailySpin();
+    };
+    const dhTodayBtn = $('#dhTodayBtn');
+    if (dhTodayBtn) dhTodayBtn.onclick = () => showDailyHub();
+    const spPopBody = $('#streakPopBody');
+    if (spPopBody) {
+      spPopBody.addEventListener('click', (e) => {
+        const dayBtn = e.target.closest('button.sp-day[data-day]');
+        if (!dayBtn) return;
+        const pop = $('#streakPopover');
+        if (pop) pop.hidden = true;
+        openDailyArchive(dayBtn.dataset.day);
+      });
+    }
 
     const dhShare = $('#dhShareBtn');
     if (dhShare) dhShare.onclick = () => {
@@ -2419,6 +2605,7 @@
   window.TuneUpDailyUI = {
     init,
     showDailyHub,
+    openDailyArchive,
     refreshLobbyDailyUI,
     syncLang,
     startFreeMiniGame,

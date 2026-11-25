@@ -95,11 +95,11 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
   const songs = loadBrowserGlobal('songs.js', 'SONGS');
   const duelStreams = loadBrowserGlobal('duel-streams-v1.js', 'DUEL_STREAMS_V1');
 
-  assert.ok(Data && Array.isArray(Data.mvBank) && Data.mvBank.length >= 200);
-  assert.ok(Array.isArray(Data.hairBank) && Data.hairBank.length >= 100);
-  assert.ok(Array.isArray(Data.lyricBank) && Data.lyricBank.length >= 70);
-  assert.ok(Array.isArray(Data.albumBank) && Data.albumBank.length >= 200);
-  assert.ok(Array.isArray(Data.factBank) && Data.factBank.length >= 75);
+  assert.ok(Data && Array.isArray(Data.mvBank) && Data.mvBank.length >= 230);
+  assert.ok(Array.isArray(Data.hairBank) && Data.hairBank.length >= 160);
+  assert.ok(Array.isArray(Data.lyricBank) && Data.lyricBank.length >= 160);
+  assert.ok(Array.isArray(Data.albumBank) && Data.albumBank.length >= 285);
+  assert.ok(Array.isArray(Data.factBank) && Data.factBank.length >= 160);
 
   const trackIds = new Set(songs.map((s) => String(s[7] || '')));
   for (const row of Data.albumBank) {
@@ -344,6 +344,12 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(mg, /ArrowLeft/);
   assert.match(html, /id="mgStreakPill"/);
   assert.match(html, /id="mgChallengeBar"/);
+  assert.match(html, /id="dhSlotMachine"[\s\S]*class="dh-beacon b2"[\s\S]*id="dhLever"/);
+  assert.match(html, /id="mgSwitcher"/);
+  assert.match(html, /id="dhTodayBtn"/);
+  assert.match(mg, /function playLeverPull\(/);
+  assert.match(mg, /function openDailyArchive\(/);
+  assert.match(mg, /function renderMiniSwitcher\(/);
   assert.match(build, /3 Game Musik Hari Ini/);
   assert.match(sw, /gts-v1[56]\d-wave/);
   assert.match(build, /gts-cf-v1[34]\d-wave/);

@@ -7540,13 +7540,13 @@
   }
   async function startDailySongForHub(slot, onDone) {
     closeAll();
-    const day = window.DailyGame.day();
+    const day = (slot && slot.day) || window.DailyGame.day();
     let songs = window.DailyGame.plan(window.DAILY_POOL_V1, day).map((s) => ({
       title: s[0], artist: s[1], tier: s[2], region: s[3], genre: s[4], year: s[5], art: s[6],
       trackId: s[7] || null,
       slug: slug(s), hay: norm(s[0] + ' ' + s[1])
     }));
-    const saved = window.DailyGame.restore(LS.get(dailyKey(day)) || LS.get('tl:daily:v1:' + day), songs.map((s) => s.slug));
+    const saved = !(slot && slot.isArchive) && window.DailyGame.restore(LS.get(dailyKey(day)) || LS.get('tl:daily:v1:' + day), songs.map((s) => s.slug));
     // If legacy daily song already played today, seed a fresh iconic T1-2 hit so Daily Hub slot is always playable!
     if (saved && saved.runDone && window.TuneUpDailyHub) {
       const topPool = ALL.filter((s) => s.tier <= (slot.diffTier === 1 ? 1 : 2) && !CLASSIC_ALL_SKIP_ARTISTS.has(s.artist));
@@ -7554,7 +7554,7 @@
       if (fresh) songs = [fresh];
     }
     dailyHubSongCb = { slot, onDone };
-    S.daily = { day, songs };
+    S.daily = { day, songs, isArchive: !!(slot && slot.isArchive) };
     S.custom = null; S.challenge = null; S.runChallenge = null;
     switchRun();
     Object.assign(S, { stage: 0, stages: [], runDone: false });
