@@ -92,7 +92,7 @@ test('Settings modal, backup script, SW shell, and Cloudflare build are wired', 
   assert.match(html, /id="backupCopy"/);
   assert.match(html, /id="backupRestore"/);
   assert.match(html, /id="resetAllData"/);
-  assert.match(html, /<script src="backup\.js"><\/script>/);
+  assert.match(html, /<script src="backup\.js"(?:\s+defer)?><\/script>/);
 
   const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
   assert.match(sw, /'\.\/backup\.js'/);

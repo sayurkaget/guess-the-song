@@ -7,10 +7,11 @@ const site = new URL(process.env.SITE_URL || 'https://tuneup.my.id');
 if (site.protocol !== 'https:' || site.pathname !== '/' || site.search || site.hash) {
   throw new Error('SITE_URL must be an HTTPS site origin');
 }
+fs.rmSync(output, { recursive: true, force: true });
 fs.mkdirSync(output, { recursive: true });
 const files = ['index.html', 'styles.css', 'layout.css', 'site-guide.css', 'site-guide.js', 'app.js', 'songs.js', 'recordings.js',
   'daily.js', 'daily-pool-v1.js', 'presets.js', 'challenge.js', 'duel-streams-v1.js', 'duel.js', 'artist-game.js', 'daily-hub-data.js', 'daily-hub.js', 'mini-games.js', 'backup.js', 'badges.js', 'i18n.js', 'feedback.js', 'analytics.js',
-  'app.webmanifest', 'sw.js', 'robots.txt', 'sitemap.xml',
+  'app.webmanifest', 'sw.js', 'robots.txt', 'sitemap.xml', '_headers',
   'googlebc29a838b567dfc0.html',
   '7b4e9c2a1f8d4e60b3c5a9d1e2f48076.txt',
   'og-image.png',
@@ -32,7 +33,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v141-wave115-mv-spot-real-scenes'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v142-wave116-perf-seo-cover-fixes'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -46,7 +47,7 @@ const escAttr = (s) => escHtml(s).replace(/"/g, '&quot;');
 
 const EN_FAQS = [
   ['Do I need an account?', 'No sign-up is needed. Open the game on your phone or computer and pick a mode, or paste any public Spotify, Apple Music, or YouTube playlist or album link to play your own tracks.'],
-  ['What can I replay?', 'Classic, Custom Artist, Spotify, Apple Music & YouTube Playlists, Music Duel, and Artist Detective can be played as often as you like. The Daily song is available once per day, with five attempts.'],
+  ['What can I replay?', 'Classic, Custom Artist, Spotify, Apple Music & YouTube Playlists, Music Duel, Artist Detective Endless, and all 5 mini-games (Cover Pixel, MV Spot, HairSpot, Fact or Cap, Lyric Guess) can be played as often as you like. The Daily Challenge resets once per day.'],
   ['When is the next Daily?', "At 7:00 AM in your device's local time. Consecutive Daily wins build your streak; a missed day or a loss resets it."],
   ['Can I challenge a friend?', 'Yes. After any song, 5-stage run, Music Duel, or Artist Detective round, tap Challenge your friend to copy a spoiler-free link with the exact same tracks or mystery artist.'],
   ['Where is my progress saved?', 'Your Daily progress, streaks, stats, and settings are saved in this browser. Open Settings -> Backup & transfer to copy a backup code and restore your progress on another browser or device.']
@@ -54,7 +55,7 @@ const EN_FAQS = [
 
 const ID_FAQS = [
   ['Apakah perlu bikin akun?', 'Tidak perlu daftar. Buka game di HP atau laptop lalu pilih mode, atau tempel link playlist publik Spotify, Apple Music, maupun YouTube untuk main pakai lagumu sendiri.'],
-  ['Mode apa saja yang bisa dimainkan berulang kali?', 'Classic, Per Artis, Playlist Spotify/Apple/YouTube, Music Duel, dan Artist Detective bisa dimainkan sepuasnya. Tantangan Harian tersedia satu lagu per hari dengan lima kesempatan.'],
+  ['Mode apa saja yang bisa dimainkan berulang kali?', 'Classic, Per Artis, Playlist Spotify/Apple/YouTube, Music Duel, Artist Detective Tanpa Batas, serta 5 mini-game (Cover Pixel, MV Spot, HairSpot, Fact or Cap, Lyric Guess) bisa dimainkan sepuasnya. Tantangan Harian (3 game /300 poin) direset sekali sehari.'],
   ['Kapan Tantangan Harian berikutnya dibuka?', 'Setiap pukul 07.00 waktu perangkatmu. Menang berturut-turut menambah streak; terlewat sehari atau kalah akan mereset streak.'],
   ['Bisa menantang teman?', 'Bisa. Setelah menyelesaikan lagu, sesi 5 tahap, Music Duel, atau Artist Detective, klik Tantang teman untuk menyalin link bebas spoiler dengan lagu atau artis yang persis sama.'],
   ['Di mana progres saya disimpan?', 'Progres Harian, streak, statistik, pencapaian, dan pengaturan tersimpan di browser ini. Buka Pengaturan -> Cadangkan & pindah data untuk menyalin kode backup dan memulihkannya di browser atau perangkat lain.']

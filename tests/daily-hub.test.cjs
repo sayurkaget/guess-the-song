@@ -321,6 +321,11 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.doesNotMatch(mg, /Top Hit:|Lagu Hit:/i);
   assert.doesNotMatch(app, /Top Hit:|Lagu Hit/i);
   assert.doesNotMatch(i18n, /Top Hit:|Lagu Hits?:/i);
+  assert.match(app, /SKIP_SPOKEN_PREVIEW_IDS/);
+  assert.match(app, /function setSafeArt\(/);
+  assert.match(html, /rel="preconnect" href="https:\/\/is1-ssl\.mzstatic\.com"/);
+  assert.ok(fs.existsSync(path.join(ROOT, '_headers')), '_headers file must exist');
+  assert.doesNotMatch(fs.readFileSync(path.join(ROOT, 'songs.js'), 'utf8'), /200x200bb\.jpg/);
   assert.match(sw, /gts-v1[56]\d-wave/);
   assert.match(build, /gts-cf-v1[34]\d-wave/);
 });

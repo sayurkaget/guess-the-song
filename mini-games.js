@@ -1217,6 +1217,21 @@
     }
 
     const artEl = $('#mgRevArt');
+    if (artEl) {
+      const safeSvg = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#081a11"/><circle cx="60" cy="60" r="38" fill="none" stroke="rgba(37,224,125,.3)" stroke-width="2"/><circle cx="60" cy="60" r="11" fill="#102b1e" stroke="#25e07d" stroke-width="2"/></svg>'
+      );
+      artEl.onerror = () => {
+        const cur = artEl.getAttribute('src') || '';
+        if (!artEl.dataset.fb && /600x600/.test(cur)) {
+          artEl.dataset.fb = '1';
+          artEl.src = cur.replace('600x600', '300x300');
+          return;
+        }
+        artEl.onerror = null;
+        artEl.src = safeSvg;
+      };
+    }
     if (trackId && bridge) {
       if (bridge.dockMiniVolume) bridge.dockMiniVolume();
       if (artEl && bridge.playTrackPreview) {

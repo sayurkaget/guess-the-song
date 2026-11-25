@@ -1021,11 +1021,35 @@
     }
     return list[list.length - 1];
   }
+  const SKIP_SPOKEN_PREVIEW_IDS = new Set([
+    '1440892167' // Drake — Passionfruit (30s iTunes preview hits the 1-minute spoken Moodymann skit intro)
+  ]);
+  const SAFE_ART_FALLBACK = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><radialGradient id="g" cx="50%" cy="45%" r="60%"><stop offset="0%" stop-color="#173a29"/><stop offset="100%" stop-color="#06130c"/></radialGradient></defs><rect width="200" height="200" fill="url(#g)"/><circle cx="100" cy="100" r="64" fill="none" stroke="rgba(37,224,125,.28)" stroke-width="2"/><circle cx="100" cy="100" r="44" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1.5"/><circle cx="100" cy="100" r="18" fill="#102b1e" stroke="#25e07d" stroke-width="2.5"/><circle cx="100" cy="100" r="5" fill="#25e07d"/></svg>'
+  );
+  function setSafeArt(img, url, alt) {
+    if (!img) return;
+    if (alt !== undefined) img.alt = alt;
+    const clean = (url || '').trim();
+    img.dataset.artFallback = '';
+    img.onerror = () => {
+      const cur = img.getAttribute('src') || '';
+      if (!img.dataset.artFallback && /600x600/.test(cur)) {
+        img.dataset.artFallback = '1';
+        img.src = cur.replace('600x600', '300x300');
+        return;
+      }
+      img.onerror = null;
+      img.src = SAFE_ART_FALLBACK;
+    };
+    img.src = clean || SAFE_ART_FALLBACK;
+  }
   function pickSongFrom(poolSrc, stageIdx, offset, excludeSlugs = null) {
     // jangan ulang lagu yang sudah keluar di tahap sebelumnya dalam sesi ini
     const used = S.stages.filter(Boolean);
     const avail = poolSrc.filter((s) =>
       (!excludeSlugs || !excludeSlugs.has(s.slug)) &&
+      (!S.custom || S.custom.kind !== 'spotify' ? !SKIP_SPOKEN_PREVIEW_IDS.has(String(s.trackId || '')) : true) &&
       used.every((u) => s.slug !== u.slug && !sameRecording(s, u)));
     const from = avail.length ? avail : poolSrc;
 
@@ -4961,8 +4985,8 @@
       btn.setAttribute('aria-checked', String(hoverPlayEnabled));
       btn.setAttribute('aria-pressed', String(hoverPlayEnabled));
       btn.title = hoverPlayEnabled
-        ? 'Hover play is on — click to disable auto-play on hover'
-        : 'Hover play is off — click to auto-play when hovering a song card';
+        ? (settings.lang === 'id' ? 'Putar saat sorot aktif — klik untuk menonaktifkan' : 'Hover play is on — click to disable auto-play on hover')
+        : (settings.lang === 'id' ? 'Putar saat sorot mati — klik untuk memutar otomatis saat menyorot kartu' : 'Hover play is off — click to auto-play when hovering a song card');
     };
     syncDuelHover = () => {
       hoverPlayEnabled = settings.hover;
@@ -5169,16 +5193,14 @@
       const mA = Duel.formatMetric(a, ds.kind);
       syncDuelChrome(a);
 
-      $('#duelArtA').src = a.art || '';
-      $('#duelArtA').alt = a.title + ' by ' + a.artist;
+      setSafeArt($('#duelArtA'), a.art, a.title + ' by ' + a.artist);
       $('#duelTitleA').textContent = a.title;
       $('#duelArtistA').textContent = a.artist;
       $('#duelYearA').textContent = mA.main;
       $('#duelSubA').textContent = mA.sub;
       $('#duelSubA').hidden = !mA.sub;
 
-      $('#duelArtB').src = b.art || '';
-      $('#duelArtB').alt = b.title + ' by ' + b.artist;
+      setSafeArt($('#duelArtB'), b.art, b.title + ' by ' + b.artist);
       $('#duelTitleB').textContent = b.title;
       $('#duelArtistB').textContent = b.artist;
       $('#duelYearB').textContent = '?';
@@ -5912,8 +5934,7 @@
         banner.hidden = !ag.done;
         if (ag.done) {
           banner.dataset.won = ag.won ? '1' : '0';
-          $('#agResultArt').src = ag.target.art || '';
-          $('#agResultArt').alt = ag.target.name;
+          setSafeArt($('#agResultArt'), ag.target.art, ag.target.name);
           const hUsed = ag.hints.length;
           if (ag.won) {
             $('#agVerdict').textContent = I18N
@@ -6799,7 +6820,7 @@
       const songs = mergedTracks.map((t, i) => {
         const local = matchLocalCatalogTrack(t.title, t.artist);
         const localThumb = local && local.art ? local.art : '';
-        const localHd = localThumb ? localThumb.replace('300x300', '600x600') : '';
+        const localHd = localThumb ? localThumb.replace(/\b(?:100|200|300)x(?:100|200|300)\b/, '600x600') : '';
         const directThumb = t.artThumb || t.art || '';
         const directHd = t.art || t.artThumb || '';
         // Album: semua lagu memang memakai cover album itu. Playlist/tracks: JANGAN
@@ -6921,7 +6942,7 @@
     if (Array.isArray(preset.tracks) && preset.tracks.length) {
       const list = preset.tracks.map((t, i) => {
         const title = t[0], artist = t[1], year = t[2] || 0, trackId = Number(t[3]) || 0, art = t[4] || '';
-        const hdArt = art ? art.replace('300x300', '600x600') : '';
+        const hdArt = art ? art.replace(/\b(?:100|200|300)x(?:100|200|300)\b/, '600x600') : '';
         return {
           slug: 'preset:' + preset.id + ':' + (trackId || i),
           title, artist, tier: 1, genre: 'preset', year, art, hdArt, artTried: true, trackId, pre: null,
@@ -6946,7 +6967,7 @@
       return picked.map((s) => ({
         slug: 'preset:' + preset.id + ':' + s.trackId,
         title: s.title, artist: s.artist, tier: s.tier || 1, genre: s.genre || 'preset',
-        year: s.year || 0, art: s.art || '', hdArt: s.art ? s.art.replace('300x300', '600x600') : '',
+        year: s.year || 0, art: s.art || '', hdArt: s.art ? s.art.replace(/\b(?:100|200|300)x(?:100|200|300)\b/, '600x600') : '',
         artTried: true, trackId: s.trackId, pre: null, hay: s.hay || norm(s.title + ' ' + s.artist)
       }));
     }

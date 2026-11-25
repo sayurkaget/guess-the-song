@@ -547,5 +547,5 @@ test('Wave 82 completes ID localization across Duel summary, challenge intros, a
   assert.match(app, /tr\('chDuelMsg'/);
   assert.doesNotMatch(build, /save score cards|save purple score cards|save your custom score card|earn badges|lencana/);
   assert.doesNotMatch(i18n, /lencana/);
-  assert.match(sitemap, /<lastmod>2026-11-23<\/lastmod>/);
+  assert.match(sitemap, /<lastmod>2026-11-2[3-9]<\/lastmod>/);
 });

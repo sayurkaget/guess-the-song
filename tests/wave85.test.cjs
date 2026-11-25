@@ -128,7 +128,7 @@ test('Wave 85/86 Quick Preset Playlists (12 curated & dynamic) and foreground co
   assert.match(html, /id="presetPlaylists"/);
   assert.match(html, /id="dailyCommunity"/);
   assert.match(html, /id="agDailyCommunity"/);
-  assert.match(html, /<script src="presets\.js"><\/script>/);
+  assert.match(html, /<script src="presets\.js"(?:\s+defer)?><\/script>/);
 
   const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
   assert.match(css, /\.confetti\{[\s\S]*?z-index:5;/, 'confetti must render above modal windows');
