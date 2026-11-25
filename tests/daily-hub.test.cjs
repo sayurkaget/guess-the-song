@@ -335,6 +335,8 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(lcss, /\.dh-breakdown\{[\s\S]*grid-template-columns:minmax\(0,1fr\)/);
   assert.match(lcss, /\.dh-row\{[\s\S]*min-width:0/);
   assert.match(app, /function dailyHubStats\(/);
+  assert.match(app, /\$\('#duelTabs'\)\.hidden = Boolean\(ds\.hubSlot\)/);
+  assert.match(app, /if \(!ds\.challenge \|\| ds\.hubSlot\)/);
   assert.doesNotMatch(app, /tl:hub:v1:/);
   assert.match(app, /navigator\.vibrate/);
   assert.match(mg, /function encodeMiniChallenge\(/);

@@ -4458,7 +4458,7 @@
     if (dailyHubSongCb && window.TuneUpDailyUI) {
       dailyHubSongCb = null;
       closeAll();
-      window.TuneUpDailyUI.showDailyHub();
+      window.TuneUpDailyUI.showDailyHub({ keepDay: true });
       return;
     }
     const isLongSpotify = !!(S.custom && S.custom.kind === 'spotify' && !S.runDone && stageCount() > STAGES);
@@ -5309,6 +5309,7 @@
       const mA = Duel.formatMetric(a, ds.kind);
       $('#duelModeLabel').textContent = isStreams ? 'Spotify Streams' : 'Release Year';
       if ($('#duelTabs')) {
+        $('#duelTabs').hidden = Boolean(ds.hubSlot);
         $('#duelTabs').querySelectorAll('[data-duel]').forEach((b) => {
           b.setAttribute('aria-pressed', String(b.dataset.duel === ds.kind));
           if (b.dataset.duel === 'streams') b.disabled = getDuelPool('streams').length < 2;
@@ -5331,7 +5332,7 @@
     function syncDuelTarget() {
       const el = $('#duelTarget');
       if (!el) return;
-      if (!ds.challenge) {
+      if (!ds.challenge || ds.hubSlot) {
         el.hidden = true;
         if (el.dataset) delete el.dataset.passed;
         return;
@@ -5348,8 +5349,14 @@
     syncDuelLang = () => {
       if ($('#duel') && !$('#duel').hidden && ds.a) {
         syncDuelChrome(ds.a);
-        $('#duelScore').textContent = I18N ? tr('duelScore', { n: ds.score }) : ('Score ' + ds.score);
-        $('#duelBest').textContent = I18N ? tr('duelBest', { n: ds.best }) : ('Best ' + ds.best);
+        if (ds.hubSlot) {
+          $('#duelScore').textContent = (settings.lang === 'id' ? 'Ronde ' : 'Round ') + ((ds.hubPlayed || 0) + 1) + '/' + (ds.hubTotal || 5) + ' · ' + (ds.score * 20) + ' pts';
+          $('#duelBest').hidden = true;
+        } else {
+          $('#duelScore').textContent = I18N ? tr('duelScore', { n: ds.score }) : ('Score ' + ds.score);
+          $('#duelBest').textContent = I18N ? tr('duelBest', { n: ds.best }) : ('Best ' + ds.best);
+          $('#duelBest').hidden = false;
+        }
         syncDuelTarget();
       }
     };
@@ -5584,7 +5591,7 @@
       }, 900);
     }
 
-    function startDuel(kind, incoming) {
+    function startDuel(kind, incoming, hubOpts) {
       closeAll();
       stopAudio();
       stopDuel();
@@ -5596,7 +5603,13 @@
 
       let first = null, second = null, queue = [], qIndex = 0;
       const seen = new Set();
-      if (incoming) {
+      if (hubOpts && Array.isArray(hubOpts.queue) && hubOpts.queue.length >= 2) {
+        queue = hubOpts.queue.slice();
+        first = queue[0];
+        second = queue[1];
+        qIndex = 2;
+        for (const s of queue) seen.add(s.slug);
+      } else if (incoming) {
         const byTid = new Map();
         for (const s of pool) {
           if (s && s.trackId && !byTid.has(Number(s.trackId))) byTid.set(Number(s.trackId), s);
@@ -5626,12 +5639,12 @@
       ds.history = [];
       ds.busy = false;
       ds.over = false;
-      ds.challenge = incoming || null;
+      ds.challenge = hubOpts ? null : (incoming || null);
       ds.queue = queue;
       ds.qIndex = qIndex;
-      ds.hubSlot = null;
-      ds.hubOnDone = null;
-      ds.hubTotal = 0;
+      ds.hubSlot = hubOpts ? hubOpts.slot : null;
+      ds.hubOnDone = hubOpts ? hubOpts.onDone : null;
+      ds.hubTotal = hubOpts ? Math.min(5, queue.length - 1) : 0;
       ds.hubPlayed = 0;
 
       const wasInDuel = !$('#duel').hidden;
@@ -5643,7 +5656,9 @@
       document.body.dataset.diff = 'duel';
       $('#duel').hidden = false;
       dockVolume('#duelVolSlot');
-      if (ds.challenge) {
+      if (ds.hubSlot) {
+        syncRoute('daily', { title: 'Daily Challenge — TuneUp', replace: true });
+      } else if (ds.challenge) {
         if (typeof document !== 'undefined') document.title = 'Friend Duel — TuneUp';
       } else {
         syncRoute('duel', {
@@ -5655,7 +5670,13 @@
         });
       }
       renderDuelPair();
-      trackActivity(incoming ? 'duel_challenge_start' : 'duel_start', { mode: 'duel' });
+      if (ds.hubSlot) {
+        if ($('#duelScore')) $('#duelScore').textContent = (settings.lang === 'id' ? 'Ronde 1/' : 'Round 1/') + ds.hubTotal + ' · 0 pts';
+        if ($('#duelBest')) $('#duelBest').hidden = true;
+      } else {
+        if ($('#duelBest')) $('#duelBest').hidden = false;
+      }
+      trackActivity(ds.hubSlot ? 'duel_hub_start' : (incoming ? 'duel_challenge_start' : 'duel_start'), { mode: 'duel' });
       return true;
     }
 
@@ -5695,17 +5716,7 @@
         cur = best;
       }
       if (queue.length < 2) return false;
-      const ok = startDuel(deckKind, { kind: deckKind, score: 0, ids: queue.map((s) => Number(s.trackId)) });
-      if (!ok) return false;
-      ds.challenge = null;
-      ds.hubSlot = slot;
-      ds.hubOnDone = onDone;
-      ds.hubTotal = Math.min(5, queue.length - 1);
-      ds.hubPlayed = 0;
-      if ($('#duelScore')) $('#duelScore').textContent = (settings.lang === 'id' ? 'Ronde 1/' : 'Round 1/') + ds.hubTotal + ' · 0 pts';
-      if ($('#duelBest')) $('#duelBest').hidden = true;
-      syncRoute('daily', { title: 'Daily Challenge — TuneUp', replace: true });
-      return true;
+      return startDuel(deckKind, null, { slot, onDone, queue });
     });
 
     $('#openDuel').onclick = () => ensureSongsLoaded().then(() => startDuel(ds.kind));
@@ -5731,7 +5742,7 @@
         ds.hubOnDone = null;
         closeAll();
         stopDuel();
-        window.TuneUpDailyUI.showDailyHub();
+        window.TuneUpDailyUI.showDailyHub({ keepDay: true });
         return;
       }
       closeAll();
@@ -6497,7 +6508,7 @@
         ag.hubOnDone = null;
         closeAll();
         stopArtistGame();
-        window.TuneUpDailyUI.showDailyHub();
+        window.TuneUpDailyUI.showDailyHub({ keepDay: true });
         return;
       }
       closeAll();
