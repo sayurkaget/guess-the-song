@@ -485,7 +485,7 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
 }
 #game #q:focus{border-color:rgba(var(--acc-rgb),.55);background:rgba(255,255,255,.08)}
 #game .guesses{display:none!important}
-.board-slots{list-style:none;margin:0;padding:0;display:grid;gap:.44rem;flex:1}
+.board-slots{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:.44rem;flex:1}
 .slot{
   display:flex;align-items:center;gap:.62rem;min-height:42px;padding:.45rem .75rem;
   border-radius:11px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);
@@ -2342,6 +2342,7 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 }
 .sp-rows{
   display:grid;
+  grid-template-columns:minmax(0,1fr);
   gap:.34rem;
   padding-top:.68rem;
   border-top:1px solid rgba(255,255,255,.08);
@@ -2547,6 +2548,8 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 }
 .dh-panel{
   width:100%;
+  min-width:0;
+  max-width:100%;
   padding:1.55rem 1.45rem;
   border-radius:22px;
   text-align:center;
@@ -2896,7 +2899,9 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   list-style:none;
   margin:0 0 .82rem;
   padding:0;
+  width:100%;
   display:grid;
+  grid-template-columns:minmax(0,1fr);
   gap:.38rem;
   text-align:left;
 }
@@ -2904,6 +2909,9 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   display:flex;
   align-items:center;
   gap:.68rem;
+  width:100%;
+  min-width:0;
+  max-width:100%;
   padding:.5rem .78rem;
   border-radius:13px;
   background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.025));
@@ -2938,6 +2946,7 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 .dh-row-score{
   flex:none;
   text-align:right;
+  white-space:nowrap;
   font-variant-numeric:tabular-nums;
 }
 .dh-row-score b{font-size:1.15rem;font-weight:800;color:var(--rc,#41f596)}
@@ -2992,6 +3001,7 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   display:flex;
   flex-direction:column;
   align-items:center;
+  min-width:0;
   gap:.22rem;
   padding:.62rem .4rem;
   border-radius:13px;
@@ -4045,6 +4055,8 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   .dh-histo{gap:2px}
   .dh-bar-pct{font-size:.5rem}
   .dh-score-actions{grid-template-columns:1fr}
+  .dh-row{padding:.48rem .64rem;gap:.55rem}
+  .dh-row-score b{font-size:1.04rem}
   .mg-stage-card{padding:.92rem .85rem;border-radius:18px;gap:.7rem}
   .mg-cover-wrap{width:156px}
   .mg-hair-frame{width:144px}
