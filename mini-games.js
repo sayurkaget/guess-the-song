@@ -1397,15 +1397,16 @@
     }
   }
 
-  /* ================= GAME 2: MV SPOT (CRISP 720p HD MUSIC VIDEO SCENES — FRAMED STYLE) ================= */
+  /* ================= GAME 2: MV SPOT (SPOILER-FREE MUSIC VIDEO SCENES — FRAMED STYLE) ================= */
   function mvFrameUrl(ytId, frameNum, variant) {
     if (variant === 'hq720') return `https://i.ytimg.com/vi/${ytId}/hq720.jpg`;
     return `https://i.ytimg.com/vi/${ytId}/maxres${frameNum}.jpg`;
   }
 
-  function preloadMvFrames(ytId) {
+  function preloadMvFrames(ytId, order) {
     if (typeof Image !== 'function') return;
-    [2, 3].forEach((n) => {
+    const seq = (Array.isArray(order) && order.length === 3) ? order : [1, 2, 3];
+    seq.slice(1).forEach((n) => {
       const pre = new Image();
       pre.referrerPolicy = 'no-referrer';
       pre.src = mvFrameUrl(ytId, n);
@@ -1421,11 +1422,13 @@
       ? Hub.pickDeterministic(srcPool, seed, 1)
       : pickFreeUnseen(srcPool, 'mv', seed, (r) => r[2]);
     if (!targetRow) return;
-    // [title, artist, yt, tier, year, genre, art, trackId]
-    const [title, artist, yt, tier, year, genre, art, trackId] = targetRow;
+    // [title, artist, yt, tier, year, genre, art, trackId, order?, masks?]
+    const [title, artist, yt, tier, year, genre, art, trackId, rawOrder, rawMasks] = targetRow;
+    const order = (Array.isArray(rawOrder) && rawOrder.length === 3) ? rawOrder : [1, 2, 3];
+    const masks = (Array.isArray(rawMasks) && rawMasks.length === 3) ? rawMasks : [[], [], []];
     mgState = {
       gameId: 'mv',
-      target: { title, artist, yt, tier, year, genre, art, trackId },
+      target: { title, artist, yt, tier, year, genre, art, trackId, order, masks },
       tries: 0,
       maxTries: 5,
       viewFrame: 1,
@@ -1434,13 +1437,31 @@
       done: false
     };
 
-    $('#mgSubtitle').textContent = t('Guess the song from 3 HD music video frames', 'Tebak lagu dari 3 adegan video klip HD');
+    $('#mgSubtitle').textContent = t('Guess the song from 3 music video frames', 'Tebak lagu dari 3 adegan video klip');
     $('#mgBody').innerHTML =
       `<div class="mg-mv-stage" id="mgMvStage">` +
         `<div class="mg-mv-frame-wrap">` +
           `<img id="mgMvImg" class="mg-mv-img" alt="${esc(t('Music video scene', 'Adegan video klip'))}" referrerpolicy="no-referrer" decoding="async">` +
+          `<div id="mgMvMaskLayer" class="mg-mv-mask-layer" aria-hidden="true" hidden>` +
+            `<svg class="mg-mv-svg-defs" width="0" height="0" aria-hidden="true">` +
+              `<defs>` +
+                `<filter id="mgMvBlurFx" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">` +
+                  `<feGaussianBlur id="mgMvBlurNode" in="SourceGraphic" stdDeviation="20" edgeMode="duplicate"/>` +
+                `</filter>` +
+                `<radialGradient id="mgMvSoft">` +
+                  `<stop offset="0%" stop-color="white" stop-opacity="1"/>` +
+                  `<stop offset="74%" stop-color="white" stop-opacity="1"/>` +
+                  `<stop offset="100%" stop-color="white" stop-opacity="0"/>` +
+                `</radialGradient>` +
+                `<mask id="mgMvFaceMask" maskUnits="objectBoundingBox" maskContentUnits="objectBoundingBox" x="0" y="0" width="1" height="1">` +
+                  `<rect x="0" y="0" width="1" height="1" fill="black"/>` +
+                `</mask>` +
+              `</defs>` +
+            `</svg>` +
+            `<img id="mgMvBlurImg" class="mg-mv-blur-img" alt="" referrerpolicy="no-referrer" decoding="async">` +
+          `</div>` +
           `<div class="mg-mv-bar">` +
-            `<span class="mg-mv-badge" id="mgMvBadge">HD · 1/3</span>` +
+            `<span class="mg-mv-badge" id="mgMvBadge">Frame 1/3</span>` +
             `<div class="mg-mv-tabs" id="mgMvTabs" role="group" aria-label="${esc(t('Music video frames', 'Frame video klip'))}">` +
               `<button type="button" class="mg-mv-tab is-active" data-mvf="1">1</button>` +
               `<button type="button" class="mg-mv-tab" data-mvf="2" disabled>2</button>` +
@@ -1469,25 +1490,34 @@
         const f = Number(btn.dataset.mvf);
         if (f >= 1 && f <= 3 && f !== mgState.viewFrame) {
           mgState.viewFrame = f;
-          renderMvStage(false);
+          renderMvStage(Boolean(mgState.done));
         }
       };
     }
 
     renderMvStage(false);
-    preloadMvFrames(yt);
+    preloadMvFrames(yt, order);
   }
 
   function renderMvStage(revealAll) {
     const st = mgState;
     if (!st || st.gameId !== 'mv') return;
     const tgt = st.target;
-    const unlockedFrames = revealAll ? 3 : Math.min(3, st.tries + 1);
+    const showAll = Boolean(revealAll || st.done);
+    const unlockedFrames = showAll ? 3 : Math.min(3, st.tries + 1);
     if (st.viewFrame > unlockedFrames) st.viewFrame = unlockedFrames;
 
+    const frameIdx = Math.max(0, Math.min(2, st.viewFrame - 1));
+    const ytFrameNum = (tgt.order && tgt.order[frameIdx]) || st.viewFrame;
+    const ellipses = (!showAll && tgt.masks && Array.isArray(tgt.masks[frameIdx])) ? tgt.masks[frameIdx] : [];
+
     const img = $('#mgMvImg');
+    const blurImg = $('#mgMvBlurImg');
+    const maskLayer = $('#mgMvMaskLayer');
+    const maskEl = $('#mgMvFaceMask');
+    const nextSrc = mvFrameUrl(tgt.yt, ytFrameNum);
+
     if (img) {
-      const nextSrc = mvFrameUrl(tgt.yt, st.viewFrame);
       if (img.dataset.curSrc !== nextSrc) {
         img.dataset.curSrc = nextSrc;
         img.dataset.fallback = '';
@@ -1497,18 +1527,47 @@
           img.classList.remove('is-loading');
           if (!img.dataset.fallback) {
             img.dataset.fallback = '1';
-            img.src = mvFrameUrl(tgt.yt, st.viewFrame, 'hq720');
+            const fbSrc = mvFrameUrl(tgt.yt, ytFrameNum, 'hq720');
+            img.src = fbSrc;
+            if (blurImg) blurImg.src = fbSrc;
           }
         };
         img.src = nextSrc;
       }
     }
 
+    if (maskLayer && blurImg && maskEl) {
+      if (ellipses.length && !showAll) {
+        let maxRy = 0.08;
+        const shapes = ['<rect x="0" y="0" width="1" height="1" fill="black"/>'];
+        ellipses.forEach(([cx, cy, rx, ry]) => {
+          const rrx = Math.max(0.04, rx / 100);
+          const rry = Math.max(0.06, ry / 100);
+          if (rry > maxRy) maxRy = rry;
+          shapes.push(`<ellipse cx="${(cx / 100).toFixed(3)}" cy="${(cy / 100).toFixed(3)}" rx="${rrx.toFixed(3)}" ry="${rry.toFixed(3)}" fill="url(#mgMvSoft)"/>`);
+        });
+        maskEl.innerHTML = shapes.join('');
+        const blurPx = Math.max(16, Math.min(28, Math.round(maxRy * 110)));
+        const blurNode = $('#mgMvBlurNode');
+        if (blurNode) blurNode.setAttribute('stdDeviation', String(blurPx));
+        if (blurImg.dataset.curSrc !== nextSrc) {
+          blurImg.dataset.curSrc = nextSrc;
+          blurImg.src = nextSrc;
+        }
+        maskLayer.hidden = false;
+        maskLayer.classList.remove('is-revealed');
+      } else {
+        maskLayer.classList.add('is-revealed');
+        if (showAll) maskLayer.hidden = true;
+        else maskLayer.hidden = true;
+      }
+    }
+
     const badge = $('#mgMvBadge');
     if (badge) {
-      badge.textContent = revealAll
-        ? `HD · ${t('Scene', 'Adegan')} ${st.viewFrame}/3`
-        : `HD · ${t('Frame', 'Frame')} ${st.viewFrame}/3`;
+      badge.textContent = showAll
+        ? `${t('Scene', 'Adegan')} ${st.viewFrame}/3`
+        : `${t('Frame', 'Frame')} ${st.viewFrame}/3`;
     }
 
     const tabsHost = $('#mgMvTabs');
@@ -1524,10 +1583,10 @@
     const cluesEl = $('#mgMvClues');
     if (cluesEl) {
       const chips = [];
-      if (revealAll || st.tries >= 3) {
+      if (showAll || st.tries >= 3) {
         chips.push(`<span class="mg-mv-clue"><small>${esc(t('Clue 1', 'Petunjuk 1'))}</small><b>${esc(tgt.year + ' · ' + formatMvGenre(tgt.genre))}</b></span>`);
       }
-      if (revealAll || st.tries >= 4) {
+      if (showAll || st.tries >= 4) {
         chips.push(`<span class="mg-mv-clue"><small>${esc(t('Artist', 'Artis'))}</small><b>${esc(tgt.artist)}</b></span>`);
       }
       cluesEl.hidden = !chips.length;

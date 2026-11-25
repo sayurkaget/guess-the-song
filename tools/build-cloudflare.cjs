@@ -32,7 +32,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v138-wave112-hairspot-face-calibrated'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v139-wave113-mv-spot-spoiler-face-fix'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -190,10 +190,10 @@ const SEO_PAGES = [
     lang: 'en',
     keepHreflang: false,
     title: 'MV Spot — Guess the Song from Music Video Frames | TuneUp',
-    description: 'Guess 215+ iconic songs from crisp 720p HD music video scenes across 5 tries, with release year & artist clues and instant audio previews. Free browser music game.',
-    imageAlt: 'TuneUp MV Spot — Guess the song from HD music video frames',
+    description: 'Guess 210+ iconic songs from music video scenes across 5 tries, with release year & artist clues and instant audio previews. Free browser music game.',
+    imageAlt: 'TuneUp MV Spot — Guess the song from music video frames',
     aboutHeading: 'About MV Spot',
-    aboutP1: 'MV Spot shows 3 real HD music video frames one scene at a time, followed by Release Year, Genre, and Artist clues across 5 attempts (just like Framed for music videos).',
+    aboutP1: 'MV Spot shows 3 real music video frames one scene at a time with artist faces masked during guessing, followed by Release Year, Genre, and Artist clues across 5 attempts.',
     aboutP2: 'Play unlimited free rounds anytime or spin MV Spot in the Daily Challenge.'
   },
   {
