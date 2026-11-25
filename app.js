@@ -5926,7 +5926,7 @@
           }
           $('#agAnswerName').textContent = ag.target.name;
           $('#agTopSongLabel').textContent = ag.target.topSong
-            ? (I18N ? tr('agTopHit', { title: ag.target.topSong.title, country: ag.target.country, genre: ag.target.genre }) : ('Top Hit: ' + ag.target.topSong.title + ' (' + ag.target.country + ' · ' + ag.target.genre + ')'))
+            ? (I18N ? tr('agTopHit', { title: ag.target.topSong.title, country: ag.target.country, genre: ag.target.genre }) : (ag.target.topSong.title + ' · ' + ag.target.country + ' · ' + ag.target.genre))
             : (ag.target.country + ' · ' + ag.target.genre);
           const noteEl = $('#agChallengeNote');
           if (noteEl) {

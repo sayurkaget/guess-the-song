@@ -313,6 +313,10 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(html, /id="moreGamesCard"[\s\S]*class="arcade-row"[\s\S]*id="openDuel"[\s\S]*id="openArtistGame"[\s\S]*class="more-games-grid"/);
   assert.match(lcss, /\.spotle-guess-card\.is-new\.is-fx-clue-exact\{animation:spCardEnter/);
   assert.doesNotMatch(app, /triggerUiFx\(newestCard/);
+  const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
+  assert.doesNotMatch(mg, /Top Hit:|Lagu Hit:/i);
+  assert.doesNotMatch(app, /Top Hit:|Lagu Hit/i);
+  assert.doesNotMatch(i18n, /Top Hit:|Lagu Hits?:/i);
   assert.match(sw, /gts-v1[56]\d-wave/);
   assert.match(build, /gts-cf-v1[34]\d-wave/);
 });

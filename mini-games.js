@@ -1768,7 +1768,7 @@
   }
 
   function hairRevealSub(hit, fallbackGenre) {
-    if (hit && hit.title) return t('Top Hit: ' + hit.title, 'Lagu Hit: ' + hit.title);
+    if (hit && hit.title) return hit.title;
     return fallbackGenre || t('Mystery musician', 'Musisi misterius');
   }
 
