@@ -131,29 +131,44 @@
     } catch {}
   }
   function playSpinLock(idx) {
-    haptic(idx === 2 ? [16, 28, 24] : 14);
+    haptic(idx === 2 ? [18, 28, 26] : 16);
     const ctx = getSpinAudio();
     if (!ctx) return;
     try {
       const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
       const f = notes[idx] || 659.25;
       const now = ctx.currentTime;
+      // Mechanical drum lock thud
+      const thud = ctx.createOscillator(), tg = ctx.createGain();
+      thud.type = 'sine';
+      thud.frequency.setValueAtTime(125, now);
+      thud.frequency.exponentialRampToValueAtTime(48, now + 0.085);
+      tg.gain.setValueAtTime(0.18, now);
+      tg.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
+      thud.connect(tg); tg.connect(ctx.destination);
+      thud.start(now); thud.stop(now + 0.1);
+
+      // Lock chime
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.type = 'sine';
       o.frequency.setValueAtTime(f, now);
       g.gain.setValueAtTime(0.15, now);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
       o.connect(g); g.connect(ctx.destination);
-      o.start(now); o.stop(now + 0.3);
+      o.start(now); o.stop(now + 0.32);
+
+      // Final reel 3 sparkling slot jackpot chord
       if (idx === 2) {
-        const o2 = ctx.createOscillator(), g2 = ctx.createGain();
-        o2.type = 'triangle';
-        o2.frequency.setValueAtTime(1046.5, now + 0.08);
-        g2.gain.setValueAtTime(0.001, now);
-        g2.gain.setValueAtTime(0.13, now + 0.08);
-        g2.gain.exponentialRampToValueAtTime(0.001, now + 0.52);
-        o2.connect(g2); g2.connect(ctx.destination);
-        o2.start(now + 0.08); o2.stop(now + 0.54);
+        [[1046.5, 0.07, 0.48, 0.14], [1318.5, 0.14, 0.52, 0.11], [1567.98, 0.21, 0.58, 0.09]].forEach(([cf, d, dur, v]) => {
+          const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+          o2.type = 'triangle';
+          o2.frequency.setValueAtTime(cf, now + d);
+          g2.gain.setValueAtTime(0.001, now);
+          g2.gain.setValueAtTime(v, now + d);
+          g2.gain.exponentialRampToValueAtTime(0.001, now + d + dur);
+          o2.connect(g2); g2.connect(ctx.destination);
+          o2.start(now + d); o2.stop(now + d + dur + 0.02);
+        });
       }
     } catch {}
   }
@@ -500,10 +515,6 @@
     spinTimers = [];
     spinRafs = [];
     spinAnimating = false;
-    const mach = $('#dhSlotMachine');
-    if (mach) mach.classList.remove('is-spinning', 'is-jackpot');
-    const lever = $('#dhLever');
-    if (lever) lever.classList.remove('is-pulled');
     for (let i = 0; i < 3; i++) {
       const s = $('#dhReel' + i);
       if (s) s.style.filter = 'none';
@@ -554,23 +565,13 @@
     const titleEl = $('#dhTitle');
     const subEl = $('#dhSub');
     const ctaBtn = $('#dhMainBtn');
-    const lever = $('#dhLever');
-    const mach = $('#dhSlotMachine');
     const nextIdx = nextUnfinishedSlotIndex();
-
-    if (mach) mach.classList.remove('is-spinning', 'is-jackpot');
-    if (lever) {
-      lever.classList.remove('is-pulled');
-      lever.classList.toggle('is-used', !!st.spun);
-      lever.disabled = !!st.spun;
-      lever.title = st.spun ? t('Lineup locked', 'Game sudah terbuka') : t('Pull lever to spin', 'Tarik tuas untuk spin');
-    }
 
     if (!st.spun) {
       if (titleEl) titleEl.textContent = isArch ? t(`Archive · ${st.day}`, `Arsip · ${st.day}`) : t("Today's 3 Music Games", '3 Game Musik Hari Ini');
       if (subEl) subEl.textContent = isArch
         ? t('Practice past Daily — won’t affect today’s streak.', 'Latihan Daily lalu — tidak mengubah streak hari ini.')
-        : t('Pull the lever or spin to reveal today’s 3 games.', 'Tarik tuas atau spin untuk undi 3 game hari ini.');
+        : t('Spin to reveal today’s lineup — same 3 games for everyone.', 'Spin untuk buka 3 game acak hari ini — sama untuk semua pemain.');
       if (ctaBtn) {
         ctaBtn.textContent = isArch ? t('Spin Archive Games', 'Spin Game Arsip') : t("Spin Today's Games", 'Spin Game Hari Ini');
         ctaBtn.disabled = false;
@@ -591,7 +592,7 @@
   }
 
   const REEL_STEP = 58; // 52px card + 6px gap
-  const REEL_BASE_LOOPS = [3, 4, 5]; // escalating travel per reel for Option A physics
+  const REEL_BASE_LOOPS = [4, 6, 8]; // high-travel escalating casino slot loops
   function buildReelStrip(slotIdx, landed) {
     const strip = $('#dhReel' + slotIdx);
     const win = $('#dhWin' + slotIdx);
@@ -611,7 +612,7 @@
     }
 
     const list = [];
-    for (let loop = 0; loop < 7; loop++) {
+    for (let loop = 0; loop < 10; loop++) {
       for (let i = 0; i < Hub.GAMES.length; i++) list.push(Hub.GAMES[i]);
     }
     strip.innerHTML = list.map((g, idx) =>
@@ -687,140 +688,129 @@
     spinAnimating = true;
     const titleEl = $('#dhTitle');
     const ctaBtn = $('#dhMainBtn');
-    const mach = $('#dhSlotMachine');
-    const lever = $('#dhLever');
-    if (titleEl) titleEl.textContent = t('Spinning the reels…', 'Memutar slot game…');
+    const reelsBox = $('.dh-reels');
+    if (titleEl) titleEl.textContent = t('Rolling today’s lineup…', 'Mengundi 3 game hari ini…');
     if (ctaBtn) ctaBtn.textContent = t('Tap to skip', 'Ketuk untuk lewati');
 
-    // Pull the slot-machine lever down with ratchet clunk, then spring back up!
+    // Crisp mechanical slot start ratchet
     playLeverPull();
-    if (lever) lever.classList.add('is-pulled');
-    if (mach) {
-      mach.classList.remove('is-jackpot');
-      mach.classList.add('is-spinning');
-    }
-    const leverReleaseTid = setTimeout(() => {
-      if (lever) lever.classList.remove('is-pulled');
-    }, 240);
-    spinTimers.push(leverReleaseTid);
 
-    const durs = [1550, 2350, 3350];
-    const launchTid = setTimeout(() => {
-      if (!spinAnimating) return;
-      hubState.slots.forEach((slot, rIdx) => {
-        const strip = $('#dhReel' + rIdx);
-        const win = $('#dhWin' + rIdx);
-        const col = $('#dhCol' + rIdx);
-        if (!strip) return;
-        const targetGameIdx = Hub.GAMES.findIndex((g) => g.id === slot.gameId);
-        const targetRow = REEL_BASE_LOOPS[rIdx] * Hub.GAMES.length + Math.max(0, targetGameIdx);
-        const startY = -((1 + rIdx * 2) * REEL_STEP) + 54;
-        const endY = -(targetRow * REEL_STEP) + 54;
-        const dist = endY - startY;
-        const dur = durs[rIdx];
-        const t0 = performance.now();
-        let lastRowPassed = -1;
+    // Extended casino-slot physics: high-speed cruise -> staggered heavy slam -> dramatic Reel 3 suspense crawl (~4.85s)
+    const durs = [2050, 3250, 4850];
+    hubState.slots.forEach((slot, rIdx) => {
+      const strip = $('#dhReel' + rIdx);
+      const win = $('#dhWin' + rIdx);
+      const col = $('#dhCol' + rIdx);
+      if (!strip) return;
+      const targetGameIdx = Hub.GAMES.findIndex((g) => g.id === slot.gameId);
+      const targetRow = REEL_BASE_LOOPS[rIdx] * Hub.GAMES.length + Math.max(0, targetGameIdx);
+      const startY = -((1 + rIdx * 2) * REEL_STEP) + 54;
+      const endY = -(targetRow * REEL_STEP) + 54;
+      const dist = endY - startY;
+      const dur = durs[rIdx];
+      const t0 = performance.now();
+      let lastRowPassed = -1;
 
-        const rc = gameColor(slot.gameId);
-        if (win) {
-          win.style.setProperty('--rc', rc);
-          win.classList.remove('is-locked', 'is-flash', 'is-suspense');
-          win.classList.add('is-spinning');
-        }
-        if (col) col.classList.remove('is-recoil', 'is-finale');
-        strip.style.transition = 'none';
+      const rc = gameColor(slot.gameId);
+      if (win) {
+        win.style.setProperty('--rc', rc);
+        win.classList.remove('is-locked', 'is-flash', 'is-suspense');
+        win.classList.add('is-spinning');
+      }
+      if (col) col.classList.remove('is-recoil', 'is-finale');
+      strip.style.transition = 'none';
 
-        function frame(now) {
-          if (!spinAnimating) return;
-          const el = now - t0;
-          const p = Math.min(1, el / dur);
-          let y, vel;
-          if (p < 0.07) {
-            // Anticipation pull-back upward before launch
-            const k = p / 0.07;
-            y = startY + Math.sin(k * Math.PI) * 18;
+      function frame(now) {
+        if (!spinAnimating) return;
+        const el = now - t0;
+        const p = Math.min(1, el / dur);
+        let y, vel;
+        const overshoot = rIdx === 2 ? 1.028 : 1.02;
+        if (p < 0.055) {
+          // Anticipation pull-back upward before reel launch
+          const k = p / 0.055;
+          y = startY + Math.sin(k * Math.PI) * 18;
+          vel = 0;
+        } else {
+          const u = (p - 0.055) / 0.945;
+          const pow = rIdx === 2 ? 4.9 : (rIdx === 1 ? 4.3 : 3.9);
+          let eased;
+          if (u < 0.91) {
+            const s = u / 0.91;
+            // Fast initial cruise blending smoothly into long dramatic brake
+            eased = (1 - Math.pow(1 - s, pow)) * overshoot;
+            vel = Math.pow(1 - s, pow - 1);
+          } else {
+            // Crisp mechanical overshoot snap-back into exact payline
+            const s = (u - 0.91) / 0.09;
+            eased = overshoot - (overshoot - 1) * (1 - Math.pow(1 - s, 2.2));
             vel = 0;
-          } else {
-            const u = (p - 0.07) / 0.93;
-            const pow = rIdx === 2 ? 4.8 : 4.2; // extra dramatic slow crawl on Reel 3!
-            let eased;
-            if (u < 0.90) {
-              const s = u / 0.90;
-              eased = (1 - Math.pow(1 - s, pow)) * 1.024;
-            } else {
-              const s = (u - 0.90) / 0.10;
-              eased = 1.024 - 0.024 * (1 - Math.pow(1 - s, 2));
-            }
-            y = startY + dist * eased;
-            vel = u < 0.90 ? Math.pow(1 - u / 0.90, pow - 1) : 0;
-            if (rIdx === 2 && el > durs[1] && p < 0.98 && win) {
-              win.classList.add('is-suspense');
-            }
           }
-          const blurPx = vel > 0.22 ? Math.min(2.6, (vel - 0.22) * 3.4) : 0;
-          strip.style.filter = blurPx > 0.15 ? `blur(${blurPx.toFixed(2)}px)` : 'none';
-          strip.style.transform = `translateY(${y.toFixed(1)}px)`;
-
-          // Per-item mechanical tick synced to active reel
-          const curRow = Math.floor((-y + 54) / REEL_STEP);
-          if (curRow !== lastRowPassed && p >= 0.07 && p < 0.97) {
-            lastRowPassed = curRow;
-            if (rIdx === 0 || el > durs[rIdx - 1] - 180) {
-              playSpinTick(520 + (1 - p) * 320);
-            }
-          }
-
-          if (p < 1) {
-            spinRafs.push(requestAnimationFrame(frame));
-          } else {
-            strip.style.filter = 'none';
-            strip.style.transform = `translateY(${endY}px)`;
-            if (win) {
-              win.classList.remove('is-spinning', 'is-suspense');
-              win.classList.add('is-locked', 'is-flash');
-            }
-            if (col) col.classList.add('is-recoil');
-            const card = strip.querySelector(`[data-idx="${targetRow}"]`);
-            if (card) {
-              card.style.setProperty('--rc', rc);
-              card.classList.add('is-landed');
-            }
-            const badge = $('#dhBadge' + rIdx);
-            const sub = $('#dhSub' + rIdx);
-            if (badge) badge.hidden = true;
-            if (sub) {
-              sub.textContent = rIdx === 0 ? t('Up next', 'Berikutnya') : t('Game ' + (rIdx + 1), 'Game ' + (rIdx + 1));
-              sub.className = rIdx === 0 ? 'dh-slot-sub is-next' : 'dh-slot-sub';
-              if (rIdx === 0) sub.style.setProperty('--rc', rc);
-              else sub.style.removeProperty('--rc');
-            }
-            playSpinLock(rIdx);
-            if (rIdx === 2) {
-              spinAnimating = false;
-              hubState.spun = true;
-              saveHubState();
-              if (mach) {
-                mach.classList.remove('is-spinning');
-                mach.classList.add('is-jackpot');
-                spawnWinSparks(mach);
-              }
-              if (lever) { lever.classList.add('is-used'); lever.disabled = true; }
-              if (titleEl) titleEl.textContent = hubState.isArchive ? t(`Archive · ${hubState.day}`, `Arsip · ${hubState.day}`) : t("Today's 3 Music Games", '3 Game Musik Hari Ini');
-              if (ctaBtn) ctaBtn.textContent = t(`Play ${gameLabel(hubState.slots[0].gameId)} →`, `Main ${gameLabel(hubState.slots[0].gameId)} →`);
-              const finaleTid = setTimeout(() => {
-                for (let i = 0; i < 3; i++) {
-                  const c = $('#dhCol' + i);
-                  if (c) c.classList.add('is-finale');
-                }
-              }, 140);
-              spinTimers.push(finaleTid);
-            }
+          y = startY + dist * eased;
+          if (rIdx === 2 && el > durs[1] - 60 && p < 0.97 && win) {
+            win.classList.add('is-suspense');
           }
         }
-        spinRafs.push(requestAnimationFrame(frame));
-      });
-    }, 140);
-    spinTimers.push(launchTid);
+        const blurPx = vel > 0.2 ? Math.min(2.8, (vel - 0.2) * 3.6) : 0;
+        strip.style.filter = blurPx > 0.15 ? `blur(${blurPx.toFixed(2)}px)` : 'none';
+        strip.style.transform = `translateY(${y.toFixed(1)}px)`;
+
+        // Per-symbol slot click synced to active reel (rising tension pitch on final Reel 3 ticks!)
+        const curRow = Math.floor((-y + 54) / REEL_STEP);
+        if (curRow !== lastRowPassed && p >= 0.055 && p < 0.985) {
+          lastRowPassed = curRow;
+          if (rIdx === 0 || el > durs[rIdx - 1] - 120) {
+            const isSuspenseTick = rIdx === 2 && el > durs[1];
+            const pitch = isSuspenseTick ? (480 + p * 440) : (520 + (1 - p) * 320);
+            playSpinTick(pitch);
+          }
+        }
+
+        if (p < 1) {
+          spinRafs.push(requestAnimationFrame(frame));
+        } else {
+          strip.style.filter = 'none';
+          strip.style.transform = `translateY(${endY}px)`;
+          if (win) {
+            win.classList.remove('is-spinning', 'is-suspense');
+            win.classList.add('is-locked', 'is-flash');
+          }
+          if (col) col.classList.add('is-recoil');
+          const card = strip.querySelector(`[data-idx="${targetRow}"]`);
+          if (card) {
+            card.style.setProperty('--rc', rc);
+            card.classList.add('is-landed');
+          }
+          const badge = $('#dhBadge' + rIdx);
+          const sub = $('#dhSub' + rIdx);
+          if (badge) badge.hidden = true;
+          if (sub) {
+            sub.textContent = rIdx === 0 ? t('Up next', 'Berikutnya') : t('Game ' + (rIdx + 1), 'Game ' + (rIdx + 1));
+            sub.className = rIdx === 0 ? 'dh-slot-sub is-next' : 'dh-slot-sub';
+            if (rIdx === 0) sub.style.setProperty('--rc', rc);
+            else sub.style.removeProperty('--rc');
+          }
+          playSpinLock(rIdx);
+          if (rIdx === 2) {
+            spinAnimating = false;
+            hubState.spun = true;
+            saveHubState();
+            if (reelsBox) spawnWinSparks(reelsBox);
+            if (titleEl) titleEl.textContent = hubState.isArchive ? t(`Archive · ${hubState.day}`, `Arsip · ${hubState.day}`) : t("Today's 3 Music Games", '3 Game Musik Hari Ini');
+            if (ctaBtn) ctaBtn.textContent = t(`Play ${gameLabel(hubState.slots[0].gameId)} →`, `Main ${gameLabel(hubState.slots[0].gameId)} →`);
+            // Cascading jackpot wave across all 3 columns
+            [0, 1, 2].forEach((ci) => {
+              const finaleTid = setTimeout(() => {
+                const c = $('#dhCol' + ci);
+                if (c) c.classList.add('is-finale');
+              }, 110 + ci * 95);
+              spinTimers.push(finaleTid);
+            });
+          }
+        }
+      }
+      spinRafs.push(requestAnimationFrame(frame));
+    });
   }
 
   /* ================= Completed Scorecard (/300 + 15-band D1 Histogram) ================= */
@@ -2468,11 +2458,6 @@
     };
     const dhMainBtn = $('#dhMainBtn');
     if (dhMainBtn) dhMainBtn.onclick = startDailySpin;
-    const dhLever = $('#dhLever');
-    if (dhLever) dhLever.onclick = () => {
-      if (!hubState) loadHubState();
-      if (!hubState.spun || spinAnimating) startDailySpin();
-    };
     const dhTodayBtn = $('#dhTodayBtn');
     if (dhTodayBtn) dhTodayBtn.onclick = () => showDailyHub();
     const spPopBody = $('#streakPopBody');

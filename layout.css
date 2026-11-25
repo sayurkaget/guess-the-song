@@ -2624,193 +2624,45 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   color:var(--dim);
   line-height:1.45;
 }
-/* ====== Arcade Slot-Machine Daily Spin Cabinet ====== */
-.dh-slot-machine{
-  position:relative;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:0;
-  margin:0 auto 1.25rem;
-  max-width:100%;
-}
-.dh-slot-cabinet{
-  flex:1 1 auto;
-  min-width:0;
-  position:relative;
-  border-radius:20px;
-  padding:.58rem .68rem .72rem;
-  background:linear-gradient(180deg,rgba(245,193,78,.18) 0%,rgba(14,38,26,.92) 14%,rgba(6,18,12,.96) 100%);
-  border:1.5px solid rgba(245,193,78,.42);
-  box-shadow:
-    0 18px 42px -12px rgba(0,0,0,.86),
-    inset 0 1px 0 rgba(255,227,153,.32),
-    inset 0 -2px 8px rgba(0,0,0,.65);
-  transition:border-color .25s,box-shadow .25s;
-}
-.dh-slot-machine.is-spinning .dh-slot-cabinet{
-  border-color:rgba(245,193,78,.72);
-  box-shadow:
-    0 18px 48px -10px rgba(245,177,61,.24),
-    inset 0 1px 0 rgba(255,232,168,.5),
-    inset 0 0 28px rgba(245,177,61,.08);
-}
-.dh-slot-machine.is-jackpot .dh-slot-cabinet{
-  border-color:rgba(65,245,150,.85);
-  box-shadow:
-    0 0 38px -6px rgba(37,224,125,.42),
-    0 18px 44px -10px rgba(0,0,0,.85),
-    inset 0 1px 0 rgba(167,243,208,.55);
-  animation:dhCabinetJackpot .55s cubic-bezier(.22,1,.36,1);
-}
-@keyframes dhCabinetJackpot{
-  0%{transform:scale(1)}
-  35%{transform:scale(1.018)}
-  100%{transform:scale(1)}
-}
-.dh-slot-top{
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-  gap:1.1rem;
-  margin:-1.18rem auto .48rem;
-  padding:.26rem 1.05rem .2rem;
-  width:fit-content;
-  border-radius:14px 14px 6px 6px;
-  background:linear-gradient(180deg,#3d2e11,#1e1809);
-  border:1.5px solid rgba(245,193,78,.48);
-  border-bottom-color:rgba(245,193,78,.18);
-  box-shadow:0 -4px 18px rgba(245,177,61,.18),inset 0 1px 0 rgba(255,233,166,.35);
-}
-.dh-beacon{
-  width:15px;height:17px;border-radius:10px 10px 3px 3px;
-  position:relative;
-  background:radial-gradient(circle at 38% 30%,#ffcf8a,#f2555a 58%,#7a1419 100%);
-  border:1px solid rgba(255,212,150,.45);
-  box-shadow:0 0 10px rgba(242,85,90,.45),inset 0 2px 3px rgba(255,255,255,.55);
-  opacity:.72;
-  transition:opacity .2s,box-shadow .2s,filter .2s;
-}
-.dh-beacon.b2{width:19px;height:21px}
-.dh-slot-machine.is-spinning .dh-beacon{
-  opacity:1;
-  animation:dhBeaconChase .42s infinite ease-in-out;
-}
-.dh-slot-machine.is-spinning .dh-beacon.b2{animation-delay:.14s}
-.dh-slot-machine.is-spinning .dh-beacon.b3{animation-delay:.28s}
-.dh-slot-machine.is-jackpot .dh-beacon{
-  opacity:1;
-  background:radial-gradient(circle at 38% 30%,#fff6c2,#25e07d 56%,#0b6b38 100%);
-  box-shadow:0 0 18px rgba(65,245,150,.95),0 0 32px rgba(245,193,78,.55);
-  animation:dhBeaconJackpot .36s 3 ease-in-out;
-}
-@keyframes dhBeaconChase{
-  0%,100%{opacity:.42;box-shadow:0 0 6px rgba(242,85,90,.3)}
-  50%{opacity:1;filter:brightness(1.32);box-shadow:0 0 18px rgba(255,196,77,.95),0 0 28px rgba(242,85,90,.75)}
-}
-@keyframes dhBeaconJackpot{
-  0%,100%{transform:scale(1);filter:brightness(1)}
-  50%{transform:scale(1.12);filter:brightness(1.38)}
-}
-.dh-slot-frame{
-  border-radius:14px;
-  padding:.52rem .52rem .42rem;
-  background:linear-gradient(180deg,#040d08,#07160f 50%,#040c08);
-  border:1px solid rgba(255,255,255,.08);
-  box-shadow:inset 0 8px 20px rgba(0,0,0,.78);
-}
-.dh-lever{
-  flex:none;
-  position:relative;
-  width:34px;
-  height:142px;
-  margin-left:-2px;
-  padding:0;
-  border:0;
-  background:transparent;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  outline:none;
-}
-.dh-lever:focus-visible .dh-lever-knob{outline:2px solid #ffd06b;outline-offset:3px}
-.dh-lever-mount{
-  width:14px;height:44px;border-radius:0 9px 9px 0;
-  background:linear-gradient(180deg,#d8a845,#8f671e 52%,#5e4110);
-  border:1.5px solid rgba(255,227,153,.55);
-  border-left:0;
-  box-shadow:4px 4px 14px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,244,200,.45);
-}
-.dh-lever-arm{
-  position:absolute;
-  left:11px;
-  bottom:70px;
-  width:7px;
-  height:62px;
-  border-radius:4px;
-  background:linear-gradient(90deg,#9c7222,#ffe59e 48%,#8c631b);
-  box-shadow:2px 4px 10px rgba(0,0,0,.65);
-  transform-origin:50% 100%;
-  transform:rotate(8deg) scaleY(1);
-  transition:transform .22s cubic-bezier(.22,1.2,.36,1);
-}
-.dh-lever-knob{
-  position:absolute;
-  top:-13px;
-  left:50%;
-  width:24px;
-  height:24px;
-  border-radius:50%;
-  transform:translateX(-50%);
-  background:radial-gradient(circle at 34% 28%,#ff9fa3,#e63946 48%,#8a1019 100%);
-  border:1.5px solid rgba(255,212,212,.55);
-  box-shadow:0 4px 14px rgba(230,57,70,.55),inset 0 2px 4px rgba(255,255,255,.55);
-  transition:transform .18s,box-shadow .18s;
-}
-.dh-lever:hover:not(.is-used) .dh-lever-knob{
-  transform:translateX(-50%) scale(1.1);
-  box-shadow:0 0 20px rgba(255,95,105,.88),inset 0 2px 4px rgba(255,255,255,.7);
-}
-.dh-lever.is-pulled .dh-lever-arm{
-  transform:rotate(14deg) scaleY(-0.88);
-  transition:transform .16s cubic-bezier(.4,0,.2,1);
-}
-.dh-lever.is-used{opacity:.48;cursor:default}
 .dh-reels{
+  position:relative;
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:.6rem;
-  margin:0;
+  gap:.72rem;
+  margin:0 0 1.3rem;
 }
 .dh-reel-col{
   display:flex;
   flex-direction:column;
-  gap:.42rem;
+  gap:.48rem;
   min-width:0;
 }
 .dh-reel-window{
   height:162px;
   position:relative;
   overflow:hidden;
-  border-radius:13px;
-  background:linear-gradient(180deg,#030b07 0%,#0b2116 28%,#0e281b 50%,#0b2116 72%,#030b07 100%);
-  border:1.5px solid rgba(245,193,78,.22);
-  box-shadow:inset 0 22px 20px -12px rgba(0,0,0,.92),inset 0 -22px 20px -12px rgba(0,0,0,.92);
-  mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.45) 16%,#000 34%,#000 66%,rgba(0,0,0,.45) 84%,transparent 100%);
-  -webkit-mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.45) 16%,#000 34%,#000 66%,rgba(0,0,0,.45) 84%,transparent 100%);
+  border-radius:15px;
+  background:rgba(5,16,11,.74);
+  border:1px solid rgba(255,255,255,.09);
+  mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.38) 18%,#000 35%,#000 65%,rgba(0,0,0,.38) 82%,transparent 100%);
+  -webkit-mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.38) 18%,#000 35%,#000 65%,rgba(0,0,0,.38) 82%,transparent 100%);
   transition:border-color .22s,box-shadow .22s;
 }
 .dh-reel-window.is-spinning{
-  border-color:rgba(245,193,78,.52);
-  box-shadow:inset 0 22px 20px -12px rgba(0,0,0,.92),inset 0 -22px 20px -12px rgba(0,0,0,.92),inset 0 0 22px rgba(245,193,78,.14);
+  border-color:rgba(var(--acc-rgb),.44);
+  box-shadow:inset 0 0 26px rgba(var(--acc-rgb),.14);
 }
 .dh-reel-window.is-suspense{
-  border-color:#ffd06b;
-  box-shadow:0 0 22px -4px rgba(245,193,78,.55),inset 0 0 20px rgba(245,193,78,.2);
+  border-color:rgba(245,193,78,.72);
+  box-shadow:0 0 24px -4px rgba(245,193,78,.42),inset 0 0 24px rgba(245,193,78,.16);
+  animation:dhSuspensePulse .55s infinite ease-in-out;
+}
+@keyframes dhSuspensePulse{
+  0%,100%{box-shadow:0 0 18px -4px rgba(245,193,78,.32),inset 0 0 18px rgba(245,193,78,.12)}
+  50%{box-shadow:0 0 28px -2px rgba(245,193,78,.62),inset 0 0 26px rgba(245,193,78,.24)}
 }
 .dh-reel-window.is-locked{
-  border-color:color-mix(in srgb,var(--rc,#25e07d) 65%,transparent);
+  border-color:color-mix(in srgb,var(--rc,#25e07d) 60%,transparent);
 }
 .dh-reel-payline{
   position:absolute;
@@ -4316,19 +4168,10 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   #lobby .daily-hub-cta{width:100%;min-height:42px}
   #lobby .more-games-card{padding:.85rem .9rem .92rem}
   .dh-day-pill{font-size:.66rem;padding:.2rem .54rem}
-  .dh-panel{padding:1.15rem .8rem;border-radius:18px}
-  .dh-slot-cabinet{padding:.48rem .46rem .55rem;border-radius:16px}
-  .dh-slot-frame{padding:.4rem .36rem .34rem;border-radius:12px}
-  .dh-slot-top{gap:.8rem;margin:-1.05rem auto .38rem;padding:.2rem .78rem .16rem}
-  .dh-beacon{width:12px;height:14px}
-  .dh-beacon.b2{width:15px;height:17px}
-  .dh-lever{width:24px;height:126px}
-  .dh-lever-mount{width:10px;height:36px}
-  .dh-lever-arm{left:8px;bottom:62px;width:5px;height:50px}
-  .dh-lever-knob{width:18px;height:18px;top:-10px}
-  .dh-reels{gap:.36rem}
-  .dh-reel-item{padding:0 .22rem}
-  .dh-reel-name{font-size:.64rem}
+  .dh-panel{padding:1.15rem .92rem;border-radius:18px}
+  .dh-reels{gap:.42rem}
+  .dh-reel-item{padding:0 .25rem}
+  .dh-reel-name{font-size:.66rem}
   .mg-sw-pill{min-height:32px;padding:.3rem .56rem;font-size:.71rem;flex:0 0 auto}
   .dh-histo{gap:2px}
   .dh-bar-pct{font-size:.5rem}

@@ -344,10 +344,11 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(mg, /ArrowLeft/);
   assert.match(html, /id="mgStreakPill"/);
   assert.match(html, /id="mgChallengeBar"/);
-  assert.match(html, /id="dhSlotMachine"[\s\S]*class="dh-beacon b2"[\s\S]*id="dhLever"/);
+  assert.doesNotMatch(html, /id="dhSlotMachine"|id="dhLever"/);
   assert.match(html, /id="mgSwitcher"/);
   assert.match(html, /id="dhTodayBtn"/);
-  assert.match(mg, /function playLeverPull\(/);
+  assert.match(mg, /REEL_BASE_LOOPS = \[4, 6, 8\]/);
+  assert.match(mg, /const durs = \[2050, 3250, 4850\]/);
   assert.match(mg, /function openDailyArchive\(/);
   assert.match(mg, /function renderMiniSwitcher\(/);
   assert.match(build, /3 Game Musik Hari Ini/);
