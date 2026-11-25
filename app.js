@@ -436,30 +436,58 @@
     set slug(v) { this._slug = v; }
   }
 
-  const ALL = (() => {
-    const raw = window.SONGS || [];
-    const out = [];
+  const ALL = [];
+  let catalogHydrated = false;
+  let songsLoadPromise = null;
+  const onCatalogHydrate = [];
+
+  function hydrateCatalog() {
+    if (catalogHydrated) return ALL;
+    const raw = (typeof window !== 'undefined' && Array.isArray(window.SONGS)) ? window.SONGS : [];
+    if (!raw.length) return ALL;
     const isStudio = window.RecordingPolicy.isStudio;
     for (let idx = 0; idx < raw.length; idx++) {
       const s = raw[idx];
-      if (s[3] === 'gl' && isStudio(s[0])) out.push(new SongEntry(s, out.length));
+      if (s[3] === 'gl' && isStudio(s[0])) ALL.push(new SongEntry(s, ALL.length));
     }
-    return out;
-  })();
-
-  // Hangatkan cache .nt/.na/.hay secara bertahap di waktu senggang browser supaya
-  // ketikan pertama di kolom pencarian tetap instan (<10ms) tanpa bikin lag boot awal.
-  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function' && ALL.length > 500) {
-    let warmIdx = 0;
-    const warmChunk = (deadline) => {
-      const end = Math.min(ALL.length, warmIdx + 1500);
-      while (warmIdx < end && (!deadline || deadline.timeRemaining() > 3)) {
-        ALL[warmIdx++].hay;
-      }
-      if (warmIdx < ALL.length) window.requestIdleCallback(warmChunk, { timeout: 2500 });
-    };
-    window.requestIdleCallback(warmChunk, { timeout: 1500 });
+    catalogHydrated = true;
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function' && ALL.length > 500) {
+      let warmIdx = 0;
+      const warmChunk = (deadline) => {
+        const end = Math.min(ALL.length, warmIdx + 1500);
+        while (warmIdx < end && (!deadline || deadline.timeRemaining() > 3)) {
+          ALL[warmIdx++].hay;
+        }
+        if (warmIdx < ALL.length) window.requestIdleCallback(warmChunk, { timeout: 2500 });
+      };
+      window.requestIdleCallback(warmChunk, { timeout: 1500 });
+    }
+    while (onCatalogHydrate.length) {
+      const fn = onCatalogHydrate.shift();
+      try { fn(); } catch (e) {}
+    }
+    return ALL;
   }
+
+  function ensureSongsLoaded() {
+    if (catalogHydrated || (typeof window !== 'undefined' && Array.isArray(window.SONGS) && window.SONGS.length)) {
+      hydrateCatalog();
+      return Promise.resolve(ALL);
+    }
+    if (songsLoadPromise) return songsLoadPromise;
+    if (typeof document === 'undefined' || !document.head) return Promise.resolve(ALL);
+    songsLoadPromise = new Promise((resolve) => {
+      const sc = document.createElement('script');
+      sc.src = (typeof location !== 'undefined' && location.protocol === 'file:') ? 'songs.js?v=117' : '/songs.js?v=117';
+      sc.async = true;
+      sc.onload = () => { hydrateCatalog(); resolve(ALL); };
+      sc.onerror = () => { songsLoadPromise = null; resolve(ALL); };
+      document.head.appendChild(sc);
+    });
+    return songsLoadPromise;
+  }
+
+  hydrateCatalog();
 
 
   // Cari entri lagu dari slug. Di mode kustom, lagu artis didahulukan -- lagu
@@ -3213,7 +3241,7 @@
       refreshDaily();
 
       const jalan = S.stages.filter(Boolean).length;
-      $('#start').disabled = !S.pool.length;
+      $('#start').disabled = catalogHydrated ? !S.pool.length : false;
       $('#start').textContent = S.runDone ? (I18N ? tr('seeResult') : 'See result')
         : (jalan || S.guesses.length ? (I18N ? tr('continueBtn') : 'Continue') : (I18N ? tr('start') : 'Start'));
       const duelSub = $('#duelLobbySub');
@@ -3337,6 +3365,7 @@
 
     poolInfo() {
       const p = $('#poolInfo');
+      if (!catalogHydrated) { p.textContent = ''; p.hidden = true; return; }
       const total = filtered().length;
       let msg = '', warn = false;
       if (!total) { msg = I18N ? tr('noSongsFilter') : 'No songs match these filters.'; warn = true; }
@@ -3821,7 +3850,7 @@
     },
 
     stats(tab = statsTab) {
-      statsTab = (tab === 'daily' || tab === 'duel' || tab === 'artist' || tab === 'badges') ? tab : 'overall';
+      statsTab = (tab === 'daily' || tab === 'duel' || tab === 'artist' || tab === 'mini' || tab === 'badges') ? tab : 'overall';
       const tabs = $('#statsTabs');
       if (tabs && typeof tabs.querySelectorAll === 'function') {
         tabs.querySelectorAll('[data-tab]').forEach((b) => {
@@ -3889,6 +3918,52 @@
           '<div class="row"><span class="n wide duel">' + r.label + '</span>' +
           '<div class="bar' + (r.val && r.val === peak ? ' hot' : '') + '" style="width:' +
           Math.max(8, r.val / top * 100) + '%">' + r.val + '</div></div>').join('');
+        if (rt) rt.hidden = true;
+      } else if (statsTab === 'mini') {
+        const raw = LS.get('tl:mg:stats', {}) || {};
+        const games = (raw && raw.games && typeof raw.games === 'object') ? raw.games : {};
+        const factBest = Math.max(0, Number(LS.get('tl:fact:best', 0)) || 0);
+        const defs = [
+          { id: 'cover', name: 'Cover Pixel', color: '#38bdf8' },
+          { id: 'mv', name: 'MV Spot', color: '#25e07d' },
+          { id: 'hair', name: 'HairSpot', color: '#f472b6' },
+          { id: 'fact', name: 'Fact or Cap', color: '#f5b13d' },
+          { id: 'lyric', name: 'Lyric Guess', color: '#a855f7' }
+        ];
+        let totPlayed = 0, totWon = 0, topStreak = 0;
+        defs.forEach((d) => {
+          const g = games[d.id] || {};
+          totPlayed += Number(g.played) || 0;
+          totWon += Number(g.won) || 0;
+          const b = d.id === 'fact' ? Math.max(Number(g.best) || 0, factBest) : (Number(g.best) || 0);
+          if (b > topStreak) topStreak = b;
+        });
+        const winPct = totPlayed ? Math.round((totWon / totPlayed) * 100) + '%' : '0%';
+        const hubDays = Object.keys(localStorage).filter((k) => k.startsWith('tl:hub:v1:') && (LS.get(k, null) || {}).done).length;
+        const baseScope = I18N ? tr('statScopeMini') : '5 free-play & Daily Hub mini-games';
+        $('#statScope').textContent = hubDays > 0
+          ? baseScope + ' · ' + hubDays + (settings.lang === 'id' ? ' Daily selesai' : (hubDays === 1 ? ' Daily completed' : ' Dailies completed'))
+          : baseScope;
+        $('#statgrid').innerHTML =
+          cell(totPlayed, I18N ? tr('statPlayed') : 'played') +
+          cell(totWon, I18N ? tr('statWins') : 'wins') +
+          cell(winPct, I18N ? tr('statWinRate') : 'win rate') +
+          cell(topStreak, I18N ? tr('statBestStreak') : 'best streak');
+        if (dh) dh.textContent = I18N ? tr('miniBreakdown') : 'Per-game breakdown';
+        $('#dist').innerHTML = '<div class="mg-stat-list">' + defs.map((d) => {
+          const g = games[d.id] || {};
+          const pl = Number(g.played) || 0;
+          const wn = Number(g.won) || 0;
+          const pct = pl ? Math.round((wn / pl) * 100) : 0;
+          const bestVal = d.id === 'fact' ? Math.max(Number(g.best) || 0, factBest) : (Number(g.best) || 0);
+          const metaTxt = d.id === 'fact'
+            ? (settings.lang === 'id' ? `${pl} main · Rekor ${bestVal}` : `${pl} played · Best ${bestVal}`)
+            : (settings.lang === 'id' ? `${wn}/${pl} benar · Streak ${bestVal}` : `${wn}/${pl} won · Best ${bestVal}`);
+          return '<div class="mg-stat-row" style="--mc:' + d.color + '">' +
+            '<div class="mg-stat-head"><b>' + esc(d.name) + '</b><span>' + esc(metaTxt) + '</span></div>' +
+            '<div class="mg-stat-track"><div class="mg-stat-fill" style="width:' + (pl ? Math.max(8, pct) : 0) + '%"></div></div>' +
+          '</div>';
+        }).join('') + '</div>';
         if (rt) rt.hidden = true;
       } else if (statsTab === 'artist') {
         const d = artistStats();
@@ -4276,10 +4351,13 @@
 
   $('#start').onclick = () => {
     closeFilterMenus();
-    loadRun();
-    if (S.runDone) { UI.runResult(); return; }
-    UI.game();
-    load();
+    ensureSongsLoaded().then(() => {
+      buildPool();
+      loadRun();
+      if (S.runDone) { UI.runResult(); return; }
+      UI.game();
+      load();
+    });
   };
   window.addEventListener('hashchange', () => {
     if (location.hash.startsWith('#challenge=') || location.hash.startsWith('#run=') || location.hash.startsWith('#duel=') || location.hash.startsWith('#artist=') || location.hash === '#daily') location.reload();
@@ -4962,9 +5040,10 @@
     const Duel = window.ReleaseDuel;
     if (!Duel || !$('#duel') || !$('#openDuel')) return;
     const duelPools = { streams: null, year: null };
+    onCatalogHydrate.push(() => { duelPools.streams = null; duelPools.year = null; });
     const getDuelPool = (kind) => {
       const k = kind === 'streams' ? 'streams' : 'year';
-      if (!duelPools[k]) {
+      if (!duelPools[k] || !duelPools[k].length) {
         duelPools[k] = k === 'streams'
           ? Duel.buildPool(ALL, window.DUEL_STREAMS_V1, 'streams')
           : Duel.buildPool(ALL, window.DUEL_STREAMS_V1, 'year');
@@ -5493,9 +5572,9 @@
       return true;
     }
 
-    launchDuelChallenge = (incoming) => startDuel(incoming && incoming.kind, incoming);
-    launchDuelMode = (deck) => startDuel(deck || ds.kind);
-    launchDailyDuelForHub = (slot, onDone) => {
+    launchDuelChallenge = (incoming) => ensureSongsLoaded().then(() => startDuel(incoming && incoming.kind, incoming));
+    launchDuelMode = (deck) => ensureSongsLoaded().then(() => startDuel(deck || ds.kind));
+    launchDailyDuelForHub = (slot, onDone) => ensureSongsLoaded().then(() => {
       const Hub = window.TuneUpDailyHub;
       const deckKind = (Hub && (Hub.hash(slot.seed) % 2 === 0)) ? 'streams' : 'year';
       const pool = getDuelPool(deckKind);
@@ -5540,9 +5619,9 @@
       if ($('#duelBest')) $('#duelBest').hidden = true;
       syncRoute('daily', { title: 'Daily Challenge — TuneUp', replace: true });
       return true;
-    };
+    });
 
-    $('#openDuel').onclick = () => startDuel(ds.kind);
+    $('#openDuel').onclick = () => ensureSongsLoaded().then(() => startDuel(ds.kind));
     if ($('#duelTabs')) {
       $('#duelTabs').addEventListener('click', (e) => {
         const b = e.target.closest('[data-duel]');
@@ -5611,8 +5690,9 @@
     const AD = window.ArtistDetective;
     if (!AD || !$('#artistGame') || !$('#openArtistGame')) return;
     let roster = null, byId = null;
+    onCatalogHydrate.push(() => { roster = null; byId = null; });
     function ensureRoster() {
-      if (!roster) {
+      if (!roster || !roster.length) {
         roster = AD.buildRoster(ALL, window.DUEL_STREAMS_V1);
         byId = new Map(roster.map((a) => [a.id, a]));
       }
@@ -6278,8 +6358,8 @@
       return true;
     }
 
-    launchArtistChallenge = (incoming) => startArtistGame(incoming);
-    launchArtistMode = (mode) => startArtistGame(null, mode);
+    launchArtistChallenge = (incoming) => ensureSongsLoaded().then(() => startArtistGame(incoming));
+    launchArtistMode = (mode) => ensureSongsLoaded().then(() => startArtistGame(null, mode));
     searchArtistRoster = (q, limit = 10) => {
       const qNorm = norm(q);
       if (!qNorm) return [];
@@ -6322,8 +6402,8 @@
       else syncAgHints();
     };
 
-    if ($('#openDailyArtist')) $('#openDailyArtist').onclick = () => startArtistGame(null, 'daily');
-    $('#openArtistGame').onclick = () => startArtistGame(null, 'free');
+    if ($('#openDailyArtist')) $('#openDailyArtist').onclick = () => ensureSongsLoaded().then(() => startArtistGame(null, 'daily'));
+    $('#openArtistGame').onclick = () => ensureSongsLoaded().then(() => startArtistGame(null, 'free'));
     $('#artistGameBack').onclick = () => {
       if (ag.hubSlot && window.TuneUpDailyUI) {
         ag.hubSlot = null;
@@ -7314,10 +7394,13 @@
     }
     if (mode === 'artist' && launchArtistMode) { launchArtistMode(); return true; }
     if ((mode === 'classic' || slug === 'classic') && $('#start') && !$('#start').disabled) {
-      loadRun();
-      if (S.runDone) { UI.runResult(); return true; }
-      UI.game();
-      load();
+      ensureSongsLoaded().then(() => {
+        buildPool();
+        loadRun();
+        if (S.runDone) { UI.runResult(); return; }
+        UI.game();
+        load();
+      });
       return true;
     }
     return changed;
@@ -7406,15 +7489,18 @@
         if ($('#artistGame')) $('#artistGame').hidden = true;
       },
       startDailySongForHub,
-      startDailyArtistForHub: (slot, onDone) => launchDailyArtistForHub && launchDailyArtistForHub(slot, onDone),
+      startDailyArtistForHub: (slot, onDone) => ensureSongsLoaded().then(() => launchDailyArtistForHub && launchDailyArtistForHub(slot, onDone)),
       startDailyDuelForHub: (slot, onDone) => launchDailyDuelForHub && launchDailyDuelForHub(slot, onDone),
       searchSongs: (q, limit = 10) => searchIndex(q).slice(0, limit),
       searchArtists: (q, limit = 10) => (searchArtistRoster ? searchArtistRoster(q, limit) : []),
       getAllSongs: () => ALL,
+      ensureSongsReady: ensureSongsLoaded,
+      isCatalogReady: () => catalogHydrated,
       stopAudio: () => { stopAudio(); stopMiniPreview(); },
       dockMiniVolume: () => dockVolume('#mgVolSlot'),
       undockMiniVolume,
       playTrackPreview: async (trackId, artEl, opts) => {
+        if (!catalogHydrated) await ensureSongsLoaded();
         const song = ALL.find((s) => String(s.trackId) === String(trackId));
         if (!song) return;
         const auto = !!(opts && opts.auto);
@@ -7500,6 +7586,17 @@
     });
   }
 
+  onCatalogHydrate.push(() => {
+    dailySearchList = null;
+    classicTopArtists = null;
+    if ($('#lobby') && !$('#lobby').hidden) {
+      buildPool();
+      UI.refreshLobby();
+    }
+  });
   setInterval(() => { if (!$('#lobby').hidden) refreshDaily(); }, 30000);
   if (!showIncomingChallenge()) applyDeepLink();
+  if (!catalogHydrated && typeof window !== 'undefined') {
+    setTimeout(() => ensureSongsLoaded(), 0);
+  }
 })();

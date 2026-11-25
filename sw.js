@@ -3,7 +3,7 @@
    ke server (no-cache / ETag) agar update langsung masuk dan file besar seperti
    songs.js tetap hemat kuota via 304 Not Modified saat belum berubah. */
 
-const CACHE = 'gts-v162-wave116-perf-seo-cover-fixes';
+const CACHE = 'gts-v163-wave117-og-speed-ministats-banks';
 const SHELL = [
   './',
   './index.html',
@@ -59,6 +59,8 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
   if (e.request.method !== 'GET') return;
-  if (url.pathname.startsWith('/fonts/')) return;
+  if (url.pathname.startsWith('/fonts/') || url.pathname.startsWith('/mv-frames/') ||
+      url.pathname.startsWith('/icon-') || url.pathname === '/og-image.png' || url.pathname === '/favicon.ico' ||
+      (url.pathname === '/songs.js' && url.searchParams.has('v'))) return;
   e.respondWith(fetch(e.request, { cache: 'no-cache' }));
 });

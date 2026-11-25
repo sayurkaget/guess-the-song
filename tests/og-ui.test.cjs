@@ -318,7 +318,7 @@ test('Wave 70/99 promotes Daily Hub onto the homepage alongside Daily Artist End
   assert.match(css, /#lobby \.daily-hub-card\{/);
   assert.match(css, /#lobby \.more-games-card\{/);
   assert.match(app, /function refreshDailyArtist\(\)/);
-  assert.match(app, /\$\('#openArtistGame'\)\.onclick\s*=\s*\(\)\s*=>\s*startArtistGame\(null,\s*'free'\)/);
+  assert.match(app, /\$\('#openArtistGame'\)\.onclick\s*=\s*\(\)\s*=>\s*(?:ensureSongsLoaded\(\)\.then\(\(\)\s*=>\s*)?startArtistGame\(null,\s*'free'\)\)?/);
   assert.match(i18n, /dailyHubHeading:\s*'Daily Challenge'/);
   assert.match(i18n, /dailyHubHeading:\s*'Tantangan Harian'/);
   assert.match(i18n, /dailyArtistHeading:\s*'Daily Artist'/);

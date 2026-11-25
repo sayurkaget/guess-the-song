@@ -1,6 +1,9 @@
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
 
+/songs.js
+  Cache-Control: public, max-age=31536000, immutable
+
 /mv-frames/*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
 

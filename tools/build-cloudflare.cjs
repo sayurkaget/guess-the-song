@@ -33,7 +33,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v142-wave116-perf-seo-cover-fixes'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v143-wave117-og-speed-ministats-banks'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -288,6 +288,7 @@ function localizeIdStaticHtml(html) {
     .replace('<span class="lbl">All Classic</span>', '<span class="lbl">Semua Classic</span>')
     .replace('<span class="lbl">Daily</span>', '<span class="lbl">Harian</span>')
     .replace('<span class="lbl">Artist</span>', '<span class="lbl">Artis</span>')
+    .replace('<span class="lbl">Mini-Games</span>', '<span class="lbl">Mini-Game</span>')
     .replace('<span class="lbl">Achievements</span>', '<span class="lbl">Pencapaian</span>')
     .replace('<h2 class="custom-h" id="customTitle">&#10022; Custom Game</h2>', '<h2 class="custom-h" id="customTitle">Pilih artis</h2>')
     .replace('<p class="custom-lbl">Play an artist</p>', '<p class="custom-lbl">Mainkan artis</p>')

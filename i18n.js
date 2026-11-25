@@ -196,11 +196,13 @@
       tabDaily: 'Daily',
       tabDuel: 'Duel',
       tabArtistStat: 'Artist',
+      tabMini: 'Mini-Games',
       tabBadges: 'Achievements',
       scoreSpread: 'Score spread',
       attemptSpread: 'Attempt spread',
       deckComparison: 'Deck comparison',
       guessesToSolve: 'Guesses to solve',
+      miniBreakdown: 'Per-game breakdown',
       resetStats: 'Reset stats',
       badgesScope: '{u} of {t} achievements unlocked · saved on this device',
       achUnlockedKicker: 'Achievement unlocked',
@@ -215,10 +217,12 @@
       statStreamsBest: 'streams best',
       statYearBest: 'year best',
       statBestStreak: 'best streak',
+      statWinRate: 'win rate',
       statDuels: 'duels',
       statScopeDaily: 'Daily Challenge · all saved days',
       statScopeDuel: 'Music Duel · Spotify Streams & Release Year',
       statScopeArtist: 'Artist Detective · Top 530 roster',
+      statScopeMini: '5 free-play & Daily Hub mini-games',
       statScopeAllClassic: 'All Classic filters',
       // Custom Modal
       customTitle: 'Pick an artist',
@@ -704,11 +708,13 @@
       tabDaily: 'Harian',
       tabDuel: 'Duel',
       tabArtistStat: 'Artis',
+      tabMini: 'Mini-Game',
       tabBadges: 'Pencapaian',
       scoreSpread: 'Sebaran skor',
       attemptSpread: 'Sebaran percobaan',
       deckComparison: 'Perbandingan deck',
       guessesToSolve: 'Tebakan untuk menebak',
+      miniBreakdown: 'Rincian per game',
       resetStats: 'Reset statistik',
       badgesScope: '{u} dari {t} pencapaian terbuka · tersimpan di perangkat ini',
       achUnlockedKicker: 'Pencapaian terbuka',
@@ -723,10 +729,12 @@
       statStreamsBest: 'terbaik streams',
       statYearBest: 'terbaik tahun',
       statBestStreak: 'streak terbaik',
+      statWinRate: 'rasio menang',
       statDuels: 'duel',
       statScopeDaily: 'Tantangan Harian · semua hari tersimpan',
       statScopeDuel: 'Music Duel · Spotify Streams & Tahun Rilis',
       statScopeArtist: 'Artist Detective · daftar Top 530',
+      statScopeMini: '5 mini-game bebas & Daily Hub',
       statScopeAllClassic: 'Semua filter Classic',
       // Custom Modal
       customTitle: 'Pilih artis',
@@ -1182,6 +1190,7 @@
     setText($('#statsTabs [data-tab="daily"]'), 'tabDaily');
     setText($('#statsTabs [data-tab="duel"]'), 'tabDuel');
     setText($('#statsTabs [data-tab="artist"]'), 'tabArtistStat');
+    setText($('#statsTabs [data-tab="mini"]'), 'tabMini');
     setText($('#statsTabs [data-tab="badges"]'), 'tabBadges');
     setText($('#reset'), 'resetStats');
 

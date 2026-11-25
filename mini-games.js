@@ -1107,6 +1107,12 @@
       const q = input.value.trim();
       clearBtn.hidden = !q;
       if (q.length < 1) { closeDD(); return; }
+      if ((mode === 'song' || mode === 'artist') && bridge && bridge.isCatalogReady && !bridge.isCatalogReady() && bridge.ensureSongsReady) {
+        bridge.ensureSongsReady().then(() => {
+          if (input.value.trim()) input.oninput();
+        });
+        return;
+      }
       if (mode === 'song' && bridge && bridge.searchSongs) {
         const res = bridge.searchSongs(q, 10);
         renderDD(res.map((s) => ({ primary: s.title, secondary: s.artist, raw: s })));
@@ -1168,6 +1174,21 @@
   }
 
   function renderMiniReveal({ won, score, title, subtitle, art, trackId, dailySlot, gameId, shortSummary, detail, freeKicker }) {
+    if (gameId && (gameId === 'cover' || gameId === 'mv' || gameId === 'hair' || gameId === 'fact' || gameId === 'lyric')) {
+      recordMgStat((s) => {
+        if (!s.games || typeof s.games !== 'object') s.games = {};
+        const g = s.games[gameId] || { played: 0, won: 0, streak: 0, best: 0 };
+        g.played = (Number(g.played) || 0) + 1;
+        if (won) {
+          g.won = (Number(g.won) || 0) + 1;
+          g.streak = (Number(g.streak) || 0) + 1;
+          if (g.streak > (Number(g.best) || 0)) g.best = g.streak;
+        } else {
+          g.streak = 0;
+        }
+        s.games[gameId] = g;
+      });
+    }
     const controls = $('#mgControls');
     if (!controls) return;
     if (bridge && bridge.undockMiniVolume) bridge.undockMiniVolume();

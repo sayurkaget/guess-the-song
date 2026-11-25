@@ -158,7 +158,9 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
     assert.ok(claimEn.length > 10 && claimId.length > 10);
     assert.ok(expEn.length > 10 && expId.length > 10);
   }
-  assert.ok(facts >= 30 && caps >= 30, `factBank must stay balanced (facts=${facts}, caps=${caps})`);
+  assert.ok(facts >= 70 && caps >= 70, `factBank must stay balanced (facts=${facts}, caps=${caps})`);
+  assert.ok(Data.lyricBank.length >= 160, `lyricBank expected >= 160 songs, got ${Data.lyricBank.length}`);
+  assert.ok(Data.factBank.length >= 160, `factBank expected >= 160 facts, got ${Data.factBank.length}`);
 });
 
 test('/api/daily-stats supports kind=hub with 15-band D1 aggregation and strict 0..300 validation', async () => {
@@ -323,8 +325,12 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.doesNotMatch(i18n, /Top Hit:|Lagu Hits?:/i);
   assert.match(app, /SKIP_SPOKEN_PREVIEW_IDS/);
   assert.match(app, /function setSafeArt\(/);
+  assert.match(app, /function ensureSongsLoaded\(/);
+  assert.match(html, /data-tab="mini"/);
+  assert.match(html, /rel="preload" href="songs\.js\?v=117" as="script"/);
   assert.match(html, /rel="preconnect" href="https:\/\/is1-ssl\.mzstatic\.com"/);
   assert.ok(fs.existsSync(path.join(ROOT, '_headers')), '_headers file must exist');
+  assert.match(fs.readFileSync(path.join(ROOT, '_headers'), 'utf8'), /\/songs\.js/);
   assert.doesNotMatch(fs.readFileSync(path.join(ROOT, 'songs.js'), 'utf8'), /200x200bb\.jpg/);
   assert.match(sw, /gts-v1[56]\d-wave/);
   assert.match(build, /gts-cf-v1[34]\d-wave/);
