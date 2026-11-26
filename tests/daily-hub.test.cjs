@@ -327,10 +327,16 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(app, /function setSafeArt\(/);
   assert.match(app, /function ensureSongsLoaded\(/);
   assert.match(html, /data-tab="mini"/);
-  assert.match(html, /rel="preload" href="songs\.js\?v=117" as="script"/);
+  assert.doesNotMatch(html, /rel="preload" href="songs\.js/);
+  assert.match(html, /href="site-guide\.css" media="print" onload="this\.media='all'"/);
   assert.match(html, /rel="preconnect" href="https:\/\/is1-ssl\.mzstatic\.com"/);
+  assert.match(app, /pointerenter/);
+  assert.doesNotMatch(app, /setTimeout\(\(\) => ensureSongsLoaded\(\), 0\)/);
+  assert.match(app, /loading="lazy" decoding="async"/);
   assert.ok(fs.existsSync(path.join(ROOT, '_headers')), '_headers file must exist');
-  assert.match(fs.readFileSync(path.join(ROOT, '_headers'), 'utf8'), /\/songs\.js/);
+  const hdr = fs.readFileSync(path.join(ROOT, '_headers'), 'utf8');
+  assert.match(hdr, /\/songs\.js/);
+  assert.match(hdr, /\/\*\.js[\s\S]*stale-while-revalidate/);
   assert.doesNotMatch(fs.readFileSync(path.join(ROOT, 'songs.js'), 'utf8'), /200x200bb\.jpg/);
   assert.match(lcss, /\.dh-breakdown\{[\s\S]*grid-template-columns:minmax\(0,1fr\)/);
   assert.match(lcss, /\.dh-row\{[\s\S]*min-width:0/);

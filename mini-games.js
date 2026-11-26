@@ -1315,6 +1315,9 @@
 
   function openMiniGame(rawGameId, dailySlot, opts) {
     const gameId = rawGameId === 'color' ? 'mv' : rawGameId;
+    if (gameId !== 'fact' && bridge && bridge.isCatalogReady && !bridge.isCatalogReady() && bridge.ensureSongsReady) {
+      bridge.ensureSongsReady();
+    }
     const challenge = (!dailySlot && opts && opts.challenge) ? opts.challenge : null;
     if (bridge && bridge.stopAudio) bridge.stopAudio();
     if (bridge && bridge.undockMiniVolume) bridge.undockMiniVolume();

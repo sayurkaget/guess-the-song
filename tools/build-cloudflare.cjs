@@ -17,10 +17,20 @@ const files = ['index.html', 'styles.css', 'layout.css', 'site-guide.css', 'site
   'og-image.png',
   'favicon.ico', 'icon-32.png', 'icon-96.png', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
+let esbuild = null;
+try { esbuild = require(path.join(root, '.cloudflare-tools/node_modules/esbuild')); } catch {}
+const MINIFY_CSS = new Set(['styles.css', 'layout.css', 'site-guide.css']);
+const MINIFY_JS = new Set([
+  'app.js', 'mini-games.js', 'daily-hub-data.js', 'daily-hub.js',
+  'duel-streams-v1.js', 'duel.js', 'artist-game.js', 'i18n.js',
+  'presets.js', 'badges.js', 'backup.js', 'feedback.js',
+  'recordings.js', 'challenge.js', 'daily.js', 'site-guide.js'
+]);
+
 let builtIndexHtml = '';
 for (const file of files) {
   let contents = fs.readFileSync(path.join(root, file));
-  if (/\.(html|xml|txt|js)$/.test(file)) {
+  if (/\.(html|xml|txt|js|css)$/.test(file)) {
     contents = contents.toString()
       .replaceAll('https://namethetrack.netlify.app', site.origin)
       .replaceAll('https://namethetrack.pages.dev', site.origin)
@@ -33,7 +43,12 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v150-wave124-daily-fixes-spanish'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v151-wave125-web-perf'");
+    if (esbuild && MINIFY_CSS.has(file)) {
+      contents = esbuild.transformSync(contents, { loader: 'css', minify: true, legalComments: 'none' }).code;
+    } else if (esbuild && MINIFY_JS.has(file)) {
+      contents = esbuild.transformSync(contents, { loader: 'js', minify: true, target: 'es2020', legalComments: 'none' }).code;
+    }
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -362,7 +377,10 @@ for (const page of SEO_PAGES) {
   fs.writeFileSync(path.join(output, `${page.slug}.html`), html);
 }
 
-fs.cpSync(path.join(root, 'fonts'), path.join(output, 'fonts'), { recursive: true });
+fs.mkdirSync(path.join(output, 'fonts'), { recursive: true });
+for (const font of ['CabinetGrotesk-Variable.woff2', 'GeneralSans-Variable.woff2', 'Unbounded-Bold.woff2']) {
+  fs.copyFileSync(path.join(root, 'fonts', font), path.join(output, 'fonts', font));
+}
 if (fs.existsSync(path.join(root, 'mv-frames'))) {
   fs.cpSync(path.join(root, 'mv-frames'), path.join(output, 'mv-frames'), { recursive: true });
 }

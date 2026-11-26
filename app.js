@@ -1887,6 +1887,7 @@
     try {
       songs = await fetchArtistSongs(artistId);
     } catch (e) {
+      if (!catalogHydrated) await ensureSongsLoaded();
       songs = localArtistSongs(artistName);
       if (songs.length < STAGES) {
         if (req !== customStartReq) return;
@@ -1945,6 +1946,7 @@
     host.hidden = !host.innerHTML;
   }
   function openCustom() {
+    ensureSongsLoaded();
     closeAll();
     customStartReq++;
     setCustomBusy(false);
@@ -2328,6 +2330,7 @@
     if (!completed.includes(S.daily.day)) LS.set('tl:daily:completed', [...completed, S.daily.day].sort());
   }
   async function startDaily() {
+    ensureSongsLoaded();
     closeAll();
     const day = window.DailyGame.day();
     const songs = window.DailyGame.plan(window.DAILY_POOL_V1, day).map((s) => ({
@@ -2420,9 +2423,12 @@
     button.disabled = true;
     message.textContent = 'Loading your challenge…';
     try {
-      const tracks = single
-        ? [await window.TrackChallenge.lookup(single.id)]
-        : await window.TrackChallenge.lookupRun(run.ids);
+      const [tracks] = await Promise.all([
+        single
+          ? window.TrackChallenge.lookup(single.id).then((t) => [t])
+          : window.TrackChallenge.lookupRun(run.ids),
+        ensureSongsLoaded()
+      ]);
       const artistId = single ? tracks[0].artistId : run.artistId;
       // Include the artist catalogue for custom challenges, alongside normal suggestions.
       let extras = [];
@@ -4578,8 +4584,8 @@
     UI.buildControls();
     if (typeof syncSpotifyRoundsUI === 'function') syncSpotifyRoundsUI();
     if (typeof updateSpotifyInputHint === 'function') updateSpotifyInputHint();
-    if (typeof renderPresetPlaylists === 'function') renderPresetPlaylists();
-    if (typeof renderRecentPlaylists === 'function') renderRecentPlaylists();
+    if (typeof renderPresetPlaylists === 'function' && $('#classicSpotifyPanel') && !$('#classicSpotifyPanel').hidden) renderPresetPlaylists();
+    if (typeof renderRecentPlaylists === 'function' && $('#classicSpotifyPanel') && !$('#classicSpotifyPanel').hidden) renderRecentPlaylists();
     syncDailyCommunityLang();
     if (typeof syncDuelLang === 'function') syncDuelLang();
     if (typeof syncArtistLang === 'function') syncArtistLang();
@@ -4646,7 +4652,7 @@
     syncMiniVolume();
     if (syncDuelHover) syncDuelHover();
     if (typeof reloadSpotifyRounds === 'function') reloadSpotifyRounds();
-    if (typeof renderRecentPlaylists === 'function') renderRecentPlaylists();
+    if (typeof renderRecentPlaylists === 'function' && $('#classicSpotifyPanel') && !$('#classicSpotifyPanel').hidden) renderRecentPlaylists();
     for (const k in RUNS) delete RUNS[k];
     for (const k in songHubRuns) delete songHubRuns[k];
     if (clearDuelFreeRuns) clearDuelFreeRuns();
@@ -6942,6 +6948,10 @@
     if ($('#classicFiltersPanel')) $('#classicFiltersPanel').hidden = tab !== 'filters';
     if ($('#classicArtistPanel')) $('#classicArtistPanel').hidden = tab !== 'artist';
     if ($('#classicSpotifyPanel')) $('#classicSpotifyPanel').hidden = tab !== 'spotify';
+    if (tab === 'spotify') {
+      if (typeof renderPresetPlaylists === 'function') renderPresetPlaylists();
+      if (typeof renderRecentPlaylists === 'function') renderRecentPlaylists();
+    }
     const modePill = document.querySelector('.classic-section .mode-pill');
     if (modePill) modePill.textContent = tab === 'spotify' ? spotifyRoundsPillLabel() : (I18N ? tr('stages5') : '5 stages');
     if ($('#classicTabs')) {
@@ -7430,7 +7440,7 @@
           const count = presetPoolCount(p);
           const cover = p.cover || (p.tracks && p.tracks[0] && p.tracks[0][4]) || '';
           return '<button type="button" class="preset-pl-chip" data-preset-pl="' + esc(p.id) + '" title="' + esc(title) + '">' +
-            (cover ? '<img class="preset-pl-art" src="' + esc(cover) + '" alt="">' : '<span class="recent-pl-dot" aria-hidden="true"></span>') +
+            (cover ? '<img class="preset-pl-art" src="' + esc(cover) + '" alt="" loading="lazy" decoding="async">' : '<span class="recent-pl-dot" aria-hidden="true"></span>') +
             '<span class="preset-pl-name">' + esc(title) + '</span>' +
             '<span class="preset-pl-cnt">' + esc(String(count)) + '</span>' +
           '</button>';
@@ -7442,6 +7452,10 @@
     const list = (typeof window !== 'undefined' && Array.isArray(window.TUNEUP_PRESETS)) ? window.TUNEUP_PRESETS : [];
     const preset = list.find((p) => p && p.id === String(presetId || '').toLowerCase());
     if (!preset) return false;
+    if (preset.filter && !catalogHydrated) {
+      ensureSongsLoaded().then(() => startPresetPlaylist(presetId, overrideRounds));
+      return true;
+    }
     const songs = resolvePresetSongs(preset);
     if (!songs.length) return false;
     const label = presetLabel(preset);
@@ -7536,7 +7550,7 @@
         list.map((item, idx) =>
           '<button type="button" class="recent-pl-chip" data-recent-pl="' + idx + '" data-src="' + esc(item.source) + '" title="' + esc(item.label) + '">' +
             (item.cover
-              ? '<img class="recent-pl-art" src="' + esc(item.cover) + '" alt="">'
+              ? '<img class="recent-pl-art" src="' + esc(item.cover) + '" alt="" loading="lazy" decoding="async">'
               : '<span class="recent-pl-dot" aria-hidden="true"></span>') +
             '<span class="recent-pl-name">' + esc(item.label) + '</span>' +
             '<span class="recent-pl-cnt">' + esc(String(item.count)) + '</span>' +
@@ -7613,8 +7627,10 @@
   }
 
   UI.buildControls();
-  renderPresetPlaylists();
-  renderRecentPlaylists();
+  if ($('#classicSpotifyPanel') && !$('#classicSpotifyPanel').hidden) {
+    renderPresetPlaylists();
+    renderRecentPlaylists();
+  }
   UI.render();
   UI.lobby({ skipRoute: true }); // selalu mulai dari layar pilih mode tanpa menghapus URL deep-link
   if (currentRouteSlug() === 'es' && I18N) {
@@ -7800,6 +7816,7 @@
   }
   async function startDailySongForHub(slot, onDone) {
     closeAll();
+    if (!catalogHydrated) await ensureSongsLoaded();
     const hk = slot ? (slot.seed + (slot.isArchive ? ':arch' : '')) : '';
     const parked = hk ? songHubRuns[hk] : null;
     const day = (slot && slot.day) || window.DailyGame.day();
@@ -7960,7 +7977,13 @@
   });
   setInterval(() => { if (!$('#lobby').hidden) refreshDaily(); }, 30000);
   if (!showIncomingChallenge()) applyDeepLink();
-  if (!catalogHydrated && typeof window !== 'undefined') {
-    setTimeout(() => ensureSongsLoaded(), 0);
+  if (!catalogHydrated && typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    const warmCatalog = () => { if (!catalogHydrated) ensureSongsLoaded(); };
+    document.querySelectorAll('#start, #openDuel, #openArtistGame, #openCustom, #openDailyHub, [data-minigame]').forEach((el) => {
+      if (el && typeof el.addEventListener === 'function') {
+        el.addEventListener('pointerenter', warmCatalog, { once: true, passive: true });
+        el.addEventListener('touchstart', warmCatalog, { once: true, passive: true });
+      }
+    });
   }
 })();

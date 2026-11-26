@@ -41,20 +41,19 @@
 <meta name="application-name" content="TuneUp">
 <meta name="apple-mobile-web-app-title" content="TuneUp">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="preconnect" href="https://is1-ssl.mzstatic.com" crossorigin>
-<link rel="preconnect" href="https://itunes.apple.com" crossorigin>
+<link rel="stylesheet" href="styles.css" fetchpriority="high">
+<link rel="stylesheet" href="layout.css" fetchpriority="high">
+<link rel="preload" href="fonts/Unbounded-Bold.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
 <link rel="preload" href="fonts/GeneralSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="songs.js?v=117" as="script">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="layout.css">
+<link rel="preload" href="fonts/CabinetGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preconnect" href="https://is1-ssl.mzstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://itunes.apple.com">
 <link rel="icon" href="favicon.ico" sizes="48x48">
 <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
 <link rel="icon" type="image/png" sizes="96x96" href="icon-96.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="preload" href="fonts/CabinetGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="fonts/Unbounded-Bold.woff2" as="font" type="font/woff2" crossorigin>
-
-<link rel="stylesheet" href="site-guide.css">
+<link rel="stylesheet" href="site-guide.css" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="site-guide.css"></noscript>
 </head>
 <body>
 

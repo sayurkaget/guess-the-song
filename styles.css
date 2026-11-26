@@ -965,3 +965,5 @@ body[data-diff="duel"]{--acc:#f5b13d;--acc-l:#ffd06b;--acc-d:#d98d14;--acc-rgb:2
 .duel-btn small{font-size:.72rem;font-weight:500;opacity:.84}
 .duel-status{margin-top:1.05rem;min-height:1.3em}
 .duel-runlist{max-height:240px;overflow-y:auto;margin-bottom:1.15rem}
+.site-guide{content-visibility:auto;contain-intrinsic-size:1px 960px}
+.wrap:has(#lobby[hidden]) ~ .site-guide{display:none}

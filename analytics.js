@@ -28,8 +28,30 @@
     allow_ad_personalization_signals: false,
     page_location: location.origin + location.pathname
   });
-  const script = document.createElement('script');
-  script.async = true;
-  script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);
-  document.head.appendChild(script);
+  let loaded = false;
+  const loadGtag = () => {
+    if (loaded) return;
+    loaded = true;
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);
+    document.head.appendChild(script);
+  };
+  if (typeof window.addEventListener === 'function') {
+    const onInteract = () => loadGtag();
+    ['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach((ev) => {
+      window.addEventListener(ev, onInteract, { once: true, passive: true });
+    });
+    const scheduleIdle = () => {
+      if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(loadGtag, { timeout: 4000 });
+      } else {
+        setTimeout(loadGtag, 3500);
+      }
+    };
+    if (document.readyState === 'complete') scheduleIdle();
+    else window.addEventListener('load', () => setTimeout(scheduleIdle, 1800), { once: true });
+  } else {
+    loadGtag();
+  }
 })();
