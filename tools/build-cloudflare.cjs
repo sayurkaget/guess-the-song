@@ -33,7 +33,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v149-wave123-persist-mode-sessions'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v150-wave124-daily-fixes-spanish'");
   }
   fs.writeFileSync(path.join(output, file), contents);
 }
@@ -53,26 +53,26 @@ const EN_FAQS = [
   ['Where is my progress saved?', 'Your Daily progress, streaks, stats, and settings are saved in this browser. Open Settings -> Backup & transfer to copy a backup code and restore your progress on another browser or device.']
 ];
 
-const ID_FAQS = [
-  ['Apakah perlu bikin akun?', 'Tidak perlu daftar. Buka game di HP atau laptop lalu pilih mode, atau tempel link playlist publik Spotify, Apple Music, maupun YouTube untuk main pakai lagumu sendiri.'],
-  ['Mode apa saja yang bisa dimainkan berulang kali?', 'Classic, Per Artis, Playlist Spotify/Apple/YouTube, Music Duel, Artist Detective Tanpa Batas, serta 5 mini-game (Cover Pixel, MV Spot, HairSpot, Fact or Cap, Lyric Guess) bisa dimainkan sepuasnya. Tantangan Harian (3 game /300 poin) direset sekali sehari.'],
-  ['Kapan Tantangan Harian berikutnya dibuka?', 'Setiap pukul 07.00 waktu perangkatmu. Menang berturut-turut menambah streak; terlewat sehari atau kalah akan mereset streak.'],
-  ['Bisa menantang teman?', 'Bisa. Setelah menyelesaikan lagu, sesi 5 tahap, Music Duel, atau Artist Detective, klik Tantang teman untuk menyalin link bebas spoiler dengan lagu atau artis yang persis sama.'],
-  ['Di mana progres saya disimpan?', 'Progres Harian, streak, statistik, pencapaian, dan pengaturan tersimpan di browser ini. Buka Pengaturan -> Cadangkan & pindah data untuk menyalin kode backup dan memulihkannya di browser atau perangkat lain.']
+const ES_FAQS = [
+  ['¿Necesito una cuenta?', 'No hace falta registrarse. Abre el juego en tu celular o computadora y elige un modo, o pega el enlace de cualquier playlist o álbum público de Spotify, Apple Music o YouTube para jugar con tus canciones.'],
+  ['¿Qué puedo volver a jugar?', 'Clásico, Por Artista, Playlists de Spotify/Apple/YouTube, Duelo Musical, Detective de Artistas Sin fin y los 5 minijuegos (Cover Pixel, MV Spot, HairSpot, Dato o Mito, Adivina la Letra) se pueden jugar todas las veces que quieras. El Desafío Diario (3 juegos /300 puntos) se renueva una vez al día.'],
+  ['¿Cuándo sale el próximo Diario?', 'A las 7:00 a. m. en la hora local de tu dispositivo. Las victorias diarias seguidas aumentan tu racha; un día perdido o una derrota la reinicia.'],
+  ['¿Puedo retar a un amigo?', 'Sí. Al terminar cualquier canción, partida de 5 rondas, Duelo Musical, Detective de Artistas o minijuego, pulsa Retar a un amigo para copiar un enlace sin spoilers con exactamente las mismas canciones o artista.'],
+  ['¿Dónde se guarda mi progreso?', 'Tu progreso diario, rachas, estadísticas, logros y ajustes se guardan en este navegador. Abre Ajustes -> Respaldo y transferencia para copiar un código y restaurarlo en otro navegador o dispositivo.']
 ];
 
 function buildLdJson(origin, page) {
   const pageUrl = `${origin}/${page.slug}`;
-  const isId = page.lang === 'id';
-  const faqs = isId ? ID_FAQS : EN_FAQS;
+  const isEs = page.lang === 'es';
+  const faqs = isEs ? ES_FAQS : EN_FAQS;
   const graph = [
     {
       '@type': 'WebSite',
       '@id': `${origin}/#website`,
       name: 'TuneUp',
-      alternateName: ['Tune Up', 'TuneUp Guess the Song', 'TuneUp Tebak Lagu'],
+      alternateName: ['Tune Up', 'TuneUp Guess the Song', 'TuneUp Adivina la Canción'],
       url: `${origin}/`,
-      inLanguage: ['en', 'id'],
+      inLanguage: ['en', 'es'],
       publisher: { '@id': `${origin}/#publisher` }
     },
     {
@@ -87,11 +87,11 @@ function buildLdJson(origin, page) {
       name: page.title,
       url: pageUrl,
       applicationCategory: 'GameApplication',
-      genre: isId ? ['Game Musik', 'Tebak Lagu', 'Kuis Musik'] : ['Music Game', 'Music Trivia', 'Guess the Song'],
+      genre: isEs ? ['Juego Musical', 'Adivina la Canción', 'Trivia Musical'] : ['Music Game', 'Music Trivia', 'Guess the Song'],
       playMode: 'SinglePlayer',
       operatingSystem: 'Any (web browser)',
-      inLanguage: isId ? 'id' : 'en',
-      offers: { '@type': 'Offer', price: '0', priceCurrency: isId ? 'IDR' : 'USD' },
+      inLanguage: isEs ? 'es' : 'en',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: isEs ? 'EUR' : 'USD' },
       description: page.description,
       isPartOf: { '@id': `${origin}/#website` }
     },
@@ -231,97 +231,97 @@ const SEO_PAGES = [
     aboutP2: 'Play unlimited free rounds or spin Lyric Guess in TuneUp’s Daily Challenge.'
   },
   {
-    slug: 'id',
-    lang: 'id',
+    slug: 'es',
+    lang: 'es',
     keepHreflang: true,
-    title: 'TuneUp — Game Tebak Lagu Online Gratis (Spotify, Harian & Duel)',
-    description: 'Main game tebak lagu online gratis di browser tanpa akun. Tebak lagu dari klip 0,1 detik di mode Harian, Classic, Artis, Playlist Spotify/Apple/YouTube, Music Duel & Tebak Artis.',
-    imageAlt: 'TuneUp — Game tebak lagu online gratis dari klip 0,1 detik, Playlist Spotify, Music Duel & Artist Detective',
-    aboutHeading: 'Tentang TuneUp — Game Tebak Lagu Gratis',
-    aboutP1: 'TuneUp adalah game tebak lagu online gratis langsung di browser HP dan laptop tanpa login. Uji telingamu menebak judul lagu dari klip 0,1–15 detik di Tantangan Harian, mode Classic (33.500+ lagu), Per Artis, serta kuis Playlist Spotify, Apple Music, dan YouTube.',
-    aboutP2: 'Mainkan juga Music Duel (tebak Spotify streams lebih tinggi/rendah & tahun rilis) dan Artist Detective (tebak 530 artis dunia dari 6 petunjuk). Gratis selamanya dan bisa langsung menantang teman.'
+    title: 'TuneUp — Juego Gratis de Adivinar Canciones (Spotify, Diario y Duelo)',
+    description: 'Juega gratis a adivinar canciones online sin cuenta. Escucha clips de 0,1 s en Desafío Diario, Clásico, Por Artista, Playlists de Spotify/Apple/YouTube, Duelo Musical y Detective de Artistas.',
+    imageAlt: 'TuneUp — Juego gratis de adivinar canciones con clips de 0,1 s, Quiz de Spotify, Duelo Musical y Detective de Artistas',
+    aboutHeading: 'Sobre TuneUp — Juego Gratis de Adivinar Canciones',
+    aboutP1: 'TuneUp es un juego musical gratis directo en el navegador de tu celular o computadora sin registro. Pon a prueba tu oído adivinando canciones con clips de 0,1 s a 15 s en el Desafío Diario, modo Clásico (33.500+ canciones), Por Artista y quizzes de playlists de Spotify, Apple Music y YouTube.',
+    aboutP2: 'Juega también Duelo Musical (compara streams de Spotify y año de lanzamiento), Detective de Artistas (descubre 530 artistas con 6 pistas) y 5 minijuegos: Cover Pixel, MV Spot, HairSpot, Dato o Mito y Adivina la Letra.'
   }
 ];
 
-function localizeIdStaticHtml(html) {
+function localizeEsStaticHtml(html) {
   let out = html
-    .replace('<h2 id="dailyHubHeading">Daily Challenge</h2>', '<h2 id="dailyHubHeading">Tantangan Harian</h2>')
-    .replace('<span class="daily-done-badge" id="dailyHubBadge">3 games · /300</span>', '<span class="daily-done-badge" id="dailyHubBadge">3 game · /300</span>')
-    .replace('<span class="daily-meta" id="dailyHubMeta">Spin 3 random music games · 300 pts max</span>', '<span class="daily-meta" id="dailyHubMeta">Spin 3 game musik acak · maks 300 poin</span>')
-    .replace('id="openDailyHub" type="button">Spin Daily</button>', 'id="openDailyHub" type="button">Spin Harian</button>')
-    .replace('<span class="dh-kicker" id="dhKicker">DAILY CHALLENGE</span>', '<span class="dh-kicker" id="dhKicker">TANTANGAN HARIAN</span>')
-    .replace('<h2 class="dh-title" id="dhTitle">Today\'s 3 Music Games</h2>', '<h2 class="dh-title" id="dhTitle">3 Game Musik Hari Ini</h2>')
-    .replace('<p class="dh-sub" id="dhSub">Spin to reveal today\'s lineup — same 3 games for everyone.</p>', '<p class="dh-sub" id="dhSub">Spin untuk buka 3 game acak hari ini — sama untuk semua pemain.</p>')
-    .replace('<span class="lbl">Spin Today\'s Games</span>', '<span class="lbl">Spin Game Hari Ini</span>')
-    .replace('<span id="dhNextLbl">Next daily in</span>', '<span id="dhNextLbl">Harian berikutnya dalam</span>')
-    .replace('<span class="dh-kicker" id="dhDoneKicker">DAILY COMPLETE</span>', '<span class="dh-kicker" id="dhDoneKicker">HARIAN SELESAI</span>')
-    .replace('<span class="lbl">Share result</span>', '<span class="lbl">Bagikan hasil</span>')
-    .replace('<span class="lbl">Back to menu</span>', '<span class="lbl">Kembali ke menu</span>')
-    .replace('<span id="dhBackLbl">Change mode</span>', '<span id="dhBackLbl">Ganti mode</span>')
-    .replace('<span id="mgBackLbl">Change mode</span>', '<span id="mgBackLbl">Ganti mode</span>')
-    .replace('<h2 id="moreGamesHeading">More Music Games</h2>', '<h2 id="moreGamesHeading">Game Musik Lainnya</h2>')
-    .replace('<span class="more-games-sub" id="moreGamesSub">Free play anytime</span>', '<span class="more-games-sub" id="moreGamesSub">Main bebas kapan saja</span>')
+    .replace('<h2 id="dailyHubHeading">Daily Challenge</h2>', '<h2 id="dailyHubHeading">Desafío Diario</h2>')
+    .replace('<span class="daily-done-badge" id="dailyHubBadge">3 games · /300</span>', '<span class="daily-done-badge" id="dailyHubBadge">3 juegos · /300</span>')
+    .replace('<span class="daily-meta" id="dailyHubMeta">Spin 3 random music games · 300 pts max</span>', '<span class="daily-meta" id="dailyHubMeta">Gira 3 juegos musicales al azar · máx. 300 pts</span>')
+    .replace('id="openDailyHub" type="button">Spin Daily</button>', 'id="openDailyHub" type="button">Girar Diario</button>')
+    .replace('<span class="dh-kicker" id="dhKicker">DAILY CHALLENGE</span>', '<span class="dh-kicker" id="dhKicker">DESAFÍO DIARIO</span>')
+    .replace('<h2 class="dh-title" id="dhTitle">Today\'s 3 Music Games</h2>', '<h2 class="dh-title" id="dhTitle">3 Juegos Musicales de Hoy</h2>')
+    .replace('<p class="dh-sub" id="dhSub">Spin to reveal today\'s lineup — same 3 games for everyone.</p>', '<p class="dh-sub" id="dhSub">Gira para revelar los 3 juegos de hoy — iguales para todos.</p>')
+    .replace('<span class="lbl">Spin Today\'s Games</span>', '<span class="lbl">Girar Juegos de Hoy</span>')
+    .replace('<span id="dhNextLbl">Next daily in</span>', '<span id="dhNextLbl">Próximo diario en</span>')
+    .replace('<span class="dh-kicker" id="dhDoneKicker">DAILY COMPLETE</span>', '<span class="dh-kicker" id="dhDoneKicker">DIARIO COMPLETADO</span>')
+    .replace('<span class="lbl">Share result</span>', '<span class="lbl">Compartir resultado</span>')
+    .replace('<span class="lbl">Back to menu</span>', '<span class="lbl">Volver al menú</span>')
+    .replace('<span id="dhBackLbl">Change mode</span>', '<span id="dhBackLbl">Cambiar modo</span>')
+    .replace('<span id="mgBackLbl">Change mode</span>', '<span id="mgBackLbl">Cambiar modo</span>')
+    .replace('<h2 id="moreGamesHeading">More Music Games</h2>', '<h2 id="moreGamesHeading">Más Juegos Musicales</h2>')
+    .replace('<span class="more-games-sub" id="moreGamesSub">Free play anytime</span>', '<span class="more-games-sub" id="moreGamesSub">Juego libre siempre</span>')
     .replace('<b id="mgLblMv">MV Spot</b>', '<b id="mgLblMv">MV Spot</b>')
-    .replace('<span id="mgSubMv">Music video</span>', '<span id="mgSubMv">Video klip MV</span>')
-    .replace('<b id="mgLblFact">Fact or Cap</b>', '<b id="mgLblFact">Fakta / Hoax</b>')
-    .replace('<b id="mgLblLyric">Lyric Guess</b>', '<b id="mgLblLyric">Tebak Lirik</b>')
-    .replace('<h2 id="dailyHeading">Daily Song</h2>', '<h2 id="dailyHeading">Lagu Harian</h2>')
-    .replace('<span class="daily-meta" id="dailySub">1 song · 5 tries</span>', '<span class="daily-meta" id="dailySub">1 lagu · 5 percobaan</span>')
-    .replace('<h2 id="dailyArtistHeading">Daily Artist</h2>', '<h2 id="dailyArtistHeading">Artis Harian</h2>')
-    .replace('<span class="daily-meta" id="dailyArtistSub">1 artist · 10 tries</span>', '<span class="daily-meta" id="dailyArtistSub">1 artis · 10 tebakan</span>')
-    .replaceAll('>Play daily</button>', '>Main harian</button>')
-    .replace('<span class="mode-pill">5 stages</span>', '<span class="mode-pill">5 tahap</span>')
-    .replace('<span class="lbl">By Artist</span>', '<span class="lbl">Per Artis</span>')
-    .replace('<span class="lbl">Playlists</span>', '<span class="lbl">Playlist</span>')
-    .replace('<span class="multi-lbl">All genres</span>', '<span class="multi-lbl">Semua genre</span>')
-    .replace('<span class="multi-lbl">All eras</span>', '<span class="multi-lbl">Semua era</span>')
-    .replace('id="start">Start</button>', 'id="start">Mulai</button>')
-    .replace('<b>Play your favorite artist</b>', '<b>Mainkan artis favoritmu</b>')
-    .replace('<span>Pick any artist &mdash; guess 5 of their tracks from 0.1s clips</span>', '<span>Pilih artis bebas &mdash; tebak 5 lagunya dari klip 0,1 detik</span>')
-    .replace('Choose artist\n', 'Pilih artis\n')
-    .replace('placeholder="Spotify, Apple, or YT link&hellip;"', 'placeholder="Link Spotify, Apple, atau YT&hellip;"')
-    .replace('id="loadSpotifyBtn" type="button">Play</button>', 'id="loadSpotifyBtn" type="button">Main</button>')
-    .replace('<span class="spotify-rounds-lbl">Songs</span>', '<span class="spotify-rounds-lbl">Lagu</span>')
-    .replace('>All</button>', '>Semua</button>')
-    .replace('placeholder="Custom"', 'placeholder="Kustom"')
-    .replace('Paste Spotify, Apple Music, or YouTube playlist links (or Ctrl+A Spotify tracks)', 'Tempel link playlist Spotify, Apple Music, atau YouTube (atau Ctrl+A lagu Spotify)')
-    .replace('<span class="mode-pill is-gold">Higher or lower</span>', '<span class="mode-pill is-gold">Tinggi / rendah</span>')
-    .replace('<p id="duelLobbySub">Spotify streams &amp; release year</p>', '<p id="duelLobbySub">Spotify streams &amp; tahun rilis</p>')
-    .replace('Play duel\n', 'Main duel\n')
-    .replace('<span class="mode-pill is-purple">Endless</span>', '<span class="mode-pill is-purple">Tanpa batas</span>')
-    .replace('<p id="artistLobbySub">Deduce the mystery artist from 6 clues</p>', '<p id="artistLobbySub">Tebak artis misterius dari 6 petunjuk</p>')
-    .replace('Play artist\n', 'Main artis\n')
-    .replace('id="leaveChallenge" type="button">Play Classic</button>', 'id="leaveChallenge" type="button">Main Classic</button>')
-    .replace('<span class="lbl">Stats</span>', '<span class="lbl">Statistik</span>')
-    .replace('<span class="lbl">Settings</span>', '<span class="lbl">Pengaturan</span>')
-    .replace('<span class="lbl">Feedback</span>', '<span class="lbl">Masukan</span>')
-    .replace('<span class="lbl">All Classic</span>', '<span class="lbl">Semua Classic</span>')
-    .replace('<span class="lbl">Daily</span>', '<span class="lbl">Harian</span>')
-    .replace('<span class="lbl">Artist</span>', '<span class="lbl">Artis</span>')
-    .replace('<span class="lbl">Mini-Games</span>', '<span class="lbl">Mini-Game</span>')
-    .replace('<span class="lbl">Achievements</span>', '<span class="lbl">Pencapaian</span>')
-    .replace('<h2 class="custom-h" id="customTitle">&#10022; Custom Game</h2>', '<h2 class="custom-h" id="customTitle">Pilih artis</h2>')
-    .replace('<p class="custom-lbl">Play an artist</p>', '<p class="custom-lbl">Mainkan artis</p>')
-    .replace('<p class="custom-hint" id="customHint">Pick an artist &mdash; we pick 5 of their songs.</p>', '<p class="custom-hint" id="customHint">Pilih artis &mdash; kami pilihkan 5 lagunya.</p>')
-    .replace('<h2 id="musicBrowserTitle">Choose your music</h2>', '<h2 id="musicBrowserTitle">Pilih musikmu</h2>')
-    .replace('<p class="browser-intro">A few shortcuts for your next Classic run.</p>', '<p class="browser-intro">Pintasan cepat untuk sesi Classic berikutnya.</p>')
-    .replace('<h3>Genres</h3>', '<h3>Genre</h3>')
-    .replace('<h3>Eras</h3>', '<h3>Era</h3>')
-    .replace('data-guide-genre="lain">Other</button>', 'data-guide-genre="lain">Lainnya</button>')
-    .replace('data-guide-era="old">Before 2000</button>', 'data-guide-era="old">Sebelum 2000</button>')
-    .replace('<p class="browser-note">Genre shortcuts include every era; era shortcuts include every genre. Combine both using the filters above.</p>', '<p class="browser-note">Pintasan genre mencakup semua era; pintasan era mencakup semua genre. Gabungkan keduanya lewat filter di atas.</p>')
-    .replace('<h2 id="faqTitle">Good to know</h2>', '<h2 id="faqTitle">Perlu diketahui</h2>')
-    .replace('>Daily Challenge</a>', '>Tantangan Harian</a>')
-    .replace('>By Artist</a>', '>Per Artis</a>')
-    .replace('>Playlist Quiz</a>', '>Kuis Playlist</a>')
+    .replace('<span id="mgSubMv">Music video</span>', '<span id="mgSubMv">Videoclip</span>')
+    .replace('<b id="mgLblFact">Fact or Cap</b>', '<b id="mgLblFact">Dato o Mito</b>')
+    .replace('<b id="mgLblLyric">Lyric Guess</b>', '<b id="mgLblLyric">Adivina la Letra</b>')
+    .replace('<h2 id="dailyHeading">Daily Song</h2>', '<h2 id="dailyHeading">Canción del Día</h2>')
+    .replace('<span class="daily-meta" id="dailySub">1 song · 5 tries</span>', '<span class="daily-meta" id="dailySub">1 canción · 5 intentos</span>')
+    .replace('<h2 id="dailyArtistHeading">Daily Artist</h2>', '<h2 id="dailyArtistHeading">Artista del Día</h2>')
+    .replace('<span class="daily-meta" id="dailyArtistSub">1 artist · 10 tries</span>', '<span class="daily-meta" id="dailyArtistSub">1 artista · 10 intentos</span>')
+    .replaceAll('>Play daily</button>', '>Jugar diario</button>')
+    .replace('<span class="mode-pill">5 stages</span>', '<span class="mode-pill">5 rondas</span>')
+    .replace('<span class="lbl">By Artist</span>', '<span class="lbl">Por Artista</span>')
+    .replace('<span class="lbl">Playlists</span>', '<span class="lbl">Playlists</span>')
+    .replace('<span class="multi-lbl">All genres</span>', '<span class="multi-lbl">Todos los géneros</span>')
+    .replace('<span class="multi-lbl">All eras</span>', '<span class="multi-lbl">Todas las épocas</span>')
+    .replace('id="start">Start</button>', 'id="start">Empezar</button>')
+    .replace('<b>Play your favorite artist</b>', '<b>Juega con tu artista favorito</b>')
+    .replace('<span>Pick any artist &mdash; guess 5 of their tracks from 0.1s clips</span>', '<span>Elige cualquier artista &mdash; adivina 5 canciones con clips de 0,1 s</span>')
+    .replace('Choose artist\n', 'Elegir artista\n')
+    .replace('placeholder="Spotify, Apple, or YT link&hellip;"', 'placeholder="Enlace de Spotify, Apple o YT&hellip;"')
+    .replace('id="loadSpotifyBtn" type="button">Play</button>', 'id="loadSpotifyBtn" type="button">Jugar</button>')
+    .replace('<span class="spotify-rounds-lbl">Songs</span>', '<span class="spotify-rounds-lbl">Canciones</span>')
+    .replace('>All</button>', '>Todas</button>')
+    .replace('placeholder="Custom"', 'placeholder="Otro"')
+    .replace('Paste Spotify, Apple Music, or YouTube playlist links (or Ctrl+A Spotify tracks)', 'Pega enlaces de playlists de Spotify, Apple Music o YouTube (o Ctrl+A de pistas de Spotify)')
+    .replace('<span class="mode-pill is-gold">Higher or lower</span>', '<span class="mode-pill is-gold">Mayor o menor</span>')
+    .replace('<p id="duelLobbySub">Spotify streams &amp; release year</p>', '<p id="duelLobbySub">Streams de Spotify y año de lanzamiento</p>')
+    .replace('Play duel\n', 'Jugar duelo\n')
+    .replace('<span class="mode-pill is-purple">Endless</span>', '<span class="mode-pill is-purple">Sin fin</span>')
+    .replace('<p id="artistLobbySub">Deduce the mystery artist from 6 clues</p>', '<p id="artistLobbySub">Descubre al artista misterioso con 6 pistas</p>')
+    .replace('Play artist\n', 'Jugar artista\n')
+    .replace('id="leaveChallenge" type="button">Play Classic</button>', 'id="leaveChallenge" type="button">Jugar Clásico</button>')
+    .replace('<span class="lbl">Stats</span>', '<span class="lbl">Estadísticas</span>')
+    .replace('<span class="lbl">Settings</span>', '<span class="lbl">Ajustes</span>')
+    .replace('<span class="lbl">Feedback</span>', '<span class="lbl">Comentarios</span>')
+    .replace('<span class="lbl">All Classic</span>', '<span class="lbl">Todo Clásico</span>')
+    .replace('<span class="lbl">Daily</span>', '<span class="lbl">Diario</span>')
+    .replace('<span class="lbl">Artist</span>', '<span class="lbl">Artista</span>')
+    .replace('<span class="lbl">Mini-Games</span>', '<span class="lbl">Minijuegos</span>')
+    .replace('<span class="lbl">Achievements</span>', '<span class="lbl">Logros</span>')
+    .replace('<h2 class="custom-h" id="customTitle">&#10022; Custom Game</h2>', '<h2 class="custom-h" id="customTitle">Elegir artista</h2>')
+    .replace('<p class="custom-lbl">Play an artist</p>', '<p class="custom-lbl">Jugar con un artista</p>')
+    .replace('<p class="custom-hint" id="customHint">Pick an artist &mdash; we pick 5 of their songs.</p>', '<p class="custom-hint" id="customHint">Elige un artista &mdash; seleccionamos 5 de sus canciones.</p>')
+    .replace('<h2 id="musicBrowserTitle">Choose your music</h2>', '<h2 id="musicBrowserTitle">Elige tu música</h2>')
+    .replace('<p class="browser-intro">A few shortcuts for your next Classic run.</p>', '<p class="browser-intro">Algunos accesos rápidos para tu próxima partida Clásica.</p>')
+    .replace('<h3>Genres</h3>', '<h3>Géneros</h3>')
+    .replace('<h3>Eras</h3>', '<h3>Épocas</h3>')
+    .replace('data-guide-genre="lain">Other</button>', 'data-guide-genre="lain">Otros</button>')
+    .replace('data-guide-era="old">Before 2000</button>', 'data-guide-era="old">Antes del 2000</button>')
+    .replace('<p class="browser-note">Genre shortcuts include every era; era shortcuts include every genre. Combine both using the filters above.</p>', '<p class="browser-note">Los accesos de género incluyen todas las épocas; los de época incluyen todos los géneros. Combina ambos con los filtros de arriba.</p>')
+    .replace('<h2 id="faqTitle">Good to know</h2>', '<h2 id="faqTitle">Información útil</h2>')
+    .replace('>Daily Challenge</a>', '>Desafío Diario</a>')
+    .replace('>By Artist</a>', '>Por Artista</a>')
+    .replace('>Playlist Quiz</a>', '>Quiz de Playlist</a>')
     .replace('<a href="/" hreflang="en" lang="en" data-mode-link="lang-en" aria-current="page">EN</a>', '<a href="/" hreflang="en" lang="en" data-mode-link="lang-en">EN</a>')
-    .replace('<a href="/id" hreflang="id" lang="id" data-mode-link="lang-id">ID</a>', '<a href="/id" hreflang="id" lang="id" data-mode-link="lang-id" aria-current="page">ID</a>')
-    .replace('Back to top <svg', 'Kembali ke atas <svg');
+    .replace('<a href="/es" hreflang="es" lang="es" data-mode-link="lang-es">ES</a>', '<a href="/es" hreflang="es" lang="es" data-mode-link="lang-es" aria-current="page">ES</a>')
+    .replace('Back to top <svg', 'Volver arriba <svg');
 
-  const idFaqMarkup = ID_FAQS.map(([q, a]) => `      <details><summary>${escHtml(q)}</summary><p>${escHtml(a)}</p></details>`).join('\n');
+  const esFaqMarkup = ES_FAQS.map(([q, a]) => `      <details><summary>${escHtml(q)}</summary><p>${escHtml(a)}</p></details>`).join('\n');
   out = out.replace(
     /(<section class="guide-faq" aria-labelledby="faqTitle">\s*<h2 id="faqTitle">[^<]+<\/h2>\s*)([\s\S]*?)(\s*<\/section>)/,
-    `$1${idFaqMarkup}$3`
+    `$1${esFaqMarkup}$3`
   );
   return out;
 }
@@ -333,8 +333,8 @@ for (const page of SEO_PAGES) {
     .replace(/<title>[^<]*<\/title>/, `<title>${escHtml(page.title)}</title>`)
     .replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${escAttr(page.description)}">`)
     .replace(/<link rel="canonical" href="[^"]*">/, `<link rel="canonical" href="${pageUrl}">`)
-    .replace(/<meta property="og:locale" content="[^"]*">/, `<meta property="og:locale" content="${page.lang === 'id' ? 'id_ID' : 'en_US'}">`)
-    .replace(/<meta property="og:locale:alternate" content="[^"]*">/, `<meta property="og:locale:alternate" content="${page.lang === 'id' ? 'en_US' : 'id_ID'}">`)
+    .replace(/<meta property="og:locale" content="[^"]*">/, `<meta property="og:locale" content="${page.lang === 'es' ? 'es_ES' : 'en_US'}">`)
+    .replace(/<meta property="og:locale:alternate" content="[^"]*">/, `<meta property="og:locale:alternate" content="${page.lang === 'es' ? 'en_US' : 'es_ES'}">`)
     .replace(/<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${pageUrl}">`)
     .replace(/<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${escAttr(page.title)}">`)
     .replace(/<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${escAttr(page.description)}">`)
@@ -351,8 +351,8 @@ for (const page of SEO_PAGES) {
   if (!page.keepHreflang) {
     html = html.replace(/\r?\n?<link rel="alternate" hreflang="[^"]+" href="[^"]+">/g, '');
   }
-  if (page.lang === 'id') {
-    html = localizeIdStaticHtml(html);
+  if (page.lang === 'es') {
+    html = localizeEsStaticHtml(html);
   }
   // Ensure static assets load from origin root on subpages regardless of trailing slash.
   html = html

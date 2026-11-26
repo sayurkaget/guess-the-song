@@ -34,13 +34,13 @@
   const MG_STATS_KEY = 'tl:mg:stats';
 
   let bridge = null;
-  const isId = () => (bridge && bridge.getLang && bridge.getLang() === 'id');
-  const t = (en, id) => (isId() ? id : en);
+  const isEs = () => (bridge && bridge.getLang && bridge.getLang() === 'es');
+  const t = (en, es) => (isEs() ? es : en);
 
   function gameLabel(id) {
     const g = Hub.GAME_MAP[id];
     if (!g) return id;
-    return isId() ? g.nameId : g.nameEn;
+    return isEs() ? g.nameEs : g.nameEn;
   }
 
   /* ================= Daily Hub State ================= */
@@ -400,11 +400,11 @@
 
     if (meta) {
       if (st.done) {
-        meta.textContent = rem ? t(`Next daily in ${rem}`, `Harian baru ${rem}`) : t('Completed today', 'Selesai hari ini');
+        meta.textContent = rem ? t(`Next daily in ${rem}`, `Próximo diario en ${rem}`) : t('Completed today', 'Completado hoy');
       } else if (doneCount > 0) {
-        meta.textContent = t(`${doneCount}/3 done · ${st.totalScore} pts`, `${doneCount}/3 selesai · ${st.totalScore} poin`);
+        meta.textContent = t(`${doneCount}/3 done · ${st.totalScore} pts`, `${doneCount}/3 listos · ${st.totalScore} pts`);
       } else {
-        meta.textContent = rem ? t(`3 random games · Resets in ${rem}`, `3 game acak · Reset ${rem}`) : t('3 random music games', '3 game musik acak');
+        meta.textContent = rem ? t(`3 random games · Resets in ${rem}`, `3 juegos al azar · Reinicia en ${rem}`) : t('3 random music games', '3 juegos musicales al azar');
       }
     }
     if (card) {
@@ -419,7 +419,7 @@
         badge.textContent = `${doneCount}/3`;
         badge.hidden = false;
       } else {
-        badge.textContent = t('3 games · /300', '3 game · /300');
+        badge.textContent = t('3 games · /300', '3 juegos · /300');
         badge.hidden = false;
       }
     }
@@ -429,8 +429,8 @@
     }
     if (btn) {
       btn.textContent = st.done
-        ? t('View daily score', 'Lihat skor harian')
-        : (doneCount > 0 || st.spun ? t('Continue daily', 'Lanjut harian') : t('Spin Daily', 'Spin Harian'));
+        ? t('View daily score', 'Ver puntaje diario')
+        : (doneCount > 0 || st.spun ? t('Continue daily', 'Continuar diario') : t('Spin Daily', 'Girar Diario'));
     }
 
     // Update countdown inside hub
@@ -442,25 +442,25 @@
     const body = $('#streakPopBody');
     if (!body) return;
     const archDays = archivedCompletedDays();
-    const sinceTxt = ov.since ? t('Since ' + ov.since, 'Sejak ' + ov.since) : t('Finish today’s Daily to start', 'Selesaikan Daily hari ini');
+    const sinceTxt = ov.since ? t('Since ' + ov.since, 'Desde ' + ov.since) : t('Finish today’s Daily to start', 'Completa el Diario de hoy para empezar');
     const daysHtml = ov.days28.map((d) => {
       const isArch = !d.played && archDays.has(d.day);
       const label = d.isToday
-        ? `${d.day} (${t('Today', 'Hari ini')})`
-        : `${d.day} (${t('Tap to play archive', 'Ketuk untuk main arsip')})`;
+        ? `${d.day} (${t('Today', 'Hoy')})`
+        : `${d.day} (${t('Tap to play archive', 'Toca para jugar el archivo')})`;
       return `<button type="button" class="sp-day${d.played ? ' is-on' : ''}${isArch ? ' is-arch' : ''}${d.isToday ? ' is-today' : ''}" data-day="${esc(d.day)}" title="${esc(label)}">${d.dom}</button>`;
     }).join('');
     const wds = ov.days28.slice(0, 7).map((d) => `<span class="sp-wd">${d.wd}</span>`).join('');
     body.innerHTML =
-      `<div class="sp-kicker">${esc(t('DAILY STREAK', 'STREAK HARIAN'))}</div>` +
-      `<div class="sp-hero"><span class="sp-flame" aria-hidden="true">🔥</span><div><div class="sp-val"><b>${ov.current}</b> ${esc(t(ov.current === 1 ? 'day' : 'days', 'hari'))}</div><div class="sp-since">${esc(sinceTxt)}</div></div></div>` +
-      `<div class="sp-cal-lbl">${esc(t('Last 28 days', '28 hari terakhir'))}</div>` +
-      `<div class="sp-cal-tip">${esc(t('Tap any date to practice past Dailies', 'Ketuk tanggal mana saja untuk latihan Daily lalu'))}</div>` +
+      `<div class="sp-kicker">${esc(t('DAILY STREAK', 'RACHA DIARIA'))}</div>` +
+      `<div class="sp-hero"><span class="sp-flame" aria-hidden="true">🔥</span><div><div class="sp-val"><b>${ov.current}</b> ${esc(t(ov.current === 1 ? 'day' : 'days', ov.current === 1 ? 'día' : 'días'))}</div><div class="sp-since">${esc(sinceTxt)}</div></div></div>` +
+      `<div class="sp-cal-lbl">${esc(t('Last 28 days', 'Últimos 28 días'))}</div>` +
+      `<div class="sp-cal-tip">${esc(t('Tap any date to practice past Dailies', 'Toca cualquier fecha para practicar Diarios pasados'))}</div>` +
       `<div class="sp-grid">${wds}${daysHtml}</div>` +
       `<div class="sp-rows">` +
-        `<div><span>${esc(t('Longest', 'Terpanjang'))}</span><b>${ov.best} ${esc(t('days', 'hari'))}</b></div>` +
-        `<div><span>${esc(t('Days played', 'Hari dimainkan'))}</span><b>${ov.totalDays}</b></div>` +
-        `<div><span>${esc(t('Next milestone', 'Target berikutnya'))}</span><b class="is-acc">${ov.nextMilestone} ${esc(t('days', 'hari'))}</b></div>` +
+        `<div><span>${esc(t('Longest', 'Más larga'))}</span><b>${ov.best} ${esc(t('days', 'días'))}</b></div>` +
+        `<div><span>${esc(t('Days played', 'Días jugados'))}</span><b>${ov.totalDays}</b></div>` +
+        `<div><span>${esc(t('Next milestone', 'Próxima meta'))}</span><b class="is-acc">${ov.nextMilestone} ${esc(t('days', 'días'))}</b></div>` +
       `</div>`;
   }
 
@@ -497,7 +497,7 @@
     loadHubState(activeHubDay || undefined);
     renderDailyHub();
     if ((!opts || !opts.skipRoute) && bridge && bridge.syncRoute) {
-      bridge.syncRoute('daily', t('Daily Challenge — TuneUp', 'Tantangan Harian — TuneUp'), !!(opts && opts.replace));
+      bridge.syncRoute('daily', t('Daily Challenge — TuneUp', 'Desafío Diario — TuneUp'), !!(opts && opts.replace));
     }
     scrollTopReset();
   }
@@ -534,18 +534,18 @@
     const isArch = !!st.isArchive;
     const dayPill = $('#dhDayPill');
     if (dayPill) {
-      dayPill.textContent = `${isArch ? t('ARCHIVE', 'ARSIP') : t('DAILY', 'HARIAN')} · ${st.day}`;
+      dayPill.textContent = `${isArch ? t('ARCHIVE', 'ARCHIVO') : t('DAILY', 'DIARIO')} · ${st.day}`;
       dayPill.classList.toggle('is-archive', isArch);
     }
     const todayBtn = $('#dhTodayBtn');
     if (todayBtn) {
       todayBtn.hidden = !isArch;
-      todayBtn.textContent = t('Today', 'Hari Ini');
+      todayBtn.textContent = t('Today', 'Hoy');
     }
     const kicker = $('#dhKicker');
-    if (kicker) kicker.textContent = isArch ? t('DAILY ARCHIVE', 'ARSIP HARIAN') : t('DAILY CHALLENGE', 'TANTANGAN HARIAN');
+    if (kicker) kicker.textContent = isArch ? t('DAILY ARCHIVE', 'ARCHIVO DIARIO') : t('DAILY CHALLENGE', 'DESAFÍO DIARIO');
     const doneKicker = $('#dhDoneKicker');
-    if (doneKicker) doneKicker.textContent = isArch ? t('ARCHIVE COMPLETE', 'ARSIP SELESAI') : t('DAILY COMPLETE', 'HARIAN SELESAI');
+    if (doneKicker) doneKicker.textContent = isArch ? t('ARCHIVE COMPLETE', 'ARCHIVO COMPLETADO') : t('DAILY COMPLETE', 'DIARIO COMPLETADO');
 
     const spinPanel = $('#dhSpinPanel');
     const scorePanel = $('#dhScorePanel');
@@ -568,23 +568,23 @@
     const nextIdx = nextUnfinishedSlotIndex();
 
     if (!st.spun) {
-      if (titleEl) titleEl.textContent = isArch ? t(`Archive · ${st.day}`, `Arsip · ${st.day}`) : t("Today's 3 Music Games", '3 Game Musik Hari Ini');
+      if (titleEl) titleEl.textContent = isArch ? t(`Archive · ${st.day}`, `Archivo · ${st.day}`) : t("Today's 3 Music Games", '3 Juegos Musicales de Hoy');
       if (subEl) subEl.textContent = isArch
-        ? t('Practice past Daily — won’t affect today’s streak.', 'Latihan Daily lalu — tidak mengubah streak hari ini.')
-        : t('Spin to reveal today’s lineup — same 3 games for everyone.', 'Spin untuk buka 3 game acak hari ini — sama untuk semua pemain.');
+        ? t('Practice past Daily — won’t affect today’s streak.', 'Práctica de Diario pasado — no afecta tu racha de hoy.')
+        : t('Spin to reveal today’s lineup — same 3 games for everyone.', 'Gira para revelar los 3 juegos de hoy — iguales para todos.');
       if (ctaBtn) {
-        ctaBtn.textContent = isArch ? t('Spin Archive Games', 'Spin Game Arsip') : t("Spin Today's Games", 'Spin Game Hari Ini');
+        ctaBtn.textContent = isArch ? t('Spin Archive Games', 'Girar Juegos de Archivo') : t("Spin Today's Games", 'Girar Juegos de Hoy');
         ctaBtn.disabled = false;
       }
       for (let i = 0; i < 3; i++) buildReelStrip(i, false);
     } else {
       const nextSlot = st.slots[nextIdx >= 0 ? nextIdx : 0];
-      if (titleEl) titleEl.textContent = isArch ? t(`Archive · ${st.day}`, `Arsip · ${st.day}`) : t("Today's 3 Music Games", '3 Game Musik Hari Ini');
+      if (titleEl) titleEl.textContent = isArch ? t(`Archive · ${st.day}`, `Archivo · ${st.day}`) : t("Today's 3 Music Games", '3 Juegos Musicales de Hoy');
       if (subEl) subEl.textContent = isArch
-        ? t('Finish all 3 archive games for your practice /300 score.', 'Selesaikan 3 game arsip untuk skor latihan /300.')
-        : t('Finish all 3 games for your daily /300 score.', 'Selesaikan 3 game untuk skor harian /300.');
+        ? t('Finish all 3 archive games for your practice /300 score.', 'Completa los 3 juegos del archivo para tu puntaje de práctica /300.')
+        : t('Finish all 3 games for your daily /300 score.', 'Completa los 3 juegos para tu puntaje diario /300.');
       if (ctaBtn) {
-        ctaBtn.textContent = t(`Play ${gameLabel(nextSlot.gameId)} →`, `Main ${gameLabel(nextSlot.gameId)} →`);
+        ctaBtn.textContent = t(`Play ${gameLabel(nextSlot.gameId)} →`, `Jugar ${gameLabel(nextSlot.gameId)} →`);
         ctaBtn.disabled = false;
       }
       for (let i = 0; i < 3; i++) buildReelStrip(i, true);
@@ -631,7 +631,7 @@
     if (!landed) {
       const idleRow = 1 + slotIdx * 2;
       strip.style.transform = `translateY(${-(idleRow * REEL_STEP) + 54}px)`;
-      if (sub) { sub.textContent = t('Game ' + (slotIdx + 1), 'Game ' + (slotIdx + 1)); sub.className = 'dh-slot-sub'; sub.style.removeProperty('--rc'); }
+      if (sub) { sub.textContent = t('Game ' + (slotIdx + 1), 'Juego ' + (slotIdx + 1)); sub.className = 'dh-slot-sub'; sub.style.removeProperty('--rc'); }
     } else {
       strip.style.transform = `translateY(${-(targetRow * REEL_STEP) + 54}px)`;
       if (win) win.classList.add('is-locked', 'is-flash');
@@ -647,11 +647,11 @@
           sub.className = 'dh-slot-sub is-done';
           sub.style.removeProperty('--rc');
         } else if (slotIdx === nextIdx) {
-          sub.textContent = t('Up next', 'Berikutnya');
+          sub.textContent = t('Up next', 'Siguiente');
           sub.className = 'dh-slot-sub is-next';
           sub.style.setProperty('--rc', rc);
         } else {
-          sub.textContent = t('Game ' + (slotIdx + 1), 'Game ' + (slotIdx + 1));
+          sub.textContent = t('Game ' + (slotIdx + 1), 'Juego ' + (slotIdx + 1));
           sub.className = 'dh-slot-sub';
           sub.style.removeProperty('--rc');
         }
@@ -689,8 +689,8 @@
     const titleEl = $('#dhTitle');
     const ctaBtn = $('#dhMainBtn');
     const reelsBox = $('.dh-reels');
-    if (titleEl) titleEl.textContent = t('Rolling today’s lineup…', 'Mengundi 3 game hari ini…');
-    if (ctaBtn) ctaBtn.textContent = t('Tap to skip', 'Ketuk untuk lewati');
+    if (titleEl) titleEl.textContent = t('Rolling today’s lineup…', 'Sorteando los juegos de hoy…');
+    if (ctaBtn) ctaBtn.textContent = t('Tap to skip', 'Toca para saltar');
 
     // Crisp mechanical slot start ratchet
     playLeverPull();
@@ -785,7 +785,7 @@
           const sub = $('#dhSub' + rIdx);
           if (badge) badge.hidden = true;
           if (sub) {
-            sub.textContent = rIdx === 0 ? t('Up next', 'Berikutnya') : t('Game ' + (rIdx + 1), 'Game ' + (rIdx + 1));
+            sub.textContent = rIdx === 0 ? t('Up next', 'Siguiente') : t('Game ' + (rIdx + 1), 'Juego ' + (rIdx + 1));
             sub.className = rIdx === 0 ? 'dh-slot-sub is-next' : 'dh-slot-sub';
             if (rIdx === 0) sub.style.setProperty('--rc', rc);
             else sub.style.removeProperty('--rc');
@@ -796,8 +796,8 @@
             hubState.spun = true;
             saveHubState();
             if (reelsBox) spawnWinSparks(reelsBox);
-            if (titleEl) titleEl.textContent = hubState.isArchive ? t(`Archive · ${hubState.day}`, `Arsip · ${hubState.day}`) : t("Today's 3 Music Games", '3 Game Musik Hari Ini');
-            if (ctaBtn) ctaBtn.textContent = t(`Play ${gameLabel(hubState.slots[0].gameId)} →`, `Main ${gameLabel(hubState.slots[0].gameId)} →`);
+            if (titleEl) titleEl.textContent = hubState.isArchive ? t(`Archive · ${hubState.day}`, `Archivo · ${hubState.day}`) : t("Today's 3 Music Games", '3 Juegos Musicales de Hoy');
+            if (ctaBtn) ctaBtn.textContent = t(`Play ${gameLabel(hubState.slots[0].gameId)} →`, `Jugar ${gameLabel(hubState.slots[0].gameId)} →`);
             // Cascading jackpot wave across all 3 columns
             [0, 1, 2].forEach((ci) => {
               const finaleTid = setTimeout(() => {
@@ -825,12 +825,12 @@
     if (metaEl) {
       if (st.isArchive) {
         metaEl.textContent = st.wasLiveDone
-          ? t(`Saved Daily · ${st.day}`, `Daily tersimpan · ${st.day}`)
-          : t(`Archive practice · ${st.day}`, `Latihan arsip · ${st.day}`);
+          ? t(`Saved Daily · ${st.day}`, `Diario guardado · ${st.day}`)
+          : t(`Archive practice · ${st.day}`, `Práctica de archivo · ${st.day}`);
       } else {
         const parts = [];
-        if (ov.current > 0) parts.push(t(`${ov.current}-day streak`, `Streak ${ov.current} hari`));
-        if (rem) parts.push(t(`Next daily in ${rem}`, `Harian baru ${rem}`));
+        if (ov.current > 0) parts.push(t(`${ov.current}-day streak`, `Racha de ${ov.current} días`));
+        if (rem) parts.push(t(`Next daily in ${rem}`, `Próximo diario en ${rem}`));
         metaEl.textContent = parts.join(' · ');
       }
     }
@@ -872,21 +872,21 @@
     const box = $('#dhCommunity');
     if (!box || !hubState || !hubState.done) return;
     if (hubState.isArchive) {
-      box.innerHTML = `<p class="dh-arch-note">${esc(t('Practice archive · does not affect today’s Daily streak or live rankings.', 'Mode latihan arsip · tidak mengubah streak Daily atau peringkat hari ini.'))}</p>`;
+      box.innerHTML = `<p class="dh-arch-note">${esc(t('Practice archive · does not affect today’s Daily streak or live rankings.', 'Modo práctica de archivo · no afecta tu racha ni el ranking de hoy.'))}</p>`;
       return;
     }
     const sum = Hub.summarizeHistogram(cachedCommunity, hubState.totalScore);
     const headline = sum.plays <= 1
-      ? t('First finisher today!', 'Pemain pertama yang selesai hari ini!')
-      : t(`Better than ${sum.beatPct}% of players`, `Lebih tinggi dari ${sum.beatPct}% pemain`);
+      ? t('First finisher today!', '¡Primer jugador en terminar hoy!')
+      : t(`Better than ${sum.beatPct}% of players`, `Mejor que el ${sum.beatPct}% de jugadores`);
     const badge = sum.plays <= 1
-      ? t(`Avg ${sum.avgScore}/300`, `Rata-rata ${sum.avgScore}/300`)
-      : t(`Rank #${sum.rank} of ${sum.plays} · Avg ${sum.avgScore}`, `Peringkat #${sum.rank}/${sum.plays} · Rata-rata ${sum.avgScore}`);
+      ? t(`Avg ${sum.avgScore}/300`, `Prom. ${sum.avgScore}/300`)
+      : t(`Rank #${sum.rank} of ${sum.plays} · Avg ${sum.avgScore}`, `Puesto #${sum.rank} de ${sum.plays} · Prom. ${sum.avgScore}`);
 
     const barsHtml = sum.bands.map((b) => {
       const h = Math.max(6, Math.round(b.heightPct * 0.52));
       return `<div class="dh-bar-col${b.isUser ? ' is-you' : ''}">` +
-        (b.isUser ? `<span class="dh-bar-you">${esc(t('You', 'Kamu'))}</span>` : '') +
+        (b.isUser ? `<span class="dh-bar-you">${esc(t('You', 'Tú'))}</span>` : '') +
         `<span class="dh-bar-pct">${b.pct > 0 || b.isUser ? (b.pct + '%') : ''}</span>` +
         `<div class="dh-bar-fill" style="height:${h}px"></div>` +
       `</div>`;
@@ -898,12 +898,16 @@
         `<span class="dh-comm-badge">${esc(badge)}</span>` +
       `</div>` +
       `<div class="dh-histo">${barsHtml}</div>` +
-      `<div class="dh-histo-axis"><span>0</span><span>${esc(t("Today's players · 20-pt bands", 'Pemain hari ini · rentang 20 poin'))}</span><span>300</span></div>`;
+      `<div class="dh-histo-axis"><span>0</span><span>${esc(t("Today's players · 20-pt bands", 'Jugadores de hoy · rangos de 20 pts'))}</span><span>300</span></div>`;
   }
 
   /* ================= Between-Game Transition Modal (`DAILY · GAME X OF 3`) ================= */
   function finishDailySlot(slotIdx, result) {
     if (!hubState) loadHubState();
+    const finSlot = hubState.slots && hubState.slots[slotIdx];
+    if (finSlot) {
+      delete dailyMiniSessions[finSlot.seed + (hubState.isArchive ? ':arch' : '')];
+    }
     hubState.results[slotIdx] = {
       score: Math.max(0, Math.min(100, Math.round(Number(result.score) || 0))),
       won: !!result.won,
@@ -937,10 +941,10 @@
     const nextIdx = nextUnfinishedSlotIndex();
     const nextSlot = hubState.slots[nextIdx >= 0 ? nextIdx : 0];
 
-    $('#dhStepKicker').textContent = `${t('DAILY', 'HARIAN')} · ${t(`GAME ${slotIdx + 1} OF 3`, `GAME ${slotIdx + 1} DARI 3`)}`;
+    $('#dhStepKicker').textContent = `${t('DAILY', 'DIARIO')} · ${t(`GAME ${slotIdx + 1} OF 3`, `JUEGO ${slotIdx + 1} DE 3`)}`;
     $('#dhStepVerdict').textContent = res.score >= 80
-      ? t('Awesome!', 'Keren!')
-      : (res.score >= 40 ? t('Nice work!', 'Bagus!') : t('Tough one!', 'Lumayan susah!'));
+      ? t('Awesome!', '¡Genial!')
+      : (res.score >= 40 ? t('Nice work!', '¡Buen trabajo!') : t('Tough one!', '¡Estuvo difícil!'));
     const ptsEl = $('#dhStepPoints');
     if (ptsEl) {
       ptsEl.textContent = `+${res.score}`;
@@ -948,7 +952,7 @@
       ptsEl.style.setProperty('--rc', gameColor(slot.gameId));
     }
     $('#dhStepDetail').textContent = res.detail || res.shortSummary || '';
-    $('#dhStepTotal').textContent = t(`Total so far: ${hubState.totalScore} / 300`, `Total sementara: ${hubState.totalScore} / 300`);
+    $('#dhStepTotal').textContent = t(`Total so far: ${hubState.totalScore} / 300`, `Total hasta ahora: ${hubState.totalScore} / 300`);
 
     // 3-card run strip
     $('#dhStepStrip').innerHTML = hubState.slots.map((s, i) => {
@@ -958,12 +962,12 @@
       return `<div class="dh-strip-card${r ? ' is-done' : ''}${isNext ? ' is-next' : ''}" style="--rc:${rc}">` +
         `<span class="dh-strip-ico">${ICONS[s.gameId] || ''}</span>` +
         `<span class="dh-strip-name">${esc(gameLabel(s.gameId))}</span>` +
-        `<span class="dh-strip-val">${r ? (r.score + '') : (isNext ? t('NEXT', 'LANJUT') : '—')}</span>` +
+        `<span class="dh-strip-val">${r ? (r.score + '') : (isNext ? t('NEXT', 'SIGUIENTE') : '—')}</span>` +
       `</div>`;
     }).join('');
 
     const nextBtn = $('#dhStepNextBtn');
-    nextBtn.textContent = t(`Next: ${gameLabel(nextSlot.gameId)} →`, `Lanjut: ${gameLabel(nextSlot.gameId)} →`);
+    nextBtn.textContent = t(`Next: ${gameLabel(nextSlot.gameId)} →`, `Siguiente: ${gameLabel(nextSlot.gameId)} →`);
     nextBtn.onclick = () => {
       closeStepModal();
       launchDailySlot(nextIdx);
@@ -1033,11 +1037,11 @@
   }
 
   const GAME_ROUTES = {
-    cover: { slug: 'cover-pixel', titleEn: 'Cover Pixel — TuneUp',       titleId: 'Cover Pixel — TuneUp' },
-    mv:    { slug: 'mv-spot',     titleEn: 'MV Spot — TuneUp',           titleId: 'MV Spot — TuneUp' },
-    hair:  { slug: 'hairspot',    titleEn: 'HairSpot Music — TuneUp',    titleId: 'HairSpot Musik — TuneUp' },
-    fact:  { slug: 'fact-or-cap', titleEn: 'Music Fact or Cap — TuneUp', titleId: 'Fakta / Hoax Musik — TuneUp' },
-    lyric: { slug: 'lyric-guess', titleEn: 'Lyric Guess — TuneUp',       titleId: 'Tebak Lirik — TuneUp' }
+    cover: { slug: 'cover-pixel', titleEn: 'Cover Pixel — TuneUp',       titleEs: 'Cover Pixel — TuneUp' },
+    mv:    { slug: 'mv-spot',     titleEn: 'MV Spot — TuneUp',           titleEs: 'MV Spot — TuneUp' },
+    hair:  { slug: 'hairspot',    titleEn: 'HairSpot Music — TuneUp',    titleEs: 'HairSpot Música — TuneUp' },
+    fact:  { slug: 'fact-or-cap', titleEn: 'Music Fact or Cap — TuneUp', titleEs: 'Dato o Mito Musical — TuneUp' },
+    lyric: { slug: 'lyric-guess', titleEn: 'Lyric Guess — TuneUp',       titleEs: 'Adivina la Letra — TuneUp' }
   };
 
   const recentFreeIds = { cover: [], mv: [], hair: [], lyric: [] };
@@ -1177,28 +1181,28 @@
   function compareMiniChallenge(ch, myWon, myTries) {
     if (!ch) return null;
     if (myWon && !ch.won) {
-      return { cls: 'is-win', text: t(`You beat your friend! (${myTries}/5 vs Miss)`, `Kamu mengalahkan temanmu! (${myTries}/5 vs Gagal)`) };
+      return { cls: 'is-win', text: t(`You beat your friend! (${myTries}/5 vs Miss)`, `¡Venciste a tu amigo! (${myTries}/5 vs Fallo)`) };
     }
     if (!myWon && ch.won) {
-      return { cls: 'is-lose', text: t(`Friend won (${ch.tries}/5 vs Miss)`, `Temanmu menang (${ch.tries}/5 vs Gagal)`) };
+      return { cls: 'is-lose', text: t(`Friend won (${ch.tries}/5 vs Miss)`, `Tu amigo ganó (${ch.tries}/5 vs Fallo)`) };
     }
     if (!myWon && !ch.won) {
-      return { cls: 'is-tie', text: t('Both stumped — tough one!', 'Sama-sama gagal — soal ini susah!') };
+      return { cls: 'is-tie', text: t('Both stumped — tough one!', '¡Ninguno acertó — estuvo difícil!') };
     }
     if (myTries < ch.tries) {
-      return { cls: 'is-win', text: t(`You beat your friend! (${myTries}/5 vs ${ch.tries}/5)`, `Kamu menang! (${myTries}/5 vs ${ch.tries}/5)`) };
+      return { cls: 'is-win', text: t(`You beat your friend! (${myTries}/5 vs ${ch.tries}/5)`, `¡Venciste a tu amigo! (${myTries}/5 vs ${ch.tries}/5)`) };
     }
     if (myTries > ch.tries) {
-      return { cls: 'is-lose', text: t(`Friend edged you out (${ch.tries}/5 vs ${myTries}/5)`, `Temanmu lebih cepat (${ch.tries}/5 vs ${myTries}/5)`) };
+      return { cls: 'is-lose', text: t(`Friend edged you out (${ch.tries}/5 vs ${myTries}/5)`, `Tu amigo fue más rápido (${ch.tries}/5 vs ${myTries}/5)`) };
     }
-    return { cls: 'is-tie', text: t(`Tied with your friend! (${myTries}/5)`, `Seri dengan temanmu! (${myTries}/5)`) };
+    return { cls: 'is-tie', text: t(`Tied with your friend! (${myTries}/5)`, `¡Empate con tu amigo! (${myTries}/5)`) };
   }
   function openMiniChallenge(rawHash) {
     const ch = parseMiniChallenge(rawHash);
     if (!ch) return false;
     const resolved = resolveMiniChallengeTarget(ch);
     if (!resolved) {
-      if (bridge && bridge.toast) bridge.toast(t('Challenge link is no longer valid.', 'Link tantangan tidak valid lagi.'));
+      if (bridge && bridge.toast) bridge.toast(t('Challenge link is no longer valid.', 'El enlace del reto ya no es válido.'));
       return false;
     }
     activeDailySlot = null;
@@ -1221,7 +1225,7 @@
     const flameSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.3 2.7c.4 3.4-1.6 5.2-3 6.9-1.4 1.7-2.3 3.2-2.3 5.2a5 5 0 0 0 10 0c0-2.7-1.6-4.7-2.6-6.2-.5 1.3-1.4 2.1-2.5 2.4.7-2.2 1.3-4.6.4-8.3Z" fill="currentColor"/></svg>';
     pill.style.setProperty('--rc', gameColor(gameId));
     pill.classList.toggle('is-hot', streak > 0);
-    pill.innerHTML = `${flameSvg}<b>${streak}</b><span>· ${esc(t('Best', 'Rekor'))} ${best}</span>`;
+    pill.innerHTML = `${flameSvg}<b>${streak}</b><span>· ${esc(t('Best', 'Récord'))} ${best}</span>`;
     pill.hidden = false;
     if (bump === 'win') {
       triggerFxClass(pill, 'is-bump', 420);
@@ -1238,8 +1242,8 @@
       return;
     }
     const msg = challenge.won
-      ? t(`Friend challenge · Beat ${challenge.tries}/5!`, `Tantangan teman · Kalahkan ${challenge.tries}/5!`)
-      : t('Friend challenge · Stumped your friend — can you get it?', 'Tantangan teman · Mereka gagal — kamu bisa nebak?');
+      ? t(`Friend challenge · Beat ${challenge.tries}/5!`, `Reto de amigo · ¡Supera ${challenge.tries}/5!`)
+      : t('Friend challenge · Stumped your friend — can you get it?', 'Reto de amigo · No pudo acertar — ¿tú puedes?');
     bar.innerHTML = `${ICONS.duel}<span>${esc(msg)}</span>`;
     bar.hidden = false;
   }
@@ -1253,11 +1257,14 @@
 
   /* ================= Unified Mini-Game Stage (`#miniGame`) ================= */
   let mgState = null; // current active mini-game runtime state
-  // Park unfinished free-play rounds in memory (matching Classic RUNS): switching modes/tabs
-  // or returning via Change mode resumes the exact same puzzle & progress; page reload starts fresh.
+  // Park unfinished free-play and Daily Hub rounds in memory (matching Classic RUNS): switching modes/tabs
+  // or returning via Change mode / Back to Daily resumes the exact same puzzle & progress.
   const freeMiniSessions = Object.create(null);
+  const dailyMiniSessions = Object.create(null);
+  const dailySlotKey = (slot) => (slot ? (slot.seed + (slot.isArchive ? ':arch' : '')) : '');
   function clearFreeSessions() {
     for (const k in freeMiniSessions) delete freeMiniSessions[k];
+    for (const k in dailyMiniSessions) delete dailyMiniSessions[k];
   }
 
   function renderDailyPillInMiniGame(slot) {
@@ -1274,7 +1281,7 @@
       return `<span class="mg-dp-seg${done ? ' is-done' : ''}${cur ? ' is-cur' : ''}"${cur ? ` style="--rc:${rc}"` : ''}></span>`;
     }).join('');
     const curRc = gameColor(slot.gameId);
-    pill.innerHTML = `<span class="mg-dp-tag">${esc(t('DAILY', 'HARIAN'))}</span>${segs}<span class="mg-dp-step" style="--rc:${curRc}">${esc(`Game ${slot.slot + 1}/3`)}</span>`;
+    pill.innerHTML = `<span class="mg-dp-tag">${esc(t('DAILY', 'DIARIO'))}</span>${segs}<span class="mg-dp-step" style="--rc:${curRc}">${esc(`Game ${slot.slot + 1}/3`)}</span>`;
     pill.hidden = false;
   }
 
@@ -1319,7 +1326,7 @@
     if (arena) arena.dataset.layout = 'centered';
 
     const backLbl = $('#mgBackLbl');
-    if (backLbl) backLbl.textContent = dailySlot ? t('Back to Daily', 'Kembali ke Daily') : t('Change mode', 'Ganti mode');
+    if (backLbl) backLbl.textContent = dailySlot ? t('Back to Daily', 'Volver al Diario') : t('Change mode', 'Cambiar modo');
     $('#mgBack').onclick = () => {
       if (bridge && bridge.stopAudio) bridge.stopAudio();
       if (typeof location !== 'undefined' && location.hash.startsWith('#mg=') && typeof history !== 'undefined' && history.replaceState) {
@@ -1342,10 +1349,10 @@
 
     if (bridge && bridge.syncRoute) {
       if (dailySlot) {
-        bridge.syncRoute('daily', t('Daily Challenge — TuneUp', 'Tantangan Harian — TuneUp'), true);
+        bridge.syncRoute('daily', t('Daily Challenge — TuneUp', 'Desafío Diario — TuneUp'), true);
       } else if (!opts || !opts.skipRoute) {
         const r = GAME_ROUTES[gameId];
-        if (r) bridge.syncRoute(r.slug, isId() ? r.titleId : r.titleEn, !!(opts && opts.replace));
+        if (r) bridge.syncRoute(r.slug, isEs() ? r.titleEs : r.titleEn, !!(opts && opts.replace));
       }
     }
 
@@ -1353,9 +1360,10 @@
     if (!isDaily && !challenge && opts && opts.forceNew) {
       delete freeMiniSessions[gameId];
     }
-    const saved = (!isDaily && !challenge && freeMiniSessions[gameId] && !freeMiniSessions[gameId].done)
-      ? freeMiniSessions[gameId]
-      : null;
+    const dKey = isDaily ? dailySlotKey(dailySlot) : '';
+    const saved = isDaily
+      ? (dailyMiniSessions[dKey] && !dailyMiniSessions[dKey].done ? dailyMiniSessions[dKey] : null)
+      : ((!challenge && freeMiniSessions[gameId] && !freeMiniSessions[gameId].done) ? freeMiniSessions[gameId] : null);
     const seed = isDaily ? dailySlot.seed : ('free:' + gameId + ':' + Date.now() + ':' + Math.random());
 
     if (gameId === 'cover') initCoverPixel(seed, dailySlot, challenge, saved);
@@ -1414,7 +1422,7 @@
       lastItems = items.map((it) => ({ ...it, tried: Boolean(isTried && isTried(it.raw)) }));
       selIdx = lastItems.findIndex((it) => !it.tried);
       if (!lastItems.length) { closeDD(); return; }
-      const triedTxt = t('Tried', 'Dicoba');
+      const triedTxt = t('Tried', 'Probado');
       dd.innerHTML = lastItems.map((it, idx) =>
         `<li><button type="button" data-i="${idx}" class="${idx === selIdx ? 'sel' : ''}${it.tried ? ' is-tried' : ''}" ${it.tried ? 'disabled' : ''}>` +
           `<div class="mg-dd-copy"><b>${esc(it.primary)}</b>${it.secondary ? `<span>${esc(it.secondary)}</span>` : ''}</div>` +
@@ -1492,21 +1500,27 @@
       if (pulseIdx === i) cls += ' is-pulse';
       pips.push(`<span class="${cls}"></span>`);
     }
-    rightEl.innerHTML = `<div class="mg-pips" aria-label="${esc(t('Attempts', 'Percobaan'))}">${pips.join('')}</div>`;
+    rightEl.innerHTML = `<div class="mg-pips" aria-label="${esc(t('Attempts', 'Intentos'))}">${pips.join('')}</div>`;
   }
 
   function renderMiniReveal({ won, score, title, subtitle, art, trackId, dailySlot, gameId, shortSummary, detail, freeKicker }) {
-    if (gameId && (gameId === 'cover' || gameId === 'mv' || gameId === 'hair' || gameId === 'fact' || gameId === 'lyric')) {
+    const isArchDaily = Boolean(dailySlot && dailySlot.isArchive);
+    if (!isArchDaily && gameId && (gameId === 'cover' || gameId === 'mv' || gameId === 'hair' || gameId === 'fact' || gameId === 'lyric')) {
       recordMgStat((s) => {
         if (!s.games || typeof s.games !== 'object') s.games = {};
         const g = s.games[gameId] || { played: 0, won: 0, streak: 0, best: 0 };
         g.played = (Number(g.played) || 0) + 1;
         if (won) {
           g.won = (Number(g.won) || 0) + 1;
-          g.streak = (Number(g.streak) || 0) + 1;
-          if (g.streak > (Number(g.best) || 0)) g.best = g.streak;
-        } else {
-          g.streak = 0;
+        }
+        // Only Free-Play affects the live Free-Play streak pill & personal streak record
+        if (!dailySlot) {
+          if (won) {
+            g.streak = (Number(g.streak) || 0) + 1;
+            if (g.streak > (Number(g.best) || 0)) g.best = g.streak;
+          } else {
+            g.streak = 0;
+          }
         }
         s.games[gameId] = g;
       });
@@ -1520,7 +1534,9 @@
     const shareSvg = '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6" fill="currentColor"/><circle cx="6" cy="12" r="2.6" fill="currentColor"/><circle cx="18" cy="19" r="2.6" fill="currentColor"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>';
 
     const st = mgState;
-    if (!dailySlot && gameId && st && !st.challenge && freeMiniSessions[gameId] === st) {
+    if (dailySlot && st) {
+      delete dailyMiniSessions[dailySlotKey(dailySlot)];
+    } else if (!dailySlot && gameId && st && !st.challenge && freeMiniSessions[gameId] === st) {
       delete freeMiniSessions[gameId];
     }
     const canChallenge = !dailySlot && CHALLENGEABLE_GAMES.has(gameId) && st && Number.isInteger(st.challengeIndex) && st.challengeIndex >= 0 && st.challengeKey;
@@ -1528,20 +1544,20 @@
     const verdictHtml = verdict ? `<div class="mg-ch-verdict ${verdict.cls}">${esc(verdict.text)}</div>` : '';
 
     const actionHtml = dailySlot
-      ? `<button id="mgContinueDaily" class="btn solid icon-btn" type="button"><span class="lbl">${esc(t('Continue Daily', 'Lanjut Daily'))}</span>${nextSvg}</button>`
+      ? `<button id="mgContinueDaily" class="btn solid icon-btn" type="button"><span class="lbl">${esc(t('Continue Daily', 'Continuar Diario'))}</span>${nextSvg}</button>`
       : canChallenge
-      ? `<button id="mgChallengeBtn" class="btn ghostbtn icon-btn share-btn" type="button">${shareSvg}<span class="lbl">${esc(t('Challenge friend', 'Tantang teman'))}</span></button>` +
-        `<button id="mgPlayAgain" class="btn solid icon-btn" type="button">${replaySvg}<span class="lbl">${esc(t('Next round', 'Ronde berikutnya'))}</span></button>`
-      : `<button id="mgPlayAgain" class="btn solid icon-btn" type="button">${replaySvg}<span class="lbl">${esc(t('Next round', 'Ronde berikutnya'))}</span></button>`;
+      ? `<button id="mgChallengeBtn" class="btn ghostbtn icon-btn share-btn" type="button">${shareSvg}<span class="lbl">${esc(t('Challenge friend', 'Retar amigo'))}</span></button>` +
+        `<button id="mgPlayAgain" class="btn solid icon-btn" type="button">${replaySvg}<span class="lbl">${esc(t('Next round', 'Siguiente ronda'))}</span></button>`
+      : `<button id="mgPlayAgain" class="btn solid icon-btn" type="button">${replaySvg}<span class="lbl">${esc(t('Next round', 'Siguiente ronda'))}</span></button>`;
 
     const kickerTxt = dailySlot
-      ? `${won ? t('Solved!', 'Benar!') : t('Revealed', 'Jawabannya')} · ${score}/100`
-      : (freeKicker || (won ? t('Solved!', 'Benar!') : t('Out of tries', 'Kesempatan habis')));
+      ? `${won ? t('Solved!', '¡Acertaste!') : t('Revealed', 'Revelado')} · ${score}/100`
+      : (freeKicker || (won ? t('Solved!', '¡Acertaste!') : t('Out of tries', 'Sin intentos')));
 
     const playable = Boolean(trackId && art);
     const portraitCls = gameId === 'hair' ? ' is-portrait' : '';
     const artHtml = art
-      ? `<img id="mgRevArt" class="mg-rev-art${portraitCls}${playable ? ' is-playable' : ''}" src="${esc(art)}" alt="${esc(title)}"${playable ? ` role="button" tabindex="0" data-playing="0" title="${esc(t('Tap to pause or resume preview', 'Ketuk untuk jeda atau putar pratinjau'))}"` : ''}${gameId === 'hair' ? ' referrerpolicy="no-referrer"' : ''}>`
+      ? `<img id="mgRevArt" class="mg-rev-art${portraitCls}${playable ? ' is-playable' : ''}" src="${esc(art)}" alt="${esc(title)}"${playable ? ` role="button" tabindex="0" data-playing="0" title="${esc(t('Tap to pause or resume preview', 'Toca para pausar o reanudar la vista previa'))}"` : ''}${gameId === 'hair' ? ' referrerpolicy="no-referrer"' : ''}>`
       : '';
     const volHtml = trackId ? '<div class="vol-slot mg-vol-slot" id="mgVolSlot"></div>' : '';
 
@@ -1618,9 +1634,9 @@
         const gName = gameLabel(gameId);
         const triesN = st.tries || 5;
         const msg = won
-          ? (isId() ? `Bisa kalahkan ${triesN}/5 aku di TuneUp ${gName}?\n${url}` : `Can you beat my ${triesN}/5 in TuneUp ${gName}?\n${url}`)
-          : (isId() ? `Aku gagal di TuneUp ${gName} ini — kamu bisa nebak?\n${url}` : `This TuneUp ${gName} stumped me — can you get it?\n${url}`);
-        if (bridge && bridge.copyText) bridge.copyText(msg, 'mini_challenge_copy', t('Challenge link copied!', 'Link tantangan tersalin!'));
+          ? (isEs() ? `¿Puedes superar mi ${triesN}/5 en TuneUp ${gName}?\n${url}` : `Can you beat my ${triesN}/5 in TuneUp ${gName}?\n${url}`)
+          : (isEs() ? `Este TuneUp ${gName} me ganó — ¿puedes adivinarlo?\n${url}` : `This TuneUp ${gName} stumped me — can you get it?\n${url}`);
+        if (bridge && bridge.copyText) bridge.copyText(msg, 'mini_challenge_copy', t('Challenge link copied!', '¡Enlace de reto copiado!'));
       };
     }
     const againBtn = $('#mgPlayAgain');
@@ -1657,12 +1673,13 @@
         ? challenge.resolvedIndex
         : allAlbums.indexOf(target);
       st = { gameId: 'cover', target, challenge, challengeKey, challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false, imgEl: null };
-      if (!dailySlot && !challenge) freeMiniSessions.cover = st;
+      if (dailySlot) dailyMiniSessions[dailySlotKey(dailySlot)] = st;
+      else if (!challenge) freeMiniSessions.cover = st;
     }
     mgState = st;
     const target = st.target;
     const initGrid = PIXEL_GRIDS[Math.min(PIXEL_GRIDS.length - 1, st.tries)];
-    $('#mgSubtitle').textContent = t('Guess the album from its pixelated cover', 'Tebak nama album dari cover pikselnya');
+    $('#mgSubtitle').textContent = t('Guess the album from its pixelated cover', 'Adivina el álbum por su portada pixelada');
     $('#mgBody').innerHTML =
       `<div class="mg-cover-stage">` +
         `<div class="mg-cover-disc" aria-hidden="true"></div>` +
@@ -1697,9 +1714,9 @@
     }
 
     bindMiniSearch({
-      placeholder: t('Type album name or artist…', 'Ketik nama album atau artis…'),
+      placeholder: t('Type album name or artist…', 'Escribe el nombre del álbum o artista…'),
       mode: 'album',
-      skipLabel: t('Sharpen', 'Perjelas'),
+      skipLabel: t('Sharpen', 'Enfocar'),
       isTried: (a) => mgState && mgState.tried.has(a.nAlbum + '|' + a.nArtist),
       onPick: (album) => submitCoverGuess(album, dailySlot),
       onSkip: () => skipCoverGuess(dailySlot)
@@ -1740,7 +1757,7 @@
     if (!st || st.done) return;
     const key = pick.nAlbum + '|' + pick.nArtist;
     if (st.tried.has(key)) {
-      if (bridge && bridge.toast) bridge.toast(t('Already tried that album.', 'Album ini sudah dicoba.'));
+      if (bridge && bridge.toast) bridge.toast(t('Already tried that album.', 'Ya probaste ese álbum.'));
       return;
     }
     st.tried.add(key);
@@ -1758,8 +1775,8 @@
       renderAttemptPips(st.guesses, 5, true, idx);
       drawCoverPixel(true);
       const score = Hub.scoreTries(true, st.tries, 5);
-      const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
-      if (st.tries === 1) {
+      const sum = t(`Solved in ${st.tries}/5`, `Acertado en ${st.tries}/5`);
+      if (st.tries === 1 && !(dailySlot && dailySlot.isArchive)) {
         recordMgStat((s) => { s.cover1 = (s.cover1 || 0) + 1; });
         awardMiniBadges(['cover1']);
       }
@@ -1771,15 +1788,15 @@
       st.done = true;
       renderAttemptPips(st.guesses, 5, true, idx);
       drawCoverPixel(true);
-      const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: tgt.album, subtitle: subTxt, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.album}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+      const sum = t('Missed', 'Fallaste');
+      renderMiniReveal({ won: false, score: 0, title: tgt.album, subtitle: subTxt, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.album}`, freeKicker: t('Out of tries', 'Sin intentos') });
     } else {
       renderAttemptPips(st.guesses, 5, false, idx);
       drawCoverPixel(false);
       if (sameArt) {
         playFxNear();
         triggerFxClass($('#mgInput'), 'is-fx-near', 520);
-        if (bridge && bridge.toast) bridge.toast(t('Right artist, wrong album!', 'Artis benar, album salah!'));
+        if (bridge && bridge.toast) bridge.toast(t('Right artist, wrong album!', '¡Artista correcto, álbum incorrecto!'));
       } else {
         playFxWrong();
         triggerFxClass($('.mg-search-row'), 'is-fx-wrong', 420);
@@ -1800,8 +1817,8 @@
       drawCoverPixel(true);
       const tgt = st.target;
       const subTxt = tgt.anchorTitle ? `${tgt.artist} · ${tgt.year} · ${tgt.anchorTitle}` : `${tgt.artist} · ${tgt.year}`;
-      const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: tgt.album, subtitle: subTxt, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.album}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+      const sum = t('Missed', 'Fallaste');
+      renderMiniReveal({ won: false, score: 0, title: tgt.album, subtitle: subTxt, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'cover', shortSummary: sum, detail: `${sum} · ${tgt.album}`, freeKicker: t('Out of tries', 'Sin intentos') });
     } else {
       renderAttemptPips(st.guesses, 5, false, idx);
       drawCoverPixel(false);
@@ -1855,18 +1872,19 @@
         tried: new Set(),
         done: false
       };
-      if (!dailySlot && !challenge) freeMiniSessions.mv = st;
+      if (dailySlot) dailyMiniSessions[dailySlotKey(dailySlot)] = st;
+      else if (!challenge) freeMiniSessions.mv = st;
     }
     mgState = st;
 
-    $('#mgSubtitle').textContent = t('Guess the song from 3 music video frames', 'Tebak lagu dari 3 adegan video klip');
+    $('#mgSubtitle').textContent = t('Guess the song from 3 music video frames', 'Adivina la canción con 3 escenas del videoclip');
     $('#mgBody').innerHTML =
       `<div class="mg-mv-stage" id="mgMvStage">` +
         `<div class="mg-mv-frame-wrap">` +
-          `<img id="mgMvImg" class="mg-mv-img" alt="${esc(t('Music video scene', 'Adegan video klip'))}" decoding="async">` +
+          `<img id="mgMvImg" class="mg-mv-img" alt="${esc(t('Music video scene', 'Escena del videoclip'))}" decoding="async">` +
           `<div class="mg-mv-bar">` +
             `<span class="mg-mv-badge" id="mgMvBadge">Frame 1/3</span>` +
-            `<div class="mg-mv-tabs" id="mgMvTabs" role="group" aria-label="${esc(t('Music video frames', 'Frame video klip'))}">` +
+            `<div class="mg-mv-tabs" id="mgMvTabs" role="group" aria-label="${esc(t('Music video frames', 'Escenas del videoclip'))}">` +
               `<button type="button" class="mg-mv-tab is-active" data-mvf="1">1</button>` +
               `<button type="button" class="mg-mv-tab" data-mvf="2" disabled>2</button>` +
               `<button type="button" class="mg-mv-tab" data-mvf="3" disabled>3</button>` +
@@ -1878,9 +1896,9 @@
 
     renderAttemptPips(st.guesses, st.maxTries, false, -1);
     bindMiniSearch({
-      placeholder: t('Type song or artist…', 'Ketik lagu atau artis…'),
+      placeholder: t('Type song or artist…', 'Escribe la canción o el artista…'),
       mode: 'song',
-      skipLabel: t('Next frame', 'Frame berikut'),
+      skipLabel: t('Next frame', 'Siguiente escena'),
       isTried: (s) => mgState && mgState.tried.has(normStr(s.title) + '|' + normStr(s.artist)),
       onPick: (song) => submitMvGuess(song, dailySlot),
       onSkip: () => skipMvGuess(dailySlot)
@@ -1937,8 +1955,8 @@
     const badge = $('#mgMvBadge');
     if (badge) {
       badge.textContent = showAll
-        ? `${t('Scene', 'Adegan')} ${st.viewFrame}/3`
-        : `${t('Frame', 'Frame')} ${st.viewFrame}/3`;
+        ? `${t('Scene', 'Escena')} ${st.viewFrame}/3`
+        : `${t('Frame', 'Escena')} ${st.viewFrame}/3`;
     }
 
     const tabsHost = $('#mgMvTabs');
@@ -1955,10 +1973,10 @@
     if (cluesEl) {
       const chips = [];
       if (showAll || st.tries >= 3) {
-        chips.push(`<span class="mg-mv-clue"><small>${esc(t('Clue 1', 'Petunjuk 1'))}</small><b>${esc(tgt.year + ' · ' + formatMvGenre(tgt.genre))}</b></span>`);
+        chips.push(`<span class="mg-mv-clue"><small>${esc(t('Clue 1', 'Pista 1'))}</small><b>${esc(tgt.year + ' · ' + formatMvGenre(tgt.genre))}</b></span>`);
       }
       if (showAll || st.tries >= 4) {
-        chips.push(`<span class="mg-mv-clue"><small>${esc(t('Artist', 'Artis'))}</small><b>${esc(tgt.artist)}</b></span>`);
+        chips.push(`<span class="mg-mv-clue"><small>${esc(t('Artist', 'Artista'))}</small><b>${esc(tgt.artist)}</b></span>`);
       }
       cluesEl.hidden = !chips.length;
       cluesEl.innerHTML = chips.join('');
@@ -1967,12 +1985,12 @@
     const skipBtn = $('#mgSkipBtn');
     if (skipBtn && !st.done) {
       skipBtn.textContent = st.tries < 2
-        ? t('Next frame', 'Frame berikut')
+        ? t('Next frame', 'Siguiente escena')
         : st.tries === 2
-        ? t('Year clue', 'Petunjuk tahun')
+        ? t('Year clue', 'Pista de año')
         : st.tries === 3
-        ? t('Artist clue', 'Petunjuk artis')
-        : t('Reveal song', 'Lihat lagu');
+        ? t('Artist clue', 'Pista de artista')
+        : t('Reveal song', 'Revelar canción');
     }
   }
 
@@ -1987,7 +2005,7 @@
     if (!st || st.done) return;
     const key = normStr(pick.title) + '|' + normStr(pick.artist);
     if (st.tried.has(key)) {
-      if (bridge && bridge.toast) bridge.toast(t('Already tried that song.', 'Lagu ini sudah dicoba.'));
+      if (bridge && bridge.toast) bridge.toast(t('Already tried that song.', 'Ya probaste esa canción.'));
       return;
     }
     st.tried.add(key);
@@ -2005,8 +2023,8 @@
       renderAttemptPips(st.guesses, 5, true, idx);
       renderMvStage(true);
       const score = Hub.scoreTries(true, st.tries, 5);
-      const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
-      if (st.tries === 1) {
+      const sum = t(`Solved in ${st.tries}/5`, `Acertado en ${st.tries}/5`);
+      if (st.tries === 1 && !(dailySlot && dailySlot.isArchive)) {
         recordMgStat((s) => { s.mv1 = (s.mv1 || 0) + 1; });
         awardMiniBadges(['mv1']);
       }
@@ -2018,8 +2036,8 @@
       st.done = true;
       renderAttemptPips(st.guesses, 5, true, idx);
       renderMvStage(true);
-      const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'mv', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+      const sum = t('Missed', 'Fallaste');
+      renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'mv', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: t('Out of tries', 'Sin intentos') });
     } else {
       advanceMvProgress();
       renderAttemptPips(st.guesses, 5, false, idx);
@@ -2027,7 +2045,7 @@
       if (sameArt) {
         playFxNear();
         triggerFxClass($('#mgInput'), 'is-fx-near', 520);
-        if (bridge && bridge.toast) bridge.toast(t('Right artist, wrong MV!', 'Artis benar, MV salah!'));
+        if (bridge && bridge.toast) bridge.toast(t('Right artist, wrong MV!', '¡Artista correcto, videoclip incorrecto!'));
       } else {
         playFxWrong();
         triggerFxClass($('.mg-search-row'), 'is-fx-wrong', 420);
@@ -2047,8 +2065,8 @@
       renderAttemptPips(st.guesses, 5, true, idx);
       renderMvStage(true);
       const tgt = st.target;
-      const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'mv', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+      const sum = t('Missed', 'Fallaste');
+      renderMiniReveal({ won: false, score: 0, title: tgt.title, subtitle: `${tgt.artist} · ${tgt.year}`, art: tgt.art, trackId: tgt.trackId, dailySlot, gameId: 'mv', shortSummary: sum, detail: `${sum} · ${tgt.title}`, freeKicker: t('Out of tries', 'Sin intentos') });
     } else {
       advanceMvProgress();
       renderAttemptPips(st.guesses, 5, false, idx);
@@ -2080,12 +2098,13 @@
         ? challenge.resolvedIndex
         : bank.indexOf(picked);
       st = { gameId: 'hair', artistId, artistName, imgUrl, curtains, hasCrop, imgStyle, challenge, challengeKey: artistId, challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
-      if (!dailySlot && !challenge) freeMiniSessions.hair = st;
+      if (dailySlot) dailyMiniSessions[dailySlotKey(dailySlot)] = st;
+      else if (!challenge) freeMiniSessions.hair = st;
     }
     mgState = st;
     const { imgUrl, curtains, hasCrop, imgStyle } = st;
 
-    $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle', 'Tebak musisi dari gaya rambutnya');
+    $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle', 'Adivina al músico por su peinado');
     renderAttemptPips(st.guesses, st.maxTries, false, -1);
 
     $('#mgBody').innerHTML =
@@ -2094,14 +2113,14 @@
           `<img id="mgHairImg" class="mg-hair-img${hasCrop ? ' is-framed' : ''}" src="${esc(imgUrl)}" alt="Mystery musician" referrerpolicy="no-referrer"${imgStyle ? ` style="${imgStyle}"` : ''}>` +
         `</div>` +
         `<div id="mgHairCurtain" class="mg-hair-curtain" style="height:${curtains[0]}%">` +
-          `<span id="mgHairStage">${esc(t('Hair only', 'Rambut saja'))}</span>` +
+          `<span id="mgHairStage">${esc(t('Hair only', 'Solo cabello'))}</span>` +
         `</div>` +
       `</div>`;
 
     bindMiniSearch({
-      placeholder: t('Search musician name…', 'Cari nama musisi…'),
+      placeholder: t('Search musician name…', 'Busca el nombre del músico…'),
       mode: 'artist',
-      skipLabel: t('Reveal more', 'Buka lagi'),
+      skipLabel: t('Reveal more', 'Revelar más'),
       isTried: (a) => mgState && mgState.tried.has(normStr(a.name)),
       onPick: (artist) => submitHairGuess(artist, dailySlot),
       onSkip: () => skipHairGuess(dailySlot)
@@ -2116,11 +2135,11 @@
     const lbl = $('#mgHairStage');
     const idx = fullReveal ? 5 : Math.min(4, st.tries);
     const names = [
-      t('Hair only', 'Rambut saja'),
-      t('Hairline', 'Garis dahi'),
-      t('Eyes', 'Mata'),
-      t('Upper face', 'Wajah atas'),
-      t('Last clue', 'Kesempatan terakhir'),
+      t('Hair only', 'Solo cabello'),
+      t('Hairline', 'Frente'),
+      t('Eyes', 'Ojos'),
+      t('Upper face', 'Parte superior'),
+      t('Last clue', 'Última pista'),
       st.artistName
     ];
     const list = (st.curtains && st.curtains.length === 6) ? st.curtains : HAIR_CURTAIN_PCTS;
@@ -2137,8 +2156,8 @@
     const skipBtn = $('#mgSkipBtn');
     if (skipBtn && !st.done) {
       skipBtn.textContent = st.tries >= 4
-        ? t('Reveal artist', 'Lihat musisi')
-        : t('Reveal more', 'Buka lagi');
+        ? t('Reveal artist', 'Revelar artista')
+        : t('Reveal more', 'Revelar más');
     }
   }
 
@@ -2152,7 +2171,7 @@
 
   function hairRevealSub(hit, fallbackGenre) {
     if (hit && hit.title) return hit.title;
-    return fallbackGenre || t('Mystery musician', 'Musisi misterius');
+    return fallbackGenre || t('Mystery musician', 'Músico misterioso');
   }
 
   function submitHairGuess(artist, dailySlot) {
@@ -2160,7 +2179,7 @@
     if (!st || st.done) return;
     const key = normStr(artist.name);
     if (st.tried.has(key)) {
-      if (bridge && bridge.toast) bridge.toast(t('Already tried that musician.', 'Musisi ini sudah ditebak.'));
+      if (bridge && bridge.toast) bridge.toast(t('Already tried that musician.', 'Ya probaste con ese músico.'));
       return;
     }
     st.tried.add(key);
@@ -2174,8 +2193,8 @@
       renderAttemptPips(st.guesses, 5, true, idx);
       updateHairCurtain(true);
       const score = Hub.scoreTries(true, st.tries, 5);
-      const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
-      if (st.tries === 1) {
+      const sum = t(`Solved in ${st.tries}/5`, `Acertado en ${st.tries}/5`);
+      if (st.tries === 1 && !(dailySlot && dailySlot.isArchive)) {
         recordMgStat((s) => { s.hair1 = (s.hair1 || 0) + 1; });
         awardMiniBadges(['hair1']);
       }
@@ -2188,9 +2207,9 @@
       st.done = true;
       renderAttemptPips(st.guesses, 5, true, idx);
       updateHairCurtain(true);
-      const sum = t('Missed', 'Gagal');
+      const sum = t('Missed', 'Fallaste');
       const hit = hairTopTrack(null, st.artistName);
-      renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: hairRevealSub(hit, null), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+      renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: hairRevealSub(hit, null), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Sin intentos') });
     } else {
       renderAttemptPips(st.guesses, 5, false, idx);
       updateHairCurtain(false);
@@ -2210,9 +2229,9 @@
       st.done = true;
       renderAttemptPips(st.guesses, 5, true, idx);
       updateHairCurtain(true);
-      const sum = t('Missed', 'Gagal');
+      const sum = t('Missed', 'Fallaste');
       const hit = hairTopTrack(null, st.artistName);
-      renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: hairRevealSub(hit, null), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+      renderMiniReveal({ won: false, score: 0, title: st.artistName, subtitle: hairRevealSub(hit, null), art: st.imgUrl, trackId: hit.trackId, dailySlot, gameId: 'hair', shortSummary: sum, detail: `${sum} · ${st.artistName}`, freeKicker: t('Out of tries', 'Sin intentos') });
     } else {
       renderAttemptPips(st.guesses, 5, false, idx);
       updateHairCurtain(false);
@@ -2226,7 +2245,7 @@
     if (!st || st.gameId !== 'fact' || !rightEl) return;
     const best = Number(LS.get(FACT_BEST_KEY, 0)) || 0;
     if (st.isDaily) {
-      rightEl.innerHTML = `<div class="mg-fact-pill${bumpScore ? ' is-bump' : ''}">${esc(`${t('Claim', 'Soal')} ${st.idx + 1}/5 · ${st.correct * 20} ${t('pts', 'poin')}`)}</div>`;
+      rightEl.innerHTML = `<div class="mg-fact-pill${bumpScore ? ' is-bump' : ''}">${esc(`${t('Claim', 'Dato')} ${st.idx + 1}/5 · ${st.correct * 20} ${t('pts', 'pts')}`)}</div>`;
       if (bumpScore) popFloatBadge(rightEl.querySelector('.mg-fact-pill'), '+20', 'win');
       return;
     }
@@ -2237,8 +2256,8 @@
     }).join('');
     rightEl.innerHTML =
       `<div class="mg-fact-meta">` +
-        `<div class="mg-fact-hearts" aria-label="${esc(`${Math.max(0, st.lives)} ${t('lives', 'nyawa')}`)}">${hearts}</div>` +
-        `<div class="mg-fact-pill${bumpScore ? ' is-bump' : ''}">${st.correct} · ${esc(t('Best', 'Terbaik'))} ${best}</div>` +
+        `<div class="mg-fact-hearts" aria-label="${esc(`${Math.max(0, st.lives)} ${t('lives', 'vidas')}`)}">${hearts}</div>` +
+        `<div class="mg-fact-pill${bumpScore ? ' is-bump' : ''}">${st.correct} · ${esc(t('Best', 'Récord'))} ${best}</div>` +
       `</div>`;
     if (lostHeartIdx >= 0) popFloatBadge(rightEl.querySelector('.mg-fact-hearts'), '-1 ♥', 'lose');
     if (bumpScore) popFloatBadge(rightEl.querySelector('.mg-fact-pill'), '+1', 'win');
@@ -2246,7 +2265,7 @@
 
   function initFactOrCap(seed, dailySlot, saved) {
     const isDaily = !!dailySlot;
-    let st = (!isDaily && saved && saved.gameId === 'fact') ? saved : null;
+    let st = (saved && saved.gameId === 'fact') ? saved : null;
     if (!st) {
       const bank = Data.factBank || [];
       const deck = isDaily
@@ -2264,12 +2283,13 @@
         lastAnswer: null,
         done: false
       };
-      if (!isDaily) freeMiniSessions.fact = st;
+      if (isDaily) dailyMiniSessions[dailySlotKey(dailySlot)] = st;
+      else freeMiniSessions.fact = st;
     }
     mgState = st;
     $('#mgSubtitle').textContent = isDaily
-      ? t('5 quick music claims · 20 pts each', '5 pernyataan musik · 20 poin tiap benar')
-      : t('Music trivia · 3 lives', 'Trivia musik · 3 nyawa');
+      ? t('5 quick music claims · 20 pts each', '5 datos musicales · 20 pts cada uno')
+      : t('Music trivia · 3 lives', 'Trivia musical · 3 vidas');
     renderAttemptPips([], 0, false, -1);
     renderFactClaim();
   }
@@ -2277,16 +2297,16 @@
   function renderFactAnswered(ans) {
     const st = mgState;
     if (!st || st.gameId !== 'fact' || !ans) return;
-    const { ok, finished, isFact, expEn, expId } = ans;
+    const { ok, finished, isFact, expEn, expEs } = ans;
     const fb = $('#mgFactFeedback');
     if (fb) {
       fb.hidden = false;
       fb.className = 'mg-fact-fb ' + (ok ? 'is-win' : 'is-lose');
-      const tag = isFact ? t('FACT', 'FAKTA') : t('CAP', 'HOAX');
-      fb.innerHTML = `<b>${ok ? '✓ ' + t('Correct!', 'Benar!') : '✕ ' + t('Wrong!', 'Salah!')} (${tag})</b> — ${esc(isId() ? expId : expEn)}`;
+      const tag = isFact ? t('FACT', 'DATO') : t('CAP', 'MITO');
+      fb.innerHTML = `<b>${ok ? '✓ ' + t('Correct!', '¡Correcto!') : '✕ ' + t('Wrong!', '¡Incorrecto!')} (${tag})</b> — ${esc(isEs() ? expEs : expEn)}`;
     }
     $('#mgControls').innerHTML =
-      `<button id="mgFactNext" class="btn solid mg-lock-btn" type="button">${esc(finished ? t('See result →', 'Lihat hasil →') : t('Next claim →', 'Soal berikutnya →'))}</button>`;
+      `<button id="mgFactNext" class="btn solid mg-lock-btn" type="button">${esc(finished ? t('See result →', 'Ver resultado →') : t('Next claim →', 'Siguiente →'))}</button>`;
     $('#mgFactNext').onclick = () => {
       st.locked = false;
       st.lastAnswer = null;
@@ -2297,21 +2317,22 @@
       }
       st.done = true;
       if (st.isDaily) {
+        delete dailyMiniSessions[dailySlotKey(st.dailySlot)];
         const score = Hub.scorePairs(st.correct, 5);
-        const sum = `${st.correct}/5 ${t('correct', 'benar')}`;
+        const sum = `${st.correct}/5 ${t('correct', 'correctas')}`;
         finishDailySlot(st.dailySlot.slot, { score, won: st.correct >= 3, shortSummary: sum, detail: sum });
       } else {
         const best = Number(LS.get(FACT_BEST_KEY, 0)) || 0;
         renderMiniReveal({
           won: st.correct >= 5,
           score: Math.min(100, st.correct * 10),
-          title: `${st.correct} ${t('correct!', 'jawaban benar!')}`,
-          subtitle: `${t('Personal best', 'Skor terbaik')}: ${best}`,
+          title: `${st.correct} ${t('correct!', '¡correctas!')}`,
+          subtitle: `${t('Personal best', 'Récord personal')}: ${best}`,
           art: '',
           trackId: null,
           dailySlot: null,
           gameId: 'fact',
-          freeKicker: `${t('Score', 'Skor')} ${st.correct} · ${t('Best', 'Terbaik')} ${best}`
+          freeKicker: `${t('Score', 'Puntos')} ${st.correct} · ${t('Best', 'Récord')} ${best}`
         });
       }
     };
@@ -2322,14 +2343,14 @@
     if (!st || st.gameId !== 'fact') return;
     const item = st.deck[st.idx];
     if (!item) return;
-    const [, , claimEn, claimId] = item;
+    const [, , claimEn, claimEs] = item;
     renderFactHeader(-1, false);
 
     $('#mgBody').innerHTML =
       `<div class="mg-deck-wrap">` +
         `<div class="mg-deck-card">` +
           `<span class="mg-deck-quote" aria-hidden="true">“</span>` +
-          `<p class="mg-fact-claim">${esc(isId() ? claimId : claimEn)}</p>` +
+          `<p class="mg-fact-claim">${esc(isEs() ? claimEs : claimEn)}</p>` +
           `<div id="mgFactFeedback" class="mg-fact-fb" hidden></div>` +
         `</div>` +
       `</div>`;
@@ -2341,8 +2362,8 @@
 
     $('#mgControls').innerHTML =
       `<div class="mg-fact-btns">` +
-        `<button id="mgBtnFact" class="btn ghostbtn mg-fact-btn is-fact" type="button"><span class="mg-fact-badge" aria-hidden="true">✓</span><span>${esc(t('FACT', 'FAKTA'))}</span><kbd class="mg-kbd" aria-hidden="true">F</kbd></button>` +
-        `<button id="mgBtnCap" class="btn ghostbtn mg-fact-btn is-cap" type="button"><span class="mg-fact-badge" aria-hidden="true">✕</span><span>${esc(t('CAP', 'HOAX'))}</span><kbd class="mg-kbd" aria-hidden="true">C</kbd></button>` +
+        `<button id="mgBtnFact" class="btn ghostbtn mg-fact-btn is-fact" type="button"><span class="mg-fact-badge" aria-hidden="true">✓</span><span>${esc(t('FACT', 'DATO'))}</span><kbd class="mg-kbd" aria-hidden="true">F</kbd></button>` +
+        `<button id="mgBtnCap" class="btn ghostbtn mg-fact-btn is-cap" type="button"><span class="mg-fact-badge" aria-hidden="true">✕</span><span>${esc(t('CAP', 'MITO'))}</span><kbd class="mg-kbd" aria-hidden="true">C</kbd></button>` +
       `</div>`;
 
     $('#mgBtnFact').onclick = () => answerFact(1);
@@ -2353,7 +2374,7 @@
     const st = mgState;
     if (!st || st.locked || st.done) return;
     st.locked = true;
-    const [isFact, , , , expEn, expId] = st.deck[st.idx];
+    const [isFact, , , , expEn, expEs] = st.deck[st.idx];
     const ok = choice === isFact;
     let lostHeartIdx = -1;
     if (ok) {
@@ -2381,7 +2402,7 @@
     }
 
     const finished = st.isDaily ? (st.idx + 1 >= st.deck.length) : (st.lives <= 0 || st.idx + 1 >= st.deck.length);
-    st.lastAnswer = { ok, finished, isFact, expEn, expId };
+    st.lastAnswer = { ok, finished, isFact, expEn, expEs };
     renderFactAnswered(st.lastAnswer);
   }
 
@@ -2402,7 +2423,8 @@
         ? challenge.resolvedIndex
         : bank.indexOf(targetRow);
       st = { gameId: 'lyric', dailySlot, trackId, title, artist, art, year, lines, challenge, challengeKey: String(trackId), challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
-      if (!dailySlot && !challenge) freeMiniSessions.lyric = st;
+      if (dailySlot) dailyMiniSessions[dailySlotKey(dailySlot)] = st;
+      else if (!challenge) freeMiniSessions.lyric = st;
     }
     mgState = st;
 
@@ -2410,9 +2432,9 @@
     renderLyricLines(false);
 
     bindMiniSearch({
-      placeholder: t('Type song title or artist…', 'Ketik judul lagu atau artis…'),
+      placeholder: t('Type song title or artist…', 'Escribe el título o artista…'),
       mode: 'song',
-      skipLabel: t('+1 line', '+1 baris'),
+      skipLabel: t('+1 line', '+1 verso'),
       isTried: (s) => mgState && mgState.tried.has(normStr(s.title) + '|' + normStr(s.artist)),
       onPick: (song) => submitLyricGuess(song, dailySlot),
       onSkip: () => skipLyricGuess(dailySlot)
@@ -2424,11 +2446,11 @@
     if (!st || st.gameId !== 'lyric') return;
     const count = showAll ? st.lines.length : Math.min(st.lines.length, st.tries + 1);
     const pts = Hub.scoreTries(true, st.tries + 1, 5);
-    const lineTag = t(`Line ${count} of 5`, `Baris ${count} dari 5`);
+    const lineTag = t(`Line ${count} of 5`, `Verso ${count} de 5`);
     const subEl = $('#mgSubtitle');
     if (subEl) {
       subEl.textContent = (st.dailySlot && !showAll)
-        ? `${lineTag} · +${pts} ${t('pts', 'poin')}`
+        ? `${lineTag} · +${pts} ${t('pts', 'pts')}`
         : lineTag;
     }
     $('#mgBody').innerHTML =
@@ -2444,7 +2466,7 @@
     if (!st || st.done) return;
     const key = normStr(pick.title) + '|' + normStr(pick.artist);
     if (st.tried.has(key)) {
-      if (bridge && bridge.toast) bridge.toast(t('Already tried that song.', 'Lagu ini sudah dicoba.'));
+      if (bridge && bridge.toast) bridge.toast(t('Already tried that song.', 'Ya probaste esa canción.'));
       return;
     }
     st.tried.add(key);
@@ -2461,8 +2483,8 @@
       renderAttemptPips(st.guesses, 5, true, idx);
       renderLyricLines(true);
       const score = Hub.scoreTries(true, st.tries, 5);
-      const sum = t(`Solved in ${st.tries}/5`, `Benar ${st.tries}/5`);
-      if (st.tries === 1) {
+      const sum = t(`Solved in ${st.tries}/5`, `Acertado en ${st.tries}/5`);
+      if (st.tries === 1 && !(dailySlot && dailySlot.isArchive)) {
         recordMgStat((s) => { s.lyric1 = (s.lyric1 || 0) + 1; });
         awardMiniBadges(['lyric1']);
       }
@@ -2474,15 +2496,15 @@
       st.done = true;
       renderAttemptPips(st.guesses, 5, true, idx);
       renderLyricLines(true);
-      const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+      const sum = t('Missed', 'Fallaste');
+      renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Sin intentos') });
     } else {
       renderAttemptPips(st.guesses, 5, false, idx);
       renderLyricLines(false);
       if (sameArt) {
         playFxNear();
         triggerFxClass($('#mgInput'), 'is-fx-near', 520);
-        if (bridge && bridge.toast) bridge.toast(t('Right artist, wrong song!', 'Artis benar, lagu salah!'));
+        if (bridge && bridge.toast) bridge.toast(t('Right artist, wrong song!', '¡Artista correcto, canción incorrecta!'));
       } else {
         playFxWrong();
         triggerFxClass($('.mg-search-row'), 'is-fx-wrong', 420);
@@ -2501,8 +2523,8 @@
       st.done = true;
       renderAttemptPips(st.guesses, 5, true, idx);
       renderLyricLines(true);
-      const sum = t('Missed', 'Gagal');
-      renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Kesempatan habis') });
+      const sum = t('Missed', 'Fallaste');
+      renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Sin intentos') });
     } else {
       renderAttemptPips(st.guesses, 5, false, idx);
       renderLyricLines(false);
@@ -2538,7 +2560,7 @@
     const dhShare = $('#dhShareBtn');
     if (dhShare) dhShare.onclick = () => {
       if (!hubState) return;
-      const txt = Hub.shareText(hubState, hubState.day, location.origin + '/daily', isId() ? 'id' : 'en');
+      const txt = Hub.shareText(hubState, hubState.day, location.origin + '/daily', isEs() ? 'es' : 'en');
       if (bridge && bridge.copyText) bridge.copyText(txt, 'daily_hub_share');
     };
     const dhMenuBtn = $('#dhMenuBtn');
@@ -2638,17 +2660,44 @@
   function syncLang() {
     refreshLobbyDailyUI();
     const backLbl = $('#dhBackLbl');
-    if (backLbl) backLbl.textContent = t('Change mode', 'Ganti mode');
+    if (backLbl) backLbl.textContent = t('Change mode', 'Cambiar modo');
     const nextLbl = $('#dhNextLbl');
-    if (nextLbl) nextLbl.textContent = t('Next daily in', 'Harian berikutnya dalam');
+    if (nextLbl) nextLbl.textContent = t('Next daily in', 'Próximo diario en');
     const kicker = $('#dhKicker');
-    if (kicker) kicker.textContent = t('DAILY CHALLENGE', 'TANTANGAN HARIAN');
+    if (kicker) kicker.textContent = t('DAILY CHALLENGE', 'DESAFÍO DIARIO');
     const doneKicker = $('#dhDoneKicker');
-    if (doneKicker) doneKicker.textContent = t('DAILY COMPLETE', 'HARIAN SELESAI');
-    setBtnLbl($('#dhShareBtn'), t('Share result', 'Bagikan hasil'));
-    setBtnLbl($('#dhMenuBtn'), t('Back to menu', 'Kembali ke menu'));
-    setBtnLbl($('#dhStepBackBtn'), t('Back to Daily', 'Kembali ke Daily'));
+    if (doneKicker) doneKicker.textContent = t('DAILY COMPLETE', 'DIARIO COMPLETADO');
+    setBtnLbl($('#dhShareBtn'), t('Share result', 'Compartir resultado'));
+    setBtnLbl($('#dhMenuBtn'), t('Back to menu', 'Volver al menú'));
+    setBtnLbl($('#dhStepBackBtn'), t('Back to Daily', 'Volver al Diario'));
     if ($('#dailyHub') && !$('#dailyHub').hidden) renderDailyHub();
+    if ($('#miniGame') && !$('#miniGame').hidden && mgState) {
+      const slot = activeDailySlot;
+      const gId = mgState.gameId;
+      const mgBackLbl = $('#mgBackLbl');
+      if (mgBackLbl) mgBackLbl.textContent = slot ? t('Back to Daily', 'Volver al Diario') : t('Change mode', 'Cambiar modo');
+      renderDailyPillInMiniGame(slot);
+      renderMiniStreakPill(gId, slot, null);
+      renderMiniSwitcher(gId, slot);
+      renderMiniChallengeBar(mgState.challenge || null);
+      const titleEl = $('#mgGameTitle');
+      if (titleEl) titleEl.textContent = gameLabel(gId);
+      if (!mgState.done) {
+        if (gId === 'cover') initCoverPixel('', slot, mgState.challenge || null, mgState);
+        else if (gId === 'mv') initMvSpot('', slot, mgState.challenge || null, mgState);
+        else if (gId === 'hair') initHairSpot('', slot, mgState.challenge || null, mgState);
+        else if (gId === 'fact') initFactOrCap('', slot, mgState);
+        else if (gId === 'lyric') initLyricGuess('', slot, mgState.challenge || null, mgState);
+      } else {
+        setBtnLbl($('#mgContinueDaily'), t('Continue Daily', 'Continuar Diario'));
+        setBtnLbl($('#mgChallengeBtn'), t('Challenge friend', 'Retar amigo'));
+        setBtnLbl($('#mgPlayAgain'), t('Next round', 'Siguiente ronda'));
+        if (gId === 'cover') $('#mgSubtitle').textContent = t('Guess the album from its pixelated cover', 'Adivina el álbum por su portada pixelada');
+        else if (gId === 'mv') { $('#mgSubtitle').textContent = t('Guess the song from 3 music video frames', 'Adivina la canción con 3 escenas del videoclip'); renderMvStage(true); }
+        else if (gId === 'hair') { $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle', 'Adivina al músico por su peinado'); updateHairCurtain(true); }
+        else if (gId === 'lyric') renderLyricLines(true);
+      }
+    }
   }
 
   window.TuneUpDailyUI = {

@@ -55,7 +55,7 @@ test('Wave 49 audio, retry, artist detective, score card, and Spotify focus fixe
 
 test('Wave 50 clean per-mode URL routing & popstate Back navigation are wired', () => {
   const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
-  assert.match(app, /const ROUTE_SLUGS = new Set\(\[\s*'daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective', 'id'[\s\S]*'cover-pixel', 'mv-spot', 'album-color', 'hairspot', 'fact-or-cap', 'lyric-guess'/);
+  assert.match(app, /const ROUTE_SLUGS = new Set\(\[\s*'daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective', 'es'[\s\S]*'cover-pixel', 'mv-spot', 'album-color', 'hairspot', 'fact-or-cap', 'lyric-guess'/);
   assert.match(app, /function syncRoute\(/);
   assert.match(app, /syncRoute\('daily'/);
   assert.match(app, /syncRoute\('classic'/);
@@ -203,7 +203,7 @@ test('Wave 65 wires zero-wait next-stage preload and persistent recent playlists
   assert.match(css, /\.recent-pl-chip\[data-src="apple"\]/);
   assert.match(css, /\.recent-pl-chip\[data-src="youtube"\]/);
   assert.match(i18n, /recentPlaylists:\s*'Recent playlists'/);
-  assert.match(i18n, /recentPlaylists:\s*'Playlist terakhir'/);
+  assert.match(i18n, /recentPlaylists:\s*'Playlists recientes'/);
 
   assert.match(app, /function computePoolForStage\(stageIdx\)/);
   assert.match(app, /function preloadNextStage\(\)/);
@@ -271,7 +271,7 @@ test('Wave 69 compacts songs.js with dictionary tables under 2.6 MB and wires Da
   assert.match(app, /AD\.dailyArtist\(list, today\)/);
   assert.match(app, /function saveDailyArtistState\(\)/);
   assert.match(i18n, /agTabDaily:\s*'Daily Artist'/);
-  assert.match(i18n, /agTabDaily:\s*'Artis Harian'/);
+  assert.match(i18n, /agTabDaily:\s*'Artista Diario'/);
 
   // Daily Artist score card produces DAILY ARTIST kicker & dated filename
   const dailyCard = TuneUpCard.buildCardData({
@@ -320,10 +320,10 @@ test('Wave 70/99 promotes Daily Hub onto the homepage alongside Daily Artist End
   assert.match(app, /function refreshDailyArtist\(\)/);
   assert.match(app, /\$\('#openArtistGame'\)\.onclick\s*=\s*\(\)\s*=>\s*(?:ensureSongsLoaded\(\)\.then\(\(\)\s*=>\s*)?startArtistGame\(null,\s*'free'\)\)?/);
   assert.match(i18n, /dailyHubHeading:\s*'Daily Challenge'/);
-  assert.match(i18n, /dailyHubHeading:\s*'Tantangan Harian'/);
+  assert.match(i18n, /dailyHubHeading:\s*'Desafío Diario'/);
   assert.match(i18n, /dailyArtistHeading:\s*'Daily Artist'/);
-  assert.match(i18n, /dailyArtistHeading:\s*'Artis Harian'/);
-  assert.match(build, /<h2 id="dailyHubHeading">Tantangan Harian<\/h2>/);
+  assert.match(i18n, /dailyArtistHeading:\s*'Artista del Día'/);
+  assert.match(build, /<h2 id="dailyHubHeading">Desafío Diario<\/h2>/);
 });
 
 test('Wave 71 removes Save score card in favor of link-only share buttons, hides mid-Classic shareStage, and redesigns Feedback modal', () => {
@@ -403,9 +403,9 @@ test('Wave 75 upgrades Badges to 16 Steam-style Achievements with SFX, adds in-a
   assert.match(app, /if \(mode === 'lose' \|\| \(typeof settings !== 'undefined' && !settings\.anim\)\) return;/);
   assert.match(app, /tr\('playClassic'\)/);
   assert.match(i18n, /tabBadges:\s*'Achievements'/);
-  assert.match(i18n, /tabBadges:\s*'Pencapaian'/);
+  assert.match(i18n, /tabBadges:\s*'Logros'/);
   assert.match(i18n, /playClassic:\s*'Play Classic'/);
-  assert.match(i18n, /playClassic:\s*'Main Classic'/);
+  assert.match(i18n, /playClassic:\s*'Jugar Clásico'/);
 });
 
 test('Wave 76 polishes mobile toast, unifies PC/mobile reveal modal, adds mobile search auto-scroll, and removes This filter tab with icons on all stats tabs', () => {
@@ -455,7 +455,7 @@ test('Wave 77 adds multi-select Genre & Era filters and unifies PC result modals
   assert.match(app, /function formatMulti\(/);
   assert.match(app, /function closeFilterMenus\(/);
   assert.match(i18n, /multiDone:\s*'Done'/);
-  assert.match(i18n, /multiDone:\s*'Selesai'/);
+  assert.match(i18n, /multiDone:\s*'Listo'/);
 
   // 2. Unified compact PC/mobile result modals across Run, Daily, Duel, and Artist Detective
   assert.match(css, /\.sheet\.run-sheet\{\s*width:min\(440px,100%\)/);
@@ -526,8 +526,8 @@ test('Wave 81 fixes ID localization in custom/result/run modals & /id SSR, remov
   assert.match(app, /tr\('notPlayed'\)/);
   assert.doesNotMatch(html, /src="score-card\.js"/);
   assert.doesNotMatch(build, /'score-card\.js'/);
-  assert.match(build, /<span class="multi-lbl">Semua genre<\/span>/);
-  assert.match(build, /<span class="lbl">Pencapaian<\/span>/);
+  assert.match(build, /<span class="multi-lbl">Todos los géneros<\/span>/);
+  assert.match(build, /<span class="lbl">Logros<\/span>/);
   assert.match(guide, /document\.body\.dataset\.anim === 'off'/);
   assert.doesNotMatch(html, /class="search-ico"[^>]*><circle cx="11" cy="11" r="6\.5"/);
 });

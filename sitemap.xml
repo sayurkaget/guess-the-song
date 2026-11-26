@@ -3,20 +3,20 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://tuneup.my.id/</loc>
-    <lastmod>2026-11-25</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://tuneup.my.id/"/>
-    <xhtml:link rel="alternate" hreflang="id" href="https://tuneup.my.id/id"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://tuneup.my.id/es"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://tuneup.my.id/"/>
   </url>
   <url>
-    <loc>https://tuneup.my.id/id</loc>
-    <lastmod>2026-11-25</lastmod>
+    <loc>https://tuneup.my.id/es</loc>
+    <lastmod>2026-11-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://tuneup.my.id/"/>
-    <xhtml:link rel="alternate" hreflang="id" href="https://tuneup.my.id/id"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://tuneup.my.id/es"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://tuneup.my.id/"/>
   </url>
   <url>

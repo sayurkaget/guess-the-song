@@ -994,7 +994,17 @@
       };
     }
     S.stages = stages;
-    if (S.daily) saveDaily();
+    if (dailyHubSongCb && dailyHubSongCb.slot && S.daily) {
+      const hk = dailyHubSongCb.slot.seed + (dailyHubSongCb.slot.isArchive ? ':arch' : '');
+      songHubRuns[hk] = {
+        songs: S.daily.songs,
+        stages: S.stages.slice(),
+        guesses: S.guesses.slice(),
+        done: S.done,
+        won: S.won
+      };
+    }
+    if (S.daily && !S.daily.isArchive && !dailyHubSongCb) saveDaily();
     // Sengaja TIDAK disimpan ke localStorage: sesi hidup di memori saja, jadi
     // muat ulang halaman selalu memulai yang baru. "Change mode" lalu kembali
     // tetap menyambung karena masih satu muatan halaman.
@@ -1457,13 +1467,17 @@
     if (S.stage === stageCount() - 1) S.runDone = true;
     saveRun();
     playSfx(won ? ((S.daily || (S.runDone && score() >= stageCount())) ? 'fanfare' : 'win') : 'wrong');
-    lastStreak = updateSongStreak(won);
-    if (S.daily) {
+    const isArchDaily = Boolean(S.daily && S.daily.isArchive);
+    if (!isArchDaily) lastStreak = updateSongStreak(won);
+    if (S.daily && !isArchDaily) {
       trackActivity('daily_complete', { won, attempts: S.guesses.length });
-      submitDailyCommunity('song', S.daily.day, won, won ? S.guesses.length : 0);
+      if (!dailyHubSongCb) submitDailyCommunity('song', S.daily.day, won, won ? S.guesses.length : 0);
     }
-    if (S.runDone) { if (S.daily) completeDaily(); else recordStats(); }
-    checkRunBadges(won);
+    if (S.runDone) {
+      if (S.daily) { if (!isArchDaily && !dailyHubSongCb) completeDaily(); }
+      else recordStats();
+    }
+    if (!isArchDaily) checkRunBadges(won);
     UI.render(); UI.streak(); UI.clearInput();
     if (UI.q && typeof UI.q.blur === 'function') UI.q.blur();
     UI.status('');
@@ -2144,6 +2158,7 @@
     }
   }
   function saveDaily() {
+    if (!S.daily || S.daily.isArchive) return;
     const key = dailyKey(S.daily.day), saved = LS.get(key);
     // An already completed result is immutable, including across browser tabs.
     if (saved && saved.runDone) return;
@@ -2159,9 +2174,9 @@
     const plays = Math.max(1, Number(data.plays) || 0);
     const wins = Math.max(0, Number(data.wins) || 0);
     const pct = Number.isFinite(Number(data.winRate)) ? Number(data.winRate) : Math.round((wins / plays) * 100);
-    const isId = !!(I18N && settings.lang === 'id');
+    const isEs = !!(I18N && settings.lang === 'es');
     const avgNum = Number(data.avgTries) || 0;
-    const avgStr = isId
+    const avgStr = isEs
       ? String(avgNum.toFixed(1)).replace('.', ',')
       : avgNum.toFixed(1);
     const bArr = Array.isArray(data.buckets) ? data.buckets.map((n) => Math.max(0, Number(n) || 0)) : [0, 0, 0, 0, 0];
@@ -2308,6 +2323,7 @@
   }
 
   function completeDaily() {
+    if (!S.daily || S.daily.isArchive) return;
     const completed = LS.get('tl:daily:completed', []);
     if (!completed.includes(S.daily.day)) LS.set('tl:daily:completed', [...completed, S.daily.day].sort());
   }
@@ -2896,6 +2912,21 @@
   let stopDuel = null, stopDuelAudio = null, syncDuelVolume = null, duelEnded = () => false, launchDuelChallenge = null, launchDuelMode = null, clearDuelFreeRuns = null;
   let stopArtistGame = null, stopArtistAudio = null, syncArtistVolume = null, launchArtistChallenge = null, launchArtistMode = null, clearArtistFreeRun = null;
   let dailyHubSongCb = null, launchDailyDuelForHub = null, launchDailyArtistForHub = null, searchArtistRoster = null;
+  const songHubRuns = Object.create(null);
+  function syncBackButton(el, isDailyHub) {
+    if (!el) return;
+    if (el.dataset) el.dataset.dailyBack = isDailyHub ? '1' : '0';
+    const key = isDailyHub ? 'backToDaily' : 'changeMode';
+    if (I18N && typeof I18N.setBtnLabelKeepSvg === 'function') {
+      I18N.setBtnLabelKeepSvg(el, key);
+    } else if (el.childNodes) {
+      const lbl = isDailyHub ? 'Back to Daily' : 'Change mode';
+      for (let i = 0; i < el.childNodes.length; i++) {
+        const n = el.childNodes[i];
+        if (n.nodeType === 3 && n.textContent.trim()) { n.textContent = ' ' + lbl + ' '; break; }
+      }
+    }
+  }
 
   // Susun kipas sampul album (maks. 3 sampul unik) atau satu sampul + piringan vinyl
   function renderRunFan(el, arts) {
@@ -3363,6 +3394,7 @@
           S.era === 'all' ? null : formatMulti(S.era, ERA_KEYS, eraLabel, 2)
         ].filter(Boolean).join(' · ');
       $('#gameMode').hidden = !$('#gameMode').textContent;
+      syncBackButton($('#back'), Boolean(dailyHubSongCb));
       if (S.challenge || S.runChallenge) {
         if (typeof document !== 'undefined') document.title = 'Friend Challenge — TuneUp';
       } else if (S.daily) {
@@ -3888,9 +3920,12 @@
         const pts = Hub ? Hub.scoreTries(won0, tries0, TRIES) : (won0 ? 100 : 0);
         const title0 = (st0 && st0.title) || (S.song && S.song.title) || '';
         const sum = won0
-          ? (settings.lang === 'id' ? ('Benar ' + tries0 + '/5') : ('Solved in ' + tries0 + '/5'))
-          : (settings.lang === 'id' ? 'Gagal' : 'Missed');
+          ? (settings.lang === 'es' ? ('Acertado en ' + tries0 + '/5') : ('Solved in ' + tries0 + '/5'))
+          : (settings.lang === 'es' ? 'Fallaste' : 'Missed');
         const cbObj = dailyHubSongCb;
+        if (cbObj && cbObj.slot) {
+          delete songHubRuns[cbObj.slot.seed + (cbObj.slot.isArchive ? ':arch' : '')];
+        }
         dailyHubSongCb = null;
         closeAll();
         cbObj.onDone({ score: pts, won: won0, shortSummary: sum, detail: title0 ? (sum + ' · ' + title0) : sum });
@@ -3995,7 +4030,7 @@
         const top = Math.max(peak, 1);
         const rows = [
           { label: 'Streams', val: d.streamsBest },
-          { label: settings.lang === 'id' ? 'Tahun' : 'Year', val: d.yearBest }
+          { label: settings.lang === 'es' ? 'Año' : 'Year', val: d.yearBest }
         ];
         $('#dist').innerHTML = rows.map((r) =>
           '<div class="row"><span class="n wide duel">' + r.label + '</span>' +
@@ -4025,7 +4060,7 @@
         const hubDays = dailyHubStats().played;
         const baseScope = I18N ? tr('statScopeMini') : '5 free-play & Daily Hub mini-games';
         $('#statScope').textContent = hubDays > 0
-          ? baseScope + ' · ' + hubDays + (settings.lang === 'id' ? ' Daily selesai' : (hubDays === 1 ? ' Daily completed' : ' Dailies completed'))
+          ? baseScope + ' · ' + hubDays + (settings.lang === 'es' ? (hubDays === 1 ? ' Diario completado' : ' Diarios completados') : (hubDays === 1 ? ' Daily completed' : ' Dailies completed'))
           : baseScope;
         $('#statgrid').innerHTML =
           cell(totPlayed, I18N ? tr('statPlayed') : 'played') +
@@ -4040,8 +4075,8 @@
           const pct = pl ? Math.round((wn / pl) * 100) : 0;
           const bestVal = d.id === 'fact' ? Math.max(Number(g.best) || 0, factBest) : (Number(g.best) || 0);
           const metaTxt = d.id === 'fact'
-            ? (settings.lang === 'id' ? `${pl} main · Rekor ${bestVal}` : `${pl} played · Best ${bestVal}`)
-            : (settings.lang === 'id' ? `${wn}/${pl} benar · Streak ${bestVal}` : `${wn}/${pl} won · Best ${bestVal}`);
+            ? (settings.lang === 'es' ? `${pl} jugadas · Récord ${bestVal}` : `${pl} played · Best ${bestVal}`)
+            : (settings.lang === 'es' ? `${wn}/${pl} ganadas · Racha ${bestVal}` : `${wn}/${pl} won · Best ${bestVal}`);
           return '<div class="mg-stat-row" style="--mc:' + d.color + '">' +
             '<div class="mg-stat-head"><b>' + esc(d.name) + '</b><span>' + esc(metaTxt) + '</span></div>' +
             '<div class="mg-stat-track"><div class="mg-stat-fill" style="width:' + (pl ? Math.max(8, pct) : 0) + '%"></div></div>' +
@@ -4078,7 +4113,7 @@
         const bestStreak = songStreak('classic').best;
         const allLbl = I18N ? tr('statScopeAllClassic') : 'All Classic filters';
         $('#statScope').textContent = [(st.filtersUsed ? allLbl + ' · ' + st.filtersUsed + (st.filtersUsed === 1 ? ' preset' : ' presets') : allLbl),
-          bestStreak ? (settings.lang === 'id' ? 'Streak lagu terbaik ' : 'Best song streak ') + bestStreak : ''].filter(Boolean).join(' · ');
+          bestStreak ? (settings.lang === 'es' ? 'Mejor racha de canciones ' : 'Best song streak ') + bestStreak : ''].filter(Boolean).join(' · ');
         const avg = st.runs ? (st.total / st.runs).toFixed(1) : '0';
         $('#statgrid').innerHTML =
           cell(st.runs, I18N ? tr('statRuns') : 'runs') + cell(avg, I18N ? tr('statAvg') : 'average') +
@@ -4209,12 +4244,12 @@
   // Alamat situs mengikuti domain tempat game dibuka (github.io, pages.dev,
   // domain sendiri -- apa pun), jadi tautan tantangan tak pernah usang.
   const ROUTE_SLUGS = new Set([
-    'daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective', 'id',
+    'daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective', 'es',
     'cover-pixel', 'mv-spot', 'album-color', 'hairspot', 'fact-or-cap', 'lyric-guess'
   ]);
   const DEFAULT_TITLE = 'TuneUp — Free Guess the Song Game, Spotify Playlist Quiz & Music Duel';
-  const DEFAULT_TITLE_ID = 'TuneUp — Game Tebak Lagu Online Gratis (Spotify, Harian & Duel)';
-  const lobbyTitle = () => (settings.lang === 'id' ? DEFAULT_TITLE_ID : DEFAULT_TITLE);
+  const DEFAULT_TITLE_ES = 'TuneUp — Juego Gratis de Adivinar Canciones (Spotify, Diario y Duelo)';
+  const lobbyTitle = () => (settings.lang === 'es' ? DEFAULT_TITLE_ES : DEFAULT_TITLE);
   const locObj = () => (typeof location !== 'undefined' && location) || null;
   const ROOT_PATH = (() => {
     const loc = locObj();
@@ -4613,6 +4648,7 @@
     if (typeof reloadSpotifyRounds === 'function') reloadSpotifyRounds();
     if (typeof renderRecentPlaylists === 'function') renderRecentPlaylists();
     for (const k in RUNS) delete RUNS[k];
+    for (const k in songHubRuns) delete songHubRuns[k];
     if (clearDuelFreeRuns) clearDuelFreeRuns();
     if (clearArtistFreeRun) clearArtistFreeRun();
     if (window.TuneUpDailyUI && typeof window.TuneUpDailyUI.clearFreeSessions === 'function') {
@@ -4643,18 +4679,18 @@
   }
   function switchLanguage(next) {
     if (!I18N) return;
-    const target = next === 'id' ? 'id' : 'en';
+    const target = next === 'es' ? 'es' : 'en';
     if (settings.lang === target) return;
     settings.lang = I18N.set(target, localStorage);
     renderSettings();
     applyLanguage();
     refreshBackupPreview();
     if ($('#lobby') && !$('#lobby').hidden) {
-      if (target === 'en' && currentRouteSlug() === 'id') syncRoute('', { title: DEFAULT_TITLE, replace: true });
-      else if (target === 'id' && !currentRouteSlug() && !location.search && !location.hash) syncRoute('id', { title: DEFAULT_TITLE_ID, replace: true });
+      if (target === 'en' && currentRouteSlug() === 'es') syncRoute('', { title: DEFAULT_TITLE, replace: true });
+      else if (target === 'es' && !currentRouteSlug() && !location.search && !location.hash) syncRoute('es', { title: DEFAULT_TITLE_ES, replace: true });
       else if (typeof document !== 'undefined') document.title = lobbyTitle();
     }
-    toast(settings.lang === 'id' ? 'Bahasa diubah ke Indonesia' : 'Language set to English');
+    toast(settings.lang === 'es' ? 'Idioma cambiado a español' : 'Language set to English');
   }
   if ($('#setLangSeg')) {
     $('#setLangSeg').addEventListener('click', (e) => {
@@ -4666,10 +4702,10 @@
   const guideLang = $('.guide-lang');
   if (guideLang && typeof guideLang.addEventListener === 'function') {
     guideLang.addEventListener('click', (e) => {
-      const a = e.target.closest('[data-mode-link="lang-en"],[data-mode-link="lang-id"]');
+      const a = e.target.closest('[data-mode-link="lang-en"],[data-mode-link="lang-es"]');
       if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault();
-      switchLanguage(a.dataset.modeLink === 'lang-id' ? 'id' : 'en');
+      switchLanguage(a.dataset.modeLink === 'lang-es' ? 'es' : 'en');
     });
   }
   if ($('#setAutoplay')) {
@@ -5156,8 +5192,8 @@
       btn.setAttribute('aria-checked', String(hoverPlayEnabled));
       btn.setAttribute('aria-pressed', String(hoverPlayEnabled));
       btn.title = hoverPlayEnabled
-        ? (settings.lang === 'id' ? 'Putar saat sorot aktif — klik untuk menonaktifkan' : 'Hover play is on — click to disable auto-play on hover')
-        : (settings.lang === 'id' ? 'Putar saat sorot mati — klik untuk memutar otomatis saat menyorot kartu' : 'Hover play is off — click to auto-play when hovering a song card');
+        ? (settings.lang === 'es' ? 'Reproducir al pasar activado — haz clic para desactivar' : 'Hover play is on — click to disable auto-play on hover')
+        : (settings.lang === 'es' ? 'Reproducir al pasar desactivado — haz clic para activar' : 'Hover play is off — click to auto-play when hovering a song card');
     };
     syncDuelHover = () => {
       hoverPlayEnabled = settings.hover;
@@ -5169,7 +5205,28 @@
     // Park unfinished free-play runs per deck in memory (matching Classic RUNS): switching
     // Spotify Streams <-> Release Year or returning via Change mode resumes the exact pair & score.
     const duelFreeRuns = { streams: null, year: null };
-    clearDuelFreeRuns = () => { duelFreeRuns.streams = null; duelFreeRuns.year = null; };
+    const duelHubRuns = Object.create(null);
+    const hubDuelKey = (slot) => (slot ? (slot.seed + (slot.isArchive ? ':arch' : '')) : '');
+    clearDuelFreeRuns = () => {
+      duelFreeRuns.streams = null;
+      duelFreeRuns.year = null;
+      for (const k in duelHubRuns) delete duelHubRuns[k];
+    };
+    function saveDuelHubRun() {
+      if (!ds.hubSlot || !ds.a || !ds.b || ds.over) return;
+      duelHubRuns[hubDuelKey(ds.hubSlot)] = {
+        kind: ds.kind,
+        a: ds.a,
+        b: ds.b,
+        score: ds.score,
+        seen: new Set(ds.seen),
+        history: ds.history.slice(),
+        queue: ds.queue.slice(),
+        qIndex: ds.qIndex,
+        hubTotal: ds.hubTotal,
+        hubPlayed: ds.hubPlayed
+      };
+    }
     function saveDuelFreeRun() {
       if (ds.hubSlot || ds.challenge || !ds.a || !ds.b || ds.over) return;
       if (ds.kind !== 'streams' && ds.kind !== 'year') return;
@@ -5331,7 +5388,8 @@
     function syncDuelChrome(a) {
       const isStreams = ds.kind === 'streams';
       const mA = Duel.formatMetric(a, ds.kind);
-      $('#duelModeLabel').textContent = isStreams ? 'Spotify Streams' : 'Release Year';
+      $('#duelModeLabel').textContent = isStreams ? 'Spotify Streams' : (settings.lang === 'es' ? 'Año de lanzamiento' : 'Release Year');
+      syncBackButton($('#duelBack'), Boolean(ds.hubSlot));
       if ($('#duelTabs')) {
         $('#duelTabs').hidden = Boolean(ds.hubSlot);
         $('#duelTabs').querySelectorAll('[data-duel]').forEach((b) => {
@@ -5374,7 +5432,7 @@
       if ($('#duel') && !$('#duel').hidden && ds.a) {
         syncDuelChrome(ds.a);
         if (ds.hubSlot) {
-          $('#duelScore').textContent = (settings.lang === 'id' ? 'Ronde ' : 'Round ') + ((ds.hubPlayed || 0) + 1) + '/' + (ds.hubTotal || 5) + ' · ' + (ds.score * 20) + ' pts';
+          $('#duelScore').textContent = (settings.lang === 'es' ? 'Ronda ' : 'Round ') + ((ds.hubPlayed || 0) + 1) + '/' + (ds.hubTotal || 5) + ' · ' + (ds.score * 20) + ' pts';
           $('#duelBest').hidden = true;
         } else {
           $('#duelScore').textContent = I18N ? tr('duelScore', { n: ds.score }) : ('Score ' + ds.score);
@@ -5531,7 +5589,7 @@
       if (res.won) {
         playSfx('win');
         ds.score++;
-        if (ds.score > ds.best) {
+        if (!ds.hubSlot && ds.score > ds.best) {
           ds.best = ds.score;
           ds.newBest = true;
           LS.set(DUEL_BEST_KEYS[ds.kind] || DUEL_BEST_KEYS.year, ds.best);
@@ -5557,9 +5615,14 @@
             duelFreeRuns[ds.kind] = null;
           }
         }
-        $('#duelScore').textContent = I18N ? tr('duelScore', { n: ds.score }) : ('Score ' + ds.score);
-        $('#duelBest').hidden = false;
-        $('#duelBest').textContent = I18N ? tr('duelBest', { n: ds.best }) : ('Best ' + ds.best);
+        if (ds.hubSlot) {
+          $('#duelScore').textContent = (settings.lang === 'es' ? 'Ronda ' : 'Round ') + ((ds.hubPlayed || 0) + 1) + '/' + (ds.hubTotal || 5) + ' · ' + (ds.score * 20) + ' pts';
+          $('#duelBest').hidden = true;
+        } else {
+          $('#duelScore').textContent = I18N ? tr('duelScore', { n: ds.score }) : ('Score ' + ds.score);
+          $('#duelBest').hidden = false;
+          $('#duelBest').textContent = I18N ? tr('duelBest', { n: ds.best }) : ('Best ' + ds.best);
+        }
         syncDuelTarget();
         triggerUiFx($('#duelB'), 'is-fx-win', 620);
         spawnUiSparks($('#duelB'), ['#25e07d', '#58ffad', '#ffd06b', '#fde047']);
@@ -5583,21 +5646,51 @@
         $('#duelStatus').className = 'status duel-status err';
       }
 
+      // Pre-lock next Daily Hub pair so leaving via Back to Daily mid-900ms cannot reset or replay a round
+      if (ds.hubSlot && ds.hubOnDone) {
+        const nextPlayed = (ds.hubPlayed || 0) + 1;
+        const hk = hubDuelKey(ds.hubSlot);
+        if (nextPlayed < (ds.hubTotal || 5)) {
+          const nextQIdx = ds.qIndex < ds.queue.length ? ds.qIndex + 1 : ds.qIndex;
+          const nextHubB = (ds.qIndex < ds.queue.length ? ds.queue[ds.qIndex] : null) || Duel.pickNext(pool, ds.b, ds.seen, ds.score, ds.kind);
+          if (nextHubB) {
+            const nextSeen = new Set(ds.seen);
+            nextSeen.add(nextHubB.slug);
+            ds.pendingNext = nextHubB;
+            duelHubRuns[hk] = {
+              kind: ds.kind,
+              a: ds.b,
+              b: nextHubB,
+              score: ds.score,
+              seen: nextSeen,
+              history: ds.history.slice(),
+              queue: ds.queue.slice(),
+              qIndex: nextQIdx,
+              hubTotal: ds.hubTotal,
+              hubPlayed: nextPlayed
+            };
+          }
+        }
+      }
+
       const myEpoch = ++duelEpoch;
       clearTimeout(duelTimer);
       duelTimer = setTimeout(() => {
         if (myEpoch !== duelEpoch || $('#duel').hidden) return;
         stopDuelAudio();
         if (ds.hubSlot && ds.hubOnDone) {
+          const hk = hubDuelKey(ds.hubSlot);
           ds.hubPlayed = (ds.hubPlayed || 0) + 1;
           if (ds.hubPlayed >= (ds.hubTotal || 5)) {
             ds.busy = false;
             ds.over = true;
+            ds.pendingNext = null;
+            delete duelHubRuns[hk];
             const Hub = window.TuneUpDailyHub;
             const total = ds.hubTotal || 5;
             const pts = Hub ? Hub.scorePairs(ds.score, total) : Math.round((ds.score / total) * 100);
-            const sum = settings.lang === 'id' ? (ds.score + '/' + total + ' benar') : (ds.score + '/' + total + ' correct');
-            const deckLbl = ds.kind === 'streams' ? 'Spotify Streams' : (settings.lang === 'id' ? 'Tahun Rilis' : 'Release Year');
+            const sum = settings.lang === 'es' ? (ds.score + '/' + total + ' correctas') : (ds.score + '/' + total + ' correct');
+            const deckLbl = ds.kind === 'streams' ? 'Spotify Streams' : (settings.lang === 'es' ? 'Año de lanzamiento' : 'Release Year');
             const cb = ds.hubOnDone;
             ds.hubSlot = null;
             ds.hubOnDone = null;
@@ -5605,9 +5698,11 @@
             return;
           }
           const prevB = ds.b;
-          const nextB = (ds.qIndex < ds.queue.length ? ds.queue[ds.qIndex++] : null) || Duel.pickNext(pool, prevB, ds.seen, ds.score, ds.kind);
+          const nextB = (ds.qIndex < ds.queue.length ? ds.queue[ds.qIndex++] : null) || ds.pendingNext || Duel.pickNext(pool, prevB, ds.seen, ds.score, ds.kind);
+          ds.pendingNext = null;
           if (!nextB) {
             ds.busy = false;
+            delete duelHubRuns[hk];
             const cb = ds.hubOnDone;
             const total = ds.hubTotal || 5;
             const pts = Math.round((ds.score / total) * 100);
@@ -5619,8 +5714,10 @@
           ds.b = nextB;
           ds.seen.add(nextB.slug);
           ds.busy = false;
+          saveDuelHubRun();
           renderDuelPair();
-          if ($('#duelScore')) $('#duelScore').textContent = (settings.lang === 'id' ? 'Ronde ' : 'Round ') + (ds.hubPlayed + 1) + '/' + (ds.hubTotal || 5) + ' · ' + (ds.score * 20) + ' pts';
+          if ($('#duelScore')) $('#duelScore').textContent = (settings.lang === 'es' ? 'Ronda ' : 'Round ') + (ds.hubPlayed + 1) + '/' + (ds.hubTotal || 5) + ' · ' + (ds.score * 20) + ' pts';
+          if ($('#duelBest')) $('#duelBest').hidden = true;
           return;
         }
         if (!res.won) {
@@ -5663,11 +5760,24 @@
 
       let first = null, second = null, queue = [], qIndex = 0;
       let seen = new Set(), score = 0, best = readBest(resolvedKind), newBest = false, historyArr = [];
-      if (hubOpts && Array.isArray(hubOpts.queue) && hubOpts.queue.length >= 2) {
+      let hubTotalInit = 0, hubPlayedInit = 0;
+      if (hubOpts && hubOpts.resume && hubOpts.resume.a && hubOpts.resume.b) {
+        const resHub = hubOpts.resume;
+        queue = resHub.queue ? resHub.queue.slice() : [];
+        first = resHub.a;
+        second = resHub.b;
+        qIndex = resHub.qIndex || 2;
+        seen = new Set(resHub.seen);
+        score = resHub.score || 0;
+        historyArr = resHub.history ? resHub.history.slice() : [];
+        hubTotalInit = resHub.hubTotal || Math.min(5, Math.max(1, queue.length - 1));
+        hubPlayedInit = resHub.hubPlayed || 0;
+      } else if (hubOpts && Array.isArray(hubOpts.queue) && hubOpts.queue.length >= 2) {
         queue = hubOpts.queue.slice();
         first = queue[0];
         second = queue[1];
         qIndex = 2;
+        hubTotalInit = Math.min(5, queue.length - 1);
         for (const s of queue) seen.add(s.slug);
       } else if (incoming) {
         const byTid = new Map();
@@ -5714,9 +5824,10 @@
       ds.qIndex = qIndex;
       ds.hubSlot = hubOpts ? hubOpts.slot : null;
       ds.hubOnDone = hubOpts ? hubOpts.onDone : null;
-      ds.hubTotal = hubOpts ? Math.min(5, queue.length - 1) : 0;
-      ds.hubPlayed = 0;
-      saveDuelFreeRun();
+      ds.hubTotal = hubOpts ? hubTotalInit : 0;
+      ds.hubPlayed = hubOpts ? hubPlayedInit : 0;
+      if (ds.hubSlot) saveDuelHubRun();
+      else saveDuelFreeRun();
 
       const wasInDuel = !$('#duel').hidden;
       $('#lobby').hidden = true;
@@ -5742,7 +5853,7 @@
       }
       renderDuelPair();
       if (ds.hubSlot) {
-        if ($('#duelScore')) $('#duelScore').textContent = (settings.lang === 'id' ? 'Ronde 1/' : 'Round 1/') + ds.hubTotal + ' · 0 pts';
+        if ($('#duelScore')) $('#duelScore').textContent = (settings.lang === 'es' ? 'Ronda ' : 'Round ') + ((ds.hubPlayed || 0) + 1) + '/' + ds.hubTotal + ' · ' + (ds.score * 20) + ' pts';
         if ($('#duelBest')) $('#duelBest').hidden = true;
       } else {
         if ($('#duelBest')) $('#duelBest').hidden = false;
@@ -5754,6 +5865,10 @@
     launchDuelChallenge = (incoming) => ensureSongsLoaded().then(() => startDuel(incoming && incoming.kind, incoming));
     launchDuelMode = (deck) => ensureSongsLoaded().then(() => startDuel(deck || ds.kind));
     launchDailyDuelForHub = (slot, onDone) => ensureSongsLoaded().then(() => {
+      const parked = duelHubRuns[hubDuelKey(slot)];
+      if (parked && parked.a && parked.b) {
+        return startDuel(parked.kind, null, { slot, onDone, queue: parked.queue, resume: parked });
+      }
       const Hub = window.TuneUpDailyHub;
       const deckKind = (Hub && (Hub.hash(slot.seed) % 2 === 0)) ? 'streams' : 'year';
       const pool = getDuelPool(deckKind);
@@ -5809,6 +5924,7 @@
     }
     $('#duelBack').onclick = () => {
       if (ds.hubSlot && window.TuneUpDailyUI) {
+        if (!ds.busy) saveDuelHubRun();
         ds.hubSlot = null;
         ds.hubOnDone = null;
         closeAll();
@@ -5891,8 +6007,23 @@
     };
 
     let artistFreeRun = null;
-    clearArtistFreeRun = () => { artistFreeRun = null; };
+    const artistHubRuns = Object.create(null);
+    const hubArtistKey = (slot) => (slot ? (slot.seed + (slot.isArchive ? ':arch' : '')) : '');
+    clearArtistFreeRun = () => {
+      artistFreeRun = null;
+      for (const k in artistHubRuns) delete artistHubRuns[k];
+    };
     function syncArtistFreeRun() {
+      if (ag.hubSlot && ag.target) {
+        artistHubRuns[hubArtistKey(ag.hubSlot)] = {
+          target: ag.target,
+          guesses: ag.guesses.slice(),
+          hints: ag.hints.slice(),
+          done: ag.done,
+          won: ag.won
+        };
+        return;
+      }
       if (ag.mode === 'free' && !ag.challenge && !ag.hubSlot && ag.target) {
         artistFreeRun = ag.done
           ? null
@@ -6101,8 +6232,9 @@
     }
 
     function recordArtistOutcome(won, tries = 0) {
+      if (ag.hubSlot && ag.hubSlot.isArchive) return;
       const prev = artistStats();
-      const current = won ? prev.current + 1 : 0;
+      const current = ag.hubSlot ? prev.current : (won ? prev.current + 1 : 0);
       const best = Math.max(prev.best, current);
       const dist = prev.dist.slice();
       if (won && tries >= 1 && tries <= AD.MAX_TRIES) dist[tries - 1]++;
@@ -6114,10 +6246,10 @@
         best,
         dist
       });
-      if (ag.mode === 'daily' && !ag.challenge && ag.day) {
+      if (!ag.hubSlot && ag.mode === 'daily' && !ag.challenge && ag.day) {
         submitDailyCommunity('artist', ag.day, won, won ? tries : 0);
       }
-      if (ag.mode === 'daily' && won && ag.day) {
+      if (!ag.hubSlot && ag.mode === 'daily' && won && ag.day) {
         const doneDays = LS.get('tl:artist:daily:completed', []);
         if (!doneDays.includes(ag.day)) {
           doneDays.push(ag.day);
@@ -6237,7 +6369,7 @@
           if (nextBtn) {
             const nextLbl = (nextBtn.querySelector && nextBtn.querySelector('.lbl')) || nextBtn;
             nextLbl.textContent = ag.hubSlot
-              ? (settings.lang === 'id' ? 'Lanjut Daily →' : 'Continue Daily →')
+              ? (settings.lang === 'es' ? 'Continuar Diario →' : 'Continue Daily →')
               : (ag.mode === 'daily'
                 ? (I18N ? tr('agPlayEndless') : 'Play Endless')
                 : (I18N ? tr('nextArtist') : 'Next artist'));
@@ -6245,6 +6377,7 @@
         }
       }
 
+      syncBackButton($('#artistGameBack'), Boolean(ag.hubSlot));
       const board = $('#agBoard');
       if (!board) return;
       if (!ag.guesses.length) {
@@ -6565,30 +6698,48 @@
         })
         .slice(0, limit);
     };
-    launchDailyArtistForHub = (slot, onDone) => {
-      const ok = startArtistGame(null, 'daily');
+    launchDailyArtistForHub = (slot, onDone) => ensureSongsLoaded().then(() => {
+      const list = ensureRoster();
+      if (!list.length) {
+        if (onDone) onDone({ score: 0, won: false, shortSummary: 'Unavailable', detail: 'Unavailable' });
+        return false;
+      }
+      const ok = startArtistGame(null, 'free');
       if (!ok) {
         if (onDone) onDone({ score: 0, won: false, shortSummary: 'Unavailable', detail: 'Unavailable' });
         return false;
       }
+      const hk = hubArtistKey(slot);
+      const parked = artistHubRuns[hk];
       ag.hubSlot = slot;
       ag.hubOnDone = onDone;
-      // If the player already finished legacy Daily Artist earlier today, pass them straight into a clean seeded target for this Daily Hub slot
-      if (ag.done && window.TuneUpDailyHub) {
-        const list = ensureRoster();
-        const seededTarget = window.TuneUpDailyHub.pickDeterministic(list.slice(0, 220), slot.seed + ':artist', 1) || ag.target;
-        ag.mode = 'free';
-        ag.target = seededTarget;
+      ag.mode = 'free';
+      ag.day = '';
+      if (parked && parked.target) {
+        ag.target = parked.target;
+        ag.guesses = parked.guesses.slice();
+        ag.hints = parked.hints.slice();
+        ag.done = !!parked.done;
+        ag.won = !!parked.won;
+      } else {
+        const dayStr = (slot && slot.day) || (window.DailyGame ? window.DailyGame.day() : '');
+        const legacySaved = !(slot && slot.isArchive) && dayStr ? LS.get(artistDailyKey(dayStr), null) : null;
+        let target = (dayStr && typeof AD.dailyArtist === 'function') ? AD.dailyArtist(list, dayStr) : null;
+        if ((!target || (legacySaved && legacySaved.done)) && window.TuneUpDailyHub) {
+          target = window.TuneUpDailyHub.pickDeterministic(list.slice(0, 220), slot.seed + ':artist', 1) || target;
+        }
+        ag.target = target || list[0];
         ag.guesses = [];
         ag.hints = [];
         ag.done = false;
         ag.won = false;
-        preloadTargetHit(ag.target);
+        syncArtistFreeRun();
       }
+      preloadTargetHit(ag.target);
       renderAgBoard();
       syncRoute('daily', { title: 'Daily Challenge — TuneUp', replace: true });
       return true;
-    };
+    });
     syncArtistLang = () => {
       if ($('#artistGame') && !$('#artistGame').hidden) renderAgBoard();
       else syncAgHints();
@@ -6598,6 +6749,7 @@
     $('#openArtistGame').onclick = () => ensureSongsLoaded().then(() => startArtistGame(null, 'free'));
     $('#artistGameBack').onclick = () => {
       if (ag.hubSlot && window.TuneUpDailyUI) {
+        syncArtistFreeRun();
         ag.hubSlot = null;
         ag.hubOnDone = null;
         closeAll();
@@ -6705,11 +6857,13 @@
     };
     $('#agNextBtn').onclick = () => {
       if (ag.hubSlot && ag.hubOnDone) {
+        const hk = hubArtistKey(ag.hubSlot);
+        delete artistHubRuns[hk];
         const Hub = window.TuneUpDailyHub;
         const pts = Hub ? Hub.scoreTries(ag.won, ag.guesses.length, AD.MAX_TRIES) : (ag.won ? 100 : 0);
         const sum = ag.won
-          ? (settings.lang === 'id' ? ('Benar ' + ag.guesses.length + '/10') : ('Solved in ' + ag.guesses.length + '/10'))
-          : (settings.lang === 'id' ? 'Gagal' : 'Missed');
+          ? (settings.lang === 'es' ? ('Acertado en ' + ag.guesses.length + '/10') : ('Solved in ' + ag.guesses.length + '/10'))
+          : (settings.lang === 'es' ? 'Fallaste' : 'Missed');
         const name = (ag.target && ag.target.name) || '';
         const cb = ag.hubOnDone;
         ag.hubSlot = null;
@@ -6951,12 +7105,12 @@
       st.textContent = I18N ? tr('plOnePlusTracks', { t: tCount }) : ('Playlist + ' + tCount + ' track links detected — will auto-merge without duplicates');
     } else if (parsed.externalUrls.length === 1) {
       const src = parsed.externalUrls[0].source === 'apple' ? 'Apple Music' : 'YouTube';
-      st.textContent = settings.lang === 'id'
-        ? ('Playlist ' + src + ' terdeteksi — siap dimainkan')
+      st.textContent = settings.lang === 'es'
+        ? ('Playlist de ' + src + ' detectada — lista para jugar')
         : (src + ' playlist detected — ready to play');
     } else if (hasSp && cCount === 1) {
-      st.textContent = settings.lang === 'id'
-        ? 'Playlist Spotify terdeteksi — siap dimainkan'
+      st.textContent = settings.lang === 'es'
+        ? 'Playlist de Spotify detectada — lista para jugar'
         : 'Spotify playlist detected — ready to play';
     } else if (tCount > 0) {
       st.textContent = I18N
@@ -7463,11 +7617,11 @@
   renderRecentPlaylists();
   UI.render();
   UI.lobby({ skipRoute: true }); // selalu mulai dari layar pilih mode tanpa menghapus URL deep-link
-  if (currentRouteSlug() === 'id' && I18N) {
-    settings.lang = I18N.set('id', localStorage);
+  if (currentRouteSlug() === 'es' && I18N) {
+    settings.lang = I18N.set('es', localStorage);
     renderSettings();
   }
-  if (settings.lang === 'id') applyLanguage();
+  if (settings.lang === 'es') applyLanguage();
 
   function applyDeepLink() {
     const hash = location.hash || '';
@@ -7475,14 +7629,14 @@
     if (hash.startsWith('#mg=') && window.TuneUpDailyUI && typeof window.TuneUpDailyUI.openMiniChallenge === 'function') {
       if (window.TuneUpDailyUI.openMiniChallenge(hash)) return true;
     }
-    if (slug === 'id') {
-      if (I18N && settings.lang !== 'id') {
-        settings.lang = I18N.set('id', localStorage);
+    if (slug === 'es') {
+      if (I18N && settings.lang !== 'es') {
+        settings.lang = I18N.set('es', localStorage);
         renderSettings();
         applyLanguage();
       }
       if ($('#lobby') && $('#lobby').hidden) UI.lobby({ skipRoute: true });
-      if (typeof document !== 'undefined') document.title = DEFAULT_TITLE_ID;
+      if (typeof document !== 'undefined') document.title = DEFAULT_TITLE_ES;
       return true;
     }
     if (hash === '#daily' || slug === 'daily') {
@@ -7646,26 +7800,40 @@
   }
   async function startDailySongForHub(slot, onDone) {
     closeAll();
+    const hk = slot ? (slot.seed + (slot.isArchive ? ':arch' : '')) : '';
+    const parked = hk ? songHubRuns[hk] : null;
     const day = (slot && slot.day) || window.DailyGame.day();
-    let songs = window.DailyGame.plan(window.DAILY_POOL_V1, day).map((s) => ({
-      title: s[0], artist: s[1], tier: s[2], region: s[3], genre: s[4], year: s[5], art: s[6],
-      trackId: s[7] || null,
-      slug: slug(s), hay: norm(s[0] + ' ' + s[1])
-    }));
-    const saved = !(slot && slot.isArchive) && window.DailyGame.restore(LS.get(dailyKey(day)) || LS.get('tl:daily:v1:' + day), songs.map((s) => s.slug));
-    // If legacy daily song already played today, seed a fresh iconic T1-2 hit so Daily Hub slot is always playable!
-    if (saved && saved.runDone && window.TuneUpDailyHub) {
-      const topPool = ALL.filter((s) => s.tier <= (slot.diffTier === 1 ? 1 : 2) && !CLASSIC_ALL_SKIP_ARTISTS.has(s.artist));
-      const fresh = window.TuneUpDailyHub.pickDeterministic(topPool.length ? topPool : ALL, slot.seed + ':song', 1);
-      if (fresh) songs = [fresh];
+    let songs = (parked && Array.isArray(parked.songs) && parked.songs.length)
+      ? parked.songs
+      : window.DailyGame.plan(window.DAILY_POOL_V1, day).map((s) => ({
+          title: s[0], artist: s[1], tier: s[2], region: s[3], genre: s[4], year: s[5], art: s[6],
+          trackId: s[7] || null,
+          slug: slug(s), hay: norm(s[0] + ' ' + s[1])
+        }));
+    if (!parked) {
+      const saved = !(slot && slot.isArchive) && window.DailyGame.restore(LS.get(dailyKey(day)) || LS.get('tl:daily:v1:' + day), songs.map((s) => s.slug));
+      // If legacy daily song already played today, seed a fresh iconic T1-2 hit so Daily Hub slot is always playable!
+      if (saved && saved.runDone && window.TuneUpDailyHub) {
+        const topPool = ALL.filter((s) => s.tier <= (slot.diffTier === 1 ? 1 : 2) && !CLASSIC_ALL_SKIP_ARTISTS.has(s.artist));
+        const fresh = window.TuneUpDailyHub.pickDeterministic(topPool.length ? topPool : ALL, slot.seed + ':song', 1);
+        if (fresh) songs = [fresh];
+      }
     }
     dailyHubSongCb = { slot, onDone };
     S.daily = { day, songs, isArchive: !!(slot && slot.isArchive) };
     S.custom = null; S.challenge = null; S.runChallenge = null;
     switchRun();
-    Object.assign(S, { stage: 0, stages: [], runDone: false });
+    if (parked) {
+      Object.assign(S, { stage: 0, stages: parked.stages.slice(), runDone: false });
+      S.guesses = parked.guesses.slice();
+      S.done = !!parked.done;
+      S.won = !!parked.won;
+    } else {
+      Object.assign(S, { stage: 0, stages: [], runDone: false });
+      S.guesses = []; S.done = false; S.won = false;
+    }
     S.song = null; S.meta = null;
-    loadRun();
+    if (!parked) loadRun();
     UI.clearInput(); UI.game();
     await load();
   }
@@ -7750,7 +7918,7 @@
         let copied = false;
         try { await navigator.clipboard.writeText(txt); copied = true; } catch (e) { copied = copyTextSync(txt); }
         toast(copied
-          ? (customToast || (settings.lang === 'id' ? 'Hasil harian tersalin!' : 'Daily result copied!'))
+          ? (customToast || (settings.lang === 'es' ? '¡Resultado diario copiado!' : 'Daily result copied!'))
           : (I18N ? tr('toastCopyFailed') : 'Copy failed'));
         if (copied && evName) trackActivity(evName, { mode: 'daily' });
         return copied;

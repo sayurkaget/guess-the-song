@@ -338,10 +338,20 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(app, /\$\('#duelTabs'\)\.hidden = Boolean\(ds\.hubSlot\)/);
   assert.match(app, /if \(!ds\.challenge \|\| ds\.hubSlot\)/);
   assert.match(app, /const duelFreeRuns = \{ streams: null, year: null \}/);
+  assert.match(app, /const duelHubRuns = Object\.create\(null\)/);
+  assert.match(app, /const artistHubRuns = Object\.create\(null\)/);
+  assert.match(app, /const songHubRuns = Object\.create\(null\)/);
   assert.match(app, /function saveDuelFreeRun\(/);
   assert.match(app, /function syncArtistFreeRun\(/);
+  assert.match(app, /function syncBackButton\(/);
+  assert.match(app, /if \(!S\.daily \|\| S\.daily\.isArchive\) return;/);
+  assert.match(app, /if \(ag\.hubSlot && ag\.hubSlot\.isArchive\) return;/);
+  assert.match(app, /launchDailyArtistForHub = \(slot, onDone\) => ensureSongsLoaded\(\)\.then\(/);
   assert.match(mg, /const freeMiniSessions = Object\.create\(null\)/);
+  assert.match(mg, /const dailyMiniSessions = Object\.create\(null\)/);
   assert.match(mg, /function clearFreeSessions\(/);
+  assert.match(mg, /const isEs = \(\) => /);
+  assert.doesNotMatch(mg, /const isId = /);
   assert.doesNotMatch(app, /tl:hub:v1:/);
   assert.match(app, /navigator\.vibrate/);
   assert.match(mg, /function encodeMiniChallenge\(/);
@@ -358,9 +368,9 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(mg, /const durs = \[2050, 3250, 4850\]/);
   assert.match(mg, /function openDailyArchive\(/);
   assert.match(mg, /function renderMiniSwitcher\(/);
-  assert.match(build, /3 Game Musik Hari Ini/);
-  assert.match(sw, /gts-v1[56]\d-wave/);
-  assert.match(build, /gts-cf-v1[34]\d-wave/);
+  assert.match(build, /3 Juegos Musicales de Hoy/);
+  assert.match(sw, /gts-v1[5-9]\d-wave/);
+  assert.match(build, /gts-cf-v1[3-9]\d-wave/);
 });
 
 test('Wave 119 mini-game challenge links round-trip spoiler-free and badge backfill reads tl:mg:stats', () => {

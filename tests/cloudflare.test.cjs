@@ -82,10 +82,10 @@ test('Cloudflare bundle uses its own URLs, isolates APIs, and preserves the orig
     // Wave 68: verify 7 dedicated SEO landing pages + FAQPage JSON-LD + bidirectional hreflang + IndexNow key
     assert.ok(fs.readFileSync(path.join(tmpOut, '7b4e9c2a1f8d4e60b3c5a9d1e2f48076.txt'), 'utf8').trim() === '7b4e9c2a1f8d4e60b3c5a9d1e2f48076');
     const sitemap = fs.readFileSync(path.join(tmpOut, 'sitemap.xml'), 'utf8');
-    assert.ok(sitemap.includes('https://tuneup.my.id/id</loc>'), 'sitemap includes /id');
-    assert.ok(sitemap.includes('hreflang="id"'), 'sitemap includes xhtml hreflang');
+    assert.ok(sitemap.includes('https://tuneup.my.id/es</loc>'), 'sitemap includes /es');
+    assert.ok(sitemap.includes('hreflang="es"'), 'sitemap includes xhtml hreflang');
 
-    const slugs = ['', 'daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'id'];
+    const slugs = ['', 'daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'es'];
     const titles = new Set();
     const descs = new Set();
     for (const slug of slugs) {
@@ -110,21 +110,21 @@ test('Cloudflare bundle uses its own URLs, isolates APIs, and preserves the orig
       assert.ok(Array.isArray(ld['@graph']), `${fname} JSON-LD must use @graph`);
       assert.ok(ld['@graph'].some((n) => n['@type'] === 'FAQPage' && Array.isArray(n.mainEntity) && n.mainEntity.length === 5), `${fname} must include 5-question FAQPage schema`);
 
-      if (slug === '' || slug === 'id') {
+      if (slug === '' || slug === 'es') {
         assert.ok(pageHtml.includes('hreflang="en"'), `${fname} must include hreflang="en"`);
-        assert.ok(pageHtml.includes('hreflang="id"'), `${fname} must include hreflang="id"`);
+        assert.ok(pageHtml.includes('hreflang="es"'), `${fname} must include hreflang="es"`);
         assert.ok(pageHtml.includes('hreflang="x-default"'), `${fname} must include hreflang="x-default"`);
       } else {
         assert.ok(!pageHtml.includes('hreflang="x-default"'), `${fname} must not leak homepage hreflang`);
         assert.ok(pageHtml.includes('href="/styles.css"') && pageHtml.includes('src="/app.js"'), `${fname} must use root-absolute assets`);
         assert.ok(pageHtml.includes('data-src="neutral"'), `${fname} must not corrupt data-src attribute`);
       }
-      if (slug === 'id') {
-        assert.ok(pageHtml.includes('<html lang="id">'), 'id.html must set lang="id"');
-        assert.ok(pageHtml.includes('Game Tebak Lagu'), 'id.html must include Indonesian title/copy');
-        assert.ok(pageHtml.includes('Apakah perlu bikin akun?'), 'id.html must include static Indonesian FAQ');
-        assert.ok(pageHtml.includes('<a href="/" hreflang="en" lang="en" data-mode-link="lang-en">EN</a>'), 'id.html must link back to English /');
-        assert.ok(pageHtml.includes('<a href="/id" hreflang="id" lang="id" data-mode-link="lang-id" aria-current="page">ID</a>'), 'id.html must mark ID active');
+      if (slug === 'es') {
+        assert.ok(pageHtml.includes('<html lang="es">'), 'es.html must set lang="es"');
+        assert.ok(pageHtml.includes('Juego Gratis de Adivinar Canciones'), 'es.html must include Spanish title/copy');
+        assert.ok(pageHtml.includes('¿Necesito una cuenta?'), 'es.html must include static Spanish FAQ');
+        assert.ok(pageHtml.includes('<a href="/" hreflang="en" lang="en" data-mode-link="lang-en">EN</a>'), 'es.html must link back to English /');
+        assert.ok(pageHtml.includes('<a href="/es" hreflang="es" lang="es" data-mode-link="lang-es" aria-current="page">ES</a>'), 'es.html must mark ES active');
       }
     }
   } finally {
@@ -138,9 +138,9 @@ test('Cloudflare middleware permanently redirects tuneup.pages.dev and www to ht
   let nextCalls = 0;
   const next = async () => { nextCalls += 1; return new Response('ok', { status: 200 }); };
 
-  const resLegacy = await mw.onRequest({ request: new Request('https://tuneup.pages.dev/id?genre=pop'), next });
+  const resLegacy = await mw.onRequest({ request: new Request('https://tuneup.pages.dev/es?genre=pop'), next });
   assert.equal(resLegacy.status, 301);
-  assert.equal(resLegacy.headers.get('location'), 'https://tuneup.my.id/id?genre=pop');
+  assert.equal(resLegacy.headers.get('location'), 'https://tuneup.my.id/es?genre=pop');
 
   const resWww = await mw.onRequest({ request: new Request('https://www.tuneup.my.id/daily'), next });
   assert.equal(resWww.status, 301);

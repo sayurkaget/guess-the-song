@@ -3,22 +3,22 @@
   'use strict';
 
   const GAMES = [
-    { id: 'song',   cat: 'audio',  nameEn: 'Song Guess',    nameId: 'Tebak Lagu',    descEn: 'Name the track from 0.1s',      descId: 'Tebak lagu dari klip 0,1 dtk' },
-    { id: 'cover',  cat: 'visual', nameEn: 'Cover Pixel',   nameId: 'Cover Pixel',   descEn: 'Guess song from pixel cover',   descId: 'Tebak lagu dari cover piksel' },
-    { id: 'hair',   cat: 'visual', nameEn: 'HairSpot',      nameId: 'HairSpot Musik',descEn: 'Guess musician from their hair', descId: 'Tebak musisi dari rambutnya' },
-    { id: 'mv',     cat: 'visual', nameEn: 'MV Spot',       nameId: 'MV Spot',       descEn: 'Guess song from 3 MV frames',   descId: 'Tebak lagu dari 3 frame MV' },
-    { id: 'fact',   cat: 'trivia', nameEn: 'Fact or Cap',   nameId: 'Fakta / Hoax',  descEn: '5 music facts or myths',        descId: '5 fakta atau mitos musik' },
-    { id: 'lyric',  cat: 'word',   nameEn: 'Lyric Guess',   nameId: 'Tebak Lirik',   descEn: 'Name the song from 5 lines',    descId: 'Tebak lagu dari 5 baris lirik' },
-    { id: 'artist', cat: 'deduce', nameEn: 'Artist Guess',  nameId: 'Tebak Artis',   descEn: '6 clues to find the artist',    descId: '6 petunjuk cari artis misterius' },
-    { id: 'duel',   cat: 'trivia', nameEn: 'Music Duel',    nameId: 'Duel Musik',    descEn: '5 rounds: Streams or Year',     descId: '5 ronde: Streams atau Tahun' }
+    { id: 'song',   cat: 'audio',  nameEn: 'Song Guess',    nameEs: 'Adivina la Canción', descEn: 'Name the track from 0.1s',       descEs: 'Adivina la canción en 0,1 s' },
+    { id: 'cover',  cat: 'visual', nameEn: 'Cover Pixel',   nameEs: 'Cover Pixel',        descEn: 'Guess song from pixel cover',    descEs: 'Adivina el álbum por su portada' },
+    { id: 'hair',   cat: 'visual', nameEn: 'HairSpot',      nameEs: 'HairSpot',           descEn: 'Guess musician from their hair', descEs: 'Adivina al músico por su peinado' },
+    { id: 'mv',     cat: 'visual', nameEn: 'MV Spot',       nameEs: 'MV Spot',            descEn: 'Guess song from 3 MV frames',    descEs: 'Adivina la canción en 3 escenas' },
+    { id: 'fact',   cat: 'trivia', nameEn: 'Fact or Cap',   nameEs: 'Dato o Mito',        descEn: '5 music facts or myths',         descEs: '5 datos o mitos musicales' },
+    { id: 'lyric',  cat: 'word',   nameEn: 'Lyric Guess',   nameEs: 'Adivina la Letra',   descEn: 'Name the song from 5 lines',     descEs: 'Adivina la canción en 5 versos' },
+    { id: 'artist', cat: 'deduce', nameEn: 'Artist Guess',  nameEs: 'Adivina el Artista', descEn: '6 clues to find the artist',     descEs: '6 pistas para hallar al artista' },
+    { id: 'duel',   cat: 'trivia', nameEn: 'Music Duel',    nameEs: 'Duelo Musical',      descEn: '5 rounds: Streams or Year',      descEs: '5 rondas: Streams o Año' }
   ];
   const GAME_MAP = Object.create(null);
   for (let i = 0; i < GAMES.length; i++) GAME_MAP[GAMES[i].id] = GAMES[i];
 
   const DIFFS = [
-    { key: 'easy',   tier: 1, labelEn: 'Easy',   labelId: 'Mudah' },
-    { key: 'medium', tier: 2, labelEn: 'Medium', labelId: 'Sedang' },
-    { key: 'hard',   tier: 3, labelEn: 'Hard',   labelId: 'Sulit' }
+    { key: 'easy',   tier: 1, labelEn: 'Easy',   labelEs: 'Fácil' },
+    { key: 'medium', tier: 2, labelEn: 'Medium', labelEs: 'Medio' },
+    { key: 'hard',   tier: 3, labelEn: 'Hard',   labelEs: 'Difícil' }
   ];
 
   function hash(str) {
@@ -254,19 +254,19 @@
   }
 
   function shareText(run, dayStr, url, lang = 'en') {
-    const isId = lang === 'id';
+    const isEs = lang === 'es';
     const results = Array.isArray(run && run.results) ? run.results : [];
     const total = results.reduce((sum, r) => sum + (Number(r && r.score) || 0), 0);
     const lines = results.map((r, i) => {
       const slot = run && run.slots && run.slots[i];
       const g = slot && GAME_MAP[slot.gameId];
-      const gName = g ? (isId ? g.nameId : g.nameEn) : ('Game ' + (i + 1));
+      const gName = g ? (isEs ? g.nameEs : g.nameEn) : ('Game ' + (i + 1));
       const sc = Number(r && r.score) || 0;
       const dot = sc >= 80 ? '🟩' : sc >= 40 ? '🟨' : '🟥';
       return `${dot} ${gName}: ${sc}/100`;
     });
-    const head = isId
-      ? `TuneUp Harian · ${dayStr} · ${total}/300`
+    const head = isEs
+      ? `TuneUp Diario · ${dayStr} · ${total}/300`
       : `TuneUp Daily · ${dayStr} · ${total}/300`;
     return [head, ...lines, url || 'https://tuneup.my.id/'].join('\n');
   }

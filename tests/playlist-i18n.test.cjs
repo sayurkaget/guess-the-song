@@ -155,26 +155,26 @@ test('parseYouTubeTrack and extractYouTubePlaylistPayload clean video tags and s
   assert.equal(out.data.tracks[1].title, 'Cruel Summer');
 });
 
-test('TuneUpI18n maintains EN/ID dictionary parity, persists tl:set:lang through Backup, and wires score-card sources', () => {
+test('TuneUpI18n maintains EN/ES dictionary parity, persists tl:set:lang through Backup, and wires score-card sources', () => {
   const enKeys = Object.keys(I18n.DICT.en).sort();
-  const idKeys = Object.keys(I18n.DICT.id).sort();
-  assert.deepEqual(idKeys, enKeys, 'EN and ID dictionaries must contain the exact same keys');
+  const esKeys = Object.keys(I18n.DICT.es).sort();
+  assert.deepEqual(esKeys, enKeys, 'EN and ES dictionaries must contain the exact same keys');
 
   const st = makeStorage();
   assert.equal(I18n.load(st), 'en');
   assert.equal(I18n.t('dailyHeading'), 'Daily Challenge');
 
-  I18n.set('id', st);
-  assert.equal(I18n.get(), 'id');
-  assert.equal(I18n.t('dailyHeading'), 'Tantangan Harian');
-  assert.equal(I18n.t('hintIn', { n: 3 }), 'Petunjuk dlm 3');
-  assert.equal(I18n.t('badgesScope', { u: 4, t: 8 }), '4 dari 8 pencapaian terbuka · tersimpan di perangkat ini');
+  I18n.set('es', st);
+  assert.equal(I18n.get(), 'es');
+  assert.equal(I18n.t('dailyHeading'), 'Desafío Diario');
+  assert.equal(I18n.t('hintIn', { n: 3 }), 'Pista en 3');
+  assert.equal(I18n.t('badgesScope', { u: 4, t: 8 }), '4 de 8 logros desbloqueados · guardados en este dispositivo');
 
   // Persists through TuneUpBackup
   const code = Backup.encode(Backup.collect(st));
   const st2 = makeStorage();
   Backup.restore(st2, Backup.decode(code).entries);
-  assert.equal(I18n.load(st2), 'id');
+  assert.equal(I18n.load(st2), 'es');
   I18n.set('en', st);
 
   // Score card kickers for Apple Music & YouTube playlists
