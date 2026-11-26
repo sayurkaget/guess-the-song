@@ -42,7 +42,7 @@ body{
 /* Latar aurora: tiga gumpalan cahaya yang bergerak sangat lambat.
    Murni CSS transform supaya tidak membebani HP. */
 .glow{
-  position:fixed; inset:0; z-index:0; isolation:isolate; transform:translateZ(0); pointer-events:none; overflow:hidden;
+  position:fixed; inset:0; z-index:0; isolation:isolate; contain:strict; transform:translateZ(0); pointer-events:none; overflow:hidden;
   background:linear-gradient(180deg,var(--bg2),var(--bg) 60%);
 }
 .glow::before,.glow::after{
@@ -63,16 +63,16 @@ body{
   animation:drift2 34s ease-in-out infinite;
 }
 @keyframes drift1{
-  0%,100%{transform:translate(0,0) scale(1)}
-  50%{transform:translate(6vw,4vw)}
+  0%,100%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(6vw,4vw,0)}
 }
 @keyframes drift2{
-  0%,100%{transform:translate(0,0) scale(1)}
-  50%{transform:translate(10vw,-6vw)}
+  0%,100%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(10vw,-6vw,0)}
 }
-/* Do not composite the ambient motion behind an opaque result overlay. */
-body:has(.modal:not([hidden])) .glow::before,
-body:has(.modal:not([hidden])) .glow::after{animation-play-state:paused}
+/* Pause ambient aurora whenever overlays, menus, popovers, or slot spins are active. */
+body:has(.modal:not([hidden]),.multi-menu:not([hidden]),.dd:not([hidden]),.streak-popover:not([hidden]),.ach-toast.is-show,.dh-reel-window.is-spinning) .glow::before,
+body:has(.modal:not([hidden]),.multi-menu:not([hidden]),.dd:not([hidden]),.streak-popover:not([hidden]),.ach-toast.is-show,.dh-reel-window.is-spinning) .glow::after{animation-play-state:paused}
 body[data-anim="off"] .glow::before,
 body[data-anim="off"] .glow::after{animation:none}
 button,input{font:inherit;color:inherit}
@@ -554,12 +554,13 @@ body[data-diff="impossible"]{--acc:#9b7bf5;--acc-l:#b49bff;--acc-d:#7355d6;--acc
 .sheet{
   position:relative;
   width:min(430px,100%); max-height:88vh; overflow-y:auto;
-  background:linear-gradient(180deg,rgba(18,42,28,.86),rgba(8,20,14,.94));
+  background:linear-gradient(180deg,rgba(18,42,28,.94),rgba(8,20,14,.98));
   border:1px solid rgba(255,255,255,.13); border-radius:24px;
   padding:1.9rem 1.6rem 1.6rem;
   box-shadow:0 40px 90px -25px rgba(0,0,0,.92),
              inset 0 1px 0 rgba(255,255,255,.09);
-  animation:rise .26s cubic-bezier(.2,.9,.3,1);
+  will-change:transform,opacity;
+  animation:rise .24s cubic-bezier(.2,.9,.3,1);
 }
 /* sampul album jadi latar kabur di layar hasil */
 .artbg{
@@ -568,11 +569,12 @@ body[data-diff="impossible"]{--acc:#9b7bf5;--acc-l:#b49bff;--acc-d:#7355d6;--acc
   z-index:0; pointer-events:none;
   background-size:cover; background-position:center;
   filter:blur(9.28px) saturate(1.5); opacity:0;
-  transform:scale(6.25);
+  transform:scale(6.25) translateZ(0);
+  will-change:opacity;
   transition:opacity .5s ease;
 }
 .artbg.on{opacity:.34}
-@keyframes rise{from{opacity:0;transform:translateY(16px) scale(.97)}}
+@keyframes rise{from{opacity:0;transform:translate3d(0,14px,0) scale(.975)}}
 /* kartu tidak boleh menggulung ke samping -- pernah muncul bilah gulir
    horizontal gara-gara satu baris daftar yang kepanjangan */
 .sheet{overflow-x:hidden}
@@ -676,8 +678,7 @@ body[data-diff="impossible"]{--acc:#9b7bf5;--acc-l:#b49bff;--acc-d:#7355d6;--acc
   grid-area:1/1;
   width:62px;height:62px;border-radius:50%;
   display:grid;place-items:center;
-  background:rgba(6,20,13,.62);
-  backdrop-filter:blur(3px);
+  background:rgba(6,20,13,.76);
   border:1.5px solid rgba(255,255,255,.28);
   transition:transform .18s cubic-bezier(.34,1.5,.5,1),background .18s;
 }
@@ -754,15 +755,15 @@ kbd{
 }
 
 .toast{
-  position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+  position:fixed;left:50%;bottom:24px;transform:translate3d(-50%,0,0);
   z-index:980;max-width:min(440px,calc(100vw - 28px));width:max-content;
   display:inline-flex;align-items:center;justify-content:center;gap:.52rem;
   padding:.62rem 1.05rem;text-align:left;line-height:1.35;pointer-events:none;
-  background:rgba(10,28,19,.95);border:1px solid rgba(var(--acc-rgb),.36);border-radius:14px;
+  background:rgba(10,28,19,.97);border:1px solid rgba(var(--acc-rgb),.36);border-radius:14px;
   color:var(--ink);font-size:.84rem;font-weight:600;
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   box-shadow:0 18px 44px -12px rgba(0,0,0,.88),inset 0 1px 0 rgba(255,255,255,.08);
-  animation:toastin .24s cubic-bezier(.2,.9,.3,1);
+  will-change:transform,opacity;
+  animation:toastin .22s cubic-bezier(.2,.9,.3,1);
 }
 .toast::before{
   content:"";width:7px;height:7px;border-radius:50%;flex:none;
@@ -770,8 +771,8 @@ kbd{
 }
 .toast[hidden]{display:none}
 body[data-anim="off"] .toast{animation:none}
-@keyframes toastin{from{opacity:0;transform:translate(-50%,10px)}}
-@keyframes toasttop{from{opacity:0;transform:translate(-50%,-10px)}}
+@keyframes toastin{from{opacity:0;transform:translate3d(-50%,10px,0)}}
+@keyframes toasttop{from{opacity:0;transform:translate3d(-50%,-10px,0)}}
 @media (max-width:600px){
   .toast{
     top:max(10px,env(safe-area-inset-top));bottom:auto;
@@ -926,7 +927,7 @@ body[data-diff="duel"]{--acc:#f5b13d;--acc-l:#ffd06b;--acc-d:#d98d14;--acc-rgb:2
 .duel-art{width:100%;height:100%;object-fit:cover;display:block}
 .duel-play{
   position:absolute;inset:0;margin:auto;width:46px;height:46px;border-radius:50%;
-  display:grid;place-items:center;background:rgba(5,16,11,.68);backdrop-filter:blur(3px);
+  display:grid;place-items:center;background:rgba(5,16,11,.78);
   border:1.5px solid rgba(255,255,255,.32);color:#fff;
   transition:transform .16s,background .16s,border-color .16s;
 }
@@ -965,5 +966,5 @@ body[data-diff="duel"]{--acc:#f5b13d;--acc-l:#ffd06b;--acc-d:#d98d14;--acc-rgb:2
 .duel-btn small{font-size:.72rem;font-weight:500;opacity:.84}
 .duel-status{margin-top:1.05rem;min-height:1.3em}
 .duel-runlist{max-height:240px;overflow-y:auto;margin-bottom:1.15rem}
-.site-guide{content-visibility:auto;contain-intrinsic-size:1px 960px}
+.site-guide{width:min(724px,calc(100% - 2.5rem));margin:3rem auto 0;content-visibility:auto;contain-intrinsic-size:1px 960px}
 .wrap:has(#lobby[hidden]) ~ .site-guide{display:none}

@@ -72,3 +72,20 @@ test('playhead moves without changing layout and clamps at both ends', () => {
   ui.head(null);
   assert.equal(classes.has('on'), false);
 });
+
+test('playSweep updates played progress bar via GPU scaleX without layout width writes', () => {
+  const app = fs.readFileSync(require('node:path').join(__dirname, '../app.js'), 'utf8');
+  const source = app.slice(app.indexOf('    playSweep(f, t) {'), app.indexOf('    // Lobi hanya menghitung ulang'));
+  const pEl = { style: {} };
+  const curEl = { textContent: '' };
+  const ui = vm.runInNewContext('({' + source + '})', {
+    $: (sel) => (sel === '#trackPlayed' ? pEl : sel === '#trackCur' ? curEl : null)
+  });
+  ui.playSweep(0.45, 3.24);
+  assert.equal(pEl.style.transform, 'scaleX(0.45)');
+  assert.equal(pEl.style.width, undefined);
+  assert.equal(curEl.textContent, '3.2s');
+  ui.playSweep(null, null);
+  assert.equal(pEl.style.transform, 'scaleX(0)');
+  assert.equal(curEl.textContent, '0.0s');
+});

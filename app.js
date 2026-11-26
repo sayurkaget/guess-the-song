@@ -372,8 +372,10 @@
   }
   function triggerUiFx(el, cls, ms = 560) {
     if (!el || !el.classList || !uiAnimOn()) return;
-    el.classList.remove(cls);
-    void el.offsetWidth;
+    if (typeof el.classList.contains !== 'function' || el.classList.contains(cls)) {
+      el.classList.remove(cls);
+      void el.offsetWidth;
+    }
     el.classList.add(cls);
     clearTimeout(el._fxTid);
     el._fxTid = setTimeout(() => { if (el.classList) el.classList.remove(cls); }, ms);
@@ -3345,7 +3347,10 @@
     },
     playSweep(f, t) {
       const pEl = $('#trackPlayed');
-      if (pEl) pEl.style.width = f === null ? '0%' : (Math.max(0, Math.min(100, f * 100)) + '%');
+      if (pEl) {
+        const s = f === null ? 0 : Math.max(0, Math.min(1, f));
+        pEl.style.transform = 'scaleX(' + s + ')';
+      }
       const curEl = $('#trackCur');
       if (curEl) {
         const lbl = t === null ? '0.0s' : t.toFixed(1) + 's';
@@ -4412,15 +4417,20 @@
       const dt = Math.min((now - prev) / 16.67, 3);
       prev = now;
       ctx.clearRect(0, 0, W, H);
+      const gravStep = grav * dpr * dt;
+      const drag = Math.pow(0.988, dt);
+      const swayAmp = 0.9 * dpr;
+      const bottomLimit = H + 50 * dpr;
       let alive = 0;
-      for (const b of bits) {
-        b.vy += grav * dpr * dt;
-        b.vx *= Math.pow(0.988, dt);
+      for (let i = 0; i < bits.length; i++) {
+        const b = bits[i];
+        b.vy += gravStep;
+        b.vx *= drag;
         b.flip += b.vflip * dt;
-        b.x += (b.vx + Math.sin(b.flip) * 0.9 * dpr) * dt;
+        b.x += (b.vx + Math.sin(b.flip) * swayAmp) * dt;
         b.y += b.vy * dt;
         b.rot += b.vr * dt;
-        if (b.y >= H + 50 * dpr) continue;
+        if (b.y >= bottomLimit) continue;
         alive++;
         const fw = b.w * (0.28 + 0.72 * Math.abs(Math.cos(b.flip)));
         ctx.save();

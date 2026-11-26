@@ -201,8 +201,10 @@
   }
   function triggerFxClass(el, cls, ms) {
     if (!el || !isAnimOn()) return;
-    el.classList.remove(cls);
-    void el.offsetWidth;
+    if (typeof el.classList.contains !== 'function' || el.classList.contains(cls)) {
+      el.classList.remove(cls);
+      void el.offsetWidth;
+    }
     el.classList.add(cls);
     clearTimeout(el._fxTid);
     el._fxTid = setTimeout(() => el.classList.remove(cls), ms || 560);
@@ -511,13 +513,11 @@
 
   function clearSpinTimers() {
     spinTimers.forEach((id) => clearTimeout(id));
-    spinRafs.forEach((id) => cancelAnimationFrame(id));
+    spinRafs.forEach((id) => { if (id) cancelAnimationFrame(id); });
     spinTimers = [];
     spinRafs = [];
     spinAnimating = false;
     for (let i = 0; i < 3; i++) {
-      const s = $('#dhReel' + i);
-      if (s) s.style.filter = 'none';
       const w = $('#dhWin' + i);
       if (w) w.classList.remove('is-spinning', 'is-suspense');
     }
@@ -626,14 +626,13 @@
     const targetRow = REEL_BASE_LOOPS[slotIdx] * Hub.GAMES.length + Math.max(0, targetGameIdx);
 
     strip.style.transition = 'none';
-    strip.style.filter = 'none';
     if (badge) badge.hidden = true;
     if (!landed) {
       const idleRow = 1 + slotIdx * 2;
-      strip.style.transform = `translateY(${-(idleRow * REEL_STEP) + 54}px)`;
+      strip.style.transform = `translate3d(0,${-(idleRow * REEL_STEP) + 54}px,0)`;
       if (sub) { sub.textContent = t('Game ' + (slotIdx + 1), 'Juego ' + (slotIdx + 1)); sub.className = 'dh-slot-sub'; sub.style.removeProperty('--rc'); }
     } else {
-      strip.style.transform = `translateY(${-(targetRow * REEL_STEP) + 54}px)`;
+      strip.style.transform = `translate3d(0,${-(targetRow * REEL_STEP) + 54}px,0)`;
       if (win) win.classList.add('is-locked', 'is-flash');
       const card = strip.querySelector(`[data-idx="${targetRow}"]`);
       if (card) {
@@ -710,6 +709,7 @@
       const dur = durs[rIdx];
       const t0 = performance.now();
       let lastRowPassed = -1;
+      let suspenseOn = false;
 
       const rc = gameColor(slot.gameId);
       if (win) {
@@ -747,13 +747,16 @@
             vel = 0;
           }
           y = startY + dist * eased;
-          if (rIdx === 2 && el > durs[1] - 60 && p < 0.97 && win) {
+          if (rIdx === 2 && !suspenseOn && el > durs[1] - 60 && p < 0.97 && win) {
+            suspenseOn = true;
             win.classList.add('is-suspense');
           }
         }
-        const blurPx = vel > 0.2 ? Math.min(2.8, (vel - 0.2) * 3.6) : 0;
-        strip.style.filter = blurPx > 0.15 ? `blur(${blurPx.toFixed(2)}px)` : 'none';
-        strip.style.transform = `translateY(${y.toFixed(1)}px)`;
+        // Pure GPU transform (zero per-frame Gaussian blur rasterization!)
+        const stretch = vel > 0.2 ? (1 + Math.min(0.045, (vel - 0.2) * 0.06)) : 1;
+        strip.style.transform = stretch > 1.001
+          ? `translate3d(0,${y.toFixed(1)}px,0) scaleY(${stretch.toFixed(3)})`
+          : `translate3d(0,${y.toFixed(1)}px,0)`;
 
         // Per-symbol slot click synced to active reel (rising tension pitch on final Reel 3 ticks!)
         const curRow = Math.floor((-y + 54) / REEL_STEP);
@@ -767,10 +770,10 @@
         }
 
         if (p < 1) {
-          spinRafs.push(requestAnimationFrame(frame));
+          spinRafs[rIdx] = requestAnimationFrame(frame);
         } else {
-          strip.style.filter = 'none';
-          strip.style.transform = `translateY(${endY}px)`;
+          spinRafs[rIdx] = 0;
+          strip.style.transform = `translate3d(0,${endY}px,0)`;
           if (win) {
             win.classList.remove('is-spinning', 'is-suspense');
             win.classList.add('is-locked', 'is-flash');
@@ -809,7 +812,7 @@
           }
         }
       }
-      spinRafs.push(requestAnimationFrame(frame));
+      spinRafs[rIdx] = requestAnimationFrame(frame);
     });
   }
 
@@ -841,7 +844,8 @@
       const r = st.results[i];
       const slot = st.slots[i];
       if (bar) {
-        bar.style.width = `${Math.max(0, Math.min(100, Number(r && r.score) || 0))}%`;
+        const sc = Math.max(0, Math.min(100, Number(r && r.score) || 0)) / 100;
+        bar.style.transform = `scaleX(${sc})`;
         bar.style.setProperty('--rc', gameColor(slot.gameId));
         bar.className = 'dh-seg-fill';
       }
@@ -2124,7 +2128,7 @@
         `<div id="mgHairClip" class="mg-hair-clip" style="clip-path:inset(0 0 ${curtains[0]}% 0)">` +
           `<img id="mgHairImg" class="mg-hair-img${hasCrop ? ' is-framed' : ''}" src="${esc(imgUrl)}" alt="Mystery musician" referrerpolicy="no-referrer"${imgStyle ? ` style="${imgStyle}"` : ''}>` +
         `</div>` +
-        `<div id="mgHairCurtain" class="mg-hair-curtain" style="height:${curtains[0]}%">` +
+        `<div id="mgHairCurtain" class="mg-hair-curtain" style="transform:translate3d(0,${100 - curtains[0]}%,0)">` +
           `<span id="mgHairStage">${esc(t('Hair only', 'Solo cabello'))}</span>` +
         `</div>` +
       `</div>`;
@@ -2161,7 +2165,7 @@
       clip.style.clipPath = fullReveal ? 'inset(0 0 0 0)' : `inset(0 0 ${pct}% 0)`;
     }
     if (curtain) {
-      curtain.style.height = pct + '%';
+      curtain.style.transform = `translate3d(0,${fullReveal ? 100 : (100 - pct)}%,0)`;
       curtain.classList.toggle('is-open', Boolean(fullReveal));
     }
     if (lbl) lbl.textContent = names[idx];
