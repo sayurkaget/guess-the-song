@@ -480,14 +480,37 @@
     return ALL;
   }
 
+  const lazyScriptPromises = Object.create(null);
+  function ensureLazyScript(relPath, isReady) {
+    if (isReady()) return Promise.resolve(true);
+    if (lazyScriptPromises[relPath]) return lazyScriptPromises[relPath];
+    if (typeof document === 'undefined' || !document.head) return Promise.resolve(false);
+    lazyScriptPromises[relPath] = new Promise((resolve) => {
+      const sc = document.createElement('script');
+      sc.src = (typeof location !== 'undefined' && location.protocol === 'file:') ? relPath : ('/' + relPath);
+      sc.async = true;
+      sc.onload = () => resolve(isReady());
+      sc.onerror = () => { delete lazyScriptPromises[relPath]; resolve(false); };
+      document.head.appendChild(sc);
+    });
+    return lazyScriptPromises[relPath];
+  }
+  function ensureDuelDataLoaded() {
+    return ensureLazyScript('duel-streams-v1.js', () => typeof window !== 'undefined' && Boolean(window.DUEL_STREAMS_V1));
+  }
+  function ensureDailyHubDataLoaded() {
+    return ensureLazyScript('daily-hub-data.js', () => typeof window !== 'undefined' && Boolean(window.TUNEUP_DAILY_HUB_DATA));
+  }
+
   function ensureSongsLoaded() {
     if (catalogHydrated || (typeof window !== 'undefined' && Array.isArray(window.SONGS) && window.SONGS.length)) {
       hydrateCatalog();
-      return Promise.resolve(ALL);
+      return ensureDuelDataLoaded().then(() => ALL);
     }
     if (songsLoadPromise) return songsLoadPromise;
     if (typeof document === 'undefined' || !document.head) return Promise.resolve(ALL);
-    songsLoadPromise = new Promise((resolve) => {
+    const duelP = ensureDuelDataLoaded();
+    const songsP = new Promise((resolve) => {
       const sc = document.createElement('script');
       sc.src = (typeof location !== 'undefined' && location.protocol === 'file:') ? 'songs.js?v=117' : '/songs.js?v=117';
       sc.async = true;
@@ -495,6 +518,7 @@
       sc.onerror = () => { songsLoadPromise = null; resolve(ALL); };
       document.head.appendChild(sc);
     });
+    songsLoadPromise = Promise.all([songsP, duelP]).then(() => ALL);
     return songsLoadPromise;
   }
 
@@ -4475,6 +4499,7 @@
 
   $('#start').onclick = () => {
     closeFilterMenus();
+    ensureDuelDataLoaded();
     ensureSongsLoaded().then(() => {
       buildPool();
       loadRun();
@@ -5868,9 +5893,10 @@
       return true;
     }
 
-    launchDuelChallenge = (incoming) => ensureSongsLoaded().then(() => startDuel(incoming && incoming.kind, incoming));
-    launchDuelMode = (deck) => ensureSongsLoaded().then(() => startDuel(deck || ds.kind));
-    launchDailyDuelForHub = (slot, onDone) => ensureSongsLoaded().then(() => {
+    const ensureDuelReady = () => Promise.all([ensureSongsLoaded(), ensureDuelDataLoaded()]);
+    launchDuelChallenge = (incoming) => ensureDuelReady().then(() => startDuel(incoming && incoming.kind, incoming));
+    launchDuelMode = (deck) => ensureDuelReady().then(() => startDuel(deck || ds.kind));
+    launchDailyDuelForHub = (slot, onDone) => ensureDuelReady().then(() => {
       const parked = duelHubRuns[hubDuelKey(slot)];
       if (parked && parked.a && parked.b) {
         return startDuel(parked.kind, null, { slot, onDone, queue: parked.queue, resume: parked });
@@ -5911,7 +5937,7 @@
       return startDuel(deckKind, null, { slot, onDone, queue });
     });
 
-    $('#openDuel').onclick = () => ensureSongsLoaded().then(() => startDuel(ds.kind));
+    $('#openDuel').onclick = () => ensureDuelReady().then(() => startDuel(ds.kind));
     if ($('#duelTabs')) {
       $('#duelTabs').addEventListener('click', (e) => {
         const b = e.target.closest('[data-duel]');
@@ -6689,8 +6715,9 @@
       return true;
     }
 
-    launchArtistChallenge = (incoming) => ensureSongsLoaded().then(() => startArtistGame(incoming));
-    launchArtistMode = (mode) => ensureSongsLoaded().then(() => startArtistGame(null, mode));
+    const ensureArtistReady = () => Promise.all([ensureSongsLoaded(), ensureDuelDataLoaded()]);
+    launchArtistChallenge = (incoming) => ensureArtistReady().then(() => startArtistGame(incoming));
+    launchArtistMode = (mode) => ensureArtistReady().then(() => startArtistGame(null, mode));
     searchArtistRoster = (q, limit = 10) => {
       const qNorm = norm(q);
       if (!qNorm) return [];
@@ -6704,7 +6731,7 @@
         })
         .slice(0, limit);
     };
-    launchDailyArtistForHub = (slot, onDone) => ensureSongsLoaded().then(() => {
+    launchDailyArtistForHub = (slot, onDone) => ensureSongsLoaded().then(() => ensureDuelDataLoaded()).then(() => {
       const list = ensureRoster();
       if (!list.length) {
         if (onDone) onDone({ score: 0, won: false, shortSummary: 'Unavailable', detail: 'Unavailable' });
@@ -7876,6 +7903,7 @@
       searchArtists: (q, limit = 10) => (searchArtistRoster ? searchArtistRoster(q, limit) : []),
       getAllSongs: () => ALL,
       ensureSongsReady: ensureSongsLoaded,
+      ensureHubDataReady: ensureDailyHubDataLoaded,
       isCatalogReady: () => catalogHydrated,
       stopAudio: () => { stopAudio(); stopMiniPreview(); },
       dockMiniVolume: () => dockVolume('#mgVolSlot'),
@@ -7977,13 +8005,20 @@
   });
   setInterval(() => { if (!$('#lobby').hidden) refreshDaily(); }, 30000);
   if (!showIncomingChallenge()) applyDeepLink();
-  if (!catalogHydrated && typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+  if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
     const warmCatalog = () => { if (!catalogHydrated) ensureSongsLoaded(); };
-    document.querySelectorAll('#start, #openDuel, #openArtistGame, #openCustom, #openDailyHub, [data-minigame]').forEach((el) => {
-      if (el && typeof el.addEventListener === 'function') {
-        el.addEventListener('pointerenter', warmCatalog, { once: true, passive: true });
-        el.addEventListener('touchstart', warmCatalog, { once: true, passive: true });
-      }
-    });
+    const warmDuel = () => { warmCatalog(); ensureDuelDataLoaded(); };
+    const warmHub = () => { warmCatalog(); ensureDailyHubDataLoaded(); };
+    const bindWarm = (sel, fn) => {
+      document.querySelectorAll(sel).forEach((el) => {
+        if (el && typeof el.addEventListener === 'function') {
+          el.addEventListener('pointerenter', fn, { once: true, passive: true });
+          el.addEventListener('touchstart', fn, { once: true, passive: true });
+        }
+      });
+    };
+    bindWarm('#start, #openCustom', warmCatalog);
+    bindWarm('#openDuel, #openArtistGame', warmDuel);
+    bindWarm('#openDailyHub, [data-minigame]', warmHub);
   }
 })();

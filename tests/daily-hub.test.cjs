@@ -253,11 +253,16 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
   const build = fs.readFileSync(path.join(ROOT, 'tools/build-cloudflare.cjs'), 'utf8');
 
-  for (const script of ['daily-hub-data.js', 'daily-hub.js', 'mini-games.js']) {
+  const appSrc = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  for (const script of ['daily-hub.js', 'mini-games.js']) {
     assert.match(html, new RegExp(`src="${script}"`));
     assert.match(sw, new RegExp(`'\\./${script}'`));
     assert.match(build, new RegExp(`'${script}'`));
   }
+  assert.doesNotMatch(html, /src="daily-hub-data\.js"/);
+  assert.match(appSrc, /daily-hub-data\.js/);
+  assert.match(sw, /'\.\/daily-hub-data\.js'/);
+  assert.match(build, /'daily-hub-data\.js'/);
   const mg = fs.readFileSync(path.join(ROOT, 'mini-games.js'), 'utf8');
   const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
   const sitemap = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');

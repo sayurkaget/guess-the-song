@@ -119,7 +119,8 @@ test('HTML and SW register Music Duel decks cleanly', () => {
   assert.match(html, /data-duel="year"/);
   assert.match(html, /id="duelSubA"/);
   assert.match(html, /id="duelSubB"/);
-  assert.match(html, /src="duel-streams-v1\.js"/);
+  assert.doesNotMatch(html, /src="duel-streams-v1\.js"/);
+  assert.match(app, /duel-streams-v1\.js/);
   assert.match(html, /src="duel\.js"/);
   assert.match(sw, /'\.\/duel-streams-v1\.js'/);
   assert.match(sw, /'\.\/duel\.js'/);

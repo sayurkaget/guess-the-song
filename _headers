@@ -8,9 +8,11 @@
   Cache-Control: public, max-age=300, stale-while-revalidate=86400
 
 /songs.js
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
 /sw.js
+  ! Cache-Control
   Cache-Control: public, max-age=0, must-revalidate
 
 /mv-frames/*

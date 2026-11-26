@@ -3,8 +3,8 @@
   'use strict';
 
   const Hub = window.TuneUpDailyHub;
-  const Data = window.TUNEUP_DAILY_HUB_DATA;
-  if (!Hub || !Data) return;
+  if (!Hub) return;
+  const getData = () => window.TUNEUP_DAILY_HUB_DATA || {};
 
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -1068,7 +1068,7 @@
   let albumIndexCache = null;
   function getAlbumIndex() {
     if (albumIndexCache) return albumIndexCache;
-    const raw = (Data && Data.albumBank) || [];
+    const raw = getData().albumBank || [];
     // [album, artist, artUrl, diff, trackId, anchorTitle, year]
     albumIndexCache = raw.map((r) => ({
       album: r[0],
@@ -1165,10 +1165,11 @@
   function resolveMiniChallengeTarget(ch) {
     if (!ch || !CHALLENGEABLE_GAMES.has(ch.gameId)) return null;
     let list = null, keyOf = null;
+    const d = getData();
     if (ch.gameId === 'cover') { list = getAlbumIndex(); keyOf = (a) => a.nAlbum + '|' + a.nArtist; }
-    else if (ch.gameId === 'mv') { list = Data.mvBank || []; keyOf = (r) => r[2]; }
-    else if (ch.gameId === 'hair') { list = Data.hairBank || []; keyOf = (p) => p[0]; }
-    else if (ch.gameId === 'lyric') { list = Data.lyricBank || []; keyOf = (r) => String(r[0]); }
+    else if (ch.gameId === 'mv') { list = d.mvBank || []; keyOf = (r) => r[2]; }
+    else if (ch.gameId === 'hair') { list = d.hairBank || []; keyOf = (p) => p[0]; }
+    else if (ch.gameId === 'lyric') { list = d.lyricBank || []; keyOf = (r) => String(r[0]); }
     if (!list || !list.length) return null;
     if (ch.index < list.length && fnvHex(keyOf(list[ch.index])) === ch.hash) {
       return { item: list[ch.index], index: ch.index };
@@ -1200,6 +1201,10 @@
   function openMiniChallenge(rawHash) {
     const ch = parseMiniChallenge(rawHash);
     if (!ch) return false;
+    if (!window.TUNEUP_DAILY_HUB_DATA && bridge && bridge.ensureHubDataReady) {
+      bridge.ensureHubDataReady().then(() => openMiniChallenge(rawHash));
+      return true;
+    }
     const resolved = resolveMiniChallengeTarget(ch);
     if (!resolved) {
       if (bridge && bridge.toast) bridge.toast(t('Challenge link is no longer valid.', 'El enlace del reto ya no es válido.'));
@@ -1315,6 +1320,10 @@
 
   function openMiniGame(rawGameId, dailySlot, opts) {
     const gameId = rawGameId === 'color' ? 'mv' : rawGameId;
+    if (!window.TUNEUP_DAILY_HUB_DATA && bridge && bridge.ensureHubDataReady) {
+      bridge.ensureHubDataReady().then(() => openMiniGame(rawGameId, dailySlot, opts));
+      return;
+    }
     if (gameId !== 'fact' && bridge && bridge.isCatalogReady && !bridge.isCatalogReady() && bridge.ensureSongsReady) {
       bridge.ensureSongsReady();
     }
@@ -1847,7 +1856,7 @@
   function initMvSpot(seed, dailySlot, challenge, saved) {
     let st = saved && saved.gameId === 'mv' ? saved : null;
     if (!st) {
-      const bank = Data.mvBank || [];
+      const bank = getData().mvBank || [];
       const maxDiff = dailySlot ? dailySlot.diffTier : 3;
       const pool = bank.filter((r) => r[3] <= maxDiff);
       const srcPool = pool.length ? pool : bank;
@@ -2082,7 +2091,7 @@
   function initHairSpot(seed, dailySlot, challenge, saved) {
     let st = saved && saved.gameId === 'hair' ? saved : null;
     if (!st) {
-      const bank = Data.hairBank || [];
+      const bank = getData().hairBank || [];
       const maxDiff = dailySlot ? dailySlot.diffTier : 3;
       const pool = bank.filter((p) => p[3] <= maxDiff);
       const srcPool = pool.length ? pool : bank;
@@ -2270,7 +2279,7 @@
     const isDaily = !!dailySlot;
     let st = (saved && saved.gameId === 'fact') ? saved : null;
     if (!st) {
-      const bank = Data.factBank || [];
+      const bank = getData().factBank || [];
       const deck = isDaily
         ? Hub.pickDeterministic(bank, seed, 5)
         : bank.slice().sort(() => Math.random() - 0.5);
@@ -2413,7 +2422,7 @@
   function initLyricGuess(seed, dailySlot, challenge, saved) {
     let st = saved && saved.gameId === 'lyric' ? saved : null;
     if (!st) {
-      const bank = Data.lyricBank || [];
+      const bank = getData().lyricBank || [];
       const targetRow = (challenge && challenge.item)
         ? challenge.item
         : dailySlot
