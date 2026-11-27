@@ -18,8 +18,8 @@
     easy:       { label: 'Easy',       tiers: [1] },
     medium:     { label: 'Medium',     tiers: [1, 2] },
     hard:       { label: 'Hard',       tiers: [2, 3] },
-    expert:     { label: 'Expert',     tiers: [2, 3] },
-    impossible: { label: 'Impossible', tiers: [3, 4] }
+    expert:     { label: 'Expert',     tiers: [3, 4] },
+    impossible: { label: 'Impossible', tiers: [4, 5] }
   };
   // urutan tahap dalam satu sesi
   const ORDER  = ['easy', 'medium', 'hard', 'expert', 'impossible'];
@@ -1081,11 +1081,11 @@
   }
   const CLASSIC_TIER_BASELINE_STREAMS = { 1: 1800000000, 2: 900000000, 3: 500000000, 4: 260000000, 5: 100000000 };
   const CLASSIC_STAGE_BANDS = [
-    { min: 1500000000, max: Infinity,   exp: 1.9,  unstreamedMaxTier: 1 }, // Stage 1 Easy: global mega-hits (>=1.5B)
-    { min: 1000000000, max: 2200000000, exp: 1.5,  unstreamedMaxTier: 1 }, // Stage 2 Medium: big hits (>=1B / top T2)
-    { min: 650000000,  max: 1250000000, exp: 1.3,  unstreamedMaxTier: 0 }, // Stage 3 Hard: radio hits (>=650M)
-    { min: 400000000,  max: 750000000,  exp: 1.15, unstreamedMaxTier: 0 }, // Stage 4 Expert: well-known hits (>=400M)
-    { min: 200000000,  max: 450000000,  exp: 1.05, unstreamedMaxTier: 0 }  // Stage 5 Impossible: deeper hits (>=200M)
+    { min: 1500000000, max: Infinity,   exp: 1.9,  unstreamedMaxTier: 1 }, // Stage 1 Easy: global mega-hits (>=1.5B + T1)
+    { min: 800000000,  max: 2200000000, exp: 1.45, unstreamedMaxTier: 2 }, // Stage 2 Medium: big hits (800M-2.2B + T2)
+    { min: 350000000,  max: 1200000000, exp: 1.2,  unstreamedMaxTier: 3 }, // Stage 3 Hard: radio hits & classics (350M-1.2B + T3)
+    { min: 100000000,  max: 650000000,  exp: 0.9,  unstreamedMaxTier: 4 }, // Stage 4 Expert: deeper hits & album tracks (100M-650M + T4)
+    { min: 0,          max: 400000000,  exp: 0.35, unstreamedMaxTier: 5 }  // Stage 5 Impossible: full 33.7k catalog incl. all Tier 5 deep cuts
   ];
   function pickWeightedClassic(list, stageIdx) {
     if (list.length <= 1) return list[0];

@@ -672,14 +672,14 @@ test('Wave 77 multi-select genre & era filters combine pools, format labels, col
   assert.equal(agg.perfect, 1);
 });
 
-test('Wave 132 Classic mode hydrates lazy DUEL_STREAMS_V1, filters holiday tracks, and enforces smooth Stage 1-5 stream bands', () => {
+test('Wave 132/138 Classic mode hydrates lazy DUEL_STREAMS_V1, filters holiday tracks, and spans Easy mega-hits to full Tier 5 Impossible catalog', () => {
   const songs = [
     ['Mistletoe and Holly', 'Frank Sinatra', 4, 'gl', 'pop', 1957, '', 9001],
     ['Santa Baby', 'Ariana Grande', 4, 'gl', 'pop', 2013, '', 9002],
     ...Array.from({ length: 14 }, (_, i) => [`Mega Hit ${i}`, `Star ${i}`, 1, 'gl', 'pop', 2020, '', 1000 + i]),
     ...Array.from({ length: 14 }, (_, i) => [`Mid Tier1 ${i}`, `Mid ${i}`, 1, 'gl', 'pop', 2015, '', 2000 + i]),
     ...Array.from({ length: 14 }, (_, i) => [`Deep Cut ${i}`, `Deep ${i}`, 4, 'gl', 'pop', 2018, '', 4000 + i]),
-    ...Array.from({ length: 14 }, (_, i) => [`Obscure ${i}`, `Obs ${i}`, 4, 'gl', 'pop', 2012, '', 5000 + i])
+    ...Array.from({ length: 14 }, (_, i) => [`Tier5 Cut ${i}`, `Vault ${i}`, 5, 'gl', 'pop', 2012, '', 5000 + i])
   ];
   const { t, ctx } = setupGame({ songs });
   t.S.genre = 'all';
@@ -699,8 +699,8 @@ test('Wave 132 Classic mode hydrates lazy DUEL_STREAMS_V1, filters holiday track
     items: [
       ...Array.from({ length: 14 }, (_, i) => [1000 + i, 2600000000]), // >= 1.5B (Easy)
       ...Array.from({ length: 14 }, (_, i) => [2000 + i, 1100000000]), // < 1.5B (Medium)
-      ...Array.from({ length: 14 }, (_, i) => [4000 + i, 300000000]),  // 200M..450M (Impossible)
-      ...Array.from({ length: 14 }, (_, i) => [5000 + i, 90000000])    // < 200M (excluded from Impossible band)
+      ...Array.from({ length: 14 }, (_, i) => [4000 + i, 300000000])   // 0..400M (Impossible)
+      // Tier 5 (5000..5013) intentionally unstreamed -> included in Impossible!
     ]
   };
   for (let i = 0; i < 40; i++) {
@@ -708,9 +708,12 @@ test('Wave 132 Classic mode hydrates lazy DUEL_STREAMS_V1, filters holiday track
     assert.match(p.title, /^Mega Hit /, `Stage 1 Easy should pick >=1.5B mega-hits, got ${p.title}`);
   }
   t.S.stage = 4;
-  t.S.pool = Array.from(t.filtered()).filter((s) => s.tier === 4);
-  for (let i = 0; i < 40; i++) {
+  t.S.pool = Array.from(t.filtered()).filter((s) => s.tier === 4 || s.tier === 5);
+  let sawTier5 = false;
+  for (let i = 0; i < 60; i++) {
     const p = t.pickSong(0);
-    assert.match(p.title, /^Deep Cut /, `Stage 5 Impossible should stay within 200M..450M recognizable band, got ${p.title}`);
+    assert.match(p.title, /^(Deep Cut |Tier5 Cut )/, `Stage 5 Impossible should include Tier 4-5 catalog tracks, got ${p.title}`);
+    if (/^Tier5 Cut /.test(p.title)) sawTier5 = true;
   }
+  assert.ok(sawTier5, 'Stage 5 Impossible must actively draw from unstreamed Tier 5 deep-cut catalog');
 });
