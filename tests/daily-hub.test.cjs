@@ -128,6 +128,7 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
     }
   }
 
+  let lyricNonZero = 0;
   for (const row of Data.lyricBank) {
     const [trackId, title, artist, art, , , lines, ytId, lyricStart] = row;
     assert.ok(trackIds.has(String(trackId)), `lyricBank trackId ${trackId} (${title}) must exist in songs.js`);
@@ -136,7 +137,20 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
     lines.forEach((ln) => assert.ok(typeof ln === 'string' && ln.trim().length >= 5));
     assert.match(String(ytId || ''), /^[A-Za-z0-9_-]{11}$/, `lyricBank ${title} must include valid 11-char ytId`);
     assert.ok(Number.isInteger(lyricStart) && lyricStart >= 0 && lyricStart <= 75, `lyricBank ${title} lyricStart must be 0..75s`);
+    if (lyricStart > 0) lyricNonZero++;
   }
+  assert.ok(lyricNonZero >= 145, `Expected >= 145 lyricBank tracks with synced non-zero timestamps, got ${lyricNonZero}`);
+  const byTitle = new Map(Data.lyricBank.map((r) => [r[1], r]));
+  assert.equal(byTitle.get('7 rings')[8], 12);
+  assert.equal(byTitle.get('Kill Bill')[8], 12);
+  assert.equal(byTitle.get('Firework')[8], 7);
+  assert.equal(byTitle.get("Sweet Child O' Mine")[8], 44);
+  assert.equal(byTitle.get('good 4 u')[8], 5);
+  assert.equal(byTitle.get("Don't Start Now")[8], 32);
+  assert.equal(byTitle.get('Lose Yourself')[7], 'Wj7lL6eDOqc');
+  assert.equal(byTitle.get('Take On Me')[7], 'MIgK3zOk0zg');
+  assert.equal(byTitle.get('Numb')[7], 'vuFdq_jWeko');
+  assert.equal(byTitle.get('Wake Me Up')[7], '5y_KJAg8bHI');
 
   const roster = ArtistDetective.buildRoster(songs, duelStreams);
   const artistIds = new Set(roster.map((a) => a.id));
