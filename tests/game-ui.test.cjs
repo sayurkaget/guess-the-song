@@ -671,3 +671,46 @@ test('Wave 77 multi-select genre & era filters combine pools, format labels, col
   assert.equal(agg.runs, 2);
   assert.equal(agg.perfect, 1);
 });
+
+test('Wave 132 Classic mode hydrates lazy DUEL_STREAMS_V1, filters holiday tracks, and enforces smooth Stage 1-5 stream bands', () => {
+  const songs = [
+    ['Mistletoe and Holly', 'Frank Sinatra', 4, 'gl', 'pop', 1957, '', 9001],
+    ['Santa Baby', 'Ariana Grande', 4, 'gl', 'pop', 2013, '', 9002],
+    ...Array.from({ length: 14 }, (_, i) => [`Mega Hit ${i}`, `Star ${i}`, 1, 'gl', 'pop', 2020, '', 1000 + i]),
+    ...Array.from({ length: 14 }, (_, i) => [`Mid Tier1 ${i}`, `Mid ${i}`, 1, 'gl', 'pop', 2015, '', 2000 + i]),
+    ...Array.from({ length: 14 }, (_, i) => [`Deep Cut ${i}`, `Deep ${i}`, 4, 'gl', 'pop', 2018, '', 4000 + i]),
+    ...Array.from({ length: 14 }, (_, i) => [`Obscure ${i}`, `Obs ${i}`, 4, 'gl', 'pop', 2012, '', 5000 + i])
+  ];
+  const { t, ctx } = setupGame({ songs });
+  t.S.genre = 'all';
+  t.S.era = 'all';
+  const filtTitles = Array.from(t.filtered(), (s) => s.title);
+  assert.ok(!filtTitles.includes('Mistletoe and Holly'), 'default Classic should filter seasonal Christmas songs');
+  assert.ok(!filtTitles.includes('Santa Baby'), 'default Classic should filter Santa Baby');
+
+  // Call pickSong BEFORE DUEL_STREAMS_V1 arrives (must NOT permanently cache empty streamMap!)
+  t.S.stage = 0;
+  t.S.pool = Array.from(t.filtered()).filter((s) => s.tier === 1);
+  t.S.stages = [];
+  assert.ok(t.pickSong(0));
+
+  // Now simulate lazy-loaded DUEL_STREAMS_V1 arriving
+  ctx.window.DUEL_STREAMS_V1 = {
+    items: [
+      ...Array.from({ length: 14 }, (_, i) => [1000 + i, 2600000000]), // >= 1.5B (Easy)
+      ...Array.from({ length: 14 }, (_, i) => [2000 + i, 1100000000]), // < 1.5B (Medium)
+      ...Array.from({ length: 14 }, (_, i) => [4000 + i, 300000000]),  // 200M..450M (Impossible)
+      ...Array.from({ length: 14 }, (_, i) => [5000 + i, 90000000])    // < 200M (excluded from Impossible band)
+    ]
+  };
+  for (let i = 0; i < 40; i++) {
+    const p = t.pickSong(0);
+    assert.match(p.title, /^Mega Hit /, `Stage 1 Easy should pick >=1.5B mega-hits, got ${p.title}`);
+  }
+  t.S.stage = 4;
+  t.S.pool = Array.from(t.filtered()).filter((s) => s.tier === 4);
+  for (let i = 0; i < 40; i++) {
+    const p = t.pickSong(0);
+    assert.match(p.title, /^Deep Cut /, `Stage 5 Impossible should stay within 200M..450M recognizable band, got ${p.title}`);
+  }
+});

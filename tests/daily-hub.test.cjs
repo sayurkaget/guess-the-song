@@ -151,6 +151,10 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
   assert.equal(byTitle.get('Take On Me')[7], 'MIgK3zOk0zg');
   assert.equal(byTitle.get('Numb')[7], 'vuFdq_jWeko');
   assert.equal(byTitle.get('Wake Me Up')[7], '5y_KJAg8bHI');
+  assert.equal(byTitle.get('Fix You')[7], 'Oncu0bgdcXU');
+  assert.equal(byTitle.get('bad guy')[7], 'ZD6rXLXZOEI');
+  assert.equal(byTitle.get('Smells Like Teen Spirit')[7], '7TDeBi34OtE');
+  assert.equal(byTitle.get('Blank Space')[7], 'dC9QIUKviJU');
 
   const roster = ArtistDetective.buildRoster(songs, duelStreams);
   const artistIds = new Set(roster.map((a) => a.id));
@@ -385,10 +389,10 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(mg, /function encodeMiniChallenge\(/);
   assert.match(mg, /function parseMiniChallenge\(/);
   assert.match(mg, /function renderMiniStreakPill\(/);
-  assert.match(mg, /LYRIC_YT_OPEN_KEY = 'tl:mg:lyricYtOpen'/);
-  assert.match(mg, /id="mgYtToggle"/);
+  assert.doesNotMatch(mg, /id="mgYtToggle"|id="mgYtTag"/);
   assert.match(mg, /id="mgYtWrap"/);
   assert.match(mg, /id="mgYtHost"/);
+  assert.match(mg, /id="mgYtRestart"/);
   assert.match(mg, /id="mgYtLink"/);
   assert.match(mg, /youtube\.com\/watch\?v=/);
   assert.match(app, /playLyricAudio:/);

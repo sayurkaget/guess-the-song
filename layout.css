@@ -4056,27 +4056,6 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 .mg-reveal-card.is-lose .mg-rev-kicker{color:#ff8f93}
 .mg-rev-title{font-size:.98rem;font-weight:800;color:#fff;line-height:1.25;margin-top:1px}
 .mg-rev-sub{font-size:.78rem;color:var(--dim);margin-top:2px}
-.mg-yt-toggle{
-  display:inline-flex;
-  align-items:center;
-  gap:.34rem;
-  margin-top:.34rem;
-  padding:.22rem .6rem;
-  border-radius:999px;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.12);
-  color:var(--dim);
-  font-size:.7rem;
-  font-weight:700;
-  font-family:inherit;
-  text-decoration:none;
-  font-variant-numeric:tabular-nums;
-  cursor:pointer;
-  transition:background .15s,border-color .15s,color .15s;
-}
-.mg-yt-toggle svg{width:13px;height:13px;flex:none;color:var(--acc-l)}
-.mg-yt-toggle .mg-yt-chev,.mg-yt-toggle .mg-yt-ext{opacity:.75;font-size:.66rem}
-.mg-yt-toggle:hover,.mg-yt-toggle.is-open{background:rgba(var(--acc-rgb),.14);border-color:rgba(var(--acc-rgb),.4);color:#fff}
 .mg-yt-wrap{
   display:flex;
   flex-direction:column;
@@ -4092,17 +4071,8 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   width:100%;
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-end;
   gap:.5rem;
-}
-.mg-yt-tag{
-  display:inline-flex;
-  align-items:center;
-  gap:.3rem;
-  font-size:.7rem;
-  font-weight:700;
-  color:var(--acc-l);
-  font-variant-numeric:tabular-nums;
 }
 .mg-yt-bar-acts{
   display:inline-flex;

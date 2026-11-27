@@ -18,8 +18,8 @@
     easy:       { label: 'Easy',       tiers: [1] },
     medium:     { label: 'Medium',     tiers: [1, 2] },
     hard:       { label: 'Hard',       tiers: [2, 3] },
-    expert:     { label: 'Expert',     tiers: [3, 4] },
-    impossible: { label: 'Impossible', tiers: [4, 5] }
+    expert:     { label: 'Expert',     tiers: [2, 3] },
+    impossible: { label: 'Impossible', tiers: [3, 4] }
   };
   // urutan tahap dalam satu sesi
   const ORDER  = ['easy', 'medium', 'hard', 'expert', 'impossible'];
@@ -535,7 +535,7 @@
     return ALL.find((s) => s.slug === sl) || null;
   }
 
-  // Katalog regional (Spanyol/Hindi/US Country) dipisahkan dari "All genres" agar Classic tetap fokus hits global;
+  // Katalog regional (Spanyol/Hindi/US Country) & lagu Natal musiman dipisahkan dari Classic default agar tetap fokus hits global;
   // tetap bisa dimainkan lewat filter "Other" (lain), Custom Artist, Playlist, Music Duel, & Artist Detective.
   const CLASSIC_ALL_SKIP_ARTISTS = new Set([
     'Bad Bunny', 'Karol G', 'Feid', 'Peso Pluma', 'Fuerza Regida', 'Anuel AA', 'Myke Towers',
@@ -543,6 +543,7 @@
     'Arijit Singh', 'Shreya Ghoshal', 'Pritam', 'A.R. Rahman',
     'Morgan Wallen', 'Luke Combs', 'Zach Bryan', 'Chris Stapleton', 'Luke Bryan'
   ]);
+  const CLASSIC_HOLIDAY_RE = /\b(mistletoe|santa baby|santa claus|jingle bell|silent night|frosty the snowman|rudolph|deck the halls|sleigh ride|silver bells|little drummer boy|o holy night|winter wonderland|holly jolly|white christmas|feliz navidad|merry little christmas|christmas tree|christmas song|christmas time|blue christmas|carol of the bells|beginning to look a lot like christmas|underneath the tree|santa tell me|all i want for christmas|last christmas|do they know it's christmas|happy xmas|wonderful christmastime)\b/i;
 
   // lagu yang lolos filter pemain, tanpa memandang tingkat kesulitan
   function filtered() {
@@ -551,7 +552,7 @@
     const eList = parseMulti(S.era, ERA_KEYS);
     const gSet = gList.length ? new Set(gList) : null;
     return ALL.filter((s) =>
-      (!gSet ? !CLASSIC_ALL_SKIP_ARTISTS.has(s.artist) : gSet.has(s.genre)) &&
+      (!gSet ? (!CLASSIC_ALL_SKIP_ARTISTS.has(s.artist) && !CLASSIC_HOLIDAY_RE.test(s.title)) : gSet.has(s.genre)) &&
       (!eList.length || eList.some((ek) => ERAS[ek].hit(s.year))));
   }
 
@@ -1063,22 +1064,34 @@
   let classicTopArtists = null;
   let classicStreamMap = null;
   function getClassicStreamMap() {
-    if (!classicStreamMap) {
+    if (!classicStreamMap || !classicStreamMap.size) {
       const items = (typeof window !== 'undefined' && window.DUEL_STREAMS_V1 && window.DUEL_STREAMS_V1.items) || [];
-      classicStreamMap = new Map();
-      for (let i = 0; i < items.length; i++) {
-        if (Array.isArray(items[i]) && items[i][0]) {
-          classicStreamMap.set(String(items[i][0]), Number(items[i][1]) || 0);
+      if (items.length) {
+        classicStreamMap = new Map();
+        for (let i = 0; i < items.length; i++) {
+          if (Array.isArray(items[i]) && items[i][0]) {
+            classicStreamMap.set(String(items[i][0]), Number(items[i][1]) || 0);
+          }
         }
+      } else if (!classicStreamMap) {
+        return new Map();
       }
     }
     return classicStreamMap;
   }
-  const CLASSIC_TIER_BASELINE_STREAMS = { 1: 2000000000, 2: 950000000, 3: 500000000, 4: 240000000, 5: 80000000 };
+  const CLASSIC_TIER_BASELINE_STREAMS = { 1: 1800000000, 2: 900000000, 3: 500000000, 4: 260000000, 5: 100000000 };
+  const CLASSIC_STAGE_BANDS = [
+    { min: 1500000000, max: Infinity,   exp: 1.9,  unstreamedMaxTier: 1 }, // Stage 1 Easy: global mega-hits (>=1.5B)
+    { min: 1000000000, max: 2200000000, exp: 1.5,  unstreamedMaxTier: 1 }, // Stage 2 Medium: big hits (>=1B / top T2)
+    { min: 650000000,  max: 1250000000, exp: 1.3,  unstreamedMaxTier: 0 }, // Stage 3 Hard: radio hits (>=650M)
+    { min: 400000000,  max: 750000000,  exp: 1.15, unstreamedMaxTier: 0 }, // Stage 4 Expert: well-known hits (>=400M)
+    { min: 200000000,  max: 450000000,  exp: 1.05, unstreamedMaxTier: 0 }  // Stage 5 Impossible: deeper hits (>=200M)
+  ];
   function pickWeightedClassic(list, stageIdx) {
     if (list.length <= 1) return list[0];
     const streamMap = getClassicStreamMap();
-    const exp = stageIdx <= 0 ? 1.4 : stageIdx === 1 ? 1.2 : stageIdx === 2 ? 1.05 : stageIdx === 3 ? 0.9 : 0.8;
+    const band = CLASSIC_STAGE_BANDS[Math.max(0, Math.min(stageIdx, CLASSIC_STAGE_BANDS.length - 1))];
+    const exp = band ? band.exp : 1.1;
     let total = 0;
     const weights = new Array(list.length);
     for (let i = 0; i < list.length; i++) {
@@ -1145,17 +1158,39 @@
       return pool[pool.length - 1];
     }
     if (!S.custom && !S.daily && !S.challenge && src.length > 1) {
+      const streamMap = getClassicStreamMap();
+      const band = CLASSIC_STAGE_BANDS[Math.max(0, Math.min(stageIdx, CLASSIC_STAGE_BANDS.length - 1))];
+      if (streamMap.size && band) {
+        let inBand = src.filter((s) => {
+          const st = (s.trackId && streamMap.get(String(s.trackId))) || 0;
+          if (st > 0) return st >= band.min && st <= band.max;
+          return band.unstreamedMaxTier > 0 && s.tier <= band.unstreamedMaxTier;
+        });
+        if (inBand.length < 12) {
+          inBand = src.filter((s) => {
+            const st = (s.trackId && streamMap.get(String(s.trackId))) || 0;
+            return st >= band.min || (band.unstreamedMaxTier > 0 && s.tier <= band.unstreamedMaxTier);
+          });
+        }
+        if (inBand.length >= 12) {
+          if (used.length && inBand.length > 4) {
+            const diverse = inBand.filter((s) => used.every((u) => !sameArtist(s, u)));
+            if (diverse.length >= 4) inBand = diverse;
+          }
+          return pickWeightedClassic(inBand, stageIdx);
+        }
+      }
       const tiers = [...new Set(src.map((s) => s.tier).filter(Boolean))].sort((a, b) => a - b);
       let pickTier = tiers.length === 1 ? tiers[0] : 0;
       if (tiers.length > 1) {
-        // Bobot ramah populer: Medium 45/55 (T2/T1), Hard 50/50 (T3/T2), Expert 45/55 (T4/T3), Impossible 30% T5 streamed + 70% T4.
-        const upperChance = stageIdx >= 4 ? 0.30 : stageIdx === 2 ? 0.50 : 0.45;
+        // Bobot ramah populer untuk filter sempit / fallback tanpa streamMap
+        const upperChance = stageIdx >= 4 ? 0.35 : stageIdx === 2 ? 0.45 : 0.40;
         pickTier = Math.random() < upperChance ? tiers[tiers.length - 1] : tiers[0];
       }
       if (pickTier) {
         let byTier = src.filter((s) => s.tier === pickTier);
         if (pickTier === 5) {
-          const streamedTids = getClassicStreamMap();
+          const streamedTids = streamMap;
           const streamed = streamedTids.size
             ? byTier.filter((s) => s.trackId && streamedTids.has(String(s.trackId)))
             : [];
@@ -4509,8 +4544,7 @@
 
   $('#start').onclick = () => {
     closeFilterMenus();
-    ensureDuelDataLoaded();
-    ensureSongsLoaded().then(() => {
+    Promise.all([ensureSongsLoaded(), ensureDuelDataLoaded()]).then(() => {
       buildPool();
       loadRun();
       if (S.runDone) { UI.runResult(); return; }
