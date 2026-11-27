@@ -1570,19 +1570,33 @@
       ? `${won ? t('Solved!', '¡Acertaste!') : t('Revealed', 'Revelado')} · ${score}/100`
       : (freeKicker || (won ? t('Solved!', '¡Acertaste!') : t('Out of tries', 'Sin intentos')));
 
-    const playable = Boolean(trackId && art);
+    const playable = Boolean((trackId || ytId) && art);
     const portraitCls = gameId === 'hair' ? ' is-portrait' : '';
     const artHtml = art
       ? `<img id="mgRevArt" class="mg-rev-art${portraitCls}${playable ? ' is-playable' : ''}" src="${esc(art)}" alt="${esc(title)}"${playable ? ` role="button" tabindex="0" data-playing="0" title="${esc(t('Tap to pause or resume preview', 'Toca para pausar o reanudar la vista previa'))}"` : ''}${gameId === 'hair' ? ' referrerpolicy="no-referrer"' : ''}>`
       : '';
-    const volHtml = trackId ? '<div class="vol-slot mg-vol-slot" id="mgVolSlot"></div>' : '';
+    const volHtml = (trackId || ytId) ? '<div class="vol-slot mg-vol-slot" id="mgVolSlot"></div>' : '';
     const startSec = Math.max(0, Math.floor(Number(lyricStart) || 0));
     const fmtStart = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
-    const ytLinkHtml = (gameId === 'lyric' && ytId)
-      ? `<a id="mgYtLink" class="mg-yt-link" href="https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}${startSec > 0 ? `&t=${startSec}s` : ''}" target="_blank" rel="noopener noreferrer">` +
-          `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="3.8" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M10.2 9.2 15.4 12l-5.2 2.8V9.2Z" fill="currentColor"/></svg>` +
-          `<span>YouTube${startSec > 0 ? ` · ${fmtStart(startSec)}` : ''}</span><span class="mg-yt-ext" aria-hidden="true">↗</span>` +
-        `</a>`
+    const ytSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="3.8" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M10.2 9.2 15.4 12l-5.2 2.8V9.2Z" fill="currentColor"/></svg>';
+    const ytUrl = ytId ? `https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}${startSec > 0 ? `&t=${startSec}s` : ''}` : '';
+    const canToggleYt = Boolean(gameId === 'lyric' && ytId && bridge && bridge.playLyricAudio);
+    const ytToggleHtml = (gameId === 'lyric' && ytId)
+      ? (canToggleYt
+          ? `<button id="mgYtToggle" class="mg-yt-toggle" type="button" aria-expanded="false" aria-controls="mgYtWrap">${ytSvg}<span class="mg-yt-lbl">YouTube${startSec > 0 ? ` · ${fmtStart(startSec)}` : ''}</span><span class="mg-yt-chev" aria-hidden="true">▾</span></button>`
+          : `<a id="mgYtLink" class="mg-yt-toggle" href="${ytUrl}" target="_blank" rel="noopener noreferrer">${ytSvg}<span>YouTube${startSec > 0 ? ` · ${fmtStart(startSec)}` : ''}</span><span class="mg-yt-ext" aria-hidden="true">↗</span></a>`)
+      : '';
+    const ytWrapHtml = canToggleYt
+      ? `<div class="mg-yt-wrap" id="mgYtWrap" hidden>` +
+          `<div class="mg-yt-bar">` +
+            `<span class="mg-yt-tag" id="mgYtTag">▶ ${fmtStart(startSec)}</span>` +
+            `<div class="mg-yt-bar-acts">` +
+              `<button type="button" class="mg-yt-restart" id="mgYtRestart">↺ ${esc(t('Restart', 'Reiniciar'))}</button>` +
+              `<a id="mgYtLink" class="mg-yt-ext-link" href="${ytUrl}" target="_blank" rel="noopener noreferrer">YouTube ↗</a>` +
+            `</div>` +
+          `</div>` +
+          `<div class="mg-yt-frame" id="mgYtHost"></div>` +
+        `</div>`
       : '';
 
     controls.innerHTML =
@@ -1594,10 +1608,11 @@
             `<span class="mg-rev-kicker">${esc(kickerTxt)}</span>` +
             `<div class="mg-rev-title">${esc(title)}</div>` +
             `<div class="mg-rev-sub">${esc(subtitle)}</div>` +
-            ytLinkHtml +
+            ytToggleHtml +
           `</div>` +
           volHtml +
         `</div>` +
+        ytWrapHtml +
         `<div class="mg-rev-actions${canChallenge ? ' is-pair' : ''}">${actionHtml}</div>` +
       `</div>`;
 
@@ -1634,15 +1649,64 @@
     if (ytLink && bridge && bridge.stopAudio) {
       ytLink.onclick = () => bridge.stopAudio();
     }
-    if (trackId && bridge) {
-      if (bridge.dockMiniVolume) bridge.dockMiniVolume();
-      if (artEl && bridge.playTrackPreview) {
+    const bindPreviewArt = (autoPlay) => {
+      if (trackId && artEl && bridge && bridge.playTrackPreview) {
         const toggle = () => bridge.playTrackPreview(trackId, artEl, { auto: false });
         artEl.onclick = toggle;
         artEl.onkeydown = (e) => {
           if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); toggle(); }
         };
-        bridge.playTrackPreview(trackId, artEl, { auto: true });
+        if (autoPlay) bridge.playTrackPreview(trackId, artEl, { auto: true });
+      }
+    };
+    if ((trackId || ytId) && bridge) {
+      if (bridge.dockMiniVolume) bridge.dockMiniVolume();
+      bindPreviewArt(true);
+      const ytToggle = $('#mgYtToggle');
+      const ytWrap = $('#mgYtWrap');
+      const ytHost = $('#mgYtHost');
+      const ytRestart = $('#mgYtRestart');
+      if (canToggleYt && ytToggle && ytWrap && ytHost) {
+        let ytOpen = false;
+        const setToggleUi = (open) => {
+          ytOpen = open;
+          ytWrap.hidden = !open;
+          ytToggle.classList.toggle('is-open', open);
+          ytToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+          const lbl = ytToggle.querySelector('.mg-yt-lbl');
+          const chev = ytToggle.querySelector('.mg-yt-chev');
+          if (lbl) lbl.textContent = open ? t('Hide player', 'Ocultar') : `YouTube${startSec > 0 ? ` · ${fmtStart(startSec)}` : ''}`;
+          if (chev) chev.textContent = open ? '▴' : '▾';
+        };
+        const handleYtFallback = () => {
+          setToggleUi(false);
+          if (bridge.toast) bridge.toast(t('YouTube embed unavailable — use YouTube link', 'Reproductor no disponible — usa el enlace'));
+          bindPreviewArt(true);
+        };
+        const openYtPlayer = () => {
+          setToggleUi(true);
+          if (artEl) {
+            const toggleYt = () => bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: false, toggle: true, onFallback: handleYtFallback });
+            artEl.onclick = toggleYt;
+            artEl.onkeydown = (e) => {
+              if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); toggleYt(); }
+            };
+          }
+          bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: false, onFallback: handleYtFallback });
+        };
+        const closeYtPlayer = () => {
+          if (bridge.stopAudio) bridge.stopAudio();
+          ytHost.innerHTML = '';
+          setToggleUi(false);
+          bindPreviewArt(false);
+        };
+        ytToggle.onclick = () => {
+          if (ytOpen) closeYtPlayer();
+          else openYtPlayer();
+        };
+        if (ytRestart) {
+          ytRestart.onclick = () => bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: false, restart: true, onFallback: handleYtFallback });
+        }
       }
     }
     const contBtn = $('#mgContinueDaily');
@@ -2728,7 +2792,16 @@
         if (gId === 'cover') $('#mgSubtitle').textContent = t('Guess the album from its pixelated cover', 'Adivina el álbum por su portada pixelada');
         else if (gId === 'mv') { $('#mgSubtitle').textContent = t('Guess the song from 3 music video frames', 'Adivina la canción con 3 escenas del videoclip'); renderMvStage(true); }
         else if (gId === 'hair') { $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle', 'Adivina al músico por su peinado'); updateHairCurtain(true); }
-        else if (gId === 'lyric') renderLyricLines(true);
+        else if (gId === 'lyric') {
+          renderLyricLines(true);
+          const ytToggle = $('#mgYtToggle');
+          if (ytToggle && ytToggle.getAttribute('aria-expanded') === 'true') {
+            const lbl = ytToggle.querySelector('.mg-yt-lbl');
+            if (lbl) lbl.textContent = t('Hide player', 'Ocultar');
+          }
+          const ytRes = $('#mgYtRestart');
+          if (ytRes) ytRes.textContent = `↺ ${t('Restart', 'Reiniciar')}`;
+        }
       }
     }
   }

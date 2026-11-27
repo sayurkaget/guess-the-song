@@ -385,9 +385,13 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(mg, /function encodeMiniChallenge\(/);
   assert.match(mg, /function parseMiniChallenge\(/);
   assert.match(mg, /function renderMiniStreakPill\(/);
+  assert.match(mg, /id="mgYtToggle"/);
+  assert.match(mg, /id="mgYtWrap" hidden/);
+  assert.match(mg, /id="mgYtHost"/);
   assert.match(mg, /id="mgYtLink"/);
   assert.match(mg, /youtube\.com\/watch\?v=/);
-  assert.doesNotMatch(mg, /mgYtHost|playLyricAudio/);
+  assert.match(app, /playLyricAudio:/);
+  assert.match(app, /youtube\.com\/iframe_api/);
   assert.match(mg, /navigator\.vibrate/);
   assert.match(mg, /ArrowLeft/);
   assert.match(html, /id="mgStreakPill"/);
