@@ -4113,8 +4113,8 @@
         const factBest = Math.max(0, Number(LS.get('tl:fact:best', 0)) || 0);
         const defs = [
           { id: 'cover', name: 'Cover Pixel', color: '#38bdf8' },
-          { id: 'mv', name: 'MV Spot', color: '#25e07d' },
-          { id: 'hair', name: 'HairSpot', color: '#f472b6' },
+          { id: 'mv', name: 'MV Frame', color: '#25e07d' },
+          { id: 'hair', name: 'Hair Peek', color: '#f472b6' },
           { id: 'fact', name: 'Fact or Cap', color: '#f5b13d' },
           { id: 'lyric', name: 'Lyric Guess', color: '#a855f7' }
         ];
@@ -4315,7 +4315,7 @@
   // domain sendiri -- apa pun), jadi tautan tantangan tak pernah usang.
   const ROUTE_SLUGS = new Set([
     'daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective', 'es',
-    'cover-pixel', 'mv-spot', 'album-color', 'hairspot', 'fact-or-cap', 'lyric-guess'
+    'cover-pixel', 'mv-frame', 'mv-spot', 'album-color', 'hair-peek', 'hairspot', 'fact-or-cap', 'lyric-guess'
   ]);
   const DEFAULT_TITLE = 'TuneUp — Free Guess the Song Game, Spotify Playlist Quiz & Music Duel';
   const DEFAULT_TITLE_ES = 'TuneUp — Juego Gratis de Adivinar Canciones (Spotify, Diario y Duelo)';
@@ -7733,8 +7733,10 @@
     }
     const MINI_ROUTE_MAP = {
       'cover-pixel': 'cover',
+      'mv-frame': 'mv',
       'mv-spot': 'mv',
       'album-color': 'mv',
+      'hair-peek': 'hair',
       'hairspot': 'hair',
       'fact-or-cap': 'fact',
       'lyric-guess': 'lyric'

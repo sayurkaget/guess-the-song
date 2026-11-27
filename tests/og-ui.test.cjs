@@ -55,7 +55,7 @@ test('Wave 49 audio, retry, artist detective, score card, and Spotify focus fixe
 
 test('Wave 50 clean per-mode URL routing & popstate Back navigation are wired', () => {
   const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
-  assert.match(app, /const ROUTE_SLUGS = new Set\(\[\s*'daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective', 'es'[\s\S]*'cover-pixel', 'mv-spot', 'album-color', 'hairspot', 'fact-or-cap', 'lyric-guess'/);
+  assert.match(app, /const ROUTE_SLUGS = new Set\(\[\s*'daily', 'classic', 'artist', 'spotify', 'duel', 'artist-detective', 'detective', 'es'[\s\S]*'cover-pixel', 'mv-frame', 'mv-spot', 'album-color', 'hair-peek', 'hairspot', 'fact-or-cap', 'lyric-guess'/);
   assert.match(app, /function syncRoute\(/);
   assert.match(app, /syncRoute\('daily'/);
   assert.match(app, /syncRoute\('classic'/);

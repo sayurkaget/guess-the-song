@@ -148,6 +148,12 @@ test('Cloudflare middleware permanently redirects tuneup.pages.dev and www to ht
   const resWww = await mw.onRequest({ request: new Request('https://www.tuneup.my.id/daily'), next });
   assert.equal(resWww.status, 301);
   assert.equal(resWww.headers.get('location'), 'https://tuneup.my.id/daily');
+  const resOldMv = await mw.onRequest({ request: new Request('https://tuneup.my.id/mv-spot?ref=1'), next });
+  assert.equal(resOldMv.status, 301);
+  assert.equal(resOldMv.headers.get('location'), 'https://tuneup.my.id/mv-frame?ref=1');
+  const resOldHair = await mw.onRequest({ request: new Request('https://tuneup.my.id/hairspot'), next });
+  assert.equal(resOldHair.status, 301);
+  assert.equal(resOldHair.headers.get('location'), 'https://tuneup.my.id/hair-peek');
   assert.equal(nextCalls, 0);
 
   const resApex = await mw.onRequest({ request: new Request('https://tuneup.my.id/'), next });

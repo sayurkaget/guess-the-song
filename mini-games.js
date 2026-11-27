@@ -1,4 +1,4 @@
-/* TuneUp Daily Spin Hub & 5 Pure-Music Mini-Games (Cover Pixel, MV Spot, HairSpot Music, Music Fact or Cap, Lyric Guess). */
+/* TuneUp Daily Spin Hub & 5 Pure-Music Mini-Games (Cover Pixel, MV Frame, Hair Peek, Music Fact or Cap, Lyric Guess). */
 (function () {
   'use strict';
 
@@ -1042,8 +1042,8 @@
 
   const GAME_ROUTES = {
     cover: { slug: 'cover-pixel', titleEn: 'Cover Pixel — TuneUp',       titleEs: 'Cover Pixel — TuneUp' },
-    mv:    { slug: 'mv-spot',     titleEn: 'MV Spot — TuneUp',           titleEs: 'MV Spot — TuneUp' },
-    hair:  { slug: 'hairspot',    titleEn: 'HairSpot Music — TuneUp',    titleEs: 'HairSpot Música — TuneUp' },
+    mv:    { slug: 'mv-frame',    titleEn: 'MV Frame — TuneUp',          titleEs: 'MV Frame — TuneUp' },
+    hair:  { slug: 'hair-peek',   titleEn: 'Hair Peek — TuneUp',         titleEs: 'Hair Peek — TuneUp' },
     fact:  { slug: 'fact-or-cap', titleEn: 'Music Fact or Cap — TuneUp', titleEs: 'Dato o Mito Musical — TuneUp' },
     lyric: { slug: 'lyric-guess', titleEn: 'Lyric Guess — TuneUp',       titleEs: 'Adivina la Letra — TuneUp' }
   };
@@ -1884,7 +1884,7 @@
     }
   }
 
-  /* ================= GAME 2: MV SPOT (CURATED NON-FACE MUSIC VIDEO SCENES — FRAMED STYLE) ================= */
+  /* ================= GAME 2: MV FRAME (CURATED NON-FACE MUSIC VIDEO SCENES) ================= */
   function mvFrameUrl(ytId, frameNum, variant) {
     if (variant === 'yt') return `https://i.ytimg.com/vi/${ytId}/maxres${frameNum}.jpg`;
     if (variant === 'hq720') return `https://i.ytimg.com/vi/${ytId}/hq720.jpg`;
@@ -2133,7 +2133,7 @@
     }
   }
 
-  /* ================= GAME 3: HAIRSPOT MUSIC ================= */
+  /* ================= GAME 3: HAIR PEEK ================= */
   const HAIR_CURTAIN_PCTS = [77, 63, 49, 34, 18, 0];
   function initHairSpot(seed, dailySlot, challenge, saved) {
     let st = saved && saved.gameId === 'hair' ? saved : null;
@@ -2671,7 +2671,7 @@
       const tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
       if (tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable)) return;
 
-      // MV Spot: press 1 / 2 / 3 to jump between unlocked video frames
+      // MV Frame: press 1 / 2 / 3 to jump between unlocked video frames
       if (mgState.gameId === 'mv' && (e.key === '1' || e.key === '2' || e.key === '3')) {
         const f = Number(e.key);
         const unlocked = mgState.done ? 3 : Math.min(3, mgState.tries + 1);

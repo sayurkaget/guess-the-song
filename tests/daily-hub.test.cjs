@@ -324,12 +324,15 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(mg, /id="mgVolSlot"/);
   assert.match(app, /dockMiniVolume/);
   assert.match(app, /undockMiniVolume/);
-  for (const slug of ['cover-pixel', 'mv-spot', 'hairspot', 'fact-or-cap', 'lyric-guess']) {
+  for (const slug of ['cover-pixel', 'mv-frame', 'hair-peek', 'fact-or-cap', 'lyric-guess']) {
     assert.match(app, new RegExp(`'${slug}'`));
     assert.match(mg, new RegExp(`'${slug}'`));
     assert.match(build, new RegExp(`slug:\\s*'${slug}'`));
     assert.match(sitemap, new RegExp(`/${slug}<`));
   }
+  assert.doesNotMatch(html, /MV Spot|HairSpot/i);
+  assert.doesNotMatch(fs.readFileSync(path.join(ROOT, 'daily-hub.js'), 'utf8'), /MV Spot|HairSpot/i);
+  assert.doesNotMatch(fs.readFileSync(path.join(ROOT, 'badges.js'), 'utf8'), /MV Spot|HairSpot/i);
   assert.match(mg, /HAIR_CURTAIN_PCTS = \[77, 63, 49, 34, 18, 0\]/);
   assert.match(mg, /id="mgHairClip"[\s\S]*clip-path:inset\(0 0 \$\{curtains\[0\]\}% 0\)/);
   assert.match(mg, /const GAME_COLORS = \{/);

@@ -63,7 +63,7 @@ for (const file of buildOrder) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v162-wave135-hashed-assets'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v163-wave136-mv-frame-hair-peek'");
     if (esbuild && MINIFY_CSS.has(file)) {
       contents = esbuild.transformSync(contents, { loader: 'css', minify: true, legalComments: 'none' }).code;
     } else if (esbuild && MINIFY_JS.has(file)) {
@@ -85,7 +85,7 @@ const escAttr = (s) => escHtml(s).replace(/"/g, '&quot;');
 
 const EN_FAQS = [
   ['Do I need an account?', 'No sign-up is needed. Open the game on your phone or computer and pick a mode, or paste any public Spotify, Apple Music, or YouTube playlist or album link to play your own tracks.'],
-  ['What can I replay?', 'Classic, Custom Artist, Spotify, Apple Music & YouTube Playlists, Music Duel, Artist Detective Endless, and all 5 mini-games (Cover Pixel, MV Spot, HairSpot, Fact or Cap, Lyric Guess) can be played as often as you like. The Daily Challenge resets once per day.'],
+  ['What can I replay?', 'Classic, Custom Artist, Spotify, Apple Music & YouTube Playlists, Music Duel, Artist Detective Endless, and all 5 mini-games (Cover Pixel, MV Frame, Hair Peek, Fact or Cap, Lyric Guess) can be played as often as you like. The Daily Challenge resets once per day.'],
   ['When is the next Daily?', "At 7:00 AM in your device's local time. Consecutive Daily wins build your streak; a missed day or a loss resets it."],
   ['Can I challenge a friend?', 'Yes. After any song, 5-stage run, Music Duel, or Artist Detective round, tap Challenge your friend to copy a spoiler-free link with the exact same tracks or mystery artist.'],
   ['Where is my progress saved?', 'Your Daily progress, streaks, stats, and settings are saved in this browser. Open Settings -> Backup & transfer to copy a backup code and restore your progress on another browser or device.']
@@ -93,7 +93,7 @@ const EN_FAQS = [
 
 const ES_FAQS = [
   ['¿Necesito una cuenta?', 'No hace falta registrarse. Abre el juego en tu celular o computadora y elige un modo, o pega el enlace de cualquier playlist o álbum público de Spotify, Apple Music o YouTube para jugar con tus canciones.'],
-  ['¿Qué puedo volver a jugar?', 'Clásico, Por Artista, Playlists de Spotify/Apple/YouTube, Duelo Musical, Detective de Artistas Sin fin y los 5 minijuegos (Cover Pixel, MV Spot, HairSpot, Dato o Mito, Adivina la Letra) se pueden jugar todas las veces que quieras. El Desafío Diario (3 juegos /300 puntos) se renueva una vez al día.'],
+  ['¿Qué puedo volver a jugar?', 'Clásico, Por Artista, Playlists de Spotify/Apple/YouTube, Duelo Musical, Detective de Artistas Sin fin y los 5 minijuegos (Cover Pixel, MV Frame, Hair Peek, Dato o Mito, Adivina la Letra) se pueden jugar todas las veces que quieras. El Desafío Diario (3 juegos /300 puntos) se renueva una vez al día.'],
   ['¿Cuándo sale el próximo Diario?', 'A las 7:00 a. m. en la hora local de tu dispositivo. Las victorias diarias seguidas aumentan tu racha; un día perdido o una derrota la reinicia.'],
   ['¿Puedo retar a un amigo?', 'Sí. Al terminar cualquier canción, partida de 5 rondas, Duelo Musical, Detective de Artistas o minijuego, pulsa Retar a un amigo para copiar un enlace sin spoilers con exactamente las mismas canciones o artista.'],
   ['¿Dónde se guarda mi progreso?', 'Tu progreso diario, rachas, estadísticas, logros y ajustes se guardan en este navegador. Abre Ajustes -> Respaldo y transferencia para copiar un código y restaurarlo en otro navegador o dispositivo.']
@@ -225,25 +225,25 @@ const SEO_PAGES = [
     aboutP2: 'Play unlimited free rounds anytime or spin Cover Pixel in the Daily Challenge.'
   },
   {
-    slug: 'mv-spot',
+    slug: 'mv-frame',
     lang: 'en',
     keepHreflang: false,
-    title: 'MV Spot — Guess the Song from Music Video Frames | TuneUp',
+    title: 'MV Frame — Guess the Song from Music Video Frames | TuneUp',
     description: 'Guess 210+ iconic songs from music video scenes across 5 tries, with release year & artist clues and instant audio previews. Free browser music game.',
-    imageAlt: 'TuneUp MV Spot — Guess the song from music video frames',
-    aboutHeading: 'About MV Spot',
-    aboutP1: 'MV Spot shows 3 real music video frames one scene at a time with artist faces masked during guessing, followed by Release Year, Genre, and Artist clues across 5 attempts.',
-    aboutP2: 'Play unlimited free rounds anytime or spin MV Spot in the Daily Challenge.'
+    imageAlt: 'TuneUp MV Frame — Guess the song from music video frames',
+    aboutHeading: 'About MV Frame',
+    aboutP1: 'MV Frame shows 3 real music video frames one scene at a time, followed by Release Year, Genre, and Artist clues across 5 attempts.',
+    aboutP2: 'Play unlimited free rounds anytime or spin MV Frame in the Daily Challenge.'
   },
   {
-    slug: 'hairspot',
+    slug: 'hair-peek',
     lang: 'en',
     keepHreflang: false,
-    title: 'HairSpot Music — Guess the Musician from Their Hairstyle | TuneUp',
+    title: 'Hair Peek — Guess the Musician from Their Hairstyle | TuneUp',
     description: 'Identify 100+ global musicians starting from just their hairstyle. Skip to lower the curtain step by step across 5 tries — free online music game.',
-    imageAlt: 'TuneUp HairSpot Music — Guess famous musicians from their hairstyle',
-    aboutHeading: 'About HairSpot Music',
-    aboutP1: 'HairSpot Music starts with only the musician’s hair visible above the curtain and reveals more of the portrait with each skip across 5 attempts.',
+    imageAlt: 'TuneUp Hair Peek — Guess famous musicians from their hairstyle',
+    aboutHeading: 'About Hair Peek',
+    aboutP1: 'Hair Peek starts with only the musician’s hair visible above the curtain and reveals more of the portrait with each skip across 5 attempts.',
     aboutP2: 'Features 100+ global music icons — play free rounds anytime or spin it in Daily Challenge.'
   },
   {
@@ -277,7 +277,7 @@ const SEO_PAGES = [
     imageAlt: 'TuneUp — Juego gratis de adivinar canciones con clips de 0,1 s, Quiz de Spotify, Duelo Musical y Detective de Artistas',
     aboutHeading: 'Sobre TuneUp — Juego Gratis de Adivinar Canciones',
     aboutP1: 'TuneUp es un juego musical gratis directo en el navegador de tu celular o computadora sin registro. Pon a prueba tu oído adivinando canciones con clips de 0,1 s a 15 s en el Desafío Diario, modo Clásico (33.500+ canciones), Por Artista y quizzes de playlists de Spotify, Apple Music y YouTube.',
-    aboutP2: 'Juega también Duelo Musical (compara streams de Spotify y año de lanzamiento), Detective de Artistas (descubre 530 artistas con 6 pistas) y 5 minijuegos: Cover Pixel, MV Spot, HairSpot, Dato o Mito y Adivina la Letra.'
+    aboutP2: 'Juega también Duelo Musical (compara streams de Spotify y año de lanzamiento), Detective de Artistas (descubre 530 artistas con 6 pistas) y 5 minijuegos: Cover Pixel, MV Frame, Hair Peek, Dato o Mito y Adivina la Letra.'
   }
 ];
 
@@ -299,7 +299,7 @@ function localizeEsStaticHtml(html) {
     .replace('<span id="mgBackLbl">Change mode</span>', '<span id="mgBackLbl">Cambiar modo</span>')
     .replace('<h2 id="moreGamesHeading">More Music Games</h2>', '<h2 id="moreGamesHeading">Más Juegos Musicales</h2>')
     .replace('<span class="more-games-sub" id="moreGamesSub">Free play anytime</span>', '<span class="more-games-sub" id="moreGamesSub">Juego libre siempre</span>')
-    .replace('<b id="mgLblMv">MV Spot</b>', '<b id="mgLblMv">MV Spot</b>')
+    .replace('<b id="mgLblMv">MV Frame</b>', '<b id="mgLblMv">MV Frame</b>')
     .replace('<span id="mgSubMv">Music video</span>', '<span id="mgSubMv">Videoclip</span>')
     .replace('<b id="mgLblFact">Fact or Cap</b>', '<b id="mgLblFact">Dato o Mito</b>')
     .replace('<b id="mgLblLyric">Lyric Guess</b>', '<b id="mgLblLyric">Adivina la Letra</b>')

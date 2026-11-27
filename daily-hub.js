@@ -5,8 +5,8 @@
   const GAMES = [
     { id: 'song',   cat: 'audio',  nameEn: 'Song Guess',    nameEs: 'Adivina la Canción', descEn: 'Name the track from 0.1s',       descEs: 'Adivina la canción en 0,1 s' },
     { id: 'cover',  cat: 'visual', nameEn: 'Cover Pixel',   nameEs: 'Cover Pixel',        descEn: 'Guess song from pixel cover',    descEs: 'Adivina el álbum por su portada' },
-    { id: 'hair',   cat: 'visual', nameEn: 'HairSpot',      nameEs: 'HairSpot',           descEn: 'Guess musician from their hair', descEs: 'Adivina al músico por su peinado' },
-    { id: 'mv',     cat: 'visual', nameEn: 'MV Spot',       nameEs: 'MV Spot',            descEn: 'Guess song from 3 MV frames',    descEs: 'Adivina la canción en 3 escenas' },
+    { id: 'hair',   cat: 'visual', nameEn: 'Hair Peek',     nameEs: 'Hair Peek',          descEn: 'Guess musician from their hair', descEs: 'Adivina al músico por su peinado' },
+    { id: 'mv',     cat: 'visual', nameEn: 'MV Frame',      nameEs: 'MV Frame',           descEn: 'Guess song from 3 MV frames',    descEs: 'Adivina la canción en 3 escenas' },
     { id: 'fact',   cat: 'trivia', nameEn: 'Fact or Cap',   nameEs: 'Dato o Mito',        descEn: '5 music facts or myths',         descEs: '5 datos o mitos musicales' },
     { id: 'lyric',  cat: 'word',   nameEn: 'Lyric Guess',   nameEs: 'Adivina la Letra',   descEn: 'Name the song from 5 lines',     descEs: 'Adivina la canción en 5 versos' },
     { id: 'artist', cat: 'deduce', nameEn: 'Artist Guess',  nameEs: 'Adivina el Artista', descEn: '6 clues to find the artist',     descEs: '6 pistas para hallar al artista' },
@@ -116,7 +116,7 @@
       // Artist Detective: 1->100, 2->90, ..., 10->10
       return Math.max(10, 110 - t * 10);
     }
-    // 5-try games (Song, Cover Pixel, HairSpot, Lyric Guess): 1->100, 2->80, 3->60, 4->40, 5->20
+    // 5-try games (Song, Cover Pixel, Hair Peek, Lyric Guess): 1->100, 2->80, 3->60, 4->40, 5->20
     return Math.max(20, 120 - t * 20);
   }
 

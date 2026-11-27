@@ -148,14 +148,14 @@
     {
       id: 'mv1',
       name: 'Cinema Buff',
-      desc: 'Guess the song from Frame 1 in MV Spot',
+      desc: 'Guess the song from Frame 1 in MV Frame',
       theme: 'gold',
       icon: 'film'
     },
     {
       id: 'hair1',
       name: 'Hair Stylist',
-      desc: 'Guess the musician on Try 1 in HairSpot',
+      desc: 'Guess the musician on Try 1 in Hair Peek',
       theme: 'purple',
       icon: 'scissors'
     },
