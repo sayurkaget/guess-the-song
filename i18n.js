@@ -14,10 +14,6 @@
       dailySub: '1 song · 5 tries',
       moreGamesHeading: 'More Music Games',
       moreGamesSub: '7 free-play modes',
-      mgCatAll: 'All',
-      mgCatAudio: 'Audio',
-      mgCatVisual: 'Visual',
-      mgCatTrivia: 'Trivia',
       mgLblCover: 'Cover Pixel',
       mgSubCover: 'Pixel album',
       mgLblMv: 'MV Spot',
@@ -534,10 +530,6 @@
       dailySub: '1 canción · 5 intentos',
       moreGamesHeading: 'Más Juegos Musicales',
       moreGamesSub: '7 modos de juego libre',
-      mgCatAll: 'Todos',
-      mgCatAudio: 'Audio',
-      mgCatVisual: 'Visual',
-      mgCatTrivia: 'Trivia',
       mgLblCover: 'Cover Pixel',
       mgSubCover: 'Portada pixelada',
       mgLblMv: 'MV Spot',
@@ -1124,10 +1116,6 @@
     setText($('#dailyArtistSub'), 'dailyArtistSub');
     setText($('#moreGamesHeading'), 'moreGamesHeading');
     setText($('#moreGamesSub'), 'moreGamesSub');
-    setText($('#mgCatTabs [data-cat="all"]'), 'mgCatAll');
-    setText($('#mgCatTabs [data-cat="audio"]'), 'mgCatAudio');
-    setText($('#mgCatTabs [data-cat="visual"]'), 'mgCatVisual');
-    setText($('#mgCatTabs [data-cat="trivia"]'), 'mgCatTrivia');
     setText($('#mgLblCover'), 'mgLblCover');
     setText($('#mgSubCover'), 'mgSubCover');
     setText($('#mgLblMv'), 'mgLblMv');

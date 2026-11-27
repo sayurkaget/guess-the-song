@@ -343,7 +343,8 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(lcss, /@keyframes mgCardWrong\{[^}]*rgba\(242,85,90/);
   assert.doesNotMatch(lcss, /@keyframes mgCardWrong\{[^}]*translateX/);
   assert.match(html, /class="head-actions"[\s\S]*id="openStats"[\s\S]*id="openSettings"[\s\S]*id="streakPillBtn"/);
-  assert.match(html, /id="mgCatTabs"[\s\S]*data-cat="all"[\s\S]*data-cat="audio"[\s\S]*data-cat="visual"[\s\S]*data-cat="trivia"/);
+  assert.doesNotMatch(html, /id="mgCatTabs"/);
+  assert.match(lcss, /#lobby \.more-games-grid\{[^}]*repeat\(5,minmax\(0,1fr\)\)/);
   assert.match(html, /id="moreGamesCard"[\s\S]*class="arcade-row"[\s\S]*id="openDuel"[\s\S]*id="openArtistGame"[\s\S]*class="more-games-grid"/);
   assert.match(lcss, /\.spotle-guess-card\.is-new\.is-fx-clue-exact\{animation:spCardEnter/);
   assert.doesNotMatch(app, /triggerUiFx\(newestCard/);
