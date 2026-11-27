@@ -43,7 +43,7 @@ for (const file of files) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v159-wave132-lyric-clean-player-bar'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v160-wave133-lobby-hybrid-layout'");
     if (esbuild && MINIFY_CSS.has(file)) {
       contents = esbuild.transformSync(contents, { loader: 'css', minify: true, legalComments: 'none' }).code;
     } else if (esbuild && MINIFY_JS.has(file)) {
@@ -275,6 +275,7 @@ function localizeEsStaticHtml(html) {
     .replace('<span id="dhBackLbl">Change mode</span>', '<span id="dhBackLbl">Cambiar modo</span>')
     .replace('<span id="mgBackLbl">Change mode</span>', '<span id="mgBackLbl">Cambiar modo</span>')
     .replace('<h2 id="moreGamesHeading">More Music Games</h2>', '<h2 id="moreGamesHeading">Más Juegos Musicales</h2>')
+    .replace('data-cat="all" aria-selected="true" aria-pressed="true">All</button>', 'data-cat="all" aria-selected="true" aria-pressed="true">Todos</button>')
     .replace('<span class="more-games-sub" id="moreGamesSub">Free play anytime</span>', '<span class="more-games-sub" id="moreGamesSub">Juego libre siempre</span>')
     .replace('<b id="mgLblMv">MV Spot</b>', '<b id="mgLblMv">MV Spot</b>')
     .replace('<span id="mgSubMv">Music video</span>', '<span id="mgSubMv">Videoclip</span>')

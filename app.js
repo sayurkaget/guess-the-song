@@ -8200,8 +8200,40 @@
         }
       });
     };
-    bindWarm('#start, #openCustom', warmCatalog);
+    bindWarm('#start', warmDuel);
+    bindWarm('#openCustom', warmCatalog);
     bindWarm('#openDuel, #openArtistGame', warmDuel);
     bindWarm('#openDailyHub, [data-minigame]', warmHub);
+    const catTabs = $('#mgCatTabs');
+    const mgCard = $('#moreGamesCard');
+    if (catTabs && mgCard) {
+      const arcadeRow = $('#lobbyArcadeRow');
+      const miniGrid = $('#lobbyMiniGrid');
+      const applyLobbyCat = (cat) => {
+        const key = cat || 'all';
+        mgCard.dataset.cat = key;
+        catTabs.querySelectorAll('button[data-cat]').forEach((b) => {
+          const on = b.dataset.cat === key;
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        let arcVis = 0, miniVis = 0;
+        mgCard.querySelectorAll('[data-cats]').forEach((card) => {
+          const cats = String(card.dataset.cats || '').split(/\s+/);
+          const show = key === 'all' || cats.includes(key);
+          card.hidden = !show;
+          if (show) {
+            if (card.classList.contains('duel-card-wide')) arcVis++;
+            else miniVis++;
+          }
+        });
+        if (arcadeRow) arcadeRow.hidden = arcVis === 0;
+        if (miniGrid) miniGrid.hidden = miniVis === 0;
+      };
+      catTabs.onclick = (e) => {
+        const btn = e.target && e.target.closest ? e.target.closest('button[data-cat]') : null;
+        if (btn) applyLobbyCat(btn.dataset.cat);
+      };
+    }
   }
 })();

@@ -61,10 +61,14 @@
 
   <header class="head">
     <h1 class="logo">Tune<span>Up</span></h1>
-    <button class="streak-pill-btn" id="streakPillBtn" type="button" aria-label="Daily streak" data-active="0">
-      <span class="sp-ico" aria-hidden="true">🔥</span>
-      <span id="streakPillNum">0</span>
-    </button>
+    <div class="head-actions">
+      <button class="menu-stats" id="openStats" type="button" aria-label="Stats" aria-haspopup="dialog" aria-controls="statsModal"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5v7M12 4.5v15M19 9v10.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="lbl">Stats</span></button>
+      <button class="menu-stats" id="openSettings" type="button" aria-label="Settings" aria-haspopup="dialog" aria-controls="settingsModal"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h9m5 0h2M4 16.5h4m5 0h7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="15.5" cy="7.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="10.5" cy="16.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lbl">Settings</span></button>
+      <button class="streak-pill-btn" id="streakPillBtn" type="button" aria-label="Daily streak" data-active="0">
+        <span class="sp-ico" aria-hidden="true">🔥</span>
+        <span id="streakPillNum">0</span>
+      </button>
+    </div>
     <div class="streak-popover" id="streakPopover" role="dialog" aria-label="Daily streak" hidden>
       <div id="streakPopBody"></div>
     </div>
@@ -169,12 +173,18 @@
       </div>
     </section>
 
-    <section class="more-games-card" id="moreGamesCard" aria-labelledby="moreGamesHeading">
+    <section class="more-games-card" id="moreGamesCard" data-cat="all" aria-labelledby="moreGamesHeading">
       <div class="more-games-head">
         <h2 id="moreGamesHeading">More Music Games</h2>
+        <div class="mg-cat-tabs" id="mgCatTabs" role="tablist" aria-label="Game categories">
+          <button type="button" role="tab" data-cat="all" aria-selected="true" aria-pressed="true">All</button>
+          <button type="button" role="tab" data-cat="audio" aria-selected="false" aria-pressed="false">Audio</button>
+          <button type="button" role="tab" data-cat="visual" aria-selected="false" aria-pressed="false">Visual</button>
+          <button type="button" role="tab" data-cat="trivia" aria-selected="false" aria-pressed="false">Trivia</button>
+        </div>
       </div>
-      <div class="arcade-row">
-        <button class="duel-card-wide" id="openDuel" type="button">
+      <div class="arcade-row" id="lobbyArcadeRow">
+        <button class="duel-card-wide" id="openDuel" type="button" data-cats="audio">
           <span class="arcade-ico is-gold" aria-hidden="true"><svg class="title-ico is-gold" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H12L11 22l8.5-11.5H12L13 2Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></span>
           <div class="duel-card-copy">
             <div class="duel-card-title">
@@ -189,7 +199,7 @@
           </span>
         </button>
 
-        <button class="duel-card-wide artist-detective-card" id="openArtistGame" type="button">
+        <button class="duel-card-wide artist-detective-card" id="openArtistGame" type="button" data-cats="trivia">
           <span class="arcade-ico is-purple" aria-hidden="true"><svg class="title-ico is-purple" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="m15.9 15.9 4.9 4.9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
           <div class="duel-card-copy">
             <div class="duel-card-title">
@@ -204,31 +214,26 @@
           </span>
         </button>
       </div>
-      <div class="more-games-grid">
-        <button class="mg-tile" type="button" data-minigame="cover">
+      <div class="more-games-grid" id="lobbyMiniGrid">
+        <button class="mg-tile" type="button" data-minigame="cover" data-cats="visual">
           <span class="mg-tile-ico is-green" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 9.5h17M3.5 15h17M9.5 3.5v17M15 3.5v17" fill="none" stroke="currentColor" stroke-width="1.35" opacity=".65"/></svg></span>
-          <b id="mgLblCover">Cover Pixel</b>
-          <span id="mgSubCover">Pixel album</span>
+          <div class="mg-tile-copy"><b id="mgLblCover">Cover Pixel</b><span id="mgSubCover">Pixel album</span></div>
         </button>
-        <button class="mg-tile" type="button" data-minigame="mv">
+        <button class="mg-tile" type="button" data-minigame="mv" data-cats="visual">
           <span class="mg-tile-ico is-gold" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="m10 9.5 5 2.5-5 2.5v-5Z" fill="currentColor"/></svg></span>
-          <b id="mgLblMv">MV Spot</b>
-          <span id="mgSubMv">Music video</span>
+          <div class="mg-tile-copy"><b id="mgLblMv">MV Spot</b><span id="mgSubMv">Music video</span></div>
         </button>
-        <button class="mg-tile" type="button" data-minigame="hair">
+        <button class="mg-tile" type="button" data-minigame="hair" data-cats="visual">
           <span class="mg-tile-ico is-purple" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 11.5a5.5 5.5 0 0 1 11 0v1.5a5.5 5.5 0 0 1-11 0v-1.5Z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M6 10.5c.8-4.2 3.2-6.5 6-6.5 3.2 0 5.6 2.1 6.2 5.8-2.2-1.6-4.4-2.2-6.6-1.8-2.2.4-3.8 1.2-5.6 2.5Z" fill="currentColor" opacity=".32"/><path d="M4.5 20.5c1.5-2.7 4.2-4 7.5-4s6 1.3 7.5 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
-          <b id="mgLblHair">HairSpot</b>
-          <span id="mgSubHair">Musician hair</span>
+          <div class="mg-tile-copy"><b id="mgLblHair">HairSpot</b><span id="mgSubHair">Musician hair</span></div>
         </button>
-        <button class="mg-tile" type="button" data-minigame="fact">
+        <button class="mg-tile" type="button" data-minigame="fact" data-cats="trivia">
           <span class="mg-tile-ico is-orange" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2.8 4.8 13.4h6.4L10.4 21.2 19.2 10.6h-6.4L13 2.8Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></span>
-          <b id="mgLblFact">Fact or Cap</b>
-          <span id="mgSubFact">Music trivia</span>
+          <div class="mg-tile-copy"><b id="mgLblFact">Fact or Cap</b><span id="mgSubFact">Music trivia</span></div>
         </button>
-        <button class="mg-tile" type="button" data-minigame="lyric">
+        <button class="mg-tile" type="button" data-minigame="lyric" data-cats="audio trivia">
           <span class="mg-tile-ico is-blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 6.5h15M4.5 11.5h11M4.5 16.5h13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="18.5" cy="16.5" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span>
-          <b id="mgLblLyric">Lyric Guess</b>
-          <span id="mgSubLyric">5 lyric lines</span>
+          <div class="mg-tile-copy"><b id="mgLblLyric">Lyric Guess</b><span id="mgSubLyric">5 lyric lines</span></div>
         </button>
       </div>
     </section>
@@ -575,10 +580,6 @@
   </section>
 
   <footer class="foot">
-    <div class="foot-menu-links">
-      <button class="menu-stats" id="openStats" type="button" aria-haspopup="dialog" aria-controls="statsModal"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5v7M12 4.5v15M19 9v10.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="lbl">Stats</span></button>
-      <button class="menu-stats" id="openSettings" type="button" aria-haspopup="dialog" aria-controls="settingsModal"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h9m5 0h2M4 16.5h4m5 0h7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="15.5" cy="7.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="10.5" cy="16.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="lbl">Settings</span></button>
-    </div>
     <button class="feedback-link" id="openFeedback" type="button" aria-haspopup="dialog" aria-controls="feedbackModal"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3v-3H6.5A2.5 2.5 0 0 1 4 14.5v-8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="lbl">Feedback</span></button>
   </footer>
 </main>

@@ -240,15 +240,55 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
 #lobby .classic-seg button[aria-pressed="true"] .btn-ico,
 #duel .duel-tabs button[aria-pressed="true"] .btn-ico{opacity:1}
 .menu-stats{display:none}
-.foot-menu-links{display:none}
-.wrap:has(#lobby:not([hidden])) .foot-menu-links{display:flex;align-items:center;gap:1.05rem}
-.wrap:has(#lobby:not([hidden])) .menu-stats{display:inline-flex;align-items:center;gap:.36rem;min-height:40px;padding:.4rem .2rem;background:transparent;border:0;color:var(--dim);font:inherit;font-size:.82rem}
-.wrap:has(#lobby:not([hidden])) .menu-stats:hover{color:var(--acc)}
-.wrap:has(#lobby:not([hidden])) .foot{width:100%;justify-content:space-between;margin-top:.55rem}
+.head-actions{display:none}
+.wrap:has(#lobby:not([hidden])){max-width:800px}
+.wrap:has(#lobby:not([hidden])) .head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.75rem;
+  text-align:left;
+  margin-bottom:1.15rem;
+}
+.wrap:has(#lobby:not([hidden])) .logo{font-size:clamp(1.9rem,5vw,2.45rem)}
+.wrap:has(#lobby:not([hidden])) .head-actions{
+  display:inline-flex;
+  align-items:center;
+  gap:.45rem;
+  flex:none;
+}
+.wrap:has(#lobby:not([hidden])) .head-actions .menu-stats{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.38rem;
+  min-height:36px;
+  height:36px;
+  padding:0 .78rem;
+  border-radius:999px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.1);
+  color:var(--dim);
+  font:inherit;
+  font-size:.76rem;
+  font-weight:600;
+  transition:background .16s,border-color .16s,color .16s;
+}
+.wrap:has(#lobby:not([hidden])) .head-actions .menu-stats:hover{
+  background:rgba(255,255,255,.085);
+  border-color:rgba(var(--acc-rgb),.36);
+  color:#fff;
+}
+.wrap:has(#lobby:not([hidden])) .head-actions .menu-stats:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+.wrap:has(#lobby:not([hidden])) .foot{width:100%;justify-content:flex-end;margin-top:.55rem}
 .wrap:has(#lobby:not([hidden])) .foot button:focus-visible{outline:2px solid var(--acc);outline-offset:4px}
 .wrap:has(#lobby:not([hidden])) .vol{display:none}
 .feedback-link{display:inline-flex;align-items:center;gap:.36rem}
 .wrap:has(#lobby:not([hidden])) .feedback-link{min-height:40px;padding:.4rem .2rem;font-size:.82rem}
+@media(max-width:600px){
+  .wrap:has(#lobby:not([hidden])) .head-actions .menu-stats{width:36px;padding:0}
+  .wrap:has(#lobby:not([hidden])) .head-actions .menu-stats .lbl{display:none}
+}
 @media(max-width:560px){
   .wrap:has(#lobby:not([hidden])){padding:1.05rem .95rem 1rem}
   .wrap:has(#lobby:not([hidden])) .head{margin-bottom:.85rem}
@@ -2206,15 +2246,8 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   width:100%;
   position:relative;
 }
-.head > .streak-pill-btn{
-  display:none;
-}
-.wrap:has(#lobby:not([hidden])) .head > .streak-pill-btn{
+.head-actions .streak-pill-btn{
   display:inline-flex;
-  position:absolute;
-  right:0;
-  top:50%;
-  transform:translateY(-50%);
 }
 .streak-pill-btn{
   display:inline-flex;
@@ -2383,23 +2416,23 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 .sp-rows b{color:var(--ink);font-variant-numeric:tabular-nums}
 .sp-rows b.is-acc{color:var(--acc-l)}
 
-/* Unified Lobby Daily Hero Card */
+/* Unified Lobby Daily Hero Card (Wave 133: Opsi C emerald wash, compact top spotlight) */
 #lobby .daily-hub-card{
   width:100%;
   display:grid;
   grid-template-columns:minmax(0,1fr) 172px;
   align-items:center;
-  gap:1.2rem;
-  padding:1.08rem 1.35rem;
+  gap:1.15rem;
+  padding:.88rem 1.25rem;
   border-radius:16px;
   text-align:left;
-  background:linear-gradient(135deg,rgba(var(--acc-rgb),.11),rgba(var(--acc-rgb),.03));
-  border:1px solid rgba(var(--acc-rgb),.32);
+  background:linear-gradient(95deg,rgba(var(--acc-rgb),.18),rgba(8,24,16,.88) 58%);
+  border:1px solid rgba(var(--acc-rgb),.36);
   transition:background .16s,border-color .16s;
 }
 #lobby .daily-hub-card:hover{
-  background:linear-gradient(135deg,rgba(var(--acc-rgb),.145),rgba(var(--acc-rgb),.045));
-  border-color:rgba(var(--acc-rgb),.48);
+  background:linear-gradient(95deg,rgba(var(--acc-rgb),.22),rgba(10,28,19,.92) 60%);
+  border-color:rgba(var(--acc-rgb),.52);
 }
 #lobby .daily-hub-card[data-done="win"]{
   border-color:rgba(37,224,125,.54);
@@ -2409,83 +2442,121 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
   justify-content:flex-start;
   flex-wrap:wrap;
   gap:.55rem;
-  margin-bottom:.28rem;
+  margin-bottom:.24rem;
 }
 #lobby .daily-hub-copy h2{
   margin:0;
-  font-size:1.34rem;
+  font-size:1.28rem;
   line-height:1.2;
 }
 #lobby .daily-hub-copy .daily-meta{
   display:block;
-  font-size:.84rem;
+  font-size:.82rem;
   color:#b4cbbd;
   line-height:1.4;
 }
 #lobby .daily-hub-cta{
   width:100%;
-  min-height:46px;
-  padding:.65rem 1rem;
-  font-size:.88rem;
+  min-height:42px;
+  padding:.52rem 1rem;
+  font-size:.84rem;
   box-shadow:0 12px 30px -12px rgba(var(--acc-rgb),.62);
 }
+#lobby .classic-section{
+  border-radius:18px;
+  background:rgba(8,22,15,.82);
+  border:1px solid rgba(255,255,255,.1);
+}
 
-/* Lobby "More Music Games" Shelf (7 unified free-play modes) */
+/* Lobby "More Music Games" Shelf (Wave 133: Flat borderless arcade hub + category tabs) */
 #lobby .more-games-card{
   width:100%;
-  padding:1.05rem 1.35rem 1.15rem;
-  border-radius:16px;
-  background:var(--surf);
-  border:1px solid var(--line);
+  padding:.18rem 0 0;
+  border-radius:0;
+  background:transparent;
+  border:0;
+  box-shadow:none;
 }
 #lobby .more-games-head{
   display:flex;
-  align-items:baseline;
+  align-items:center;
   justify-content:space-between;
-  gap:.5rem;
-  margin-bottom:.7rem;
+  gap:.6rem;
+  margin-bottom:.78rem;
   flex-wrap:wrap;
 }
 #lobby .more-games-head h2{
   margin:0;
-  font-size:.98rem;
-  font-weight:700;
-  color:var(--ink);
+  font-size:.94rem;
+  font-weight:800;
+  color:#fff;
 }
-#lobby .more-games-sub{
-  font-size:.76rem;
+.mg-cat-tabs{
+  display:inline-flex;
+  align-items:center;
+  gap:.22rem;
+  padding:.22rem;
+  border-radius:999px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.09);
+}
+.mg-cat-tabs button{
+  padding:.28rem .72rem;
+  border-radius:999px;
+  font-size:.72rem;
+  font-weight:700;
   color:var(--dim);
+  transition:background .15s,color .15s;
+}
+.mg-cat-tabs button:hover{color:#fff}
+.mg-cat-tabs button[aria-pressed="true"]{
+  background:rgba(var(--acc-rgb),.2);
+  color:var(--acc-l);
+}
+#lobby .arcade-row{gap:.72rem;margin-bottom:.72rem}
+#lobby .arcade-row[hidden],
+#lobby .more-games-grid[hidden],
+#lobby .duel-card-wide[hidden],
+#lobby .mg-tile[hidden]{display:none !important}
+#lobby .duel-card-wide{
+  border-radius:16px;
+  padding:.95rem 1.05rem;
+  background:rgba(9,24,17,.86);
 }
 #lobby .more-games-grid{
   display:grid;
-  grid-template-columns:repeat(5,minmax(0,1fr));
-  gap:.55rem;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:.68rem;
 }
 #lobby .mg-tile{
   display:flex;
-  flex-direction:column;
-  align-items:flex-start;
-  gap:.18rem;
-  padding:.72rem .68rem;
-  border-radius:13px;
+  flex-direction:row;
+  align-items:center;
+  gap:.72rem;
+  padding:.9rem .95rem;
+  border-radius:16px;
   text-align:left;
-  background:rgba(255,255,255,.035);
-  border:1px solid rgba(255,255,255,.075);
+  background:rgba(9,24,17,.84);
+  border:1px solid rgba(255,255,255,.1);
   transition:background .16s,border-color .16s,transform .12s;
 }
+#lobby .more-games-card[data-cat="all"] .mg-tile:last-child{
+  grid-column:span 2;
+}
 #lobby .mg-tile:hover{
-  background:rgba(255,255,255,.085);
-  border-color:rgba(var(--acc-rgb),.36);
+  background:rgba(14,34,24,.94);
+  border-color:rgba(var(--acc-rgb),.38);
   transform:translateY(-1px);
 }
 #lobby .mg-tile:active{transform:scale(.98)}
 #lobby .mg-tile-ico{
-  width:28px;
-  height:28px;
-  border-radius:8px;
+  width:32px;
+  height:32px;
+  border-radius:9px;
+  flex:none;
   display:grid;
   place-items:center;
-  margin-bottom:.26rem;
+  margin-bottom:0;
   background:rgba(37,224,125,.14);
   color:#41f596;
 }
@@ -2494,16 +2565,27 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 #lobby .mg-tile-ico.is-purple{background:rgba(168,85,247,.16);color:#d8b4fe}
 #lobby .mg-tile-ico.is-orange{background:rgba(240,138,60,.16);color:#ffab66}
 #lobby .mg-tile-ico.is-blue{background:rgba(61,182,245,.16);color:#7fd4ff}
+#lobby .mg-tile-copy{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
 #lobby .mg-tile b{
-  font-size:.8rem;
+  font-size:.88rem;
   font-weight:700;
   color:var(--ink);
   line-height:1.2;
 }
 #lobby .mg-tile span:last-child{
-  font-size:.69rem;
+  font-size:.74rem;
   color:var(--dim);
-  line-height:1.2;
+  line-height:1.25;
+}
+@media(max-width:640px){
+  #lobby .more-games-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem}
+  #lobby .mg-tile{padding:.78rem .82rem;gap:.58rem}
+  #lobby .more-games-card[data-cat="all"] .mg-tile:last-child{grid-column:1 / -1}
 }
 
 /* ====== Daily Spin Hub (#dailyHub) & Mini-Game Stage (#miniGame) ====== */
