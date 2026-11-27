@@ -107,7 +107,7 @@ function setupGame(options = {}) {
   vm.runInContext(fs.readFileSync(path.join(root, 'challenge.js'), 'utf8'), ctx);
   const src = fs.readFileSync(path.join(root, 'app.js'), 'utf8')
     .split('  /* ================= event ================= */')[0];
-  vm.runInContext(src + '\nglobalThis.test={S,ALL,UI,slug,submitGuess,skip,searchIndex,startCustom,openCustom,clearRecentArtists,refreshPopularArtists,surprisePopularArtist,POPULAR_ARTISTS,localArtistMatches,dailyStats,allClassicStats,songStreak,finish,pickSong,showIncomingChallenge,filtered,normalizeMulti,toggleMulti,formatMulti,GENRE_KEYS,ERA_KEYS,genreLabel,eraLabel};})();', ctx);
+  vm.runInContext(src + '\nglobalThis.test={S,ALL,UI,slug,submitGuess,skip,searchIndex,startCustom,openCustom,clearRecentArtists,refreshPopularArtists,surprisePopularArtist,POPULAR_ARTISTS,localArtistMatches,dailyStats,allClassicStats,songStreak,finish,pickSong,showIncomingChallenge,filtered,computePoolForStage,isClassicEnglishSong,normalizeMulti,toggleMulti,formatMulti,GENRE_KEYS,ERA_KEYS,genreLabel,eraLabel};})();', ctx);
   return { t: ctx.test, nodes, storage, ctx, tabNodes };
 }
 
@@ -697,15 +697,15 @@ test('Wave 132/138 Classic mode hydrates lazy DUEL_STREAMS_V1, filters holiday t
   // Now simulate lazy-loaded DUEL_STREAMS_V1 arriving
   ctx.window.DUEL_STREAMS_V1 = {
     items: [
-      ...Array.from({ length: 14 }, (_, i) => [1000 + i, 2600000000]), // >= 1.5B (Easy)
-      ...Array.from({ length: 14 }, (_, i) => [2000 + i, 1100000000]), // < 1.5B (Medium)
-      ...Array.from({ length: 14 }, (_, i) => [4000 + i, 300000000])   // 0..400M (Impossible)
+      ...Array.from({ length: 14 }, (_, i) => [1000 + i, 2600000000]), // >= 750M (Easy)
+      ...Array.from({ length: 14 }, (_, i) => [2000 + i, 500000000]),  // < 750M (Medium)
+      ...Array.from({ length: 14 }, (_, i) => [4000 + i, 250000000])   // 0..300M (Impossible)
       // Tier 5 (5000..5013) intentionally unstreamed -> included in Impossible!
     ]
   };
   for (let i = 0; i < 40; i++) {
     const p = t.pickSong(0);
-    assert.match(p.title, /^Mega Hit /, `Stage 1 Easy should pick >=1.5B mega-hits, got ${p.title}`);
+    assert.match(p.title, /^Mega Hit /, `Stage 1 Easy should pick >=750M mega-hits, got ${p.title}`);
   }
   t.S.stage = 4;
   t.S.pool = Array.from(t.filtered()).filter((s) => s.tier === 4 || s.tier === 5);
@@ -716,4 +716,74 @@ test('Wave 132/138 Classic mode hydrates lazy DUEL_STREAMS_V1, filters holiday t
     if (/^Tier5 Cut /.test(p.title)) sawTier5 = true;
   }
   assert.ok(sawTier5, 'Stage 5 Impossible must actively draw from unstreamed Tier 5 deep-cut catalog');
+});
+
+test('Wave 139 Classic mode enforces English-only across all filters and expands Easy-Expert pools', () => {
+  const realCtx = { window: {} };
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'songs.js'), 'utf8'), realCtx);
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'duel-streams-v1.js'), 'utf8'), realCtx);
+
+  const { t, ctx } = setupGame({ songs: realCtx.window.SONGS });
+  ctx.window.DUEL_STREAMS_V1 = realCtx.window.DUEL_STREAMS_V1;
+
+  for (const genre of ['all', 'pop', 'lain']) {
+    t.S.genre = genre;
+    t.S.era = 'all';
+    const list = t.filtered();
+    const has = (artist, title) => list.some((s) => s.artist === artist && s.title === title);
+    // Non-English tracks across Spanish, K-pop, J-pop, Hindi, French, German, Italian must NEVER appear in Classic
+    for (const [artist, title] of [
+      ['Bad Bunny', 'NUEVAYoL'],
+      ['Karol G', 'PROVENZA'],
+      ['BTS', 'Boy With Luv (feat. Halsey)'],
+      ['BLACKPINK', 'How You Like That'],
+      ['NewJeans', 'OMG'],
+      ['YOASOBI', 'Idol'],
+      ['Fujii Kaze', 'Shinunoga E-Wa'],
+      ['Arijit Singh', 'Tum Hi Ho (From "Aashiqui 2")'],
+      ['Rammstein', 'Du hast'],
+      ['Edith Piaf', 'La Vie en Rose'],
+      ['Shakira', 'Chantaje (feat. Maluma)'],
+      ['Enrique Iglesias', 'Bailando (feat. Sean Paul, Descemer Bueno & Gente de Zona)'],
+      ['Kali Uchis', 'telepatía'],
+      ['Måneskin', 'ZITTI E BUONI'],
+      ['Celine Dion', 'Pour que tu m’aimes encore'],
+      ['DJ Snake', 'Taki Taki (feat. Selena Gomez, Ozuna & Cardi B)'],
+      ['Drake', 'Gently (feat. Bad Bunny)']
+    ]) {
+      assert.equal(has(artist, title), false, `non-English leak in genre=${genre}: ${artist} - ${title}`);
+    }
+  }
+
+  // Pure English hits (including verified English singles by bilingual/K-pop acts) stay in Classic
+  t.S.genre = 'all';
+  t.S.era = 'all';
+  const allEng = t.filtered();
+  assert.ok(allEng.length >= 31000, `expected >= 31000 pure-English Classic tracks, got ${allEng.length}`);
+  for (const [artist, title] of [
+    ['BTS', 'Dynamite'],
+    ['Jung Kook', 'Seven'],
+    ['Shakira', "Hips Don't Lie"],
+    ['Enrique Iglesias', 'Hero'],
+    ['Måneskin', "Beggin'"],
+    ['The Marías', 'No One Noticed'],
+    ['wave to earth', 'seasons'],
+    ['Camila Cabello', 'Señorita'],
+    ['Coldplay', 'Viva La Vida']
+  ]) {
+    assert.equal(allEng.some((s) => s.artist === artist && s.title === title), true, `missing English hit: ${artist} - ${title}`);
+  }
+
+  // Verify expanded stage pools & 0 non-English picks across 250 simulated picks (50 per stage)
+  assert.ok(t.computePoolForStage(0).pool.length >= 1800, 'Easy stage pool should cover expanded T1-2 English pool');
+  assert.ok(t.computePoolForStage(1).pool.length >= 2800, 'Medium stage pool should cover expanded T1-3 English pool');
+  for (let st = 0; st < 5; st++) {
+    t.S.stage = st;
+    t.S.stages = [];
+    t.S.pool = t.computePoolForStage(st).pool;
+    for (let i = 0; i < 50; i++) {
+      const p = t.pickSong(0);
+      assert.ok(p && t.isClassicEnglishSong(p), `stage ${st} picked non-English song: ${p && p.artist} - ${p && p.title}`);
+    }
+  }
 });

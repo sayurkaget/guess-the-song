@@ -15,10 +15,10 @@
   const TRIES  = LADDER.length;
 
   const DIFFS = {
-    easy:       { label: 'Easy',       tiers: [1] },
-    medium:     { label: 'Medium',     tiers: [1, 2] },
-    hard:       { label: 'Hard',       tiers: [2, 3] },
-    expert:     { label: 'Expert',     tiers: [3, 4] },
+    easy:       { label: 'Easy',       tiers: [1, 2] },
+    medium:     { label: 'Medium',     tiers: [1, 2, 3] },
+    hard:       { label: 'Hard',       tiers: [2, 3, 4, 5] },
+    expert:     { label: 'Expert',     tiers: [3, 4, 5] },
     impossible: { label: 'Impossible', tiers: [4, 5] }
   };
   // urutan tahap dalam satu sesi
@@ -535,15 +535,124 @@
     return ALL.find((s) => s.slug === sl) || null;
   }
 
-  // Katalog regional (Spanyol/Hindi/US Country) & lagu Natal musiman dipisahkan dari Classic default agar tetap fokus hits global;
-  // tetap bisa dimainkan lewat filter "Other" (lain), Custom Artist, Playlist, Music Duel, & Artist Detective.
-  const CLASSIC_ALL_SKIP_ARTISTS = new Set([
+  // Mode Classic dikhususkan untuk lagu berbahasa Inggris (lagu non-Inggris seperti Spanyol/Latin,
+  // K-pop Korea, J-pop Jepang, Hindi/Bollywood, Prancis, & Jerman tetap tersedia di By Artist,
+  // Playlist, Music Duel, Artist Detective, dan Daily Hub).
+  const CLASSIC_NON_ENGLISH_ARTISTS = new Set([
+    // Spanyol / Latin
     'Bad Bunny', 'Karol G', 'Feid', 'Peso Pluma', 'Fuerza Regida', 'Anuel AA', 'Myke Towers',
     'Rauw Alejandro', 'J Balvin', 'Ozuna', 'Maluma', 'Farruko', 'Don Omar', 'Bizarrap',
+    'Daddy Yankee', 'Luis Fonsi', 'ROSALÍA', 'Los del Río',
+    // Hindi / Bollywood
     'Arijit Singh', 'Shreya Ghoshal', 'Pritam', 'A.R. Rahman',
-    'Morgan Wallen', 'Luke Combs', 'Zach Bryan', 'Chris Stapleton', 'Luke Bryan'
+    // Korea / K-pop
+    '(G)I-DLE', '2NE1', 'aespa', 'BABYMONSTER', 'BIGBANG', 'BLACKPINK', 'BTS', 'DAY6',
+    'ENHYPEN', 'EXO', 'FIFTY FIFTY', "Girls' Generation", 'iKON', 'ILLIT', 'ITZY', 'IU',
+    'IVE', 'JENNIE', 'Jimin', 'JISOO', 'Jung Kook', 'LE SSERAFIM', 'LISA', 'NewJeans',
+    'PSY', 'Red Velvet', 'SEVENTEEN', 'SHINee', 'Stray Kids', 'Super Junior',
+    'Taeyang', 'TOMORROW X TOGETHER', 'TWICE', 'V',
+    // Jepang / J-pop
+    'Creepy Nuts', 'Fujii Kaze', 'imase', 'Kenshi Yonezu', 'RADWIMPS', 'YOASOBI',
+    // Prancis / Jerman
+    'Aya Nakamura', 'Edith Piaf', 'Indila', 'Stromae', 'Rammstein', 'Klangkarussell',
+    // Artis dwibahasa yang mayoritas katalognya berbahasa Spanyol (hanya single 100% Inggris yang lolos)
+    'Shakira', 'Enrique Iglesias'
   ]);
-  const CLASSIC_HOLIDAY_RE = /\b(mistletoe|santa baby|santa claus|jingle bell|silent night|frosty the snowman|rudolph|deck the halls|sleigh ride|silver bells|little drummer boy|o holy night|winter wonderland|holly jolly|white christmas|feliz navidad|merry little christmas|christmas tree|christmas song|christmas time|blue christmas|carol of the bells|beginning to look a lot like christmas|underneath the tree|santa tell me|all i want for christmas|last christmas|do they know it's christmas|happy xmas|wonderful christmastime)\b/i;
+  const CLASSIC_ENGLISH_ALLOW = {
+    'BTS': new Set(['Dynamite', 'Butter', 'Permission to Dance']),
+    'Jung Kook': new Set(['Seven', 'Standing Next to You', '3D', 'Dreamers (Music from the FiFA World Cup Qatar 2022 Official Soundtrack)']),
+    'Jimin': new Set(['Who']),
+    'LISA': new Set(['MONEY', 'Rockstar', 'Moonlit Floor', 'New Woman (feat. ROSALÍA)', 'Born Again (feat. Doja Cat & RAYE)', 'FXCK UP THE WORLD (feat. Future)', 'Dream', 'Leave With Me', 'Goals']),
+    'JENNIE': new Set(['Mantra', 'You & Me', 'Handlebars', 'Love Hangover', 'ZEN', 'Damn Right', 'start a war', 'twin', 'FALLEN ANGEL', 'Slow Motion', 'HEAVEN']),
+    'V': new Set(['Sweet Night', 'Slow Dancing', 'FRI(END)S', 'Rainy Days', 'For Us', 'Winter Bear', 'Winter Ahead']),
+    'TWICE': new Set(['The Feels', 'MOONLIGHT SUNRISE', 'I GOT YOU', 'Strategy']),
+    'LE SSERAFIM': new Set(['Perfect Night']),
+    'aespa': new Set(['Better Things', "Life's Too Short", 'Hold On Tight']),
+    'BLACKPINK': new Set(['Bet You Wanna (feat. Cardi B)', 'Typa Girl', 'Crazy Over You', 'THE GIRLS (BLACKPINK THE GAME OST)']),
+    'Shakira': new Set([
+      'Whenever, Wherever', "Hips Don't Lie", 'Waka Waka', 'She Wolf', 'Try Everything',
+      'Beautiful Liar', 'Underneath Your Clothes', "Can't Remember to Forget You (feat. Rihanna) [Album]",
+      'Objection (Tango)', "Don't Wait Up", 'Empire', 'Gypsy', 'Give It Up to Me (feat. Lil Wayne)',
+      'Did It Again', "DON'T YOU WORRY", 'GIRL LIKE ME', 'Dare (La La La)',
+      'La La La (Brazil 2014) [feat. Carlinhos Brown]', 'Zoo', 'Addicted to You',
+      'When a Woman', 'The One', 'Poem to a Horse', 'Ready for the Good Times', 'Rules', 'Fool',
+      'Spy (feat. Wyclef Jean)', 'Men In This Town', 'Why Wait', 'Coconut Tree',
+      'What We Said (Comme moi) [feat. MAGIC!] [English Version]'
+    ]),
+    'Enrique Iglesias': new Set([
+      'Hero', 'Escape', 'Be with You', 'Bailamos', 'Rhythm Divine', 'I Like It (feat. Pitbull)',
+      "Tonight (I'm Lovin' You) [feat. Ludacris & DJ Frank E]", 'Heartbeat (feat. Nicole Scherzinger)',
+      'Dirty Dancer (feat. Usher)', "Takin' Back My Love (feat. Ciara)", 'Do You Know? (The Ping Pong Song)',
+      'Could I Have This Kiss Forever (feat. Whitney Houston)', 'Tired of Being Sorry', "Somebody's Me",
+      'Addicted', 'Turn the Night Up', "Don't Turn Off the Lights", 'There Goes My Baby (feat. Flo Rida)',
+      'One Day at a Time (feat. Akon)', 'Why Not Me?', 'Maybe', 'You and I', 'Love to See You Cry',
+      'Only a Woman', 'Beautiful (feat. Kylie Minogue)', 'I Will Survive', 'If the World Crashes Down',
+      'Heartbreaker', 'Coming Home', 'Sad Eyes', "I'm Your Man", "California Callin'", 'She Be the One',
+      'One Night Stand', 'Space in My Heart', 'Heart Attack', 'UNWELL', "I'm a Freak (feat. Pitbull)",
+      'Let Me Be Your Lover (feat. Pitbull) [English Version]', 'Love 4 Fun'
+    ])
+  };
+  const CLASSIC_NON_ENGLISH_EXACT = {
+    'wave to earth': new Set(['love.']),
+    'Kali Uchis': new Set(['telepatía', 'Igual Que Un Ángel', 'fue mejor', 'Muñekita', 'Nuestro Planeta (feat. Reykon)', 'Te Mata']),
+    'Måneskin': new Set(['ZITTI E BUONI', 'CORALINE', 'MAMMAMIA']),
+    'The Marías': new Set(['Lejos de Ti', 'Cariño', 'Ojos Tristes', 'Ay No Puedo', 'Basta Ya', 'Un Millón', 'Déjate Llevar', 'Hable con Ella']),
+    'Cuco': new Set(['Lo Que Siento', 'Amor De Siempre', 'Piel Canela', 'Mi Infinita', 'Decir Adios', 'Fin Del Mundo', 'Si Me Voy (feat. The Marias)', 'Para Ti', 'Mi Querido, Mi Viejo, Mi Amigo', 'Llorar', 'Sin Un Corazón', 'Adios Adios', 'La Negra Tomasa']),
+    'Omar Apollo': new Set(['Hecho para ti', 'En El Olvido', 'Frío', 'Amor Malo', 'Pedro', 'Dos Uno Nueve (219)']),
+    'Selena Gomez': new Set(['Baila Conmigo', 'Dámelo To’ (feat. Myke Towers)', 'De Una Vez', 'Buscando Amor', 'Adiós', 'Vicio']),
+    'Camila Cabello': new Set(['Mi Persona Favorita', 'Hasta Los Dientes', 'Ambulancia', 'La Buena Vida', 'Lola (feat. Yotuel)']),
+    'Pitbull': new Set(['No Lo Trates', 'Bon, Bon', 'Maldito Alcohol', 'Imagínate', 'Como Yo Le Doy (feat. Don Miguelo)', 'El Taxi (feat. Sensato & Osmani Garcia)', "Echa pa'lla (Manos Pa'rriba)", "Guantanamera (She's Hot)", 'Piensas (Dile la Verdad) [feat. Gente de Zona]', 'Café Con Leche', 'Hoy Se Bebe (feat. Farruko)', 'Ay Chico (Lengua Afuera)', 'Quiero Saber (feat. Prince Royce & Ludacris)', 'Culo', 'Muévelo Loca Boom Boom', 'Cantaré (feat. Lenier)']),
+    'DJ Snake': new Set(['Taki Taki (feat. Selena Gomez, Ozuna & Cardi B)', 'Loco Contigo', 'Fuego (feat. Tainy)', 'Guddi Riddim (feat. Nooran Sisters)', 'Disco Maghreb', 'Ocho Cinco (feat. Yellow Claw)']),
+    'Major Lazer': new Set(['pAPi wiTH tOKisCha', 'Que Calor (feat. J Balvin & El Alfa)', 'Buscando Huellas (feat. J Balvin & Sean Paul)', 'Sua Cara (feat. Anitta & Pabllo Vittar)', 'Diplomático (feat. Guaynaa)', 'QueLoQue (feat. Paloma Mami)']),
+    'Celine Dion': new Set(['Pour que tu m’aimes encore', 'Bonjour, Pardon, Merci', 'Encore un soir', 'On ne change pas', 'Je sais pas', 'Les Cloches du Hameau', 'Ave Maria', 'Adeste Fideles (O Come All Ye Faithful)']),
+    'Christina Aguilera': new Set(['Pero Me Acuerdo de Tí', 'Santo', 'Cuando Me Dé la Gana', 'Ven Conmigo (Solamente Tú)', 'Primer Amor Interlude', 'La Reina', 'Desnudate', 'Contigo en la Distancia', 'Ya Llegué', 'Somos Nada', 'Genio Atrapado', 'Por Siempre Tú', 'El Beso del Final', 'Te Deseo Lo Mejor', 'Como Yo', 'Falsas Esperanzas']),
+    'Nelly Furtado': new Set(['Fotografía', 'Forca', 'Manos al Aire', 'No Hay Igual', 'GALA Y DALÍ', 'Corazón', 'Te Busque (feat. Juanes)', 'Más', 'Fuerte (feat. Concha Buika)', 'Bajo Otra Luz (feat. Julieta Venegas & Mala Rodríguez)']),
+    'Linda Ronstadt': new Set(['Los Laureles', 'Por un Amor', 'Tú Solo Tú', 'Y Ándale', 'Hay Unos Ojos', 'La Charreada', 'La Cigarra', 'Corrido de Canenea', 'Rogaciano El Huapanguero', 'Dos Arbolitos', 'La Calandria', 'El Crucifijo De Piedra (2016 Remastered)', 'La Barca de Guaymas', 'El Sol Que Tú Eres', 'Lago Azul (Blue Bayou) [Bonus Track]', 'Mi Ranchito (2016 Remastered)', 'Corrido DeCananea', 'Adiós (feat. Aaron Neville)', 'Siempre Hace Frío (2016 Remastered)', 'Lo Siento Mi Vida', 'La Mariquita (2016 Remastered)', 'Ta Ta Dios (2016 Remastered)', 'El Toro Relajo (The Troublesome Bull) [2016 Remastered]', 'Palomita De Ojos Negros (2016 Remastered)', 'Gritenme Piedras Del Campo (2016 Remastered)']),
+    'Drake': new Set(['Gently (feat. Bad Bunny)']),
+    'Halsey': new Set(["SUGA's Interlude"]),
+    'Flo Rida': new Set(['Hola (feat. Maluma)']),
+    'Jason Derulo': new Set(['Mamacita (feat. Farruko)']),
+    'Khalid': new Set(['Otra Noche Sin Ti']),
+    'boy pablo': new Set(['vamos a la playa']),
+    'Two Door Cinema Club': new Set(['Je Viens De La']),
+    'Lady Gaga': new Set(['La Vie En Rose']),
+    'Michael Buble': new Set(['La vie en rose (feat. Cécile McLorin Salvant)']),
+    'Cyndi Lauper': new Set(['La Vie en Rose']),
+    'Jeff Buckley': new Set(["Je N'en Connais Pas La Fin"]),
+    'Grouplove': new Set(['Je Pense Toujours a Toi (Bonus Track)']),
+    'David Guetta': new Set(['Para que te quedes (feat. J Balvin)']),
+    'Tiesto': new Set(['Baila Conmigo', 'CONTIGO']),
+    'Akon': new Set(['Cómo No (feat. Becky G)', 'Te Quiero Amar']),
+    'Fifth Harmony': new Set(['Por Favor', 'Eres Tú (Who Are You)', 'Tú Eres Lo Que Yo Quiero (Better Together)', 'Que el Corazón No Hable por Mi (Leave My Heart Out of This)', "Que Bailes Conmigo Hoy (Don't Wanna Dance Alone)"]),
+    'Gorillaz': new Set(['Latin Simone (Que Pasa Contigo)', 'Désolé (feat. Fatoumata Diawara)']),
+    'Jose Gonzalez': new Set(['En Stund På Jorden', 'U / Rawls Slöja']),
+    'Lorde': new Set(['Te Ao Mārama / Solar Power']),
+    'Ben E. King': new Set(['Bésame Mucho']),
+    'Tory Lanez': new Set(['Pa Mí']),
+    'Cardi B': new Set(['Puntería']),
+    '50 Cent': new Set(['Háblame Bajito']),
+    'Snoop Dogg': new Set(['Qué Maldición']),
+    'Sean Paul': new Set(['Niña Bonita', 'KÁRMIKA']),
+    'T-Pain': new Set(['Imagínate']),
+    'The Walkmen': new Set(['Dónde Está La Playa']),
+    'Spice Girls': new Set(['Seremos 1 Los 2 (Versión En Español)'])
+  };
+  const CLASSIC_NON_ENGLISH_TITLE_RE = /[\u0400-\u04FF\u0590-\u05FF\u0600-\u06FF\u0900-\u097F\u0E00-\u0E7F\u1100-\u11FF\u3040-\u30FF\u3130-\u318F\u3400-\u9FFF\uAC00-\uD7AF]|(?:[¿¡]|vers[ií][oó]n en espa[nñ]ol|\b(?:despacito|macarena|b[eé]same mucho|cantique de no[eë]l|adi[oó]s amigos|el ma[nñ]ana)\b)/i;
+  const CLASSIC_HOLIDAY_RE = /\b(mistletoe|santa baby|santa claus|jingle bell|silent night|frosty the snowman|rudolph|deck the halls|sleigh ride|silver bells|little drummer boy|o holy night|winter wonderland|holly jolly|white christmas|feliz navidad|merry little christmas|christmas tree|christmas song|christmas time|blue christmas|carol of the bells|beginning to look a lot like christmas|underneath the tree|santa tell me|all i want for christmas|last christmas|do they know it's christmas|happy xmas|wonderful christmastime|like it'?s christmas|cozy little christmas|this christmas|christmas eve|merry christmas|first no[eë]l|rockin'? around the christmas|mr\.?\s*grinch)\b/i;
+
+  function isClassicEnglishSong(s) {
+    if (!s) return false;
+    const artist = s.artist || '';
+    const title = s.title || '';
+    if (CLASSIC_NON_ENGLISH_ARTISTS.has(artist)) {
+      const allow = CLASSIC_ENGLISH_ALLOW[artist];
+      if (!allow || !allow.has(title)) return false;
+    }
+    const ex = CLASSIC_NON_ENGLISH_EXACT[artist];
+    if (ex && ex.has(title)) return false;
+    if (CLASSIC_NON_ENGLISH_TITLE_RE.test(title)) return false;
+    return true;
+  }
 
   // lagu yang lolos filter pemain, tanpa memandang tingkat kesulitan
   function filtered() {
@@ -552,7 +661,9 @@
     const eList = parseMulti(S.era, ERA_KEYS);
     const gSet = gList.length ? new Set(gList) : null;
     return ALL.filter((s) =>
-      (!gSet ? (!CLASSIC_ALL_SKIP_ARTISTS.has(s.artist) && !CLASSIC_HOLIDAY_RE.test(s.title)) : gSet.has(s.genre)) &&
+      isClassicEnglishSong(s) &&
+      !CLASSIC_HOLIDAY_RE.test(s.title) &&
+      (!gSet || gSet.has(s.genre)) &&
       (!eList.length || eList.some((ek) => ERAS[ek].hit(s.year))));
   }
 
@@ -1063,6 +1174,7 @@
 
   let classicTopArtists = null;
   let classicStreamMap = null;
+  let classicRankCache = null;
   function getClassicStreamMap() {
     if (!classicStreamMap || !classicStreamMap.size) {
       const items = (typeof window !== 'undefined' && window.DUEL_STREAMS_V1 && window.DUEL_STREAMS_V1.items) || [];
@@ -1079,13 +1191,36 @@
     }
     return classicStreamMap;
   }
+  function getClassicRankMeta(streamMap) {
+    const sig = ALL.length + ':' + (streamMap ? streamMap.size : 0);
+    if (classicRankCache && classicRankCache.sig === sig) return classicRankCache;
+    const topArtists = new Set();
+    const t5RankByArtist = new Map();
+    const unstrT5Rank = new Map();
+    for (let i = 0; i < ALL.length; i++) {
+      const s = ALL[i];
+      if (s.tier <= 2 && isClassicEnglishSong(s)) topArtists.add(s.artist);
+    }
+    for (let i = 0; i < ALL.length; i++) {
+      const s = ALL[i];
+      if (s.tier !== 5 || !isClassicEnglishSong(s) || CLASSIC_HOLIDAY_RE.test(s.title)) continue;
+      const st = (streamMap && s.trackId && streamMap.get(String(s.trackId))) || 0;
+      if (st > 0) continue;
+      if (/^\s*(?:intro|outro|interlude)\b/i.test(s.title) || /\b(?:interlude|skit)\b/i.test(s.title)) continue;
+      const r = t5RankByArtist.get(s.artist) || 0;
+      t5RankByArtist.set(s.artist, r + 1);
+      unstrT5Rank.set(s, r);
+    }
+    classicRankCache = { sig, topArtists, unstrT5Rank };
+    return classicRankCache;
+  }
   const CLASSIC_TIER_BASELINE_STREAMS = { 1: 1800000000, 2: 900000000, 3: 500000000, 4: 260000000, 5: 100000000 };
   const CLASSIC_STAGE_BANDS = [
-    { min: 1500000000, max: Infinity,   exp: 1.9,  unstreamedMaxTier: 1 }, // Stage 1 Easy: global mega-hits (>=1.5B + T1)
-    { min: 800000000,  max: 2200000000, exp: 1.45, unstreamedMaxTier: 2 }, // Stage 2 Medium: big hits (800M-2.2B + T2)
-    { min: 350000000,  max: 1200000000, exp: 1.2,  unstreamedMaxTier: 3 }, // Stage 3 Hard: radio hits & classics (350M-1.2B + T3)
-    { min: 100000000,  max: 650000000,  exp: 0.9,  unstreamedMaxTier: 4 }, // Stage 4 Expert: deeper hits & album tracks (100M-650M + T4)
-    { min: 0,          max: 400000000,  exp: 0.35, unstreamedMaxTier: 5 }  // Stage 5 Impossible: full 33.7k catalog incl. all Tier 5 deep cuts
+    { min: 750000000, max: Infinity,   exp: 1.55, unstreamedMaxTier: 1, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 1 Easy: English mega-hits (>=750M + T1)
+    { min: 320000000, max: 1600000000, exp: 1.25, unstreamedMaxTier: 2, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 2 Medium: big English hits (320M-1.6B + T1-2)
+    { min: 150000000, max: 900000000,  exp: 1.05, unstreamedMaxTier: 3, t5TopRank: 4,        t5TopArtistOnly: true  }, // Stage 3 Hard: radio hits, classics & icon top-4 T5 (150M-900M + T2-3 + icon T5)
+    { min: 50000000,  max: 450000000,  exp: 0.85, unstreamedMaxTier: 4, t5TopRank: 12,       t5TopArtistOnly: false }, // Stage 4 Expert: deeper English hits & top-12 T5 album cuts (50M-450M + T3-4 + top-12 T5)
+    { min: 0,         max: 300000000,  exp: 0.35, unstreamedMaxTier: 5, t5TopRank: Infinity, t5TopArtistOnly: false }  // Stage 5 Impossible: full remaining English catalog (<=300M + all T4-5)
   ];
   function pickWeightedClassic(list, stageIdx) {
     if (list.length <= 1) return list[0];
@@ -1161,17 +1296,20 @@
       const streamMap = getClassicStreamMap();
       const band = CLASSIC_STAGE_BANDS[Math.max(0, Math.min(stageIdx, CLASSIC_STAGE_BANDS.length - 1))];
       if (streamMap.size && band) {
-        let inBand = src.filter((s) => {
+        const rankMeta = band.t5TopRank > 0 && band.t5TopRank < Infinity ? getClassicRankMeta(streamMap) : null;
+        const matchesBand = (s, strictMax) => {
           const st = (s.trackId && streamMap.get(String(s.trackId))) || 0;
-          if (st > 0) return st >= band.min && st <= band.max;
-          return band.unstreamedMaxTier > 0 && s.tier <= band.unstreamedMaxTier;
-        });
-        if (inBand.length < 12) {
-          inBand = src.filter((s) => {
-            const st = (s.trackId && streamMap.get(String(s.trackId))) || 0;
-            return st >= band.min || (band.unstreamedMaxTier > 0 && s.tier <= band.unstreamedMaxTier);
-          });
-        }
+          if (st > 0) return st >= band.min && (!strictMax || st <= band.max);
+          if (band.unstreamedMaxTier > 0 && s.tier <= band.unstreamedMaxTier) return true;
+          if (band.t5TopRank > 0 && s.tier === 5) {
+            if (band.t5TopRank === Infinity) return true;
+            const r = rankMeta ? rankMeta.unstrT5Rank.get(s) : undefined;
+            if (r !== undefined && r < band.t5TopRank && (!band.t5TopArtistOnly || rankMeta.topArtists.has(s.artist))) return true;
+          }
+          return false;
+        };
+        let inBand = src.filter((s) => matchesBand(s, true));
+        if (inBand.length < 12) inBand = src.filter((s) => matchesBand(s, false));
         if (inBand.length >= 12) {
           if (used.length && inBand.length > 4) {
             const diverse = inBand.filter((s) => used.every((u) => !sameArtist(s, u)));
