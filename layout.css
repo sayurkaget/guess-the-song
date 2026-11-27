@@ -4056,61 +4056,25 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 .mg-reveal-card.is-lose .mg-rev-kicker{color:#ff8f93}
 .mg-rev-title{font-size:.98rem;font-weight:800;color:#fff;line-height:1.25;margin-top:1px}
 .mg-rev-sub{font-size:.78rem;color:var(--dim);margin-top:2px}
-.mg-yt-wrap{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:.42rem;
-  padding:.52rem .58rem .58rem;
-  border-radius:12px;
-  background:rgba(4,13,9,.68);
-  border:1px solid rgba(255,255,255,.09);
-}
-.mg-yt-bar{
-  width:100%;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:.5rem;
-}
-.mg-yt-tag{
+.mg-yt-link{
   display:inline-flex;
   align-items:center;
   gap:.34rem;
-  font-size:.7rem;
-  font-weight:700;
-  color:var(--acc-l);
-  font-variant-numeric:tabular-nums;
-}
-.mg-yt-restart{
-  padding:.2rem .56rem;
+  margin-top:.34rem;
+  padding:.2rem .58rem;
   border-radius:999px;
   background:rgba(255,255,255,.06);
   border:1px solid rgba(255,255,255,.12);
   color:var(--dim);
-  font-size:.69rem;
+  font-size:.7rem;
   font-weight:700;
-  cursor:pointer;
-  transition:background .15s,color .15s,border-color .15s;
+  text-decoration:none;
+  font-variant-numeric:tabular-nums;
+  transition:background .15s,border-color .15s,color .15s;
 }
-.mg-yt-restart:hover{background:rgba(var(--acc-rgb),.14);border-color:rgba(var(--acc-rgb),.38);color:#fff}
-.mg-yt-frame{
-  width:100%;
-  height:158px;
-  border-radius:10px;
-  overflow:hidden;
-  background:#040c08;
-  border:1px solid rgba(255,255,255,.08);
-}
-@media(max-width:600px){
-  .mg-yt-frame{height:146px}
-}
-.mg-yt-frame iframe{
-  width:100%;
-  height:100%;
-  border:0;
-  display:block;
-}
+.mg-yt-link svg{width:13px;height:13px;flex:none;color:var(--acc-l)}
+.mg-yt-link .mg-yt-ext{opacity:.7;font-size:.66rem}
+.mg-yt-link:hover{background:rgba(var(--acc-rgb),.14);border-color:rgba(var(--acc-rgb),.4);color:#fff}
 .mg-rev-actions{display:flex;gap:.5rem;flex-wrap:wrap}
 .mg-rev-actions .btn{width:100%;min-height:42px;padding:.52rem .75rem;font-size:.84rem}
 .mg-rev-actions.is-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}

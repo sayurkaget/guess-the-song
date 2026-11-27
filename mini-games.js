@@ -1570,25 +1570,19 @@
       ? `${won ? t('Solved!', '¡Acertaste!') : t('Revealed', 'Revelado')} · ${score}/100`
       : (freeKicker || (won ? t('Solved!', '¡Acertaste!') : t('Out of tries', 'Sin intentos')));
 
-    const playable = Boolean((trackId || ytId) && art);
+    const playable = Boolean(trackId && art);
     const portraitCls = gameId === 'hair' ? ' is-portrait' : '';
     const artHtml = art
       ? `<img id="mgRevArt" class="mg-rev-art${portraitCls}${playable ? ' is-playable' : ''}" src="${esc(art)}" alt="${esc(title)}"${playable ? ` role="button" tabindex="0" data-playing="0" title="${esc(t('Tap to pause or resume preview', 'Toca para pausar o reanudar la vista previa'))}"` : ''}${gameId === 'hair' ? ' referrerpolicy="no-referrer"' : ''}>`
       : '';
-    const volHtml = (trackId || ytId) ? '<div class="vol-slot mg-vol-slot" id="mgVolSlot"></div>' : '';
-    const fmtStart = (sec) => {
-      const s = Math.max(0, Math.floor(Number(sec) || 0));
-      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-    };
-    const useYt = Boolean(gameId === 'lyric' && ytId && bridge && bridge.playLyricAudio);
-    const ytHtml = useYt
-      ? `<div class="mg-yt-wrap" id="mgYtWrap">` +
-          `<div class="mg-yt-bar">` +
-            `<span class="mg-yt-tag" id="mgYtTag">▶ ${esc(t('From lyric start', 'Desde la letra'))} · ${fmtStart(lyricStart)}</span>` +
-            `<button type="button" class="mg-yt-restart" id="mgYtRestart">↺ ${esc(t('Restart', 'Reiniciar'))}</button>` +
-          `</div>` +
-          `<div class="mg-yt-frame" id="mgYtHost"></div>` +
-        `</div>`
+    const volHtml = trackId ? '<div class="vol-slot mg-vol-slot" id="mgVolSlot"></div>' : '';
+    const startSec = Math.max(0, Math.floor(Number(lyricStart) || 0));
+    const fmtStart = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+    const ytLinkHtml = (gameId === 'lyric' && ytId)
+      ? `<a id="mgYtLink" class="mg-yt-link" href="https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}${startSec > 0 ? `&t=${startSec}s` : ''}" target="_blank" rel="noopener noreferrer">` +
+          `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="3.8" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M10.2 9.2 15.4 12l-5.2 2.8V9.2Z" fill="currentColor"/></svg>` +
+          `<span>YouTube${startSec > 0 ? ` · ${fmtStart(startSec)}` : ''}</span><span class="mg-yt-ext" aria-hidden="true">↗</span>` +
+        `</a>`
       : '';
 
     controls.innerHTML =
@@ -1600,10 +1594,10 @@
             `<span class="mg-rev-kicker">${esc(kickerTxt)}</span>` +
             `<div class="mg-rev-title">${esc(title)}</div>` +
             `<div class="mg-rev-sub">${esc(subtitle)}</div>` +
+            ytLinkHtml +
           `</div>` +
           volHtml +
         `</div>` +
-        ytHtml +
         `<div class="mg-rev-actions${canChallenge ? ' is-pair' : ''}">${actionHtml}</div>` +
       `</div>`;
 
@@ -1636,36 +1630,13 @@
         artEl.src = safeSvg;
       };
     }
-    if ((trackId || ytId) && bridge) {
+    const ytLink = $('#mgYtLink');
+    if (ytLink && bridge && bridge.stopAudio) {
+      ytLink.onclick = () => bridge.stopAudio();
+    }
+    if (trackId && bridge) {
       if (bridge.dockMiniVolume) bridge.dockMiniVolume();
-      if (useYt) {
-        const ytWrap = $('#mgYtWrap');
-        const ytHost = $('#mgYtHost');
-        const ytRestart = $('#mgYtRestart');
-        const startSec = Math.max(0, Math.floor(Number(lyricStart) || 0));
-        const bindFallback = () => {
-          if (ytWrap) ytWrap.hidden = true;
-          if (trackId && artEl && bridge.playTrackPreview) {
-            const toggleFb = () => bridge.playTrackPreview(trackId, artEl, { auto: false });
-            artEl.onclick = toggleFb;
-            artEl.onkeydown = (e) => {
-              if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); toggleFb(); }
-            };
-            bridge.playTrackPreview(trackId, artEl, { auto: true });
-          }
-        };
-        if (artEl) {
-          const toggleYt = () => bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: false, toggle: true, onFallback: bindFallback });
-          artEl.onclick = toggleYt;
-          artEl.onkeydown = (e) => {
-            if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); toggleYt(); }
-          };
-        }
-        if (ytRestart) {
-          ytRestart.onclick = () => bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: false, restart: true, onFallback: bindFallback });
-        }
-        bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: true, onFallback: bindFallback });
-      } else if (trackId && artEl && bridge.playTrackPreview) {
+      if (artEl && bridge.playTrackPreview) {
         const toggle = () => bridge.playTrackPreview(trackId, artEl, { auto: false });
         artEl.onclick = toggle;
         artEl.onkeydown = (e) => {
@@ -2757,16 +2728,7 @@
         if (gId === 'cover') $('#mgSubtitle').textContent = t('Guess the album from its pixelated cover', 'Adivina el álbum por su portada pixelada');
         else if (gId === 'mv') { $('#mgSubtitle').textContent = t('Guess the song from 3 music video frames', 'Adivina la canción con 3 escenas del videoclip'); renderMvStage(true); }
         else if (gId === 'hair') { $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle', 'Adivina al músico por su peinado'); updateHairCurtain(true); }
-        else if (gId === 'lyric') {
-          renderLyricLines(true);
-          const ytTag = $('#mgYtTag');
-          if (ytTag && mgState) {
-            const s = Math.max(0, Math.floor(Number(mgState.lyricStart) || 0));
-            ytTag.textContent = `▶ ${t('From lyric start', 'Desde la letra')} · ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-          }
-          const ytRes = $('#mgYtRestart');
-          if (ytRes) ytRes.textContent = `↺ ${t('Restart', 'Reiniciar')}`;
-        }
+        else if (gId === 'lyric') renderLyricLines(true);
       }
     }
   }

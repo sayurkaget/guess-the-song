@@ -7828,50 +7828,8 @@
   }
 
   let miniAudio = null, miniAudioEpoch = 0, miniArtEl = null;
-  let miniYtPlayer = null, miniYtId = '', miniYtReady = false, miniYtPlaying = false, miniYtWatchdog = 0, ytApiPromise = null;
-  function ensureYouTubeApi() {
-    if (typeof window === 'undefined' || typeof document === 'undefined' || !document.head) return Promise.resolve(null);
-    if (window.YT && typeof window.YT.Player === 'function') return Promise.resolve(window.YT);
-    if (ytApiPromise) return ytApiPromise;
-    ytApiPromise = new Promise((resolve) => {
-      let settled = false;
-      const done = (val) => { if (!settled) { settled = true; clearTimeout(tid); resolve(val); } };
-      const tid = setTimeout(() => { ytApiPromise = null; done(null); }, 5500);
-      const prev = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        try { if (typeof prev === 'function') prev(); } catch (e) {}
-        done(window.YT && typeof window.YT.Player === 'function' ? window.YT : null);
-      };
-      const sc = document.createElement('script');
-      sc.src = 'https://www.youtube.com/iframe_api';
-      sc.async = true;
-      sc.onerror = () => { ytApiPromise = null; done(null); };
-      document.head.appendChild(sc);
-    });
-    return ytApiPromise;
-  }
-  function destroyMiniYt() {
-    clearTimeout(miniYtWatchdog);
-    miniYtWatchdog = 0;
-    miniYtReady = false;
-    miniYtPlaying = false;
-    miniYtId = '';
-    if (miniYtPlayer) {
-      try { miniYtPlayer.destroy(); } catch (e) {}
-      miniYtPlayer = null;
-    }
-  }
   function syncMiniVolume() {
     if (miniAudio) miniAudio.volume = S.muted ? 0 : S.vol;
-    if (miniYtPlayer && miniYtReady) {
-      try {
-        if (S.muted) miniYtPlayer.mute();
-        else {
-          miniYtPlayer.unMute();
-          miniYtPlayer.setVolume(Math.round(Math.max(0, Math.min(1, S.vol)) * 100));
-        }
-      } catch (e) {}
-    }
   }
   function stopMiniPreview() {
     miniAudioEpoch++;
@@ -7879,7 +7837,6 @@
       try { miniAudio.pause(); miniAudio.currentTime = 0; } catch (e) {}
       miniAudio.datasetTrack = '';
     }
-    destroyMiniYt();
     if (miniArtEl) { miniArtEl.dataset.playing = '0'; miniArtEl = null; }
   }
   function undockMiniVolume() {
@@ -7888,16 +7845,9 @@
   }
   if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        if (miniAudio && !miniAudio.paused) {
-          try { miniAudio.pause(); } catch (e) {}
-          if (miniArtEl) miniArtEl.dataset.playing = '0';
-        }
-        if (miniYtPlayer && miniYtReady && miniYtPlaying) {
-          try { miniYtPlayer.pauseVideo(); } catch (e) {}
-          miniYtPlaying = false;
-          if (miniArtEl) miniArtEl.dataset.playing = '0';
-        }
+      if (document.hidden && miniAudio && !miniAudio.paused) {
+        try { miniAudio.pause(); } catch (e) {}
+        if (miniArtEl) miniArtEl.dataset.playing = '0';
       }
     });
   }
@@ -7968,95 +7918,6 @@
       stopAudio: () => { stopAudio(); stopMiniPreview(); },
       dockMiniVolume: () => dockVolume('#mgVolSlot'),
       undockMiniVolume,
-      playLyricAudio: async (opts) => {
-        const { ytId, startSec = 0, hostEl, artEl, auto, toggle, restart, onFallback } = opts || {};
-        if (!ytId || !hostEl || (typeof location !== 'undefined' && location.protocol === 'file:')) {
-          if (typeof onFallback === 'function') onFallback();
-          return;
-        }
-        if (miniYtPlayer && miniYtId === ytId && miniYtReady) {
-          if (restart) {
-            stopAudio();
-            syncMiniVolume();
-            try { miniYtPlayer.seekTo(startSec, true); miniYtPlayer.playVideo(); } catch (e) {}
-            return;
-          }
-          if (toggle) {
-            try {
-              if (miniYtPlaying) miniYtPlayer.pauseVideo();
-              else { stopAudio(); syncMiniVolume(); miniYtPlayer.playVideo(); }
-            } catch (e) {}
-            return;
-          }
-        }
-        stopAudio();
-        stopMiniPreview();
-        const myEpoch = miniAudioEpoch;
-        miniArtEl = artEl || null;
-        const YT = await ensureYouTubeApi();
-        if (myEpoch !== miniAudioEpoch || !$('#miniGame') || $('#miniGame').hidden) return;
-        if (!YT || !document.contains(hostEl)) {
-          if (typeof onFallback === 'function') onFallback();
-          return;
-        }
-        hostEl.innerHTML = '';
-        const slot = document.createElement('div');
-        hostEl.appendChild(slot);
-        const wantAuto = auto ? (settings.autoplay !== false) : true;
-        miniYtId = ytId;
-        let fellBack = false;
-        const triggerFallback = () => {
-          if (fellBack || myEpoch !== miniAudioEpoch) return;
-          fellBack = true;
-          destroyMiniYt();
-          if (typeof onFallback === 'function') onFallback();
-        };
-        miniYtWatchdog = setTimeout(() => {
-          if (!miniYtReady) triggerFallback();
-        }, 6500);
-        try {
-          miniYtPlayer = new YT.Player(slot, {
-            width: '100%',
-            height: '100%',
-            videoId: ytId,
-            playerVars: {
-              start: Math.max(0, Math.floor(Number(startSec) || 0)),
-              autoplay: wantAuto ? 1 : 0,
-              rel: 0,
-              fs: 0,
-              iv_load_policy: 3,
-              modestbranding: 1,
-              playsinline: 1,
-              origin: location.origin
-            },
-            events: {
-              onReady: (e) => {
-                if (myEpoch !== miniAudioEpoch) { try { e.target.destroy(); } catch (err) {} return; }
-                clearTimeout(miniYtWatchdog);
-                miniYtReady = true;
-                syncMiniVolume();
-                if (wantAuto) {
-                  try { e.target.playVideo(); } catch (err) {}
-                }
-              },
-              onStateChange: (e) => {
-                if (myEpoch !== miniAudioEpoch) return;
-                const st = e.data;
-                if (st === 1) {
-                  miniYtPlaying = true;
-                  if (miniArtEl) miniArtEl.dataset.playing = '1';
-                } else if (st === 2 || st === 0) {
-                  miniYtPlaying = false;
-                  if (miniArtEl) miniArtEl.dataset.playing = '0';
-                }
-              },
-              onError: () => triggerFallback()
-            }
-          });
-        } catch (e) {
-          triggerFallback();
-        }
-      },
       playTrackPreview: async (trackId, artEl, opts) => {
         if (!catalogHydrated) await ensureSongsLoaded();
         const song = ALL.find((s) => String(s.trackId) === String(trackId));
