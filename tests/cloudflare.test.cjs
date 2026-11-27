@@ -114,9 +114,12 @@ test('Cloudflare bundle uses its own URLs, isolates APIs, and preserves the orig
         assert.ok(pageHtml.includes('hreflang="en"'), `${fname} must include hreflang="en"`);
         assert.ok(pageHtml.includes('hreflang="es"'), `${fname} must include hreflang="es"`);
         assert.ok(pageHtml.includes('hreflang="x-default"'), `${fname} must include hreflang="x-default"`);
+        assert.match(pageHtml, /href="\/?layout\.css\?v=[0-9a-f]{8}"/, `${fname} must version layout.css with content hash`);
       } else {
         assert.ok(!pageHtml.includes('hreflang="x-default"'), `${fname} must not leak homepage hreflang`);
-        assert.ok(pageHtml.includes('href="/styles.css"') && pageHtml.includes('src="/app.js"'), `${fname} must use root-absolute assets`);
+        assert.match(pageHtml, /href="\/styles\.css\?v=[0-9a-f]{8}"/, `${fname} must use root-absolute versioned styles.css`);
+        assert.match(pageHtml, /href="\/layout\.css\?v=[0-9a-f]{8}"/, `${fname} must use root-absolute versioned layout.css`);
+        assert.match(pageHtml, /src="\/app\.js\?v=[0-9a-f]{8}"/, `${fname} must use root-absolute versioned app.js`);
         assert.ok(pageHtml.includes('data-src="neutral"'), `${fname} must not corrupt data-src attribute`);
       }
       if (slug === 'es') {

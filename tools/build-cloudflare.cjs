@@ -1,4 +1,5 @@
 /* Build a separate Pages bundle; the Netlify/GitHub source remains usable. */
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
@@ -27,8 +28,16 @@ const MINIFY_JS = new Set([
   'recordings.js', 'challenge.js', 'daily.js', 'site-guide.js'
 ]);
 
+const shortHash = (buf) => crypto.createHash('sha256').update(buf).digest('hex').slice(0, 8);
+const assetHashes = new Map();
+const buildOrder = [
+  ...files.filter((f) => f !== 'app.js' && f !== 'index.html'),
+  'app.js',
+  'index.html'
+];
+
 let builtIndexHtml = '';
-for (const file of files) {
+for (const file of buildOrder) {
   let contents = fs.readFileSync(path.join(root, file));
   if (/\.(html|xml|txt|js|css)$/.test(file)) {
     contents = contents.toString()
@@ -36,18 +45,32 @@ for (const file of files) {
       .replaceAll('https://namethetrack.pages.dev', site.origin)
       .replaceAll('https://tuneup.pages.dev', site.origin)
       .replaceAll('https://tuneup.my.id', site.origin);
+    if (file === 'app.js') {
+      for (const lazy of ['duel-streams-v1.js', 'daily-hub-data.js']) {
+        const h = assetHashes.get(lazy);
+        if (h) contents = contents.replaceAll(`'${lazy}'`, `'${lazy}?v=${h}'`);
+      }
+    }
     if (file === 'index.html') {
       contents = contents
         .replace('action="/feedback-received.html" data-netlify="true"', 'action="/api/feedback" data-feedback-api="true"');
+      for (const [asset, h] of assetHashes) {
+        contents = contents
+          .replaceAll(`href="${asset}"`, `href="${asset}?v=${h}"`)
+          .replaceAll(`src="${asset}"`, `src="${asset}?v=${h}"`);
+      }
       builtIndexHtml = contents;
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v161-wave134-more-games-framed-grid'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v162-wave135-hashed-assets'");
     if (esbuild && MINIFY_CSS.has(file)) {
       contents = esbuild.transformSync(contents, { loader: 'css', minify: true, legalComments: 'none' }).code;
     } else if (esbuild && MINIFY_JS.has(file)) {
       contents = esbuild.transformSync(contents, { loader: 'js', minify: true, target: 'es2020', legalComments: 'none' }).code;
+    }
+    if (/\.(css|js)$/.test(file) && file !== 'sw.js' && file !== 'songs.js') {
+      assetHashes.set(file, shortHash(contents));
     }
   }
   fs.writeFileSync(path.join(output, file), contents);
