@@ -542,6 +542,8 @@
       todayBtn.hidden = !isArch;
       todayBtn.textContent = t('Today', 'Hoy');
     }
+    const archLbl = $('#dhArchiveLbl');
+    if (archLbl) archLbl.textContent = t('Archive', 'Archivo');
     const kicker = $('#dhKicker');
     if (kicker) kicker.textContent = isArch ? t('DAILY ARCHIVE', 'ARCHIVO DIARIO') : t('DAILY CHALLENGE', 'DESAFÍO DIARIO');
     const doneKicker = $('#dhDoneKicker');
@@ -2648,9 +2650,11 @@
     if (spBtn) spBtn.onclick = (e) => { e.stopPropagation(); toggleStreakPop(); };
     const dhSpBtn = $('#dhStreakBtn');
     if (dhSpBtn) dhSpBtn.onclick = (e) => { e.stopPropagation(); toggleStreakPop(); };
+    const dhArchBtn = $('#dhArchiveBtn');
+    if (dhArchBtn) dhArchBtn.onclick = (e) => { e.stopPropagation(); toggleStreakPop(); };
     document.addEventListener('click', (e) => {
       const pop = $('#streakPopover');
-      if (pop && !pop.hidden && !pop.contains(e.target) && e.target !== spBtn && e.target !== dhSpBtn) {
+      if (pop && !pop.hidden && !pop.contains(e.target) && e.target !== spBtn && e.target !== dhSpBtn && (!dhArchBtn || !dhArchBtn.contains(e.target))) {
         pop.hidden = true;
       }
       const mgDD = $('#mgDD');
@@ -2724,6 +2728,8 @@
     refreshLobbyDailyUI();
     const backLbl = $('#dhBackLbl');
     if (backLbl) backLbl.textContent = t('Change mode', 'Cambiar modo');
+    const archLbl = $('#dhArchiveLbl');
+    if (archLbl) archLbl.textContent = t('Archive', 'Archivo');
     const nextLbl = $('#dhNextLbl');
     if (nextLbl) nextLbl.textContent = t('Next daily in', 'Próximo diario en');
     const kicker = $('#dhKicker');

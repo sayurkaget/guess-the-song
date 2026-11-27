@@ -2629,6 +2629,19 @@ body[data-anim="off"] .set-switch .set-knob{transition:none}
 }
 .dh-today-btn:hover{background:rgba(var(--acc-rgb),.26);color:#fff}
 .dh-today-btn[hidden]{display:none !important}
+.dh-archive-btn{
+  display:inline-flex;align-items:center;gap:.34rem;
+  min-height:30px;padding:.24rem .64rem;border-radius:999px;font:inherit;font-size:.7rem;font-weight:700;
+  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.13);color:var(--dim);
+  cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,color .15s;
+}
+.dh-archive-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(var(--acc-rgb),.4);color:#fff}
+.dh-archive-btn .btn-ico{width:13px;height:13px;flex:none}
+#dailyHub .gamebar{flex-wrap:wrap;row-gap:.4rem}
+@media(max-width:440px){
+  .dh-archive-btn{padding:.24rem .46rem}
+  #dhArchiveLbl{display:none}
+}
 .dh-arch-note{
   margin:0;font-size:.78rem;color:#ffd06b;font-weight:600;text-align:center;
 }

@@ -3468,7 +3468,7 @@
       if (S.challenge || S.runChallenge) {
         if (typeof document !== 'undefined') document.title = 'Friend Challenge — TuneUp';
       } else if (S.daily) {
-        syncRoute('daily', { title: 'Daily Guess the Song Challenge (Heardle Alternative) — TuneUp', replace: wasInGame });
+        syncRoute('daily', { title: 'Daily Music Challenge — 3 Random Games (/300) | TuneUp', replace: wasInGame });
       } else if (S.custom && S.custom.kind === 'spotify') {
         const count = stageCount();
         const q = S.custom.presetId
@@ -3500,7 +3500,7 @@
         const modeTitle = $('#gameMode').textContent;
         syncRoute('classic', {
           query: q,
-          title: modeTitle ? (modeTitle + ' — Guess the Song Game | TuneUp') : 'Classic Guess the Song Game — 33,500+ Songs (0.1s Clips) | TuneUp',
+          title: modeTitle ? (modeTitle + ' — Guess the Song Game | TuneUp') : 'Classic Guess the Song Game — 33,700+ Songs (0.1s Clips) | TuneUp',
           replace: wasInGame
         });
       }
@@ -6749,7 +6749,7 @@
       } else {
         syncRoute('artist-detective', {
           query: ag.mode === 'free' ? 'mode=endless' : '',
-          title: 'Artist Detective — Guess the Mystery Artist (Spotle Alternative) | TuneUp',
+          title: 'Artist Detective — Guess the Mystery Artist from 6 Clues | TuneUp',
           replace: wasInArtist
         });
       }

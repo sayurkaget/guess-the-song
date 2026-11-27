@@ -63,7 +63,7 @@ for (const file of buildOrder) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v163-wave136-mv-frame-hair-peek'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v164-wave137-bank-expansion-archive-seo'");
     if (esbuild && MINIFY_CSS.has(file)) {
       contents = esbuild.transformSync(contents, { loader: 'css', minify: true, legalComments: 'none' }).code;
     } else if (esbuild && MINIFY_JS.has(file)) {
@@ -151,22 +151,22 @@ const SEO_PAGES = [
     slug: 'daily',
     lang: 'en',
     keepHreflang: false,
-    title: 'Daily Guess the Song Challenge (Heardle Alternative) — TuneUp',
-    description: "Play today's free Daily Guess the Song challenge in your browser. Identify the daily hit from 0.1s–15s clips in 5 tries, build streaks & share spoiler-free.",
-    imageAlt: 'TuneUp Daily Challenge — Free daily guess the song game from 0.1s clips',
+    title: 'Daily Music Challenge — 3 Random Games (/300) | TuneUp',
+    description: "Spin today's free 3-game Daily Music Challenge in your browser. Play the same 3 random games as everyone else, score up to 300 pts, build streaks & browse past days.",
+    imageAlt: 'TuneUp Daily Music Challenge — Spin 3 daily music games scored out of 300',
     aboutHeading: 'About Daily Challenge',
-    aboutP1: 'TuneUp Daily Challenge gives every player the same hand-picked hit song each day — a free Heardle alternative in your browser with no sign-up. Start with a 0.1-second audio clip and unlock longer previews (0.5s, 2s, 8s, 15s) across 5 tries.',
-    aboutP2: 'Resets daily at 7:00 AM local time. Build streaks, unlock achievements, and challenge friends with spoiler-free links.'
+    aboutP1: 'TuneUp Daily Challenge gives every player the same 3-game lineup each day — spun from Song Guess, Music Duel, Artist Detective, Cover Pixel, MV Frame, Hair Peek, Fact or Cap, and Lyric Guess. Earn up to 100 points per game for a /300 daily score.',
+    aboutP2: 'Resets daily at 7:00 AM local time. Compare your /300 score against today’s community histogram, keep your daily streak alive, or replay past days anytime in the 28-day Archive.'
   },
   {
     slug: 'classic',
     lang: 'en',
     keepHreflang: false,
-    title: 'Classic Guess the Song Game — 33,500+ Songs (0.1s Clips) | TuneUp',
-    description: 'Guess 5 songs from Easy to Impossible using 0.1s–15s clips across 33,500+ tracks. Filter by Pop, Rock, Hip-hop, R&B, Indie, Electronic & any era — free online.',
-    imageAlt: 'TuneUp Classic — Free 5-stage guess the song game across 33,500+ tracks',
+    title: 'Classic Guess the Song Game — 33,700+ Songs (0.1s Clips) | TuneUp',
+    description: 'Guess 5 songs from Easy to Impossible using 0.1s–15s clips across 33,700+ tracks. Filter by Pop, Rock, Hip-hop, R&B, Indie, Electronic & any era — free online.',
+    imageAlt: 'TuneUp Classic — Free 5-stage guess the song game across 33,700+ tracks',
     aboutHeading: 'About Classic Mode',
-    aboutP1: 'TuneUp Classic is a 5-stage guess the song gauntlet spanning over 33,500 tracks from before 2000 to the 2020s. Each run escalates from Easy global hits to Impossible deep cuts, starting with a 0.1s clip on every stage.',
+    aboutP1: 'TuneUp Classic is a 5-stage guess the song gauntlet spanning over 33,700 tracks from before 2000 to the 2020s. Each run escalates from Easy global hits to Impossible deep cuts, starting with a 0.1s clip on every stage.',
     aboutP2: 'Filter by genre (Pop, Rock, Hip-hop, R&B/Soul, Electronic, Indie) and era, track win streaks, and challenge friends to play your exact 5-song run.'
   },
   {
@@ -206,19 +206,19 @@ const SEO_PAGES = [
     slug: 'artist-detective',
     lang: 'en',
     keepHreflang: false,
-    title: 'Artist Detective — Guess the Mystery Artist (Spotle Alternative) | TuneUp',
-    description: 'Deduce the mystery artist in 10 guesses using 6 clues: debut year, type, gender, genre, country & global rank across 530 artists. Free Spotle alternative.',
+    title: 'Artist Detective — Guess the Mystery Artist from 6 Clues | TuneUp',
+    description: 'Deduce the mystery artist in 10 guesses using 6 clues: debut year, type, gender, genre, country & global rank across 530 artists. Free online music deduction game.',
     imageAlt: 'TuneUp Artist Detective — Guess the mystery artist from 6 clues across Top 530 roster',
     aboutHeading: 'About Artist Detective',
-    aboutP1: 'Artist Detective is a free Spotle-style music deduction game spanning 530 global artists. Each guess reveals 6 color-coded clues: Debut Year, Solo/Group Type, Gender, Primary Genre, Country, and Global Rank (#1–#530).',
-    aboutP2: 'Unlock clue and name hints when stuck, play Daily Artist or endless rounds, unlock achievements, and challenge friends to solve your exact mystery artist.'
+    aboutP1: 'Artist Detective is a free browser music deduction game spanning 530 global artists. Each guess reveals 6 color-coded clues: Debut Year, Solo/Group Type, Gender, Primary Genre, Country, and Global Rank (#1–#530).',
+    aboutP2: 'Unlock clue and name hints when stuck, play endless rounds, unlock achievements, and challenge friends to solve your exact mystery artist.'
   },
   {
     slug: 'cover-pixel',
     lang: 'en',
     keepHreflang: false,
     title: 'Cover Pixel — Guess the Album from Pixelated Cover Art | TuneUp',
-    description: 'Guess 260+ iconic albums from pixelated cover art that sharpens across 5 tries (6×6 to 46×46 px). Free online browser music game with instant audio previews.',
+    description: 'Guess 280+ iconic albums from pixelated cover art that sharpens across 5 tries (6×6 to 46×46 px). Free online browser music game with instant audio previews.',
     imageAlt: 'TuneUp Cover Pixel — Guess the album from pixelated album cover art',
     aboutHeading: 'About Cover Pixel',
     aboutP1: 'Cover Pixel tests your visual music memory by starting with a 6×6 pixelated album cover and revealing sharper detail with every attempt across 5 tries.',
@@ -229,7 +229,7 @@ const SEO_PAGES = [
     lang: 'en',
     keepHreflang: false,
     title: 'MV Frame — Guess the Song from Music Video Frames | TuneUp',
-    description: 'Guess 210+ iconic songs from music video scenes across 5 tries, with release year & artist clues and instant audio previews. Free browser music game.',
+    description: 'Guess 230+ iconic songs from music video scenes across 5 tries, with release year & artist clues and instant audio previews. Free browser music game.',
     imageAlt: 'TuneUp MV Frame — Guess the song from music video frames',
     aboutHeading: 'About MV Frame',
     aboutP1: 'MV Frame shows 3 real music video frames one scene at a time, followed by Release Year, Genre, and Artist clues across 5 attempts.',
@@ -240,21 +240,21 @@ const SEO_PAGES = [
     lang: 'en',
     keepHreflang: false,
     title: 'Hair Peek — Guess the Musician from Their Hairstyle | TuneUp',
-    description: 'Identify 100+ global musicians starting from just their hairstyle. Skip to lower the curtain step by step across 5 tries — free online music game.',
+    description: 'Identify 240+ global musicians starting from just their hairstyle. Skip to lower the curtain step by step across 5 tries — free online music game.',
     imageAlt: 'TuneUp Hair Peek — Guess famous musicians from their hairstyle',
     aboutHeading: 'About Hair Peek',
     aboutP1: 'Hair Peek starts with only the musician’s hair visible above the curtain and reveals more of the portrait with each skip across 5 attempts.',
-    aboutP2: 'Features 100+ global music icons — play free rounds anytime or spin it in Daily Challenge.'
+    aboutP2: 'Features 240+ global music icons — play free rounds anytime or spin it in Daily Challenge.'
   },
   {
     slug: 'fact-or-cap',
     lang: 'en',
     keepHreflang: false,
     title: 'Music Fact or Cap — Music Trivia True or False Game | TuneUp',
-    description: 'Test your music history knowledge with quick Fact or Cap trivia claims. Survive 3 lives in Endless mode or beat 5 daily claims — free in your browser.',
+    description: 'Test your music history knowledge with 250+ quick Fact or Cap trivia claims. Survive 3 lives in Endless mode or beat 5 daily claims — free in your browser.',
     imageAlt: 'TuneUp Music Fact or Cap — Music trivia game',
     aboutHeading: 'About Music Fact or Cap',
-    aboutP1: 'Decide whether surprising music claims are real facts or total cap, with crisp explanations after every answer.',
+    aboutP1: 'Decide whether 250+ surprising music claims are real facts or total cap, with crisp explanations after every answer.',
     aboutP2: 'Chase high scores with 3 lives in Endless free play or earn up to 100 points in the Daily Challenge.'
   },
   {
@@ -262,11 +262,11 @@ const SEO_PAGES = [
     lang: 'en',
     keepHreflang: false,
     title: 'Lyric Guess — Guess the Song from 5 Lyric Lines | TuneUp',
-    description: 'Identify hit songs starting from a single lyric line. Unlock up to 5 progressive lyric clues and listen to the track preview on reveal — free online.',
+    description: 'Identify 250+ hit songs starting from a single lyric line. Unlock up to 5 progressive lyric clues and listen straight from the synced lyric moment on reveal.',
     imageAlt: 'TuneUp Lyric Guess — Guess songs from progressive lyric clues',
     aboutHeading: 'About Lyric Guess',
-    aboutP1: 'Lyric Guess gives you one famous lyric line at a time across 5 attempts — solve on line 1 or unlock more lyrics before listening to the audio preview on reveal.',
-    aboutP2: 'Play unlimited free rounds or spin Lyric Guess in TuneUp’s Daily Challenge.'
+    aboutP1: 'Lyric Guess gives you one famous lyric line at a time across 5 attempts — solve on line 1 or unlock more lyrics before listening to the official audio from the lyric start on reveal.',
+    aboutP2: 'Play unlimited free rounds across 250+ songs or spin Lyric Guess in TuneUp’s Daily Challenge.'
   },
   {
     slug: 'es',
@@ -276,7 +276,7 @@ const SEO_PAGES = [
     description: 'Juega gratis a adivinar canciones online sin cuenta. Escucha clips de 0,1 s en Desafío Diario, Clásico, Por Artista, Playlists de Spotify/Apple/YouTube, Duelo Musical y Detective de Artistas.',
     imageAlt: 'TuneUp — Juego gratis de adivinar canciones con clips de 0,1 s, Quiz de Spotify, Duelo Musical y Detective de Artistas',
     aboutHeading: 'Sobre TuneUp — Juego Gratis de Adivinar Canciones',
-    aboutP1: 'TuneUp es un juego musical gratis directo en el navegador de tu celular o computadora sin registro. Pon a prueba tu oído adivinando canciones con clips de 0,1 s a 15 s en el Desafío Diario, modo Clásico (33.500+ canciones), Por Artista y quizzes de playlists de Spotify, Apple Music y YouTube.',
+    aboutP1: 'TuneUp es un juego musical gratis directo en el navegador de tu celular o computadora sin registro. Pon a prueba tu oído adivinando canciones con clips de 0,1 s a 15 s en el Desafío Diario, modo Clásico (33.700+ canciones), Por Artista y quizzes de playlists de Spotify, Apple Music y YouTube.',
     aboutP2: 'Juega también Duelo Musical (compara streams de Spotify y año de lanzamiento), Detective de Artistas (descubre 530 artistas con 6 pistas) y 5 minijuegos: Cover Pixel, MV Frame, Hair Peek, Dato o Mito y Adivina la Letra.'
   }
 ];
@@ -296,6 +296,7 @@ function localizeEsStaticHtml(html) {
     .replace('<span class="lbl">Share result</span>', '<span class="lbl">Compartir resultado</span>')
     .replace('<span class="lbl">Back to menu</span>', '<span class="lbl">Volver al menú</span>')
     .replace('<span id="dhBackLbl">Change mode</span>', '<span id="dhBackLbl">Cambiar modo</span>')
+    .replace('<span id="dhArchiveLbl">Archive</span>', '<span id="dhArchiveLbl">Archivo</span>')
     .replace('<span id="mgBackLbl">Change mode</span>', '<span id="mgBackLbl">Cambiar modo</span>')
     .replace('<h2 id="moreGamesHeading">More Music Games</h2>', '<h2 id="moreGamesHeading">Más Juegos Musicales</h2>')
     .replace('<span class="more-games-sub" id="moreGamesSub">Free play anytime</span>', '<span class="more-games-sub" id="moreGamesSub">Juego libre siempre</span>')

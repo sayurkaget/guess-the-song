@@ -96,10 +96,11 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
   const duelStreams = loadBrowserGlobal('duel-streams-v1.js', 'DUEL_STREAMS_V1');
 
   assert.ok(Data && Array.isArray(Data.mvBank) && Data.mvBank.length >= 230);
-  assert.ok(Array.isArray(Data.hairBank) && Data.hairBank.length >= 160);
-  assert.ok(Array.isArray(Data.lyricBank) && Data.lyricBank.length >= 160);
+  assert.ok(Array.isArray(Data.hairBank) && Data.hairBank.length >= 240);
+  assert.ok(Array.isArray(Data.lyricBank) && Data.lyricBank.length >= 250);
   assert.ok(Array.isArray(Data.albumBank) && Data.albumBank.length >= 285);
-  assert.ok(Array.isArray(Data.factBank) && Data.factBank.length >= 160);
+  assert.ok(Array.isArray(Data.factBank) && Data.factBank.length >= 260);
+  assert.equal(Data.hairBank.filter((r) => String(r[2]).includes('upload.wikimedia.org')).length, 0, 'hairBank must use thumb.wikimedia.org thumbnails');
 
   const trackIds = new Set(songs.map((s) => String(s[7] || '')));
   for (const row of Data.albumBank) {
@@ -410,6 +411,9 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.doesNotMatch(html, /id="dhSlotMachine"|id="dhLever"/);
   assert.match(html, /id="mgSwitcher"/);
   assert.match(html, /id="dhTodayBtn"/);
+  assert.match(html, /id="dhArchiveBtn"/);
+  assert.doesNotMatch(build, /Heardle Alternative|Spotle Alternative|Spotle-style/i);
+  assert.doesNotMatch(app, /Heardle Alternative|Spotle Alternative/i);
   assert.match(mg, /REEL_BASE_LOOPS = \[4, 6, 8\]/);
   assert.match(mg, /const durs = \[2050, 3250, 4850\]/);
   assert.match(mg, /function openDailyArchive\(/);
