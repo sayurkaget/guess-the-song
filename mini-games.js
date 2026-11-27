@@ -32,6 +32,7 @@
   const HUB_POSTED_KEY = (day) => 'tl:dailyhub:posted:' + day;
   const FACT_BEST_KEY = 'tl:fact:best';
   const MG_STATS_KEY = 'tl:mg:stats';
+  const LYRIC_YT_OPEN_KEY = 'tl:mg:lyricYtOpen';
 
   let bridge = null;
   const isEs = () => (bridge && bridge.getLang && bridge.getLang() === 'es');
@@ -1581,13 +1582,14 @@
     const ytSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="3.8" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M10.2 9.2 15.4 12l-5.2 2.8V9.2Z" fill="currentColor"/></svg>';
     const ytUrl = ytId ? `https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}${startSec > 0 ? `&t=${startSec}s` : ''}` : '';
     const canToggleYt = Boolean(gameId === 'lyric' && ytId && bridge && bridge.playLyricAudio);
+    const ytAutoOpen = canToggleYt && LS.get(LYRIC_YT_OPEN_KEY, true) !== false;
     const ytToggleHtml = (gameId === 'lyric' && ytId)
       ? (canToggleYt
-          ? `<button id="mgYtToggle" class="mg-yt-toggle" type="button" aria-expanded="false" aria-controls="mgYtWrap">${ytSvg}<span class="mg-yt-lbl">YouTube${startSec > 0 ? ` · ${fmtStart(startSec)}` : ''}</span><span class="mg-yt-chev" aria-hidden="true">▾</span></button>`
+          ? `<button id="mgYtToggle" class="mg-yt-toggle${ytAutoOpen ? ' is-open' : ''}" type="button" aria-expanded="${ytAutoOpen ? 'true' : 'false'}" aria-controls="mgYtWrap">${ytSvg}<span class="mg-yt-lbl">${esc(ytAutoOpen ? t('Hide player', 'Ocultar') : `YouTube${startSec > 0 ? ` · ${fmtStart(startSec)}` : ''}`)}</span><span class="mg-yt-chev" aria-hidden="true">${ytAutoOpen ? '▴' : '▾'}</span></button>`
           : `<a id="mgYtLink" class="mg-yt-toggle" href="${ytUrl}" target="_blank" rel="noopener noreferrer">${ytSvg}<span>YouTube${startSec > 0 ? ` · ${fmtStart(startSec)}` : ''}</span><span class="mg-yt-ext" aria-hidden="true">↗</span></a>`)
       : '';
     const ytWrapHtml = canToggleYt
-      ? `<div class="mg-yt-wrap" id="mgYtWrap" hidden>` +
+      ? `<div class="mg-yt-wrap" id="mgYtWrap"${ytAutoOpen ? '' : ' hidden'}>` +
           `<div class="mg-yt-bar">` +
             `<span class="mg-yt-tag" id="mgYtTag">▶ ${fmtStart(startSec)}</span>` +
             `<div class="mg-yt-bar-acts">` +
@@ -1661,13 +1663,12 @@
     };
     if ((trackId || ytId) && bridge) {
       if (bridge.dockMiniVolume) bridge.dockMiniVolume();
-      bindPreviewArt(true);
       const ytToggle = $('#mgYtToggle');
       const ytWrap = $('#mgYtWrap');
       const ytHost = $('#mgYtHost');
       const ytRestart = $('#mgYtRestart');
       if (canToggleYt && ytToggle && ytWrap && ytHost) {
-        let ytOpen = false;
+        let ytOpen = ytAutoOpen;
         const setToggleUi = (open) => {
           ytOpen = open;
           ytWrap.hidden = !open;
@@ -1683,7 +1684,7 @@
           if (bridge.toast) bridge.toast(t('YouTube embed unavailable — use YouTube link', 'Reproductor no disponible — usa el enlace'));
           bindPreviewArt(true);
         };
-        const openYtPlayer = () => {
+        const openYtPlayer = (isAuto) => {
           setToggleUi(true);
           if (artEl) {
             const toggleYt = () => bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: false, toggle: true, onFallback: handleYtFallback });
@@ -1692,7 +1693,7 @@
               if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); toggleYt(); }
             };
           }
-          bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: false, onFallback: handleYtFallback });
+          bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: !!isAuto, onFallback: handleYtFallback });
         };
         const closeYtPlayer = () => {
           if (bridge.stopAudio) bridge.stopAudio();
@@ -1701,12 +1702,21 @@
           bindPreviewArt(false);
         };
         ytToggle.onclick = () => {
-          if (ytOpen) closeYtPlayer();
-          else openYtPlayer();
+          if (ytOpen) {
+            LS.set(LYRIC_YT_OPEN_KEY, false);
+            closeYtPlayer();
+          } else {
+            LS.set(LYRIC_YT_OPEN_KEY, true);
+            openYtPlayer(false);
+          }
         };
         if (ytRestart) {
           ytRestart.onclick = () => bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: false, restart: true, onFallback: handleYtFallback });
         }
+        if (ytAutoOpen) openYtPlayer(true);
+        else bindPreviewArt(true);
+      } else {
+        bindPreviewArt(true);
       }
     }
     const contBtn = $('#mgContinueDaily');

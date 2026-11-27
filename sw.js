@@ -3,7 +3,7 @@
    ke server (no-cache / ETag) agar update langsung masuk dan file besar seperti
    songs.js tetap hemat kuota via 304 Not Modified saat belum berubah. */
 
-const CACHE = 'gts-v177-wave130-lyric-toggle-yt-player';
+const CACHE = 'gts-v178-wave131-lyric-yt-default-open';
 const SHELL = [
   './',
   './index.html',
