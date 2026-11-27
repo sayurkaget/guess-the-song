@@ -129,11 +129,13 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
   }
 
   for (const row of Data.lyricBank) {
-    const [trackId, title, artist, art, , , lines] = row;
+    const [trackId, title, artist, art, , , lines, ytId, lyricStart] = row;
     assert.ok(trackIds.has(String(trackId)), `lyricBank trackId ${trackId} (${title}) must exist in songs.js`);
     assert.ok(title && artist && /^https:\/\//.test(art));
     assert.equal(lines.length, 5);
     lines.forEach((ln) => assert.ok(typeof ln === 'string' && ln.trim().length >= 5));
+    assert.match(String(ytId || ''), /^[A-Za-z0-9_-]{11}$/, `lyricBank ${title} must include valid 11-char ytId`);
+    assert.ok(Number.isInteger(lyricStart) && lyricStart >= 0 && lyricStart <= 75, `lyricBank ${title} lyricStart must be 0..75s`);
   }
 
   const roster = ArtistDetective.buildRoster(songs, duelStreams);
@@ -210,14 +212,15 @@ test('/api/daily-stats supports kind=hub with 15-band D1 aggregation and strict 
     env
   });
 
+  const today = new Date().toISOString().slice(0, 10);
   // Invalid scores rejected
-  const badLow = await makePost({ kind: 'hub', day: '2026-11-24', score: -5 });
+  const badLow = await makePost({ kind: 'hub', day: today, score: -5 });
   assert.equal(badLow.status, 400);
-  const badHigh = await makePost({ kind: 'hub', day: '2026-11-24', score: 305 });
+  const badHigh = await makePost({ kind: 'hub', day: today, score: 305 });
   assert.equal(badHigh.status, 400);
 
   // Valid POST #1: score 245 -> band 12
-  const r1 = await makePost({ kind: 'hub', day: '2026-11-24', score: 245 });
+  const r1 = await makePost({ kind: 'hub', day: today, score: 245 });
   assert.equal(r1.status, 200);
   const j1 = await r1.json();
   assert.equal(j1.ok, true);
@@ -228,7 +231,7 @@ test('/api/daily-stats supports kind=hub with 15-band D1 aggregation and strict 
   assert.equal(j1.bands[12], 1);
 
   // Valid POST #2: score 300 -> band 14
-  const r2 = await makePost({ kind: 'hub', day: '2026-11-24', score: 300 });
+  const r2 = await makePost({ kind: 'hub', day: today, score: 300 });
   assert.equal(r2.status, 200);
   const j2 = await r2.json();
   assert.equal(j2.plays, 2);
@@ -238,7 +241,7 @@ test('/api/daily-stats supports kind=hub with 15-band D1 aggregation and strict 
 
   // Valid GET
   const g1 = await onRequest({
-    request: new Request('https://tuneup.my.id/api/daily-stats?kind=hub&day=2026-11-24'),
+    request: new Request(`https://tuneup.my.id/api/daily-stats?kind=hub&day=${today}`),
     env
   });
   assert.equal(g1.status, 200);
@@ -368,6 +371,9 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(mg, /function encodeMiniChallenge\(/);
   assert.match(mg, /function parseMiniChallenge\(/);
   assert.match(mg, /function renderMiniStreakPill\(/);
+  assert.match(mg, /bridge\.playLyricAudio/);
+  assert.match(app, /playLyricAudio:/);
+  assert.match(html, /name="referrer" content="strict-origin-when-cross-origin"/);
   assert.match(mg, /navigator\.vibrate/);
   assert.match(mg, /ArrowLeft/);
   assert.match(html, /id="mgStreakPill"/);

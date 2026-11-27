@@ -1519,7 +1519,7 @@
     rightEl.innerHTML = `<div class="mg-pips" aria-label="${esc(t('Attempts', 'Intentos'))}">${pips.join('')}</div>`;
   }
 
-  function renderMiniReveal({ won, score, title, subtitle, art, trackId, dailySlot, gameId, shortSummary, detail, freeKicker }) {
+  function renderMiniReveal({ won, score, title, subtitle, art, trackId, ytId, lyricStart, dailySlot, gameId, shortSummary, detail, freeKicker }) {
     const isArchDaily = Boolean(dailySlot && dailySlot.isArchive);
     if (!isArchDaily && gameId && (gameId === 'cover' || gameId === 'mv' || gameId === 'hair' || gameId === 'fact' || gameId === 'lyric')) {
       recordMgStat((s) => {
@@ -1570,12 +1570,26 @@
       ? `${won ? t('Solved!', '¡Acertaste!') : t('Revealed', 'Revelado')} · ${score}/100`
       : (freeKicker || (won ? t('Solved!', '¡Acertaste!') : t('Out of tries', 'Sin intentos')));
 
-    const playable = Boolean(trackId && art);
+    const playable = Boolean((trackId || ytId) && art);
     const portraitCls = gameId === 'hair' ? ' is-portrait' : '';
     const artHtml = art
       ? `<img id="mgRevArt" class="mg-rev-art${portraitCls}${playable ? ' is-playable' : ''}" src="${esc(art)}" alt="${esc(title)}"${playable ? ` role="button" tabindex="0" data-playing="0" title="${esc(t('Tap to pause or resume preview', 'Toca para pausar o reanudar la vista previa'))}"` : ''}${gameId === 'hair' ? ' referrerpolicy="no-referrer"' : ''}>`
       : '';
-    const volHtml = trackId ? '<div class="vol-slot mg-vol-slot" id="mgVolSlot"></div>' : '';
+    const volHtml = (trackId || ytId) ? '<div class="vol-slot mg-vol-slot" id="mgVolSlot"></div>' : '';
+    const fmtStart = (sec) => {
+      const s = Math.max(0, Math.floor(Number(sec) || 0));
+      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    };
+    const useYt = Boolean(gameId === 'lyric' && ytId && bridge && bridge.playLyricAudio);
+    const ytHtml = useYt
+      ? `<div class="mg-yt-wrap" id="mgYtWrap">` +
+          `<div class="mg-yt-bar">` +
+            `<span class="mg-yt-tag" id="mgYtTag">▶ ${esc(t('From lyric start', 'Desde la letra'))} · ${fmtStart(lyricStart)}</span>` +
+            `<button type="button" class="mg-yt-restart" id="mgYtRestart">↺ ${esc(t('Restart', 'Reiniciar'))}</button>` +
+          `</div>` +
+          `<div class="mg-yt-frame" id="mgYtHost"></div>` +
+        `</div>`
+      : '';
 
     controls.innerHTML =
       `<div class="mg-reveal-card${won ? ' is-win' : ' is-lose'}">` +
@@ -1589,6 +1603,7 @@
           `</div>` +
           volHtml +
         `</div>` +
+        ytHtml +
         `<div class="mg-rev-actions${canChallenge ? ' is-pair' : ''}">${actionHtml}</div>` +
       `</div>`;
 
@@ -1621,9 +1636,36 @@
         artEl.src = safeSvg;
       };
     }
-    if (trackId && bridge) {
+    if ((trackId || ytId) && bridge) {
       if (bridge.dockMiniVolume) bridge.dockMiniVolume();
-      if (artEl && bridge.playTrackPreview) {
+      if (useYt) {
+        const ytWrap = $('#mgYtWrap');
+        const ytHost = $('#mgYtHost');
+        const ytRestart = $('#mgYtRestart');
+        const startSec = Math.max(0, Math.floor(Number(lyricStart) || 0));
+        const bindFallback = () => {
+          if (ytWrap) ytWrap.hidden = true;
+          if (trackId && artEl && bridge.playTrackPreview) {
+            const toggleFb = () => bridge.playTrackPreview(trackId, artEl, { auto: false });
+            artEl.onclick = toggleFb;
+            artEl.onkeydown = (e) => {
+              if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); toggleFb(); }
+            };
+            bridge.playTrackPreview(trackId, artEl, { auto: true });
+          }
+        };
+        if (artEl) {
+          const toggleYt = () => bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: false, toggle: true, onFallback: bindFallback });
+          artEl.onclick = toggleYt;
+          artEl.onkeydown = (e) => {
+            if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); toggleYt(); }
+          };
+        }
+        if (ytRestart) {
+          ytRestart.onclick = () => bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: false, restart: true, onFallback: bindFallback });
+        }
+        bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: true, onFallback: bindFallback });
+      } else if (trackId && artEl && bridge.playTrackPreview) {
         const toggle = () => bridge.playTrackPreview(trackId, artEl, { auto: false });
         artEl.onclick = toggle;
         artEl.onkeydown = (e) => {
@@ -2433,12 +2475,16 @@
         ? Hub.pickDeterministic(bank, seed, 1)
         : pickFreeUnseen(bank, 'lyric', seed, (r) => r[0]);
       if (!targetRow) return;
-      // [trackId, title, artist, art, year, diff, lines]
-      const [trackId, title, artist, art, year, , lines] = targetRow;
+      // [trackId, title, artist, art, year, diff, lines, ytId?, lyricStart?]
+      const [trackId, title, artist, art, year, , lines, ytId, lyricStart] = targetRow;
       const challengeIndex = (challenge && Number.isInteger(challenge.resolvedIndex))
         ? challenge.resolvedIndex
         : bank.indexOf(targetRow);
-      st = { gameId: 'lyric', dailySlot, trackId, title, artist, art, year, lines, challenge, challengeKey: String(trackId), challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false };
+      st = {
+        gameId: 'lyric', dailySlot, trackId, title, artist, art, year, lines,
+        ytId: ytId || '', lyricStart: Number.isFinite(Number(lyricStart)) ? Math.max(0, Math.floor(Number(lyricStart))) : 0,
+        challenge, challengeKey: String(trackId), challengeIndex, tries: 0, maxTries: 5, guesses: [], tried: new Set(), done: false
+      };
       if (dailySlot) dailyMiniSessions[dailySlotKey(dailySlot)] = st;
       else if (!challenge) freeMiniSessions.lyric = st;
     }
@@ -2504,7 +2550,7 @@
         recordMgStat((s) => { s.lyric1 = (s.lyric1 || 0) + 1; });
         awardMiniBadges(['lyric1']);
       }
-      renderMiniReveal({ won: true, score, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: sum });
+      renderMiniReveal({ won: true, score, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, ytId: st.ytId, lyricStart: st.lyricStart, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: sum });
       return;
     }
     st.guesses.push({ kind: sameArt ? 'near' : 'wrong' });
@@ -2513,7 +2559,7 @@
       renderAttemptPips(st.guesses, 5, true, idx);
       renderLyricLines(true);
       const sum = t('Missed', 'Fallaste');
-      renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Sin intentos') });
+      renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, ytId: st.ytId, lyricStart: st.lyricStart, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Sin intentos') });
     } else {
       renderAttemptPips(st.guesses, 5, false, idx);
       renderLyricLines(false);
@@ -2540,7 +2586,7 @@
       renderAttemptPips(st.guesses, 5, true, idx);
       renderLyricLines(true);
       const sum = t('Missed', 'Fallaste');
-      renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Sin intentos') });
+      renderMiniReveal({ won: false, score: 0, title: st.title, subtitle: `${st.artist} · ${st.year}`, art: st.art, trackId: st.trackId, ytId: st.ytId, lyricStart: st.lyricStart, dailySlot, gameId: 'lyric', shortSummary: sum, detail: `${sum} · ${st.title}`, freeKicker: t('Out of tries', 'Sin intentos') });
     } else {
       renderAttemptPips(st.guesses, 5, false, idx);
       renderLyricLines(false);
@@ -2711,7 +2757,16 @@
         if (gId === 'cover') $('#mgSubtitle').textContent = t('Guess the album from its pixelated cover', 'Adivina el álbum por su portada pixelada');
         else if (gId === 'mv') { $('#mgSubtitle').textContent = t('Guess the song from 3 music video frames', 'Adivina la canción con 3 escenas del videoclip'); renderMvStage(true); }
         else if (gId === 'hair') { $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle', 'Adivina al músico por su peinado'); updateHairCurtain(true); }
-        else if (gId === 'lyric') renderLyricLines(true);
+        else if (gId === 'lyric') {
+          renderLyricLines(true);
+          const ytTag = $('#mgYtTag');
+          if (ytTag && mgState) {
+            const s = Math.max(0, Math.floor(Number(mgState.lyricStart) || 0));
+            ytTag.textContent = `▶ ${t('From lyric start', 'Desde la letra')} · ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+          }
+          const ytRes = $('#mgYtRestart');
+          if (ytRes) ytRes.textContent = `↺ ${t('Restart', 'Reiniciar')}`;
+        }
       }
     }
   }
