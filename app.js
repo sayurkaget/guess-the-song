@@ -1224,19 +1224,86 @@
     classicRankCache = { sig, topArtists, unstrT5Rank };
     return classicRankCache;
   }
-  const CLASSIC_TIER_BASELINE_STREAMS = { 1: 1800000000, 2: 900000000, 3: 500000000, 4: 260000000, 5: 60000000 };
+  const CLASSIC_TIER_BASELINE_STREAMS = { 1: 2000000000, 2: 1000000000, 3: 520000000, 4: 280000000, 5: 60000000 };
   const CLASSIC_STAGE_BANDS = [
-    { min: 1100000000, max: Infinity,   exp: 2.1,  unstreamedMaxTier: 1, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 1 Easy: global English mega-hits (>=1.1B + T1)
-    { min: 600000000,  max: 2000000000, exp: 1.65, unstreamedMaxTier: 2, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 2 Medium: big familiar hits (600M-2.0B + T1-2)
-    { min: 280000000,  max: 1000000000, exp: 1.35, unstreamedMaxTier: 3, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 3 Hard: recognizable radio hits & classics (280M-1.0B + T2-3)
-    { min: 120000000,  max: 500000000,  exp: 1.15, unstreamedMaxTier: 4, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 4 Expert: deeper hits & famous album cuts (120M-500M + T3-4)
-    { min: 0,          max: 300000000,  exp: 1.1,  unstreamedMaxTier: 5, t5TopRank: Infinity, t5TopArtistOnly: false }  // Stage 5 Impossible: full remaining English catalog (<=300M + all T4-5)
+    { min: 1500000000, max: Infinity,   exp: 2.5,  unstreamedMaxTier: 1, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 1 Easy: global English mega-hits (>=1.5B + T1)
+    { min: 800000000,  max: 2200000000, exp: 2.0,  unstreamedMaxTier: 2, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 2 Medium: big familiar hits (800M-2.2B + T1-2)
+    { min: 400000000,  max: 1100000000, exp: 1.65, unstreamedMaxTier: 3, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 3 Hard: recognizable radio hits & classics (400M-1.1B + T2-3)
+    { min: 200000000,  max: 550000000,  exp: 1.45, unstreamedMaxTier: 4, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 4 Expert: deeper hits & famous album cuts (200M-550M + T3-4)
+    { min: 0,          max: 350000000,  exp: 1.35, unstreamedMaxTier: 5, t5TopRank: Infinity, t5TopArtistOnly: false }  // Stage 5 Impossible: balanced mix of <=350M hits + full 27.6k T5 vault
   ];
-  function pickWeightedClassic(list, stageIdx) {
+  function getClassicTopArtists() {
+    if (!classicTopArtists) {
+      classicTopArtists = new Set(ALL.filter((s) => s.tier <= 2).map((s) => s.artist));
+    }
+    return classicTopArtists;
+  }
+  function getClassicAdaptiveProfile() {
+    // Invisible adaptive skill score in [-1, +1]: negative -> more iconic hits; positive -> deeper challenge
+    let histSignal = -0.25;
+    try {
+      const st = typeof allClassicStats === 'function' ? allClassicStats() : null;
+      const streak = typeof songStreak === 'function' ? (songStreak('classic').current || 0) : 0;
+      if (st && st.runs >= 1) {
+        const avg = st.total / st.runs;
+        histSignal = Math.max(-1, Math.min(1, (avg - 3.0) / 1.4));
+      }
+      if (streak >= 5) histSignal = Math.min(1, histSignal + Math.min(0.45, (streak - 4) * 0.09));
+    } catch (e) {}
+    const done = (S.stages || []).filter((r) => r && r.done);
+    let skill = Math.max(-0.85, Math.min(0.85, histSignal));
+    if (done.length > 0) {
+      const wins = done.filter((r) => r.won).length;
+      const runRate = wins / done.length;
+      let runSignal = Math.max(-1, Math.min(1, (runRate - 0.6) / 0.4));
+      const prev = done[done.length - 1];
+      if (prev && !prev.won) runSignal = Math.max(-1, runSignal - 0.25);
+      skill = Math.max(-1, Math.min(1, 0.65 * runSignal + 0.35 * histSignal));
+    }
+    return {
+      skill,
+      expDelta: -skill * 0.75,
+      floorMult: skill < -0.2 ? (1 + (-skill - 0.2) * 0.3) : 1,
+      t5Chance: Math.max(0.15, Math.min(0.55, 0.35 + skill * 0.20))
+    };
+  }
+  function pickWeightedClassic(list, stageIdx, adapt = null) {
     if (list.length <= 1) return list[0];
     const streamMap = getClassicStreamMap();
     const band = CLASSIC_STAGE_BANDS[Math.max(0, Math.min(stageIdx, CLASSIC_STAGE_BANDS.length - 1))];
-    const exp = band ? band.exp : 1.1;
+    const exp = Math.max(0.75, (band ? band.exp : 1.1) + (adapt ? adapt.expDelta : 0));
+    if (stageIdx >= 4 && streamMap.size) {
+      const streamed = [];
+      const unstreamed = [];
+      for (let i = 0; i < list.length; i++) {
+        const s = list[i];
+        const real = (s.trackId && streamMap.get(String(s.trackId))) || 0;
+        if (real > 0) streamed.push(s);
+        else unstreamed.push(s);
+      }
+      if (streamed.length && unstreamed.length) {
+        const t5Chance = adapt ? adapt.t5Chance : 0.35;
+        if (Math.random() < t5Chance) {
+          const topArtists = getClassicTopArtists();
+          let uTotal = 0;
+          const uWeights = new Array(unstreamed.length);
+          for (let i = 0; i < unstreamed.length; i++) {
+            const s = unstreamed[i];
+            const isSkit = /^\s*(?:intro|outro|interlude)\b/i.test(s.title);
+            const w = (topArtists.has(s.artist) ? 2.5 : 1.0) * (isSkit ? 0.35 : 1.0);
+            uWeights[i] = w;
+            uTotal += w;
+          }
+          let uRoll = Math.random() * uTotal;
+          for (let i = 0; i < unstreamed.length; i++) {
+            uRoll -= uWeights[i];
+            if (uRoll <= 0) return unstreamed[i];
+          }
+          return unstreamed[unstreamed.length - 1];
+        }
+        list = streamed;
+      }
+    }
     let total = 0;
     const weights = new Array(list.length);
     for (let i = 0; i < list.length; i++) {
@@ -1313,11 +1380,12 @@
       const streamMap = getClassicStreamMap();
       const bIdx = stageBandIdx(stageIdx);
       const band = CLASSIC_STAGE_BANDS[Math.max(0, Math.min(bIdx, CLASSIC_STAGE_BANDS.length - 1))];
+      const adapt = getClassicAdaptiveProfile();
       if (streamMap.size && band) {
         const rankMeta = band.t5TopRank > 0 && band.t5TopRank < Infinity ? getClassicRankMeta(streamMap) : null;
-        const matchesBand = (s, strictMax) => {
+        const matchesBand = (s, strictMax, minFloor) => {
           const st = (s.trackId && streamMap.get(String(s.trackId))) || 0;
-          if (st > 0) return st >= band.min && (!strictMax || st <= band.max);
+          if (st > 0) return st >= minFloor && (!strictMax || st <= band.max);
           if (band.unstreamedMaxTier > 0 && s.tier <= band.unstreamedMaxTier) return true;
           if (band.t5TopRank > 0 && s.tier === 5) {
             if (band.t5TopRank === Infinity) return true;
@@ -1326,14 +1394,19 @@
           }
           return false;
         };
-        let inBand = src.filter((s) => matchesBand(s, true));
-        if (inBand.length < 12) inBand = src.filter((s) => matchesBand(s, false));
+        let inBand = src.filter((s) => matchesBand(s, true, band.min));
+        if (bIdx < 4 && adapt.floorMult > 1.01 && inBand.length >= 24) {
+          const nudged = inBand.filter((s) => matchesBand(s, true, band.min * adapt.floorMult));
+          if (nudged.length >= 24) inBand = nudged;
+        }
+        if (inBand.length < 12 && band.min > 0) inBand = src.filter((s) => matchesBand(s, true, band.min * 0.6));
+        if (inBand.length < 12) inBand = src.filter((s) => matchesBand(s, false, band.min * 0.6));
         if (inBand.length >= 12) {
           if (used.length && inBand.length > 4) {
             const diverse = inBand.filter((s) => used.every((u) => !sameArtist(s, u)));
             if (diverse.length >= 4) inBand = diverse;
           }
-          return pickWeightedClassic(inBand, bIdx);
+          return pickWeightedClassic(inBand, bIdx, adapt);
         }
       }
       const tiers = [...new Set(src.map((s) => s.tier).filter(Boolean))].sort((a, b) => a - b);
@@ -1359,10 +1432,8 @@
             if (srcStreamed.length >= 5) {
               byTier = srcStreamed;
             } else if (byTier.length > 40) {
-              if (!classicTopArtists) {
-                classicTopArtists = new Set(ALL.filter((s) => s.tier <= 2).map((s) => s.artist));
-              }
-              const fair = byTier.filter((s) => classicTopArtists.has(s.artist) && !/^\s*(?:intro|outro|interlude)\b/i.test(s.title));
+              const topArtists = getClassicTopArtists();
+              const fair = byTier.filter((s) => topArtists.has(s.artist) && !/^\s*(?:intro|outro|interlude)\b/i.test(s.title));
               if (fair.length >= 16) byTier = fair;
             }
           }
@@ -1371,7 +1442,7 @@
           const diverse = byTier.filter((s) => used.every((u) => !sameArtist(s, u)));
           if (diverse.length >= 4) byTier = diverse;
         }
-        if (byTier.length) return pickWeightedClassic(byTier, bIdx);
+        if (byTier.length) return pickWeightedClassic(byTier, bIdx, adapt);
       }
     }
     return src[Math.floor(Math.random() * src.length)];

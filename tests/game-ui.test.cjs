@@ -107,7 +107,7 @@ function setupGame(options = {}) {
   vm.runInContext(fs.readFileSync(path.join(root, 'challenge.js'), 'utf8'), ctx);
   const src = fs.readFileSync(path.join(root, 'app.js'), 'utf8')
     .split('  /* ================= event ================= */')[0];
-  vm.runInContext(src + '\nglobalThis.test={S,ALL,UI,slug,submitGuess,skip,searchIndex,startCustom,openCustom,clearRecentArtists,refreshPopularArtists,surprisePopularArtist,POPULAR_ARTISTS,localArtistMatches,dailyStats,allClassicStats,songStreak,finish,pickSong,showIncomingChallenge,filtered,computePoolForStage,isClassicEnglishSong,normalizeMulti,toggleMulti,formatMulti,GENRE_KEYS,ERA_KEYS,genreLabel,eraLabel};})();', ctx);
+  vm.runInContext(src + '\nglobalThis.test={S,ALL,UI,slug,submitGuess,skip,searchIndex,startCustom,openCustom,clearRecentArtists,refreshPopularArtists,surprisePopularArtist,POPULAR_ARTISTS,localArtistMatches,dailyStats,allClassicStats,songStreak,finish,pickSong,getClassicAdaptiveProfile,showIncomingChallenge,filtered,computePoolForStage,isClassicEnglishSong,normalizeMulti,toggleMulti,formatMulti,GENRE_KEYS,ERA_KEYS,genreLabel,eraLabel};})();', ctx);
   return { t: ctx.test, nodes, storage, ctx, tabNodes };
 }
 
@@ -824,4 +824,70 @@ test('Wave 140/142 polish: English-only Daily pool, fair Classic curve, silent p
     assert.ok(p.tier <= 3 || st >= 280000000, `Classic Hard must stay inside recognizable hits, got ${p.artist} - ${p.title} (T${p.tier}, ${st})`);
     assert.ok(!['1440892167', '1754219314', '1694794945', '1065973980', '1433828082', '1572046440', '1754024626', '1582691808'].includes(String(p.trackId)));
   }
+});
+
+test('Wave 143 Classic Option 1 + Option 2: sharper hits curve, 65/35 Impossible split, and invisible adaptive difficulty', () => {
+  const realCtx = { window: {} };
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'songs.js'), 'utf8'), realCtx);
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'duel-streams-v1.js'), 'utf8'), realCtx);
+
+  const { t, ctx, storage } = setupGame({ songs: realCtx.window.SONGS });
+  ctx.window.DUEL_STREAMS_V1 = realCtx.window.DUEL_STREAMS_V1;
+  const stMap = new Map(realCtx.window.DUEL_STREAMS_V1.items.map(([id, st]) => [String(id), st]));
+
+  // 1. Brand-new player gets welcoming baseline
+  t.S.genre = 'all';
+  t.S.era = 'all';
+  t.S.stages = [];
+  const freshProf = t.getClassicAdaptiveProfile();
+  assert.ok(freshProf.skill < 0, 'brand-new player should start with welcoming skill bias');
+  assert.ok(freshProf.t5Chance >= 0.25 && freshProf.t5Chance <= 0.35, `unexpected fresh t5Chance: ${freshProf.t5Chance}`);
+
+  // 2. Struggling player (low avg + lost Stage 1) gets gentler hits bias & lower Stage 5 T5 deep-cut rate
+  storage.set('tl:stats:gl:all:all', JSON.stringify({ runs: 5, total: 8, best: 2, perfect: 0, dist: [0, 2, 3, 0, 0, 0] }));
+  t.S.stages = [{ done: true, won: false, slug: 'x', title: 'X', artist: 'Y' }];
+  const lowProf = t.getClassicAdaptiveProfile();
+  assert.ok(lowProf.skill <= -0.8, `expected struggling skill <= -0.8, got ${lowProf.skill}`);
+  assert.ok(lowProf.expDelta >= 0.6, `expected steeper hit bias for struggling player, got ${lowProf.expDelta}`);
+  assert.ok(lowProf.floorMult >= 1.15, `expected soft floor nudge for struggling player, got ${lowProf.floorMult}`);
+  assert.ok(lowProf.t5Chance <= 0.20, `expected <=20% Stage 5 T5 share when struggling, got ${lowProf.t5Chance}`);
+
+  // 3. Veteran on 4/4 hot streak gets broader variety & true Stage 5 T5 boss rate (~55%)
+  storage.set('tl:stats:gl:all:all', JSON.stringify({ runs: 10, total: 46, best: 5, perfect: 6, dist: [0, 0, 0, 0, 4, 6] }));
+  storage.set('tl:streak:classic', JSON.stringify({ current: 9, best: 12 }));
+  t.S.stages = Array.from({ length: 4 }, (_, i) => ({ done: true, won: true, slug: 'w' + i, title: 'W' + i, artist: 'A' + i }));
+  const proProf = t.getClassicAdaptiveProfile();
+  assert.ok(proProf.skill >= 0.9, `expected veteran hot-streak skill >= 0.9, got ${proProf.skill}`);
+  assert.ok(proProf.expDelta <= -0.65, `expected wider variety exponent for pro, got ${proProf.expDelta}`);
+  assert.ok(proProf.t5Chance >= 0.50, `expected >=50% Stage 5 T5 boss share for hot pro, got ${proProf.t5Chance}`);
+
+  // 4. Monte Carlo on real 33.7k catalog Stage 5: struggling player draws far more streamed hits than obscure T5, while pro draws both
+  t.S.stage = 4;
+  t.S.pool = t.computePoolForStage(4).pool;
+
+  // Struggling scenario
+  storage.set('tl:stats:gl:all:all', JSON.stringify({ runs: 5, total: 7, best: 2, perfect: 0, dist: [0, 3, 2, 0, 0, 0] }));
+  storage.set('tl:streak:classic', JSON.stringify({ current: 0, best: 2 }));
+  t.S.stages = [
+    { done: true, won: false, slug: 's0', title: 'S0', artist: 'A0' },
+    { done: true, won: false, slug: 's1', title: 'S1', artist: 'A1' }
+  ];
+  let lowUnstr = 0;
+  for (let i = 0; i < 300; i++) {
+    const p = t.pickSong(0);
+    if (!stMap.get(String(p.trackId))) lowUnstr++;
+  }
+  assert.ok(lowUnstr >= 15 && lowUnstr <= 95, `struggling Stage 5 should draw ~15% T5 deep cuts (expected 15..95/300), got ${lowUnstr}`);
+
+  // Hot-streak veteran scenario
+  storage.set('tl:stats:gl:all:all', JSON.stringify({ runs: 10, total: 46, best: 5, perfect: 6, dist: [0, 0, 0, 0, 4, 6] }));
+  storage.set('tl:streak:classic', JSON.stringify({ current: 9, best: 12 }));
+  t.S.stages = Array.from({ length: 4 }, (_, i) => ({ done: true, won: true, slug: 'w' + i, title: 'W' + i, artist: 'A' + i }));
+  let proUnstr = 0;
+  for (let i = 0; i < 300; i++) {
+    const p = t.pickSong(0);
+    if (!stMap.get(String(p.trackId))) proUnstr++;
+  }
+  assert.ok(proUnstr >= 115 && proUnstr <= 215, `hot-streak Stage 5 should draw ~55% T5 deep cuts (expected 115..215/300), got ${proUnstr}`);
+  assert.ok(proUnstr > lowUnstr + 40, `pro Stage 5 T5 share (${proUnstr}/300) should clearly exceed struggling share (${lowUnstr}/300)`);
 });
