@@ -1579,16 +1579,9 @@
       : '';
     const volHtml = (trackId || ytId) ? '<div class="vol-slot mg-vol-slot" id="mgVolSlot"></div>' : '';
     const startSec = Math.max(0, Math.floor(Number(lyricStart) || 0));
-    const ytUrl = ytId ? `https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}${startSec > 0 ? `&t=${startSec}s` : ''}` : '';
     const useYt = Boolean(gameId === 'lyric' && ytId && bridge && bridge.playLyricAudio);
     const ytWrapHtml = useYt
       ? `<div class="mg-yt-wrap" id="mgYtWrap">` +
-          `<div class="mg-yt-bar">` +
-            `<div class="mg-yt-bar-acts">` +
-              `<button type="button" class="mg-yt-restart" id="mgYtRestart">↺ ${esc(t('Restart', 'Reiniciar'))}</button>` +
-              `<a id="mgYtLink" class="mg-yt-ext-link" href="${ytUrl}" target="_blank" rel="noopener noreferrer">YouTube ↗</a>` +
-            `</div>` +
-          `</div>` +
           `<div class="mg-yt-frame" id="mgYtHost"></div>` +
         `</div>`
       : '';
@@ -1638,10 +1631,6 @@
         artEl.src = safeSvg;
       };
     }
-    const ytLink = $('#mgYtLink');
-    if (ytLink && bridge && bridge.stopAudio) {
-      ytLink.onclick = () => bridge.stopAudio();
-    }
     const bindPreviewArt = (autoPlay) => {
       if (trackId && artEl && bridge && bridge.playTrackPreview) {
         const toggle = () => bridge.playTrackPreview(trackId, artEl, { auto: false });
@@ -1656,7 +1645,6 @@
       if (bridge.dockMiniVolume) bridge.dockMiniVolume();
       const ytWrap = $('#mgYtWrap');
       const ytHost = $('#mgYtHost');
-      const ytRestart = $('#mgYtRestart');
       if (useYt && ytWrap && ytHost) {
         const handleYtFallback = () => {
           ytWrap.hidden = true;
@@ -1668,9 +1656,6 @@
           artEl.onkeydown = (e) => {
             if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); toggleYt(); }
           };
-        }
-        if (ytRestart) {
-          ytRestart.onclick = () => bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: false, restart: true, onFallback: handleYtFallback });
         }
         bridge.playLyricAudio({ trackId, ytId, startSec, hostEl: ytHost, artEl, auto: true, onFallback: handleYtFallback });
       } else {
@@ -2766,8 +2751,6 @@
         else if (gId === 'hair') { $('#mgSubtitle').textContent = t('Guess the musician from their hairstyle', 'Adivina al músico por su peinado'); updateHairCurtain(true); }
         else if (gId === 'lyric') {
           renderLyricLines(true);
-          const ytRes = $('#mgYtRestart');
-          if (ytRes) ytRes.textContent = `↺ ${t('Restart', 'Reiniciar')}`;
         }
       }
     }
