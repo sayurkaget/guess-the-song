@@ -788,14 +788,14 @@ test('Wave 139 Classic mode enforces English-only across all filters and expands
   }
 });
 
-test('Wave 140 polish: English-only Daily pool, Hits Only toggle, silent preview skips, and .ag-* internal cleanup', () => {
+test('Wave 140/142 polish: English-only Daily pool, fair Classic curve, silent preview skips, and .ag-* internal cleanup', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const css = fs.readFileSync(path.join(root, 'layout.css'), 'utf8');
   const appCode = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
   assert.doesNotMatch(html, /spotle-/);
   assert.doesNotMatch(css, /spotle-/);
   assert.doesNotMatch(appCode, /spotle-/);
-  assert.match(html, /id="classicFocusSeg"[\s\S]*data-focus="ladder"[\s\S]*data-focus="hits"/);
+  assert.doesNotMatch(html, /id="classicFocusSeg"/);
 
   const realCtx = { window: {} };
   vm.runInNewContext(fs.readFileSync(path.join(root, 'songs.js'), 'utf8'), realCtx);
@@ -811,18 +811,17 @@ test('Wave 140 polish: English-only Daily pool, Hits Only toggle, silent preview
     assert.equal(t.isClassicEnglishSong({ title: row[0], artist: row[1] }), true, `Daily pool non-English leak: ${row[1]} - ${row[0]}`);
   }
 
-  // Hits Only keeps Stage 5 inside Hard hits (Easy->Easy->Medium->Medium->Hard), never drawing unstreamed obscure deep cuts
+  // Fair Classic Hard stage (stage 2) stays inside recognizable hits without unstreamed Tier-5 bloat or silent-intro skips
   t.S.genre = 'all';
   t.S.era = 'all';
-  t.S.focus = 'hits';
-  t.S.stage = 4;
+  t.S.stage = 2;
   t.S.stages = [];
-  t.S.pool = t.computePoolForStage(4).pool;
+  t.S.pool = t.computePoolForStage(2).pool;
   const stMap = new Map(realCtx.window.DUEL_STREAMS_V1.items.map(([id, st]) => [String(id), st]));
   for (let i = 0; i < 40; i++) {
     const p = t.pickSong(0);
     const st = stMap.get(String(p.trackId)) || 0;
-    assert.ok(p.tier <= 3 || st >= 280000000, `Hits Only Stage 5 must stay inside recognizable hits, got ${p.artist} - ${p.title} (T${p.tier}, ${st})`);
+    assert.ok(p.tier <= 3 || st >= 280000000, `Classic Hard must stay inside recognizable hits, got ${p.artist} - ${p.title} (T${p.tier}, ${st})`);
     assert.ok(!['1440892167', '1754219314', '1694794945', '1065973980', '1433828082', '1572046440', '1754024626', '1582691808'].includes(String(p.trackId)));
   }
 });

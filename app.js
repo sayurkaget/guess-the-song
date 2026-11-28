@@ -22,9 +22,8 @@
     impossible: { label: 'Impossible', tiers: [4, 5] }
   };
   // urutan tahap dalam satu sesi
-  const ORDER      = ['easy', 'medium', 'hard', 'expert', 'impossible'];
-  const HITS_ORDER = ['easy', 'easy', 'medium', 'medium', 'hard'];
-  const STAGES     = ORDER.length;
+  const ORDER  = ['easy', 'medium', 'hard', 'expert', 'impossible'];
+  const STAGES = ORDER.length;
 
   const GENRES  = {
     all: 'All genres', pop: 'Pop', rock: 'Rock', hiphop: 'Hip-hop',
@@ -236,7 +235,6 @@
   const S = {
     genre:  LS.get('tl:genre', 'all'),
     era:    LS.get('tl:era', 'all'),
-    focus:  LS.get('tl:focus', 'ladder') === 'hits' ? 'hits' : 'ladder',
     vol:    LS.get('tl:vol', 0.8),
     muted:  LS.get('tl:muted', false),
 
@@ -260,8 +258,9 @@
     custom: null     // mode artis kustom: {id,label,songs[]} -- null = mode katalog biasa
   };
 
-  // Pilihan region lama tidak lagi berlaku; statistik Western tetap memakai kunci gl.
+  // Pilihan region & focus lama tidak lagi berlaku; statistik Western tetap memakai kunci gl.
   LS.del('tl:region');
+  LS.del('tl:focus');
   S.genre = normalizeMulti(S.genre, GENRE_KEYS);
   S.era = normalizeMulti(S.era, ERA_KEYS);
 
@@ -270,17 +269,10 @@
     : S.challenge ? 'challenge:' + S.challenge.id
     : S.runChallenge ? 'run:' + S.runChallenge.ids.join('-')
     : S.custom ? 'custom:' + S.custom.id
-    : ('gl:' + (S.focus === 'hits' ? 'hits:' : '') + S.genre + ':' + S.era);
+    : ('gl:' + S.genre + ':' + S.era);
 
-  const stageDiffKey = (idx) => {
-    const ord = (!S.daily && !S.custom && !S.challenge && !S.runChallenge && S.focus === 'hits') ? HITS_ORDER : ORDER;
-    return ord[Math.min(idx, ord.length - 1)];
-  };
-  const stageBandIdx = (idx) => {
-    const k = stageDiffKey(idx);
-    const i = ORDER.indexOf(k);
-    return i >= 0 ? i : Math.min(idx, ORDER.length - 1);
-  };
+  const stageDiffKey = (idx) => ORDER[Math.min(idx, ORDER.length - 1)];
+  const stageBandIdx = (idx) => Math.min(idx, ORDER.length - 1);
   const D       = () => DIFFS[stageDiffKey(S.stage)];
   const ladder  = () => LADDER;
   const maxLen  = () => ladder()[TRIES - 1];
@@ -3456,29 +3448,6 @@
       };
       setupFilter('genre', GENRES, GENRE_KEYS, 'tl:genre', genreLabel);
       setupFilter('era',   ERAS,   ERA_KEYS,   'tl:era',   eraLabel);
-      const focusSeg = $('#classicFocusSeg');
-      if (focusSeg && typeof focusSeg.querySelectorAll === 'function') {
-        const btns = focusSeg.querySelectorAll('[data-focus]');
-        for (let i = 0; i < btns.length; i++) {
-          const on = btns[i].dataset.focus === S.focus;
-          btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
-          btns[i].setAttribute('aria-checked', on ? 'true' : 'false');
-        }
-        if (!focusSeg._wired) {
-          focusSeg._wired = true;
-          focusSeg.addEventListener('click', (e) => {
-            const b = e.target && typeof e.target.closest === 'function' ? e.target.closest('[data-focus]') : null;
-            if (!b) return;
-            const next = b.dataset.focus === 'hits' ? 'hits' : 'ladder';
-            if (next === S.focus) return;
-            S.focus = next;
-            LS.set('tl:focus', next);
-            switchRun();
-            UI.buildControls();
-            UI.refreshLobby();
-          });
-        }
-      }
     },
 
     /* --- rangkaian tahap --- */
@@ -3647,7 +3616,6 @@
         : S.runChallenge ? (S.runChallenge.artistLabel ? 'Friend challenge · ' + S.runChallenge.artistLabel : 'Friend challenge')
         : S.custom ? S.custom.label
         : [
-          S.focus === 'hits' ? (I18N ? tr('focusHits') : 'Hits Only') : null,
           S.genre === 'all' ? null : formatMulti(S.genre, GENRE_KEYS, genreLabel, 2),
           S.era === 'all' ? null : formatMulti(S.era, ERA_KEYS, eraLabel, 2)
         ].filter(Boolean).join(' · ');
@@ -3683,8 +3651,7 @@
       } else {
         const q = encodeQuery([
           ['genre', S.genre !== 'all' ? S.genre : ''],
-          ['era', S.era !== 'all' ? S.era : ''],
-          ['focus', S.focus === 'hits' ? 'hits' : '']
+          ['era', S.era !== 'all' ? S.era : '']
         ]);
         const modeTitle = $('#gameMode').textContent;
         syncRoute('classic', {
@@ -4066,7 +4033,6 @@
           modeTag.textContent = (I18N ? tr('customTag') : 'Custom') + ' · ' + (S.custom.label || (I18N ? tr('tabArtistStat') : 'Artist'));
         } else {
           const parts = [];
-          if (S.focus === 'hits') parts.push(I18N ? tr('focusHits') : 'Hits Only');
           if (S.genre !== 'all') parts.push(formatMulti(S.genre, GENRE_KEYS, genreLabel, 2));
           if (S.era !== 'all') parts.push(formatMulti(S.era, ERA_KEYS, eraLabel, 2));
           modeTag.textContent = 'Classic · ' + (parts.length ? parts.join(' · ') : (count + ' ' + unitStage));
@@ -4410,7 +4376,6 @@
     }
     if (S.custom) return S.custom.label;
     const tags = [
-      S.focus === 'hits' ? 'Hits Only' : null,
       S.genre === 'all' ? null : formatMulti(S.genre, GENRE_KEYS, genreLabel, 2),
       S.era === 'all' ? null : formatMulti(S.era, ERA_KEYS, eraLabel, 2)
     ].filter(Boolean);
@@ -4897,7 +4862,6 @@
     settings.lang = I18N ? I18N.load(localStorage) : 'en';
     S.genre = normalizeMulti(LS.get('tl:genre', 'all'), GENRE_KEYS);
     S.era = normalizeMulti(LS.get('tl:era', 'all'), ERA_KEYS);
-    S.focus = LS.get('tl:focus', 'ladder') === 'hits' ? 'hits' : 'ladder';
     const v = Number(LS.get('tl:vol', 0.8));
     S.vol = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.8;
     S.muted = !!LS.get('tl:muted', false);
@@ -8003,11 +7967,9 @@
     };
     const g = parseParamMulti(params.get('genre'), genreAliases, GENRE_KEYS);
     const e = parseParamMulti(params.get('era'), eraAliases, ERA_KEYS);
-    const fParam = (params.get('focus') || '').trim().toLowerCase();
     let changed = false;
     if (g) { S.genre = g; LS.set('tl:genre', g); changed = true; }
     if (e) { S.era = e; LS.set('tl:era', e); changed = true; }
-    if (fParam === 'hits' || fParam === 'ladder') { S.focus = fParam; LS.set('tl:focus', fParam); changed = true; }
     if (changed) {
       switchRun();
       UI.buildControls();

@@ -63,7 +63,7 @@ for (const file of buildOrder) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v168-wave141-clean-lyric-yt'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v169-wave142-clean-classic-bar'");
     if (esbuild && MINIFY_CSS.has(file)) {
       contents = esbuild.transformSync(contents, { loader: 'css', minify: true, legalComments: 'none' }).code;
     } else if (esbuild && MINIFY_JS.has(file)) {

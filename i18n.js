@@ -37,10 +37,6 @@
       viewResult: 'See result',
       classicHeading: 'Classic',
       stages5: '5 stages',
-      focusLadder: '5-Stage',
-      focusLadderSub: 'Easy–Impossible',
-      focusHits: 'Hits Only',
-      focusHitsSub: 'Easy–Hard',
       tabFilters: 'Genre & Era',
       tabArtist: 'By Artist',
       tabPlaylist: 'Playlists',
@@ -557,10 +553,6 @@
       viewResult: 'Ver resultado',
       classicHeading: 'Clásico',
       stages5: '5 rondas',
-      focusLadder: '5 etapas',
-      focusLadderSub: 'Fácil–Imposible',
-      focusHits: 'Solo éxitos',
-      focusHitsSub: 'Fácil–Difícil',
       tabFilters: 'Género y Época',
       tabArtist: 'Por Artista',
       tabPlaylist: 'Playlists',
@@ -1138,10 +1130,6 @@
     if (!$('#classicSpotifyPanel') || $('#classicSpotifyPanel').hidden) {
       setText($('.classic-title-group .mode-pill'), 'stages5');
     }
-    setText($('#classicFocusLadderLbl'), 'focusLadder');
-    setText($('#classicFocusLadderSub'), 'focusLadderSub');
-    setText($('#classicFocusHitsLbl'), 'focusHits');
-    setText($('#classicFocusHitsSub'), 'focusHitsSub');
     setText($('#classicTabs [data-classic-tab="filters"]'), 'tabFilters');
     setText($('#classicTabs [data-classic-tab="artist"]'), 'tabArtist');
     setText($('#classicTabs [data-classic-tab="spotify"]'), 'tabPlaylist');

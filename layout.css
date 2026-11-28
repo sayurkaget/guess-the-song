@@ -186,15 +186,7 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
 #lobby .drop select:hover{background:rgba(255,255,255,.085)}
 #lobby .drop select[data-on="1"]{background:rgba(255,255,255,.1);border-color:rgba(var(--acc-rgb),.42);color:var(--ink)}
 #lobby .start{margin:0;width:100%;min-height:46px;padding:.65rem 1rem;box-shadow:none;font-size:.88rem}
-#lobby .classic-focus-row{margin:.7rem 0 0;display:flex;align-items:center;justify-content:space-between;gap:.65rem;flex-wrap:wrap}
-#lobby .classic-focus-seg{display:inline-flex;padding:3px;gap:3px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
-#lobby .classic-focus-seg button{display:inline-flex;align-items:baseline;gap:.38rem;padding:.3rem .72rem;border-radius:999px;font-size:.75rem;font-weight:700;color:var(--dim);background:transparent;border:0;cursor:pointer;transition:background .15s,color .15s}
-#lobby .classic-focus-seg button small{font-size:.66rem;font-weight:600;opacity:.72}
-#lobby .classic-focus-seg button:hover{color:var(--ink)}
-#lobby .classic-focus-seg button[aria-pressed="true"]{background:rgba(var(--acc-rgb),.18);color:var(--acc-l)}
-#lobby .classic-focus-seg button[data-focus="hits"][aria-pressed="true"]{background:rgba(245,177,61,.18);color:#ffd27d}
-#lobby .classic-focus-seg button[aria-pressed="true"] small{opacity:.9}
-#lobby .poolinfo{margin:0;min-height:0;text-align:right;line-height:1.45;font-size:.78rem;color:var(--dim)}
+#lobby .poolinfo{margin:.55rem 0 0;min-height:0;text-align:left;line-height:1.45;font-size:.78rem;color:var(--dim)}
 #lobby .poolinfo.warn{color:var(--warn)}
 #lobby .artist-panel{
   display:grid;grid-template-columns:minmax(0,1fr) 172px;align-items:center;gap:1.2rem;
@@ -321,11 +313,7 @@ body[data-anim="off"] #lobby .multi-menu{animation:none}
   #lobby .subcontrols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.52rem}
   #lobby .drop{max-width:none}
   #lobby .start{width:100%;min-height:42px}
-  #lobby .classic-focus-row{margin-top:.55rem;gap:.45rem}
-  #lobby .classic-focus-seg{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
-  #lobby .classic-focus-seg button{justify-content:center;padding:.34rem .45rem;font-size:.72rem;gap:.26rem;flex-wrap:wrap}
-  #lobby .classic-focus-seg button small{font-size:.62rem}
-  #lobby .poolinfo{width:100%;text-align:left}
+  #lobby .poolinfo{margin-top:.48rem;text-align:left}
   #lobby .artist-panel{grid-template-columns:1fr;gap:.62rem}
   #lobby .arcade-row{gap:.48rem;margin-bottom:.48rem}
   #lobby .arcade-row .duel-card-wide{grid-template-columns:32px minmax(0,1fr) 28px;padding:.68rem .76rem;gap:.56rem}
