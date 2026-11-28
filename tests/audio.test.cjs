@@ -99,3 +99,97 @@ test('a failed retry never substitutes a different song',async()=>{
   assert.equal(t.S.retrySong,song);
   await t.api.load(t.S.song || t.S.retrySong);assert.equal(count,2);assert.equal(t.S.retrySong,song);
 });
+
+test('Wave 144 background audio: unsolved clips pause on hide, revealed tracks keep playing, OS pause & cross-tab focus sync cleanly', async () => {
+  const docListeners = new Map();
+  const channels = [];
+  const handlers = new Map();
+  const mediaSession = {
+    metadata: null,
+    playbackState: 'none',
+    setActionHandler(name, fn) { handlers.set(name, fn); }
+  };
+  class FakeBroadcastChannel {
+    constructor(name) { this.name = name; this.onmessage = null; channels.push(this); }
+    postMessage(data) {
+      for (const ch of channels) {
+        if (ch !== this && ch.name === this.name && ch.onmessage) ch.onmessage({ data });
+      }
+    }
+  }
+  class FakeMediaMetadata { constructor(init) { Object.assign(this, init); } }
+
+  const makeTab = () => {
+    const listeners = new Map(), timers = new Map(), nodes = new Map(), states = [], messages = [];
+    let timerId = 0;
+    const node = id => { if (!nodes.has(id)) nodes.set(id, { hidden: true }); return nodes.get(id); };
+    node('#game').hidden = false;
+    const audio = {
+      currentTime: 0, duration: 30, volume: .8, ended: false, playCalls: 0, pauseCalls: 0,
+      addEventListener(type, fn) { if (!listeners.has(type)) listeners.set(type, new Set()); listeners.get(type).add(fn); },
+      removeEventListener(type, fn) { listeners.get(type)?.delete(fn); },
+      emit(type) { for (const fn of [...(listeners.get(type) || [])]) fn(); },
+      load() {}, pause() { this.pauseCalls++; }, play() { this.playCalls++; return Promise.resolve(); },
+    };
+    const song = { slug: 'blinding-lights', title: 'Blinding Lights', artist: 'The Weeknd', art: 'https://img.test/bl.jpg' };
+    const meta = { preview: 'https://audio.test/bl.m4a', art: 'https://img.test/bl.jpg' };
+    const S = { epoch: 0, vol: .8, muted: false, meta, song, loading: false, audioFailed: false, done: false, guesses: [], stages: [], stage: 0, pool: [song] };
+    const tabDocListeners = new Map();
+    const doc = {
+      hidden: false,
+      addEventListener(type, fn) { if (!tabDocListeners.has(type)) tabDocListeners.set(type, new Set()); tabDocListeners.get(type).add(fn); },
+      emit(type) { for (const fn of [...(tabDocListeners.get(type) || [])]) fn(); }
+    };
+    const context = {
+      audio, S, Promise, DOMException, Error, Math, isFinite, $: node,
+      navigator: { mediaSession }, MediaMetadata: FakeMediaMetadata, BroadcastChannel: FakeBroadcastChannel,
+      UI: { head() {}, readout() {}, render() {}, result() {}, playState: s => states.push(s), status: (s, err) => messages.push({ s, err }) },
+      setTimeout(fn, ms) { const id = ++timerId; timers.set(id, { fn, ms }); return id; }, clearTimeout: id => timers.delete(id),
+      requestAnimationFrame: () => 1, cancelAnimationFrame() {}, limit: () => .1, maxLen: () => 15,
+      document: doc, buildPool() {}, findSong: () => song, pickSong: () => song,
+      resolve: async () => meta, trackActivity() {}, saveRun() {}, fmt: n => n + 's',
+    };
+    vm.createContext(context);
+    vm.runInContext(audioCode + loadCode + eventCode + '\nglobalThis.api={loadAudioMetadata,playClip,stopAudio,load};', context);
+    return { api: context.api, audio, S, doc, states };
+  };
+
+  const tabA = makeTab();
+  const tabB = makeTab();
+
+  // 1. Unsolved clip hides title/artist from OS MediaSession and auto-pauses when switching tabs
+  tabA.S.done = false;
+  await tabA.api.playClip();
+  assert.equal(tabA.states.at(-1), 'playing');
+  assert.equal(mediaSession.metadata.title, 'TuneUp');
+  assert.equal(mediaSession.metadata.artist, 'Guess the Song');
+  tabA.doc.hidden = true;
+  tabA.doc.emit('visibilitychange');
+  assert.equal(tabA.states.at(-1), 'idle', 'unsolved guessing clip must pause on tab hide');
+
+  // 2. Revealed full song exposes real metadata AND keeps playing when switching tabs / minimizing
+  tabA.doc.hidden = false;
+  tabA.S.done = true;
+  await tabA.api.playClip();
+  assert.equal(tabA.states.at(-1), 'playing');
+  assert.equal(mediaSession.metadata.title, 'Blinding Lights');
+  assert.equal(mediaSession.metadata.artist, 'The Weeknd');
+  tabA.doc.hidden = true;
+  tabA.doc.emit('visibilitychange');
+  assert.equal(tabA.states.at(-1), 'playing', 'revealed song should continue playing in background');
+
+  // 3. External OS Audio Focus pause event syncs UI back to idle cleanly without recursion
+  const pausesBefore = tabA.audio.pauseCalls;
+  tabA.audio.emit('pause');
+  assert.equal(tabA.states.at(-1), 'idle');
+  assert.equal(tabA.audio.pauseCalls, pausesBefore + 1);
+  assert.equal(mediaSession.playbackState, 'paused');
+
+  // 4. Starting playback in Tab B automatically pauses Tab A via BroadcastChannel
+  await tabA.api.playClip();
+  assert.equal(tabA.states.at(-1), 'playing');
+  tabB.S.done = true;
+  await tabB.api.playClip();
+  assert.equal(tabB.states.at(-1), 'playing');
+  assert.equal(tabA.states.at(-1), 'idle', 'playing in Tab B must auto-pause Tab A');
+});

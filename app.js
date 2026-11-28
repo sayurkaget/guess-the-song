@@ -995,6 +995,63 @@
 
   let raf = 0, playing = false, playPending = false, playbackEpoch = 0;
   let cancelAudioLoad = null, cancelPendingPlay = null, bufferTimer = 0;
+  const AUDIO_TAB_ID = Math.random().toString(36).slice(2);
+  let audioChannel = null, mediaSessionResume = null, mediaSessionPause = null, pauseMiniAudio = null;
+
+  function pauseAllTabAudio() {
+    if (playing || playPending) stopAudio();
+    if (typeof stopDuelAudio === 'function') stopDuelAudio();
+    if (typeof stopArtistAudio === 'function') stopArtistAudio();
+    if (typeof stopSummaryPreview === 'function') stopSummaryPreview();
+    if (typeof pauseMiniAudio === 'function') pauseMiniAudio();
+  }
+
+  function ensureAudioChannel() {
+    if (audioChannel || typeof BroadcastChannel !== 'function') return audioChannel;
+    try {
+      audioChannel = new BroadcastChannel('tuneup-audio-v1');
+      audioChannel.onmessage = (e) => {
+        const msg = e && e.data;
+        if (msg && msg.type === 'claim' && msg.tab !== AUDIO_TAB_ID) pauseAllTabAudio();
+      };
+    } catch (e) {}
+    return audioChannel;
+  }
+
+  function clearMediaSessionState(state = 'paused') {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.mediaSession) {
+        navigator.mediaSession.playbackState = state;
+      }
+    } catch (e) {}
+  }
+
+  function claimAudioFocus(info = {}) {
+    const ch = ensureAudioChannel();
+    if (ch) {
+      try { ch.postMessage({ type: 'claim', tab: AUDIO_TAB_ID }); } catch (e) {}
+    }
+    mediaSessionResume = typeof info.onPlay === 'function' ? info.onPlay : null;
+    mediaSessionPause = typeof info.onPause === 'function' ? info.onPause : null;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.mediaSession) {
+        const ms = navigator.mediaSession;
+        if (typeof MediaMetadata === 'function') {
+          const art = info.art || '';
+          ms.metadata = new MediaMetadata({
+            title: info.title || 'TuneUp',
+            artist: info.artist || 'Guess the Song',
+            album: 'TuneUp',
+            artwork: art ? [{ src: art, sizes: '300x300', type: 'image/jpeg' }] : []
+          });
+        }
+        ms.playbackState = 'playing';
+        ms.setActionHandler('play', () => { if (mediaSessionResume) mediaSessionResume(); });
+        ms.setActionHandler('pause', () => { if (mediaSessionPause) mediaSessionPause(); else pauseAllTabAudio(); });
+        ms.setActionHandler('stop', () => { if (mediaSessionPause) mediaSessionPause(); else pauseAllTabAudio(); });
+      }
+    } catch (e) {}
+  }
 
   function loadAudioMetadata(src) {
     return new Promise((resolve, reject) => {
@@ -1057,6 +1114,7 @@
     if (UI.playSweep) UI.playSweep(null, null);
     UI.playState('idle');
     UI.readout(null);
+    clearMediaSessionState('paused');
   }
 
   async function playClip() {
@@ -1104,6 +1162,13 @@
     playing = true;
     UI.playState('playing');
     UI.status('');
+    claimAudioFocus({
+      title: S.done && S.song ? S.song.title : 'TuneUp',
+      artist: S.done && S.song ? S.song.artist : 'Guess the Song',
+      art: S.done ? ((S.meta && S.meta.art) || (S.song && S.song.art) || '') : '',
+      onPlay: () => { if (!playing && !playPending) playClip(); },
+      onPause: () => { if (playing || playPending) stopAudio(); }
+    });
 
     const tick = () => {
       if (!playing) return;
@@ -3278,6 +3343,7 @@
       try { summaryAudio.pause(); } catch (e) {}
     }
     setSummaryBtnState('', 'idle');
+    clearMediaSessionState('paused');
   }
 
   function syncSummaryVolume() {
@@ -3322,6 +3388,9 @@
           if (summaryKey) summaryPos.delete(summaryKey);
           if (summaryKey) stopSummaryPreview();
         });
+        summaryAudio.addEventListener('pause', () => {
+          if (summaryKey && !summaryAudio.ended) stopSummaryPreview();
+        });
         summaryAudio.addEventListener('error', () => {
           if (summaryKey) { stopSummaryPreview(); toast(I18N ? tr('toastPreviewUnavailable') : 'Preview unavailable for this track.'); }
         });
@@ -3349,6 +3418,13 @@
         return;
       }
       setSummaryBtnState(key, 'playing');
+      claimAudioFocus({
+        title: song.title || 'TuneUp',
+        artist: song.artist || 'TuneUp',
+        art: (song.pre && song.pre.art) || (findSong(song.slug) && findSong(song.slug).art) || '',
+        onPlay: () => toggleSummaryPreview(key),
+        onPause: () => stopSummaryPreview()
+      });
     } catch (e) {
       if (ticket === summaryEpoch) {
         stopSummaryPreview();
@@ -5443,6 +5519,9 @@
   $('#share').onclick = () => salin(challengeUrlForRun(), 'result_copy');
 
   audio.addEventListener('ended', stopAudio);
+  audio.addEventListener('pause', () => {
+    if (playing && !audio.ended) stopAudio();
+  });
   audio.addEventListener('error', () => {
     if (!S.loading && S.meta && !$('#game').hidden) audioFailure();
   });
@@ -5459,9 +5538,8 @@
   });
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) return;
-    if (playing || playPending) stopAudio();
-    if (stopArtistAudio) stopArtistAudio();
-    stopSummaryPreview();
+    // Pause only active unsolved guessing clips (0.1s–15s) so throttled background rAF cannot leak past the clip limit.
+    if (!S.done && (playing || playPending)) stopAudio();
   });
 
   /* ================= mulai ================= */
@@ -5552,6 +5630,7 @@
       if (card) card.classList.toggle('playing', state === 'playing');
     };
     const pauseSlot = (slot) => {
+      if (activeSlot === slot) activeSlot = null;
       const sp = slotPlayers[slot];
       if (sp && sp.audio) {
         sp.audio.pause();
@@ -5560,6 +5639,7 @@
         }
       }
       setPlayBtn(slot, 'idle');
+      if (!activeSlot) clearMediaSessionState('paused');
     };
 
     stopDuelAudio = () => {
@@ -5592,10 +5672,6 @@
     };
     duelEnded = () => ds.over;
 
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden && activeSlot) stopDuelAudio();
-    });
-
     function ensureSlotAudio(slot) {
       const sp = slotPlayers[slot];
       if (sp.audio) return sp;
@@ -5605,6 +5681,10 @@
         if (sp.slug) duelPos.delete(sp.slug);
         if (activeSlot === slot) activeSlot = null;
         setPlayBtn(slot, 'idle');
+        if (!activeSlot) clearMediaSessionState('paused');
+      });
+      a.addEventListener('pause', () => {
+        if (activeSlot === slot && !a.ended) pauseSlot(slot);
       });
       a.addEventListener('error', () => {
         if (activeSlot !== slot) return;
@@ -5662,6 +5742,13 @@
         }
         setPlayBtn(slot, 'playing');
         $('#duelStatus').textContent = '';
+        claimAudioFocus({
+          title: song.title || 'TuneUp',
+          artist: song.artist || 'Music Duel',
+          art: song.art || '',
+          onPlay: () => playDuelSlot(slot, false),
+          onPause: () => stopDuelAudio()
+        });
       } catch (err) {
         if (myEpoch !== duelAudioEpoch || activeSlot !== slot) return;
         activeSlot = null;
@@ -6358,6 +6445,9 @@
         }
         stopArtistAudio();
       });
+      agAudio.addEventListener('pause', () => {
+        if (agAudioKind && !agAudio.ended) stopArtistAudio();
+      });
       agAudio.addEventListener('error', () => {
         if (agAudioKind) {
           stopArtistAudio();
@@ -6460,6 +6550,7 @@
         try { agAudio.pause(); } catch (e) {}
       }
       syncAudioBtns();
+      clearMediaSessionState('paused');
     };
 
     syncArtistVolume = () => {
@@ -6526,6 +6617,13 @@
           return;
         }
         syncAudioBtns();
+        claimAudioFocus({
+          title: song.title || 'TuneUp',
+          artist: song.artist || 'Artist Detective',
+          art: song.art || '',
+          onPlay: () => playArtistTrack(song, kind, false),
+          onPause: () => stopArtistAudio()
+        });
       } catch (e) {
         if (myEpoch === agAudioEpoch) {
           stopArtistAudio();
@@ -8149,21 +8247,18 @@
     const slot = $('#mgVolSlot');
     if (slot && slot.querySelector && slot.querySelector('.vol')) dockVolume('#gameVolSlot');
   }
-  if (typeof document !== 'undefined') {
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        if (miniAudio && !miniAudio.paused) {
-          try { miniAudio.pause(); } catch (e) {}
-          if (miniArtEl) miniArtEl.dataset.playing = '0';
-        }
-        if (miniYtPlayer && miniYtReady && miniYtPlaying) {
-          try { miniYtPlayer.pauseVideo(); } catch (e) {}
-          miniYtPlaying = false;
-          if (miniArtEl) miniArtEl.dataset.playing = '0';
-        }
-      }
-    });
-  }
+  pauseMiniAudio = () => {
+    if (miniAudio && !miniAudio.paused) {
+      try { miniAudio.pause(); } catch (e) {}
+      if (miniArtEl) miniArtEl.dataset.playing = '0';
+    }
+    if (miniYtPlayer && miniYtReady && miniYtPlaying) {
+      try { miniYtPlayer.pauseVideo(); } catch (e) {}
+      miniYtPlaying = false;
+      if (miniArtEl) miniArtEl.dataset.playing = '0';
+    }
+    clearMediaSessionState('paused');
+  };
   async function startDailySongForHub(slot, onDone) {
     closeAll();
     if (!catalogHydrated) await ensureSongsLoaded();
@@ -8308,9 +8403,16 @@
                 if (st === 1) {
                   miniYtPlaying = true;
                   if (miniArtEl) miniArtEl.dataset.playing = '1';
+                  claimAudioFocus({
+                    title: 'Lyric Guess',
+                    artist: 'TuneUp',
+                    onPlay: () => { try { if (miniYtPlayer && miniYtReady) miniYtPlayer.playVideo(); } catch (err) {} },
+                    onPause: () => pauseMiniAudio()
+                  });
                 } else if (st === 2 || st === 0) {
                   miniYtPlaying = false;
                   if (miniArtEl) miniArtEl.dataset.playing = '0';
+                  clearMediaSessionState('paused');
                 }
               },
               onError: () => triggerFallback()
@@ -8339,6 +8441,13 @@
           try {
             await miniAudio.play();
             if (artEl) artEl.dataset.playing = '1';
+            claimAudioFocus({
+              title: song.title || 'TuneUp',
+              artist: song.artist || 'TuneUp',
+              art: song.art || '',
+              onPlay: () => { if (miniAudio && miniAudio.paused) miniAudio.play().catch(() => {}); },
+              onPause: () => pauseMiniAudio()
+            });
           } catch (e) {
             if (artEl) artEl.dataset.playing = '0';
           }
@@ -8356,7 +8465,16 @@
             if (!auto) toast(I18N ? tr('toastAudioUnavailable') : 'Preview unavailable');
             return;
           }
-          if (!miniAudio) miniAudio = new Audio();
+          if (!miniAudio) {
+            miniAudio = new Audio();
+            miniAudio.addEventListener('pause', () => {
+              if (miniArtEl) miniArtEl.dataset.playing = '0';
+              clearMediaSessionState('paused');
+            });
+            miniAudio.addEventListener('play', () => {
+              if (miniArtEl) miniArtEl.dataset.playing = '1';
+            });
+          }
           miniAudio.datasetTrack = tid;
           miniAudio.src = meta.preview;
           miniAudio.currentTime = 0;
@@ -8364,9 +8482,19 @@
           miniAudio.onended = () => {
             try { miniAudio.currentTime = 0; } catch (e) {}
             if (miniArtEl) miniArtEl.dataset.playing = '0';
+            clearMediaSessionState('paused');
           };
           await miniAudio.play();
           if (myEpoch === miniAudioEpoch && artEl) artEl.dataset.playing = '1';
+          if (myEpoch === miniAudioEpoch) {
+            claimAudioFocus({
+              title: song.title || 'TuneUp',
+              artist: song.artist || 'TuneUp',
+              art: (meta && meta.art) || song.art || '',
+              onPlay: () => { if (miniAudio && miniAudio.paused) miniAudio.play().catch(() => {}); },
+              onPause: () => pauseMiniAudio()
+            });
+          }
         } catch (e) {
           if (artEl) artEl.dataset.playing = '0';
         }
