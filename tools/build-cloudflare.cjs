@@ -63,7 +63,7 @@ for (const file of buildOrder) {
     }
     if (file === 'analytics.js') contents = contents
       .replace(/location\.hostname === '[^']+'/, 'location.hostname === ' + JSON.stringify(site.hostname));
-    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v166-wave139-classic-english-expanded'");
+    if (file === 'sw.js') contents = contents.replace(/const CACHE = '[^']+'/, "const CACHE = 'gts-cf-v167-wave140-polish-hits-mv286'");
     if (esbuild && MINIFY_CSS.has(file)) {
       contents = esbuild.transformSync(contents, { loader: 'css', minify: true, legalComments: 'none' }).code;
     } else if (esbuild && MINIFY_JS.has(file)) {
@@ -229,7 +229,7 @@ const SEO_PAGES = [
     lang: 'en',
     keepHreflang: false,
     title: 'MV Frame — Guess the Song from Music Video Frames | TuneUp',
-    description: 'Guess 230+ iconic songs from music video scenes across 5 tries, with release year & artist clues and instant audio previews. Free browser music game.',
+    description: 'Guess 280+ iconic songs from music video scenes across 5 tries, with release year & artist clues and instant audio previews. Free browser music game.',
     imageAlt: 'TuneUp MV Frame — Guess the song from music video frames',
     aboutHeading: 'About MV Frame',
     aboutP1: 'MV Frame shows 3 real music video frames one scene at a time, followed by Release Year, Genre, and Artist clues across 5 attempts.',

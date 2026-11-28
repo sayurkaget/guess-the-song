@@ -95,7 +95,7 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
   const songs = loadBrowserGlobal('songs.js', 'SONGS');
   const duelStreams = loadBrowserGlobal('duel-streams-v1.js', 'DUEL_STREAMS_V1');
 
-  assert.ok(Data && Array.isArray(Data.mvBank) && Data.mvBank.length >= 230);
+  assert.ok(Data && Array.isArray(Data.mvBank) && Data.mvBank.length >= 280);
   assert.ok(Array.isArray(Data.hairBank) && Data.hairBank.length >= 240);
   assert.ok(Array.isArray(Data.lyricBank) && Data.lyricBank.length >= 250);
   assert.ok(Array.isArray(Data.albumBank) && Data.albumBank.length >= 285);
@@ -140,7 +140,7 @@ test('TUNEUP_DAILY_HUB_DATA banks are verified against songs.js and ArtistDetect
     assert.ok(Number.isInteger(lyricStart) && lyricStart >= 0 && lyricStart <= 75, `lyricBank ${title} lyricStart must be 0..75s`);
     if (lyricStart > 0) lyricNonZero++;
   }
-  assert.ok(lyricNonZero >= 145, `Expected >= 145 lyricBank tracks with synced non-zero timestamps, got ${lyricNonZero}`);
+  assert.ok(lyricNonZero >= 240, `Expected >= 240 lyricBank tracks with synced non-zero timestamps, got ${lyricNonZero}`);
   const byTitle = new Map(Data.lyricBank.map((r) => [r[1], r]));
   assert.equal(byTitle.get('7 rings')[8], 12);
   assert.equal(byTitle.get('Kill Bill')[8], 12);
@@ -313,7 +313,7 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.match(app, /renderAgBoard\(true\)/);
   assert.match(css, /\.glow\{[\s\S]*z-index:0;\s*isolation:isolate/);
   assert.match(css, /\.wrap\{[\s\S]*position:relative;\s*z-index:1/);
-  assert.match(mg, /function initMvSpot\(/);
+  assert.match(mg, /function initMvFrame\(/);
   assert.match(mg, /\/mv-frames\//);
   assert.doesNotMatch(mg, /mgMvFaceMask|mgMvBlurFx/);
   assert.match(mg, /const showAll = Boolean\(revealAll \|\| st\.done\)/);
@@ -350,7 +350,7 @@ test('Wave 99 files are wired in index.html, sw.js, and tools/build-cloudflare.c
   assert.doesNotMatch(html, /id="mgCatTabs"/);
   assert.match(lcss, /#lobby \.more-games-grid\{[^}]*repeat\(5,minmax\(0,1fr\)\)/);
   assert.match(html, /id="moreGamesCard"[\s\S]*class="arcade-row"[\s\S]*id="openDuel"[\s\S]*id="openArtistGame"[\s\S]*class="more-games-grid"/);
-  assert.match(lcss, /\.spotle-guess-card\.is-new\.is-fx-clue-exact\{animation:spCardEnter/);
+  assert.match(lcss, /\.ag-guess-card\.is-new\.is-fx-clue-exact\{animation:spCardEnter/);
   assert.doesNotMatch(app, /triggerUiFx\(newestCard/);
   const i18n = fs.readFileSync(path.join(ROOT, 'i18n.js'), 'utf8');
   assert.doesNotMatch(mg, /Top Hit:|Lagu Hit:/i);

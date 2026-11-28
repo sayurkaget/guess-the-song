@@ -30,7 +30,7 @@ test('1-song summary shelf keeps .run-playbtn inline, modal uses overflow:clip, 
   assert.match(css, /\.runlist\.run-shelf li\{\s*position:relative;/);
   assert.match(css, /\.modal\{[^}]*overflow:clip/);
   assert.match(css, /#duelModal \.sheet\.run-sheet \.r-actions\{display:grid;grid-template-columns:minmax\(0,\.88fr\) minmax\(0,1\.35fr\);/);
-  assert.match(css, /\.spotle-result-actions\{width:100%;display:flex;flex-direction:column-reverse;/);
+  assert.match(css, /\.ag-result-actions\{width:100%;display:flex;flex-direction:column-reverse;/);
   assert.match(css, /\.sheet\.run-sheet \.run-foot-links\{display:grid;grid-template-columns:1fr;/);
 });
 
@@ -147,8 +147,8 @@ test('Wave 53/54 Artist Detective Clue + Name Hints and SEO sitemap/JSON-LD are 
   assert.match(app, /function openAgDD\(query\)[\s\S]*?fuzzyMatchScore\(toks, qCompact, a\)/);
 
   const css = fs.readFileSync(path.join(ROOT, 'layout.css'), 'utf8');
-  assert.match(css, /\.spotle-hint-box\{/);
-  assert.match(css, /\.spotle-hint-chip\{/);
+  assert.match(css, /\.ag-hint-box\{/);
+  assert.match(css, /\.ag-hint-chip\{/);
 });
 
 test('Wave 58 summary modal footer aligns Daily in 2x2 grid and wide sheets in 1 row', () => {
@@ -240,7 +240,7 @@ test('Wave 66 mobile UI polish and remaining ID localization leaks are wired cle
   assert.match(css, /Wave 66: Comprehensive Mobile UI Polish/);
   assert.match(css, /#statsModal \.badge-grid\{grid-template-columns:1fr;/);
   assert.match(css, /\.sp-tile small\{font-size:\.57rem;letter-spacing:\.035em;white-space:nowrap\}/);
-  assert.match(css, /\.spotle-result-actions #agNextBtn\{order:-1\}/);
+  assert.match(css, /\.ag-result-actions #agNextBtn\{order:-1\}/);
   assert.match(css, /#customModal \.custom-quick-head\{flex-wrap:nowrap;/);
   assert.doesNotMatch(css, /\.vinyl-card \.spot-play-wrap\{flex-direction:column/);
   assert.match(css, /\.sheet\.run-sheet \.run-head\{display:contents\}/);
@@ -462,8 +462,8 @@ test('Wave 77 adds multi-select Genre & Era filters and unifies PC result modals
   assert.match(css, /\.sheet\.run-sheet\[data-mode="daily"\]\{width:min\(468px,100%\)\}/);
   assert.match(css, /\.runlist\.run-shelf\{[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /\.run-foot\{[\s\S]*flex-direction:column;align-items:stretch/);
-  assert.match(css, /\.spotle-result-banner\{[\s\S]*flex-direction:column;align-items:stretch/);
-  assert.match(css, /\.spotle-result-actions\{\s*display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.ag-result-banner\{[\s\S]*flex-direction:column;align-items:stretch/);
+  assert.match(css, /\.ag-result-actions\{\s*display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
 test('Wave 78 restores spinning vinyl disc on #resultModal across PC & mobile with dedicated 3-row mobile-friendly typography', () => {

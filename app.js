@@ -17,13 +17,14 @@
   const DIFFS = {
     easy:       { label: 'Easy',       tiers: [1, 2] },
     medium:     { label: 'Medium',     tiers: [1, 2, 3] },
-    hard:       { label: 'Hard',       tiers: [2, 3, 4, 5] },
+    hard:       { label: 'Hard',       tiers: [2, 3, 4] },
     expert:     { label: 'Expert',     tiers: [3, 4, 5] },
     impossible: { label: 'Impossible', tiers: [4, 5] }
   };
   // urutan tahap dalam satu sesi
-  const ORDER  = ['easy', 'medium', 'hard', 'expert', 'impossible'];
-  const STAGES = ORDER.length;
+  const ORDER      = ['easy', 'medium', 'hard', 'expert', 'impossible'];
+  const HITS_ORDER = ['easy', 'easy', 'medium', 'medium', 'hard'];
+  const STAGES     = ORDER.length;
 
   const GENRES  = {
     all: 'All genres', pop: 'Pop', rock: 'Rock', hiphop: 'Hip-hop',
@@ -235,6 +236,7 @@
   const S = {
     genre:  LS.get('tl:genre', 'all'),
     era:    LS.get('tl:era', 'all'),
+    focus:  LS.get('tl:focus', 'ladder') === 'hits' ? 'hits' : 'ladder',
     vol:    LS.get('tl:vol', 0.8),
     muted:  LS.get('tl:muted', false),
 
@@ -268,9 +270,18 @@
     : S.challenge ? 'challenge:' + S.challenge.id
     : S.runChallenge ? 'run:' + S.runChallenge.ids.join('-')
     : S.custom ? 'custom:' + S.custom.id
-    : ('gl:' + S.genre + ':' + S.era);
+    : ('gl:' + (S.focus === 'hits' ? 'hits:' : '') + S.genre + ':' + S.era);
 
-  const D       = () => DIFFS[ORDER[Math.min(S.stage, ORDER.length - 1)]];
+  const stageDiffKey = (idx) => {
+    const ord = (!S.daily && !S.custom && !S.challenge && !S.runChallenge && S.focus === 'hits') ? HITS_ORDER : ORDER;
+    return ord[Math.min(idx, ord.length - 1)];
+  };
+  const stageBandIdx = (idx) => {
+    const k = stageDiffKey(idx);
+    const i = ORDER.indexOf(k);
+    return i >= 0 ? i : Math.min(idx, ORDER.length - 1);
+  };
+  const D       = () => DIFFS[stageDiffKey(S.stage)];
   const ladder  = () => LADDER;
   const maxLen  = () => ladder()[TRIES - 1];
   const step    = () => Math.min(S.guesses.length, TRIES - 1);
@@ -514,7 +525,7 @@
     const duelP = ensureDuelDataLoaded();
     const songsP = new Promise((resolve) => {
       const sc = document.createElement('script');
-      sc.src = (typeof location !== 'undefined' && location.protocol === 'file:') ? 'songs.js?v=117' : '/songs.js?v=117';
+      sc.src = (typeof location !== 'undefined' && location.protocol === 'file:') ? 'songs.js?v=118' : '/songs.js?v=118';
       sc.async = true;
       sc.onload = () => { hydrateCatalog(); resolve(ALL); };
       sc.onerror = () => { songsLoadPromise = null; resolve(ALL); };
@@ -654,6 +665,13 @@
     return true;
   }
 
+  // Artis US Country regional dipisahkan dari Classic default "All genres" agar tidak menyulitkan pemain global;
+  // tetap muncul jika memilih genre "Other" atau mode By Artist.
+  const CLASSIC_DEFAULT_SKIP_COUNTRY = new Set([
+    'Morgan Wallen', 'Luke Combs', 'Zach Bryan', 'Chris Stapleton', 'Luke Bryan',
+    'Darius Rucker', 'Kacey Musgraves', 'Kenny Rogers', 'Dolly Parton'
+  ]);
+
   // lagu yang lolos filter pemain, tanpa memandang tingkat kesulitan
   function filtered() {
     if (S.custom) return S.custom.songs;
@@ -663,7 +681,7 @@
     return ALL.filter((s) =>
       isClassicEnglishSong(s) &&
       !CLASSIC_HOLIDAY_RE.test(s.title) &&
-      (!gSet || gSet.has(s.genre)) &&
+      (!gSet ? !CLASSIC_DEFAULT_SKIP_COUNTRY.has(s.artist) : gSet.has(s.genre)) &&
       (!eList.length || eList.some((ek) => ERAS[ek].hit(s.year))));
   }
 
@@ -675,7 +693,7 @@
     // dilonggarkan. Hanya rentang tier tahap ini yang dilebarkan kalau
     // lagu yang cocok terlalu sedikit.
     const base = filtered();
-    const diff = DIFFS[ORDER[Math.min(stageIdx, ORDER.length - 1)]];
+    const diff = DIFFS[stageDiffKey(stageIdx)];
     const tiers = diff.tiers;
     const lo0 = Math.min.apply(null, tiers), hi0 = Math.max.apply(null, tiers);
     let pool = [], spread = 0;
@@ -1214,13 +1232,13 @@
     classicRankCache = { sig, topArtists, unstrT5Rank };
     return classicRankCache;
   }
-  const CLASSIC_TIER_BASELINE_STREAMS = { 1: 1800000000, 2: 900000000, 3: 500000000, 4: 260000000, 5: 100000000 };
+  const CLASSIC_TIER_BASELINE_STREAMS = { 1: 1800000000, 2: 900000000, 3: 500000000, 4: 260000000, 5: 60000000 };
   const CLASSIC_STAGE_BANDS = [
-    { min: 750000000, max: Infinity,   exp: 1.55, unstreamedMaxTier: 1, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 1 Easy: English mega-hits (>=750M + T1)
-    { min: 320000000, max: 1600000000, exp: 1.25, unstreamedMaxTier: 2, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 2 Medium: big English hits (320M-1.6B + T1-2)
-    { min: 150000000, max: 900000000,  exp: 1.05, unstreamedMaxTier: 3, t5TopRank: 4,        t5TopArtistOnly: true  }, // Stage 3 Hard: radio hits, classics & icon top-4 T5 (150M-900M + T2-3 + icon T5)
-    { min: 50000000,  max: 450000000,  exp: 0.85, unstreamedMaxTier: 4, t5TopRank: 12,       t5TopArtistOnly: false }, // Stage 4 Expert: deeper English hits & top-12 T5 album cuts (50M-450M + T3-4 + top-12 T5)
-    { min: 0,         max: 300000000,  exp: 0.35, unstreamedMaxTier: 5, t5TopRank: Infinity, t5TopArtistOnly: false }  // Stage 5 Impossible: full remaining English catalog (<=300M + all T4-5)
+    { min: 1100000000, max: Infinity,   exp: 2.1,  unstreamedMaxTier: 1, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 1 Easy: global English mega-hits (>=1.1B + T1)
+    { min: 600000000,  max: 2000000000, exp: 1.65, unstreamedMaxTier: 2, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 2 Medium: big familiar hits (600M-2.0B + T1-2)
+    { min: 280000000,  max: 1000000000, exp: 1.35, unstreamedMaxTier: 3, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 3 Hard: recognizable radio hits & classics (280M-1.0B + T2-3)
+    { min: 120000000,  max: 500000000,  exp: 1.15, unstreamedMaxTier: 4, t5TopRank: 0,        t5TopArtistOnly: false }, // Stage 4 Expert: deeper hits & famous album cuts (120M-500M + T3-4)
+    { min: 0,          max: 300000000,  exp: 1.1,  unstreamedMaxTier: 5, t5TopRank: Infinity, t5TopArtistOnly: false }  // Stage 5 Impossible: full remaining English catalog (<=300M + all T4-5)
   ];
   function pickWeightedClassic(list, stageIdx) {
     if (list.length <= 1) return list[0];
@@ -1245,7 +1263,14 @@
     return list[list.length - 1];
   }
   const SKIP_SPOKEN_PREVIEW_IDS = new Set([
-    '1440892167' // Drake — Passionfruit (30s iTunes preview hits the 1-minute spoken Moodymann skit intro)
+    '1440892167', // Drake — Passionfruit (30s iTunes preview hits the 1-minute spoken Moodymann skit intro)
+    '1754219314', // The Lumineers — Ho Hey (2s dead silence at preview start: -60.4 dBFS)
+    '1694794945', // Major Lazer — Cold Water (0.5s silent preview start: -57.7 dBFS)
+    '1065973980', // Pink Floyd — Wish You Were Here (8s quiet radio static intro: -48.4 dBFS)
+    '1433828082', // Metallica — One (8s battlefield sound-effect intro: -58.7 dBFS)
+    '1572046440', // Metallica — The Unforgiven (2s silent preview start: -63.3 dBFS)
+    '1754024626', // The Lumineers — Sleep On the Floor (quiet ambient preview start: -45.1 dBFS)
+    '1582691808'  // JVKE — this is what falling in love feels like (0.5s silent preview start: -44.6 dBFS)
   ]);
   const SAFE_ART_FALLBACK = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><radialGradient id="g" cx="50%" cy="45%" r="60%"><stop offset="0%" stop-color="#173a29"/><stop offset="100%" stop-color="#06130c"/></radialGradient></defs><rect width="200" height="200" fill="url(#g)"/><circle cx="100" cy="100" r="64" fill="none" stroke="rgba(37,224,125,.28)" stroke-width="2"/><circle cx="100" cy="100" r="44" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1.5"/><circle cx="100" cy="100" r="18" fill="#102b1e" stroke="#25e07d" stroke-width="2.5"/><circle cx="100" cy="100" r="5" fill="#25e07d"/></svg>'
@@ -1294,7 +1319,8 @@
     }
     if (!S.custom && !S.daily && !S.challenge && src.length > 1) {
       const streamMap = getClassicStreamMap();
-      const band = CLASSIC_STAGE_BANDS[Math.max(0, Math.min(stageIdx, CLASSIC_STAGE_BANDS.length - 1))];
+      const bIdx = stageBandIdx(stageIdx);
+      const band = CLASSIC_STAGE_BANDS[Math.max(0, Math.min(bIdx, CLASSIC_STAGE_BANDS.length - 1))];
       if (streamMap.size && band) {
         const rankMeta = band.t5TopRank > 0 && band.t5TopRank < Infinity ? getClassicRankMeta(streamMap) : null;
         const matchesBand = (s, strictMax) => {
@@ -1315,14 +1341,14 @@
             const diverse = inBand.filter((s) => used.every((u) => !sameArtist(s, u)));
             if (diverse.length >= 4) inBand = diverse;
           }
-          return pickWeightedClassic(inBand, stageIdx);
+          return pickWeightedClassic(inBand, bIdx);
         }
       }
       const tiers = [...new Set(src.map((s) => s.tier).filter(Boolean))].sort((a, b) => a - b);
       let pickTier = tiers.length === 1 ? tiers[0] : 0;
       if (tiers.length > 1) {
         // Bobot ramah populer untuk filter sempit / fallback tanpa streamMap
-        const upperChance = stageIdx >= 4 ? 0.35 : stageIdx === 2 ? 0.45 : 0.40;
+        const upperChance = bIdx >= 4 ? 0.35 : bIdx === 2 ? 0.45 : 0.40;
         pickTier = Math.random() < upperChance ? tiers[tiers.length - 1] : tiers[0];
       }
       if (pickTier) {
@@ -1353,7 +1379,7 @@
           const diverse = byTier.filter((s) => used.every((u) => !sameArtist(s, u)));
           if (diverse.length >= 4) byTier = diverse;
         }
-        if (byTier.length) return pickWeightedClassic(byTier, stageIdx);
+        if (byTier.length) return pickWeightedClassic(byTier, bIdx);
       }
     }
     return src[Math.floor(Math.random() * src.length)];
@@ -2934,7 +2960,7 @@
     }
     setSearchingMode(true);
     if (typeof window === 'undefined' || typeof window.scrollTo !== 'function') return;
-    const card = (typeof inputEl.closest === 'function' && inputEl.closest('.guess-card, .spotle-top-card')) || inputEl;
+    const card = (typeof inputEl.closest === 'function' && inputEl.closest('.guess-card, .ag-top-card')) || inputEl;
     const doScroll = (instant) => {
       if (!card || typeof card.getBoundingClientRect !== 'function') return;
       const rect = card.getBoundingClientRect();
@@ -3430,6 +3456,29 @@
       };
       setupFilter('genre', GENRES, GENRE_KEYS, 'tl:genre', genreLabel);
       setupFilter('era',   ERAS,   ERA_KEYS,   'tl:era',   eraLabel);
+      const focusSeg = $('#classicFocusSeg');
+      if (focusSeg && typeof focusSeg.querySelectorAll === 'function') {
+        const btns = focusSeg.querySelectorAll('[data-focus]');
+        for (let i = 0; i < btns.length; i++) {
+          const on = btns[i].dataset.focus === S.focus;
+          btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+          btns[i].setAttribute('aria-checked', on ? 'true' : 'false');
+        }
+        if (!focusSeg._wired) {
+          focusSeg._wired = true;
+          focusSeg.addEventListener('click', (e) => {
+            const b = e.target && typeof e.target.closest === 'function' ? e.target.closest('[data-focus]') : null;
+            if (!b) return;
+            const next = b.dataset.focus === 'hits' ? 'hits' : 'ladder';
+            if (next === S.focus) return;
+            S.focus = next;
+            LS.set('tl:focus', next);
+            switchRun();
+            UI.buildControls();
+            UI.refreshLobby();
+          });
+        }
+      }
     },
 
     /* --- rangkaian tahap --- */
@@ -3467,7 +3516,7 @@
 
       let activeEl = null;
       for (let i = 0; i < count; i++) {
-        const k = ORDER[i] || ORDER[ORDER.length - 1];
+        const k = stageDiffKey(i);
         if (i > 0 && !many) { const a = el('li', 'arrow'); a.textContent = '›'; host.appendChild(a); }
         const li = el('li');
         li.dataset.k = artistMode ? 'custom' : k;
@@ -3593,11 +3642,12 @@
       $('#game').hidden = false;
       dockVolume('#gameVolSlot');
       const artistMode = S.runChallenge ? !!S.runChallenge.artistId : !!S.custom;
-      document.body.dataset.diff = artistMode ? 'custom' : ORDER[S.stage];  // warna mewarnai seluruh halaman
+      document.body.dataset.diff = artistMode ? 'custom' : stageDiffKey(S.stage);  // warna mewarnai seluruh halaman
       $('#gameMode').textContent = S.daily ? S.daily.day
         : S.runChallenge ? (S.runChallenge.artistLabel ? 'Friend challenge · ' + S.runChallenge.artistLabel : 'Friend challenge')
         : S.custom ? S.custom.label
         : [
+          S.focus === 'hits' ? (I18N ? tr('focusHits') : 'Hits Only') : null,
           S.genre === 'all' ? null : formatMulti(S.genre, GENRE_KEYS, genreLabel, 2),
           S.era === 'all' ? null : formatMulti(S.era, ERA_KEYS, eraLabel, 2)
         ].filter(Boolean).join(' · ');
@@ -3633,7 +3683,8 @@
       } else {
         const q = encodeQuery([
           ['genre', S.genre !== 'all' ? S.genre : ''],
-          ['era', S.era !== 'all' ? S.era : '']
+          ['era', S.era !== 'all' ? S.era : ''],
+          ['focus', S.focus === 'hits' ? 'hits' : '']
         ]);
         const modeTitle = $('#gameMode').textContent;
         syncRoute('classic', {
@@ -4015,6 +4066,7 @@
           modeTag.textContent = (I18N ? tr('customTag') : 'Custom') + ' · ' + (S.custom.label || (I18N ? tr('tabArtistStat') : 'Artist'));
         } else {
           const parts = [];
+          if (S.focus === 'hits') parts.push(I18N ? tr('focusHits') : 'Hits Only');
           if (S.genre !== 'all') parts.push(formatMulti(S.genre, GENRE_KEYS, genreLabel, 2));
           if (S.era !== 'all') parts.push(formatMulti(S.era, ERA_KEYS, eraLabel, 2));
           modeTag.textContent = 'Classic · ' + (parts.length ? parts.join(' · ') : (count + ' ' + unitStage));
@@ -4025,7 +4077,7 @@
       const stageArtsWin = [], stageArtsAll = [];
       const listEl = $('#runList');
       listEl.innerHTML = Array.from({ length: count }, (_, i) => {
-        const k = ORDER[i] || ORDER[ORDER.length - 1];
+        const k = stageDiffKey(i);
         const r = S.stages[i];
         const lvl = S.daily ? (I18N ? tr('todaysSong') : "Today's song")
           : artistMode ? (I18N ? tr('songNum', { n: i + 1 }) : ('Song ' + (i + 1)))
@@ -4358,6 +4410,7 @@
     }
     if (S.custom) return S.custom.label;
     const tags = [
+      S.focus === 'hits' ? 'Hits Only' : null,
       S.genre === 'all' ? null : formatMulti(S.genre, GENRE_KEYS, genreLabel, 2),
       S.era === 'all' ? null : formatMulti(S.era, ERA_KEYS, eraLabel, 2)
     ].filter(Boolean);
@@ -4381,7 +4434,7 @@
       for (let i = 0; i < cells.length; i += 10) lines.push(cells.slice(i, i + 10).join(''));
     } else {
       lines = Array.from({ length: count }, (_, i) => {
-        const k = ORDER[i] || ORDER[ORDER.length - 1];
+        const k = stageDiffKey(i);
         const name = artistMode ? ('Song ' + (i + 1)) : DIFFS[k].label;
         const r = S.stages[i];
         if (!r || !r.done) return '⬜ ' + name;
@@ -4844,6 +4897,7 @@
     settings.lang = I18N ? I18N.load(localStorage) : 'en';
     S.genre = normalizeMulti(LS.get('tl:genre', 'all'), GENRE_KEYS);
     S.era = normalizeMulti(LS.get('tl:era', 'all'), ERA_KEYS);
+    S.focus = LS.get('tl:focus', 'ladder') === 'hits' ? 'hits' : 'ladder';
     const v = Number(LS.get('tl:vol', 0.8));
     S.vol = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.8;
     S.muted = !!LS.get('tl:muted', false);
@@ -6338,7 +6392,7 @@
         } else {
           box.hidden = false;
           box.innerHTML = ag.hints.map((h) =>
-            '<span class="spotle-hint-chip"><small>' + esc(h.label) + '</small><b>' + esc(h.value) + '</b></span>'
+            '<span class="ag-hint-chip"><small>' + esc(h.label) + '</small><b>' + esc(h.value) + '</b></span>'
           ).join('');
         }
       }
@@ -6531,7 +6585,7 @@
 
       $('#agQ').disabled = ag.done;
       $('#agGiveUp').hidden = ag.done;
-      const topCard = $('#artistGame .spotle-top-card');
+      const topCard = $('#artistGame .ag-top-card');
       if (topCard) topCard.hidden = ag.done;
       syncAudioBtns();
       syncAgHints();
@@ -6595,7 +6649,7 @@
       const board = $('#agBoard');
       if (!board) return;
       if (!ag.guesses.length) {
-        board.innerHTML = '<div class="spotle-empty">' + esc(I18N ? tr('agEmpty') : 'Guess any artist above to reveal Debut Year, Solo/Group Type, Gender, Genre, Country & Global Rank (#1–#530).') + '</div>';
+        board.innerHTML = '<div class="ag-empty">' + esc(I18N ? tr('agEmpty') : 'Guess any artist above to reveal Debut Year, Solo/Group Type, Gender, Genre, Country & Global Rank (#1–#530).') + '</div>';
         return;
       }
       board.innerHTML = ag.guesses.slice().reverse().map((g, revIdx) => {
@@ -6608,15 +6662,15 @@
             ? ' is-fx-clue-exact'
             : (tiles.some((t) => t.status === 'close') ? ' is-fx-clue-close' : ' is-fx-wrong'))
           : '';
-        return '<article class="spotle-guess-card' + (isWin ? ' is-winner' : '') + (isNew ? ' is-new' : '') + fxCls + '">' +
-          '<div class="spotle-guess-head">' +
-            '<div class="spotle-guess-who">' +
-              '<img class="spotle-guess-avatar" src="' + esc(g.art || '') + '" alt="">' +
-              '<span class="spotle-guess-name">' + esc(g.name) + '</span>' +
+        return '<article class="ag-guess-card' + (isWin ? ' is-winner' : '') + (isNew ? ' is-new' : '') + fxCls + '">' +
+          '<div class="ag-guess-head">' +
+            '<div class="ag-guess-who">' +
+              '<img class="ag-guess-avatar" src="' + esc(g.art || '') + '" alt="">' +
+              '<span class="ag-guess-name">' + esc(g.name) + '</span>' +
             '</div>' +
-            '<span class="spotle-guess-num">' + esc(I18N ? tr('agGuessNum', { n: num }) : ('Guess #' + num)) + '</span>' +
+            '<span class="ag-guess-num">' + esc(I18N ? tr('agGuessNum', { n: num }) : ('Guess #' + num)) + '</span>' +
           '</div>' +
-          '<div class="spotle-tiles">' +
+          '<div class="ag-tiles">' +
             tiles.map((t, ti) =>
               '<div class="sp-tile ' + t.status + '"' + (isNew ? ' style="--ti:' + ti + '"' : '') + '>' +
                 '<small>' + esc(I18N ? tr('clue_' + t.key) : t.label) + '</small>' +
@@ -6683,9 +6737,9 @@
           b.disabled = tried;
           b.dataset.idx = String(idx);
           b.innerHTML =
-            '<img class="spotle-dd-art" src="' + esc(a.art || '') + '" alt="">' +
+            '<img class="ag-dd-art" src="' + esc(a.art || '') + '" alt="">' +
             '<span class="dd-txt"><b>' + esc(a.name) + '</b><small>' + esc(a.country + ' · ' + a.type) + '</small></span>' +
-            '<span class="spotle-dd-meta">' + esc(a.genre) + '</span>';
+            '<span class="ag-dd-meta">' + esc(a.genre) + '</span>';
           dd.appendChild(b);
         });
       }
@@ -6762,7 +6816,7 @@
       playSfx(allMiss ? 'wrong' : 'near');
       renderAgBoard(true);
       if (allMiss) {
-        triggerUiFx($('#artistGame .spotle-top-card'), 'is-fx-wrong', 480);
+        triggerUiFx($('#artistGame .ag-top-card'), 'is-fx-wrong', 480);
         triggerUiFx($('#agTriesPill'), 'is-fx-wrong', 460);
       } else {
         triggerUiFx($('#agTriesPill'), 'is-bump', 440);
@@ -7042,7 +7096,7 @@
     });
     document.addEventListener('pointerdown', (e) => {
       if ($('#agDD').hidden) return;
-      if (!e.target.closest('.spotle-search')) closeAgDD();
+      if (!e.target.closest('.ag-search')) closeAgDD();
     });
     $('#agClear').onpointerdown = (e) => e.preventDefault();
     $('#agClear').onclick = () => {
@@ -7949,9 +8003,11 @@
     };
     const g = parseParamMulti(params.get('genre'), genreAliases, GENRE_KEYS);
     const e = parseParamMulti(params.get('era'), eraAliases, ERA_KEYS);
+    const fParam = (params.get('focus') || '').trim().toLowerCase();
     let changed = false;
     if (g) { S.genre = g; LS.set('tl:genre', g); changed = true; }
     if (e) { S.era = e; LS.set('tl:era', e); changed = true; }
+    if (fParam === 'hits' || fParam === 'ladder') { S.focus = fParam; LS.set('tl:focus', fParam); changed = true; }
     if (changed) {
       switchRun();
       UI.buildControls();

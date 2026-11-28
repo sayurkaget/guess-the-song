@@ -1385,8 +1385,8 @@
     const seed = isDaily ? dailySlot.seed : ('free:' + gameId + ':' + Date.now() + ':' + Math.random());
 
     if (gameId === 'cover') initCoverPixel(seed, dailySlot, challenge, saved);
-    else if (gameId === 'mv') initMvSpot(seed, dailySlot, challenge, saved);
-    else if (gameId === 'hair') initHairSpot(seed, dailySlot, challenge, saved);
+    else if (gameId === 'mv') initMvFrame(seed, dailySlot, challenge, saved);
+    else if (gameId === 'hair') initHairPeek(seed, dailySlot, challenge, saved);
     else if (gameId === 'fact') initFactOrCap(seed, dailySlot, saved);
     else if (gameId === 'lyric') initLyricGuess(seed, dailySlot, challenge, saved);
 
@@ -1902,7 +1902,7 @@
     });
   }
 
-  function initMvSpot(seed, dailySlot, challenge, saved) {
+  function initMvFrame(seed, dailySlot, challenge, saved) {
     let st = saved && saved.gameId === 'mv' ? saved : null;
     if (!st) {
       const bank = getData().mvBank || [];
@@ -2137,7 +2137,7 @@
 
   /* ================= GAME 3: HAIR PEEK ================= */
   const HAIR_CURTAIN_PCTS = [77, 63, 49, 34, 18, 0];
-  function initHairSpot(seed, dailySlot, challenge, saved) {
+  function initHairPeek(seed, dailySlot, challenge, saved) {
     let st = saved && saved.gameId === 'hair' ? saved : null;
     if (!st) {
       const bank = getData().hairBank || [];
@@ -2753,8 +2753,8 @@
       if (titleEl) titleEl.textContent = gameLabel(gId);
       if (!mgState.done) {
         if (gId === 'cover') initCoverPixel('', slot, mgState.challenge || null, mgState);
-        else if (gId === 'mv') initMvSpot('', slot, mgState.challenge || null, mgState);
-        else if (gId === 'hair') initHairSpot('', slot, mgState.challenge || null, mgState);
+        else if (gId === 'mv') initMvFrame('', slot, mgState.challenge || null, mgState);
+        else if (gId === 'hair') initHairPeek('', slot, mgState.challenge || null, mgState);
         else if (gId === 'fact') initFactOrCap('', slot, mgState);
         else if (gId === 'lyric') initLyricGuess('', slot, mgState.challenge || null, mgState);
       } else {

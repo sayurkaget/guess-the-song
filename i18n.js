@@ -37,6 +37,10 @@
       viewResult: 'See result',
       classicHeading: 'Classic',
       stages5: '5 stages',
+      focusLadder: '5-Stage',
+      focusLadderSub: 'Easy–Impossible',
+      focusHits: 'Hits Only',
+      focusHitsSub: 'Easy–Hard',
       tabFilters: 'Genre & Era',
       tabArtist: 'By Artist',
       tabPlaylist: 'Playlists',
@@ -553,6 +557,10 @@
       viewResult: 'Ver resultado',
       classicHeading: 'Clásico',
       stages5: '5 rondas',
+      focusLadder: '5 etapas',
+      focusLadderSub: 'Fácil–Imposible',
+      focusHits: 'Solo éxitos',
+      focusHitsSub: 'Fácil–Difícil',
       tabFilters: 'Género y Época',
       tabArtist: 'Por Artista',
       tabPlaylist: 'Playlists',
@@ -1130,6 +1138,10 @@
     if (!$('#classicSpotifyPanel') || $('#classicSpotifyPanel').hidden) {
       setText($('.classic-title-group .mode-pill'), 'stages5');
     }
+    setText($('#classicFocusLadderLbl'), 'focusLadder');
+    setText($('#classicFocusLadderSub'), 'focusLadderSub');
+    setText($('#classicFocusHitsLbl'), 'focusHits');
+    setText($('#classicFocusHitsSub'), 'focusHitsSub');
     setText($('#classicTabs [data-classic-tab="filters"]'), 'tabFilters');
     setText($('#classicTabs [data-classic-tab="artist"]'), 'tabArtist');
     setText($('#classicTabs [data-classic-tab="spotify"]'), 'tabPlaylist');
@@ -1165,7 +1177,7 @@
     setText($('#agGiveUp'), 'giveUp');
     setBtnLabelKeepSvg($('#agShareBtn'), 'challengeFriend');
     setText($('#agNextBtn'), 'nextArtist');
-    const legendSpans = doc.querySelectorAll('.spotle-legend span');
+    const legendSpans = doc.querySelectorAll('.ag-legend span');
     if (legendSpans[0] && legendSpans[0].lastChild) legendSpans[0].lastChild.textContent = t('legendExact');
     if (legendSpans[1] && legendSpans[1].lastChild) legendSpans[1].lastChild.textContent = t('legendClose');
 

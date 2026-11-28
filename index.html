@@ -130,7 +130,13 @@
           </div>
           <button class="btn solid start" id="start">Start</button>
         </div>
-        <p class="poolinfo" id="poolInfo" hidden></p>
+        <div class="classic-focus-row" id="classicFocusRow">
+          <div class="seg classic-focus-seg" id="classicFocusSeg" role="radiogroup" aria-label="Classic difficulty mode">
+            <button type="button" role="radio" data-focus="ladder" aria-checked="true" aria-pressed="true"><span class="lbl" id="classicFocusLadderLbl">5-Stage</span><small id="classicFocusLadderSub">Easy–Impossible</small></button>
+            <button type="button" role="radio" data-focus="hits" aria-checked="false" aria-pressed="false"><span class="lbl" id="classicFocusHitsLbl">Hits Only</span><small id="classicFocusHitsSub">Easy–Hard</small></button>
+          </div>
+          <p class="poolinfo" id="poolInfo" hidden></p>
+        </div>
       </div>
       <div class="artist-panel" id="classicArtistPanel" hidden>
         <div class="artist-panel-copy">
@@ -520,38 +526,38 @@
 
     <p class="daily-game-pill is-purple" id="agDailyMeta" hidden>Daily Artist</p>
 
-    <div class="spotle-top-card">
-      <div class="search spotle-search">
+    <div class="ag-top-card">
+      <div class="search ag-search">
         <svg class="search-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.9 15.9 4.9 4.9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <input id="agQ" type="text" placeholder="Search any artist&hellip;" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="agDD" aria-autocomplete="list">
         <button class="clear" id="agClear" type="button" aria-label="Clear" hidden>&times;</button>
-        <div class="dd spotle-dd" id="agDD" role="listbox" hidden></div>
+        <div class="dd ag-dd" id="agDD" role="listbox" hidden></div>
       </div>
 
-      <div class="spotle-controls-row">
-        <div class="spotle-legend" aria-label="Clue color legend">
+      <div class="ag-controls-row">
+        <div class="ag-legend" aria-label="Clue color legend">
           <span><i class="dot exact"></i>Exact</span>
           <span><i class="dot close"></i>Close</span>
           <span><i class="dot miss"></i>&#9650; / &#9660;</span>
         </div>
-        <div class="spotle-actions">
-          <button class="btn ghostbtn spotle-hint-btn" id="agHintBtn" type="button" disabled title="Unlocks at 5 guesses (unmatched clue) and 7 guesses (name initial)">
+        <div class="ag-actions">
+          <button class="btn ghostbtn ag-hint-btn" id="agHintBtn" type="button" disabled title="Unlocks at 5 guesses (unmatched clue) and 7 guesses (name initial)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6m-5 3h4M12 3a6 6 0 0 0-3.7 10.7c.7.6 1.2 1.4 1.3 2.3h4.8c.1-.9.6-1.7 1.3-2.3A6 6 0 0 0 12 3Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span id="agHintLbl">Hint in 5</span>
           </button>
-          <button class="btn ghostbtn spotle-giveup-btn" id="agGiveUp" type="button">
+          <button class="btn ghostbtn ag-giveup-btn" id="agGiveUp" type="button">
             <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4v16M6 5h12l-2.4 4L18 13H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span class="lbl">Give up</span>
           </button>
         </div>
       </div>
-      <div class="spotle-hint-box" id="agHintBox" role="status" aria-live="polite" hidden></div>
+      <div class="ag-hint-box" id="agHintBox" role="status" aria-live="polite" hidden></div>
     </div>
 
-    <div class="spotle-result-banner" id="agResultBanner" hidden>
-      <div class="spotle-result-main">
-        <img class="spotle-result-art" id="agResultArt" alt="">
-        <div class="spotle-result-copy">
+    <div class="ag-result-banner" id="agResultBanner" hidden>
+      <div class="ag-result-main">
+        <img class="ag-result-art" id="agResultArt" alt="">
+        <div class="ag-result-copy">
           <span class="run-kicker" data-mode="artist" id="agVerdict">Solved!</span>
           <h3 id="agAnswerName"></h3>
           <p id="agTopSongLabel"></p>
@@ -560,7 +566,7 @@
         <div class="vol-slot" id="agVolSlot"></div>
       </div>
       <p class="daily-community is-artist" id="agDailyCommunity" hidden></p>
-      <div class="spotle-result-actions">
+      <div class="ag-result-actions">
         <button class="btn ghostbtn share-btn" id="agShareBtn" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M15.6 6.3 8.4 10.7M8.4 13.3l7.2 4.4" stroke="currentColor" stroke-width="1.7" fill="none"/></svg>
           Challenge your friend
@@ -569,8 +575,8 @@
       </div>
     </div>
 
-    <div class="spotle-board" id="agBoard" aria-live="polite">
-      <div class="spotle-empty">Guess any artist above to reveal Debut Year, Solo/Group Type, Gender, Genre, Country &amp; Global Rank (#1&ndash;#530).</div>
+    <div class="ag-board" id="agBoard" aria-live="polite">
+      <div class="ag-empty">Guess any artist above to reveal Debut Year, Solo/Group Type, Gender, Genre, Country &amp; Global Rank (#1&ndash;#530).</div>
     </div>
   </section>
 
